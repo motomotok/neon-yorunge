@@ -1,8 +1,13 @@
 // Ses (WebAudio beep'leri), titreşim ve ekran-üstü toast bildirimleri.
 let AC=null;
-function beep(freq,dur,type,vol){
+// Melodi kombosu 4'ü geçtiğinde, melodi notaları VE rakiplere çarpma
+// sesleri dışındaki her şeyin sesi kısılır — oyuncu o an kurduğu melodiye
+// odaklanabilsin diye. `keepFull=true` geçen çağrılar (melodi notaları,
+// hitHazard() sesleri) bu kısıtlamadan muaftır.
+function beep(freq,dur,type,vol,keepFull){
   if(!cfg.sound) return;
   dur=dur||0.09; type=type||'sine'; vol=vol||0.14;
+  if(!keepFull && typeof state!=='undefined' && state==='play' && typeof combo!=='undefined' && combo>4) vol*=0.3;
   try{
     if(!AC) AC=new (window.AudioContext||window.webkitAudioContext)();
     const o=AC.createOscillator(), g=AC.createGain();
@@ -25,7 +30,7 @@ function melodyFreq(i){
   return MELODY_SCALE[((i%MELODY_SCALE.length)+MELODY_SCALE.length)%MELODY_SCALE.length] * Math.pow(2, Math.min(oct,3));
 }
 function playMelodyNote(comboVal, vol){
-  beep(melodyFreq(comboVal-1), 0.10, 'sine', vol||0.14);
+  beep(melodyFreq(comboVal-1), 0.10, 'sine', vol||0.14, true);
 }
 
 let toastQueue=[], toastShowing=false;

@@ -3,6 +3,8 @@
 hydrateIcons();
 resize(); initStars(); applyTheme(cfg.theme); applyAccessibility(); ensureTodayQuest(); handleDailyReturn(); resetGame(); renderThemeGrid(); goMenu();
 Ads.init();
+syncAdButtons();
+setInterval(syncAdButtons, 1000); // "Reklam İzle" butonlarındaki bekleme geri sayımını canlı tutar
 if(window.PlayGames && PlayGames.isNative()){
   PlayGames.signIn().then(()=>{ syncPlayGamesUI(); });
 }

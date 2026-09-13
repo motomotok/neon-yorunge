@@ -25,7 +25,7 @@ function goHowto(){ state='howto'; setHud(false); showScreen('howto'); }
 function goSettings(){ state='settings'; setHud(false); showScreen('settings'); syncSettings(); }
 function goStats(){ state='stats'; setHud(false); showScreen('stats'); syncStats(); }
 function goMode(){ state='mode'; setHud(false); showScreen('mode'); refreshDailyStatus(); renderBoostRow(); }
-function goShop(){ state='shop'; setHud(false); showScreen('shop'); ensureDailyDeal(); refreshWallet(); renderDealBanner(); renderShopTab(); }
+function goShop(){ state='shop'; setHud(false); showScreen('shop'); ensureDailyDeal(); refreshWallet(); renderDealBanner(); renderShopTab(); syncAdButtons(); }
 function goBattlepass(){ state='battlepass'; setHud(false); showScreen('battlepass'); renderBattlepass(); }
 
 function startGame(m,d){
@@ -85,7 +85,7 @@ function gameOver(reason){
   document.getElementById('recordBadge').innerHTML = newRecord ? `<span class="badge">${icon('trophy')} YENİ REKOR!</span>` : '';
   const totalEarned = session.coins + scoreBonus;
   document.getElementById('coinsEarned').innerHTML = `${icon('coin')} +${totalEarned} <span style="opacity:.6;font-size:12px">(${session.coins} toplama + ${scoreBonus} puan bonusu)</span>`;
-  setHud(false); showScreen('over');
+  setHud(false); showScreen('over'); syncAdButtons();
   beep(200,0.3,'sine',0.12);
   if(!stats.premiumNoAds){
     if(adGamesLeft===null) adGamesLeft=rollAdInterval();

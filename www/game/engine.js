@@ -36,7 +36,7 @@ const PW = ['shield','slow','magnet','freeze','mult','ghost'];
 const PW_ICON_TYPE = {shield:'shield', slow:'clock', magnet:'magnet', freeze:'hourglass', mult:'coin', ghost:'ghost'};
 
 function resetGame(){
-  player = { ang:-Math.PI/2, targetRing:0, curRadius:radiusFor(0), speed:1.6,
+  player = { ang:-Math.PI/2, targetRing:0, curRadius:radiusFor(0), speed:1.6, speedMulEase:1,
              shield:false, slowT:0, magnetT:0, invulT:0, freezeT:0, multT:0, ghostT:0 };
   items=[]; particles=[]; score=0; combo=1;
   lives = mode==='zen' ? 999 : diffCfg.lives;
@@ -92,10 +92,14 @@ function pickHazardKind(){
 // tetiklenmez (o modda zaten hiç tehlike yok). Her eşik bir oyunda yalnızca
 // bir kez tetiklenir (bkz. bossNextIndex, resetGame() ile sıfırlanır).
 const BOSS_STAGES = [
-  {score:1000,  count:3, reward:40},
-  {score:5000,  count:5, reward:100},
-  {score:10000, count:7, reward:200},
+  {score:1000,  count:5, reward:40},
+  {score:5000,  count:7, reward:100},
+  {score:10000, count:9, reward:200},
 ];
+// Boss dalgası sırasında oyuncunun (mevcut hızından bağımsız) sabit açısal
+// hızı — dalganın toplam açısal uzunluğu (~1.3 başlangıç payı + 3.2 yayılım
+// + pay) bu hızla en az ~6.5 saniyede kat edilir.
+const BOSS_SLOW_RATE = 0.012;
 function startBossWave(stageDef){
   bossActive=true; bossReward=stageDef.reward; bossWaveItems=[];
   shake=Math.max(shake,20); flash=1;
@@ -176,7 +180,7 @@ function checkStreak(ix,iy,mult){
     score+=20*octave*mult; timeScale=0.3; timeScaleT=16;
     showFlash('MELODİ x'+octave+'!',50); burst(ix,iy,'#ffffff',18,5);
     const root=melodyFreq(combo-1);
-    beep(root,0.16,'triangle',0.16); beep(root*1.25,0.16,'sine',0.12); beep(root*1.5,0.18,'sine',0.10);
+    beep(root,0.16,'triangle',0.16,true); beep(root*1.25,0.16,'sine',0.12,true); beep(root*1.5,0.18,'sine',0.10,true);
   }
 }
 
@@ -191,9 +195,17 @@ function update(dt){
     if(timeLeft<=0){ timeLeft=0; gameOver('time'); return; }
   }
 
-  let speedMul = 1;
-  if(player.freezeT>0) speedMul=0.04; else if(player.slowT>0) speedMul=0.5;
-  player.speed = 1.5 + (zen?0:Math.min(diffCfg.speedCap, elapsed*diffCfg.speedRamp));
+  // Ani hız sıçramalarını (dondurma/yavaşlatma bitince tek karede eski hıza
+  // fırlaması) önlemek için hedef çarpana her karede yumuşakça yaklaşılır —
+  // "top bi anda aşırı hızlanıyor" hissi buradan geliyordu.
+  let targetSpeedMul = 1;
+  if(player.freezeT>0) targetSpeedMul=0.04; else if(player.slowT>0) targetSpeedMul=0.5;
+  player.speedMulEase += (targetSpeedMul-player.speedMulEase)*Math.min(1,0.1*dt);
+  const speedMul = player.speedMulEase;
+  // Temel hız artışı artık oynama SÜRESİNE değil SKORA bağlı ve skor
+  // 1500'e ulaşmadan devreye girmiyor — erken oyunda tempo daha uzun süre
+  // sabit kalıyor, sonrası daha yumuşak bir eğimle tavana çıkıyor.
+  player.speed = 1.5 + (zen?0:Math.min(diffCfg.speedCap, Math.max(0,score-1500)*diffCfg.speedRamp));
   let pullMul=1;
   if(!zen){
     for(const it of items){
@@ -202,7 +214,11 @@ function update(dt){
       if(fwd>0 && fwd<0.85) pullMul=Math.max(pullMul, 1+(1-fwd/0.85)*0.55);
     }
   }
-  player.ang = normAng(player.ang + player.speed*speedMul*pullMul*0.018*dt*timeScale);
+  // Boss dalgası sırasında oyuncu hızından bağımsız, sabit ve yavaş bir
+  // açısal hızla ilerlenir — dalga en az ~6-7 saniye sürsün diye (bkz.
+  // BOSS_SLOW_RATE, startBossWave()).
+  const angStep = bossActive ? BOSS_SLOW_RATE : player.speed*speedMul*pullMul*0.018;
+  player.ang = normAng(player.ang + angStep*dt*timeScale);
 
   const tR=radiusFor(player.targetRing);
   player.curRadius += (tR-player.curRadius)*Math.min(1,0.22*dt);
@@ -337,22 +353,28 @@ function update(dt){
   if(flash>0) flash=Math.max(0,flash-dt*0.06);
   if(freezeFlash>0) freezeFlash=Math.max(0,freezeFlash-dt*0.05);
   if(levelFlashT>0) levelFlashT-=dt;
-  if(timeScaleT>0){ timeScaleT-=1; if(timeScaleT<=0) timeScale=1; }
+  // Melodi kombosunun "yavaş çekim" anı bitince timeScale eskiden tek
+  // karede 0.3'ten 1'e fırlıyordu — bu da anlık bir hız patlaması gibi
+  // hissettiriyordu. Artık geri sayım bitince yumuşakça 1'e yaklaşıyor.
+  if(timeScaleT>0) timeScaleT-=1;
+  else if(timeScale<1) timeScale=Math.min(1, timeScale+0.05*dt);
   updateHud();
 }
 
 function hitHazard(ix,iy,subtype){
   const px=CX+Math.cos(player.ang)*player.curRadius, py=CY+Math.sin(player.ang)*player.curRadius;
+  // Bu fonksiyondaki tüm sesler "rakiplere çarpma" anına ait olduğundan
+  // melodi-kombosu sesi kısma kuralından muaf tutulur (5. parametre).
   if(player.shield){ player.shield=false; session.shieldSaved=true; burst(px,py,'#5efc82',26,5); shake=9;
-    beep(300,0.2,'square',0.14); return; }
+    beep(300,0.2,'square',0.14,true); return; }
   const power = subtype==='hazardBomb' ? 1.6 : 1;
   lives--; combo=1; shake=16*power; flash=1; session.hits++;
-  burst(ix,iy,T.peril,34,6); beep(120,0.4,'sawtooth',0.2); beep(80,0.5,'square',0.15); vibrate([40,30,40]);
+  burst(ix,iy,T.peril,34,6); beep(120,0.4,'sawtooth',0.2,true); beep(80,0.5,'square',0.15,true); vibrate([40,30,40]);
   if(lives<=0){
     if(mode!=='zen' && !session.revivedUsed) offerRevive();
     else gameOver();
   }
-  else { player.invulT=INVUL; beep(220,0.15,'square',0.1); }
+  else { player.invulT=INVUL; beep(220,0.15,'square',0.1,true); }
 }
 
 let reviveTimer=null;
