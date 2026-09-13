@@ -46,15 +46,36 @@ body{
 @keyframes driftA{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(4vmax,3vmax) scale(1.12)}}
 @keyframes driftB{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-3vmax,-4vmax) scale(1.08)}}
 
-.screen{display:none;flex-direction:column;align-items:center;justify-content:center;
+.screen{display:none;flex-direction:column;align-items:center;
   text-align:center;gap:10px;padding:20px;width:100%;max-width:560px;
   overflow-y:auto;max-height:100dvh;-webkit-overflow-scrolling:touch;
   position:relative;z-index:1;
   scrollbar-width:thin;scrollbar-color:rgba(150,180,255,.35) transparent;}
+/* İçerik ekrana sığıyorsa dikeyde ortalar, sığmıyorsa üstten başlatıp tamamen
+   kaydırılabilir bırakır — taşan üst kısmın "kayamayan" klasik flexbox hatasını önler. */
+.screen::before,.screen::after{content:'';flex:none;margin:auto 0;}
 .screen::-webkit-scrollbar{width:5px;}
 .screen::-webkit-scrollbar-thumb{background:rgba(150,180,255,.3);border-radius:3px;}
 .screen.active{display:flex;animation:fade .35s ease;}
-@keyframes fade{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
+
+/* "fullpin": başlık/sekmeler ve alt buton sabit kalır, sadece ortadaki içerik
+   kayar — tüm ekran hiç dikeyde kaymadan (Subway Surfers menüleri gibi) sığar. */
+.screen.fullpin{justify-content:flex-start;overflow:hidden;height:100dvh;
+  padding-top:calc(env(safe-area-inset-top) + 18px);
+  padding-bottom:calc(env(safe-area-inset-bottom) + 14px);}
+.screen.fullpin::before,.screen.fullpin::after{content:none;margin:0;}
+.screenHead{flex:none;width:100%;display:flex;flex-direction:column;align-items:center;gap:10px;}
+.screenBody{flex:1 1 auto;min-height:0;width:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  display:flex;flex-direction:column;align-items:center;gap:10px;padding:4px 0;
+  scrollbar-width:thin;scrollbar-color:rgba(150,180,255,.35) transparent;}
+.screenBody::-webkit-scrollbar{width:5px;}
+.screenBody::-webkit-scrollbar-thumb{background:rgba(150,180,255,.3);border-radius:3px;}
+.screenFoot{flex:none;width:100%;padding-top:10px;display:flex;flex-direction:column;gap:8px;align-items:center;}
+/* Not: transform içeren bir giriş animasyonu (translateY/scale) burada dururken,
+   art arda hızlı ekran geçişlerinde bazı Chromium sürümlerinde ekranın yanlış
+   konumda "takılı" kalmasına yol açıyordu (bkz. commit notu). Sadece opaklık
+   kullanmak bu hatayı ortadan kaldırıyor. */
+@keyframes fade{from{opacity:0}to{opacity:1}}
 
 h1{font-family:var(--font-display);font-size:clamp(34px,9.5vw,72px);font-weight:900;letter-spacing:3px;line-height:1.08;
   background:linear-gradient(90deg,var(--star),var(--player),var(--peril),var(--star));
@@ -95,7 +116,7 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
 }
 .col{display:flex;flex-direction:column;gap:12px;align-items:center;width:100%;}
 .row2{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;width:100%;}
-.menuGrid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;}
+.menuGrid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;width:100%;}
 .menuGrid2 .btn{width:100%;}
 
 .legend{display:flex;gap:16px 22px;flex-wrap:wrap;justify-content:center;font-size:14px;opacity:.9;}
@@ -113,7 +134,7 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
 .row .k{opacity:.7;}
 .row .v{font-family:var(--font-display);font-weight:700;font-size:17px;color:var(--star);}
 
-.themes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;}
+.themes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:100%;}
 .theme{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.015)) padding-box,
       linear-gradient(160deg,var(--glass-brd-soft),transparent) border-box;
   border:2px solid transparent;border-radius:14px;padding:8px 6px;cursor:pointer;
@@ -137,13 +158,13 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
 .sw.on{background:linear-gradient(90deg,var(--star),var(--player));box-shadow:0 0 14px rgba(84,224,255,.5),0 0 0 1px rgba(255,255,255,.08) inset;}
 .sw.on::after{left:25px;}
 
-.toggleGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;}
+.toggleGrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;width:100%;}
 .toggleGrid .toggle{flex-direction:column;align-items:flex-start;gap:8px;padding:10px 12px;font-size:12.5px;line-height:1.25;}
 .toggleGrid .sw{width:42px;height:24px;align-self:flex-end;}
 .toggleGrid .sw::after{width:18px;height:18px;}
 .toggleGrid .sw.on::after{left:21px;}
 
-.acctRow{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;}
+.acctRow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;width:100%;}
 .acctRow.single{grid-template-columns:1fr;}
 .acctCard{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.015)) padding-box,
       linear-gradient(160deg,var(--glass-brd-soft),transparent) border-box;
@@ -159,7 +180,7 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
 .skinDot.sel{border-color:#fff;}
 .skinDot.locked{opacity:.25;filter:grayscale(.7);}
 
-.modeGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;width:100%;}
+.modeGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:100%;}
 .modeCard{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.015)) padding-box,
       linear-gradient(160deg,var(--glass-brd-soft),transparent) border-box;
   border:2px solid transparent;border-radius:16px;
@@ -263,7 +284,7 @@ body.left-hand #walletChip{left:18px;right:auto;}
 .shopCard .ownedTag{font-size:10px;opacity:.6;}
 .boostCard .boostIcon{font-size:30px;filter:drop-shadow(0 0 8px rgba(120,180,255,.4));}
 
-.bpGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:100%;}
+.bpGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;width:100%;}
 .bpTile{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.015)) padding-box,
       linear-gradient(160deg,var(--glass-brd-soft),transparent) border-box;
   border:1px solid transparent;border-radius:12px;

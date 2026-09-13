@@ -102,81 +102,105 @@
     <button class="btn alt small" data-go="menu"><i class="gicon" data-icon="back"></i> Geri</button>
   </div>
 
-  <div class="screen" id="screen-settings">
-    <h2>Ayarlar</h2>
-    <div class="toggleGrid">
-      <div class="toggle">Ses <div class="sw" id="soundSw"></div></div>
-      <div class="toggle">Büyük Butonlar <div class="sw" id="bigSw"></div></div>
-      <div class="toggle">Sol El Modu <div class="sw" id="handSw"></div></div>
-      <div class="toggle">Renk Körü Simgeler <div class="sw" id="cbSw"></div></div>
+  <div class="screen fullpin" id="screen-settings">
+    <div class="screenHead">
+      <h2>Ayarlar</h2>
     </div>
-    <div class="acctRow" id="acctRow">
-      <div class="acctCard" id="premiumCard">
-        <div class="acctStatus" id="premiumStatusText"><i class="gicon" data-icon="gem"></i> Reklamsız Premium</div>
-        <button class="btn small" id="premiumBuyBtn">49 TL</button>
+    <div class="screenBody">
+      <div class="toggleGrid">
+        <div class="toggle">Ses <div class="sw" id="soundSw"></div></div>
+        <div class="toggle">Büyük Butonlar <div class="sw" id="bigSw"></div></div>
+        <div class="toggle">Sol El Modu <div class="sw" id="handSw"></div></div>
+        <div class="toggle">Renk Körü Simgeler <div class="sw" id="cbSw"></div></div>
       </div>
-      <div class="acctCard" id="playGamesCard">
-        <div class="acctStatus" id="playGamesStatusText"><i class="gicon" data-icon="trophy"></i> Play Games</div>
-        <button class="btn alt small" id="playGamesBtn">Bağlan</button>
+      <div class="acctRow" id="acctRow">
+        <div class="acctCard" id="premiumCard">
+          <div class="acctStatus" id="premiumStatusText"><i class="gicon" data-icon="gem"></i> Reklamsız Premium</div>
+          <button class="btn small" id="premiumBuyBtn">49 TL</button>
+        </div>
+        <div class="acctCard" id="playGamesCard">
+          <div class="acctStatus" id="playGamesStatusText"><i class="gicon" data-icon="trophy"></i> Play Games</div>
+          <button class="btn alt small" id="playGamesBtn">Bağlan</button>
+        </div>
+      </div>
+      <div class="sub" style="margin-top:4px">Tema</div>
+      <div class="themes" id="themeGrid"></div>
+      <div class="sub" style="margin-top:4px">Orb Rengi</div>
+      <div id="skinGrid"></div>
+      <button class="btn alt small" id="legalBtn"><i class="gicon" data-icon="scale"></i> Gizlilik &amp; Yasal</button>
+      <button class="btn alt small" id="clearCacheBtn"><i class="gicon" data-icon="replay"></i> Önbelleği Temizle</button>
+    </div>
+    <div class="screenFoot">
+      <button class="btn alt small" data-go="menu"><i class="gicon" data-icon="back"></i> Geri</button>
+    </div>
+  </div>
+
+  <div class="screen fullpin" id="screen-stats">
+    <div class="screenHead">
+      <h2>İstatistikler</h2>
+      <div class="card">
+        <div class="row"><span class="k"><i class="gicon" data-icon="trophy"></i> En iyi skor</span><span class="v" id="stBest">0</span></div>
+        <div class="row"><span class="k"><i class="gicon" data-icon="star"></i> Toplam yıldız</span><span class="v" id="stStars">0</span></div>
+        <div class="row"><span class="k"><i class="gicon" data-icon="gamepad"></i> Oynanan oyun</span><span class="v" id="stGames">0</span></div>
+        <div class="row"><span class="k"><i class="gicon" data-icon="chart"></i> En yüksek seviye</span><span class="v" id="stLevel">1</span></div>
+      </div>
+      <div class="shopTabs" id="statsTabs">
+        <div class="stab sel" data-stat-tab="ach"><i class="gicon" data-icon="trophy"></i> Başarımlar</div>
+        <div class="stab" data-stat-tab="lb"><i class="gicon" data-icon="medal"></i> Liderlik</div>
+        <div class="stab" data-stat-tab="league"><i class="gicon" data-icon="target"></i> Rakipler</div>
       </div>
     </div>
-    <div class="sub" style="margin-top:4px">Tema</div>
-    <div class="themes" id="themeGrid"></div>
-    <div class="sub" style="margin-top:4px">Orb Rengi</div>
-    <div id="skinGrid"></div>
-    <button class="btn alt small" id="legalBtn"><i class="gicon" data-icon="scale"></i> Gizlilik &amp; Yasal</button>
-    <button class="btn alt small" id="clearCacheBtn"><i class="gicon" data-icon="replay"></i> Önbelleği Temizle</button>
-    <button class="btn alt small" data-go="menu"><i class="gicon" data-icon="back"></i> Geri</button>
+    <div class="screenBody">
+      <div class="card" id="achCard"><b>Başarımlar (<span id="achCount">0</span>/10)</b>
+        <div class="achGrid" id="achGrid"></div>
+      </div>
+      <div class="card" id="lbCard" style="display:none"><b><i class="gicon" data-icon="medal"></i> En İyi 5</b><div id="lbList"></div></div>
+      <div class="card" id="leagueCard" style="display:none"><b><i class="gicon" data-icon="flag"></i> Rakipler Ligi</b><div id="leagueList"></div></div>
+    </div>
+    <div class="screenFoot">
+      <button class="btn alt small" id="resetStats">İstatistikleri Sıfırla</button>
+      <button class="btn alt small" data-go="menu"><i class="gicon" data-icon="back"></i> Geri</button>
+    </div>
   </div>
 
-  <div class="screen" id="screen-stats">
-    <h2>İstatistikler</h2>
-    <div class="card">
-      <div class="row"><span class="k"><i class="gicon" data-icon="trophy"></i> En iyi skor</span><span class="v" id="stBest">0</span></div>
-      <div class="row"><span class="k"><i class="gicon" data-icon="star"></i> Toplam yıldız</span><span class="v" id="stStars">0</span></div>
-      <div class="row"><span class="k"><i class="gicon" data-icon="gamepad"></i> Oynanan oyun</span><span class="v" id="stGames">0</span></div>
-      <div class="row"><span class="k"><i class="gicon" data-icon="chart"></i> En yüksek seviye</span><span class="v" id="stLevel">1</span></div>
+  <div class="screen fullpin" id="screen-shop">
+    <div class="screenHead">
+      <h2><i class="gicon" data-icon="cart"></i> Kozmik Mağaza</h2>
+      <div class="walletBig"><i class="gicon" data-icon="coin"></i> <span id="shopWallet">0</span></div>
+      <div class="muted" id="dealBanner"></div>
+      <button class="btn alt small" id="watchAdCoinsShopBtn"><i class="gicon" data-icon="filmreel"></i> Reklam İzle (+25 <i class="gicon" data-icon="coin"></i>)</button>
+      <div class="shopTabs" id="shopTabs">
+        <div class="stab sel" data-tab="themes">Temalar</div>
+        <div class="stab" data-tab="skins">Orblar</div>
+        <div class="stab" data-tab="trails">İzler</div>
+        <div class="stab" data-tab="suns">Güneşler</div>
+        <div class="stab" data-tab="rings">Halkalar</div>
+        <div class="stab" data-tab="boosts">Takviyeler</div>
+      </div>
     </div>
-    <div class="shopTabs" id="statsTabs">
-      <div class="stab sel" data-stat-tab="ach"><i class="gicon" data-icon="trophy"></i> Başarımlar</div>
-      <div class="stab" data-stat-tab="lb"><i class="gicon" data-icon="medal"></i> Liderlik</div>
-      <div class="stab" data-stat-tab="league"><i class="gicon" data-icon="target"></i> Rakipler</div>
+    <div class="screenBody">
+      <div class="shopGrid" id="shopGrid"></div>
     </div>
-    <div class="card" id="achCard"><b>Başarımlar (<span id="achCount">0</span>/10)</b>
-      <div class="achGrid" id="achGrid"></div>
+    <div class="screenFoot">
+      <button class="btn alt small" data-go="menu"><i class="gicon" data-icon="back"></i> Geri</button>
     </div>
-    <div class="card" id="lbCard" style="display:none"><b><i class="gicon" data-icon="medal"></i> En İyi 5</b><div id="lbList"></div></div>
-    <div class="card" id="leagueCard" style="display:none"><b><i class="gicon" data-icon="flag"></i> Rakipler Ligi</b><div id="leagueList"></div></div>
-    <button class="btn alt small" id="resetStats">İstatistikleri Sıfırla</button>
-    <button class="btn alt small" data-go="menu"><i class="gicon" data-icon="back"></i> Geri</button>
   </div>
 
-  <div class="screen" id="screen-shop">
-    <h2><i class="gicon" data-icon="cart"></i> Kozmik Mağaza</h2>
-    <div class="walletBig"><i class="gicon" data-icon="coin"></i> <span id="shopWallet">0</span></div>
-    <div class="muted" id="dealBanner"></div>
-    <button class="btn alt small" id="watchAdCoinsShopBtn"><i class="gicon" data-icon="filmreel"></i> Reklam İzle (+25 <i class="gicon" data-icon="coin"></i>)</button>
-    <div class="shopTabs" id="shopTabs">
-      <div class="stab sel" data-tab="themes">Temalar</div>
-      <div class="stab" data-tab="skins">Orblar</div>
-      <div class="stab" data-tab="trails">İzler</div>
-      <div class="stab" data-tab="suns">Güneşler</div>
-      <div class="stab" data-tab="rings">Halkalar</div>
-      <div class="stab" data-tab="boosts">Takviyeler</div>
+  <div class="screen fullpin" id="screen-battlepass">
+    <div class="screenHead">
+      <h2><i class="gicon" data-icon="ticket"></i> Sezon Bileti</h2>
+      <div class="sub" id="seasonXpLine">0 XP</div>
+      <div class="card" id="seasonPassCard" style="text-align:center;margin-top:4px;">
+        <div id="seasonPassStatusText" style="font-weight:700;margin-bottom:10px;"><i class="gicon" data-icon="ticket"></i> Premium çizgi ile daha büyük ödüller</div>
+        <button class="btn small" id="seasonPassBuyBtn"><i class="gicon" data-icon="ticket"></i> Sezon Bileti — 29 TL</button>
+      </div>
     </div>
-    <div class="shopGrid" id="shopGrid"></div>
-    <button class="btn alt small" data-go="menu"><i class="gicon" data-icon="back"></i> Geri</button>
-  </div>
-
-  <div class="screen" id="screen-battlepass">
-    <h2><i class="gicon" data-icon="ticket"></i> Sezon Bileti</h2>
-    <div class="sub" id="seasonXpLine">0 XP</div>
-    <div class="card" id="seasonPassCard" style="text-align:center;margin-top:4px;">
-      <div id="seasonPassStatusText" style="font-weight:700;margin-bottom:10px;"><i class="gicon" data-icon="ticket"></i> Premium çizgi ile daha büyük ödüller</div>
-      <button class="btn small" id="seasonPassBuyBtn"><i class="gicon" data-icon="ticket"></i> Sezon Bileti — 29 TL</button>
+    <div class="screenBody">
+      <div class="bpGrid" id="battlepassTiers"></div>
     </div>
-    <div class="bpGrid" id="battlepassTiers"></div>
-    <button class="btn alt small" data-go="menu"><i class="gicon" data-icon="back"></i> Geri</button>
+    <div class="screenFoot">
+      <button class="btn alt small" data-go="menu"><i class="gicon" data-icon="back"></i> Geri</button>
+    </div>
   </div>
 
   <div class="screen" id="screen-pause">
