@@ -25,7 +25,10 @@ let levelFlashT, session, timeLeft, newRecord, timeScale, timeScaleT, activeBoos
 
 const SLOW_DUR=300, MAGNET_DUR=360, INVUL=95, FREEZE_DUR=150, MULT_DUR=360, GHOST_DUR=240;
 const PW = ['shield','slow','magnet','freeze','mult','ghost'];
-const PW_EMOJI = {shield:'🛡️',slow:'⏱️',magnet:'🧲',freeze:'⏳',mult:'💰',ghost:'👻'};
+// HUD çipleriyle (bkz. chip() çağrıları aşağıda) aynı ikon setine eşler —
+// oyun dünyasındaki takviye topları da render.js'de bu anahtarlarla,
+// sistem emojisi yerine oyunun kendi SVG ikonlarıyla çizilir.
+const PW_ICON_TYPE = {shield:'shield', slow:'clock', magnet:'magnet', freeze:'hourglass', mult:'coin', ghost:'ghost'};
 
 function resetGame(){
   player = { ang:-Math.PI/2, targetRing:0, curRadius:radiusFor(0), speed:1.6,

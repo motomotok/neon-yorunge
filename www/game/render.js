@@ -269,6 +269,43 @@ function drawPlayer(t){
   }
 }
 
+// Takviye topu ikonları — HUD çiplerinde (icons.js/ICON_SVG) kullanılanla
+// birebir aynı çizgi-ikonlar, 24x24 birimlik bir düzlemde Path2D olarak bir
+// kez tanımlanıp her karede ölçeklenerek çizilir. Önceden burada sistem
+// emojisi (ctx.fillText) kullanılıyordu; bazı Android emoji fontlarında
+// glif ortalanmıyor, topun dışına taşıyordu — bu yüzden değiştirildi.
+const PW_ICON_PATH = {
+  shield: new Path2D('M12 3l7 3v5c0 5-3.2 8.5-7 10-3.8-1.5-7-5-7-10V6l7-3Z'),
+  magnet: new Path2D('M8 21V11a4 4 0 0 1 8 0v10M8 21H4M8 17H4M16 21h4M16 17h4'),
+  hourglass: new Path2D('M6 3h12M6 21h12M7 3c0 5 4 6.5 5 8-1 1.5-5 3-5 8M17 3c0 5-4 6.5-5 8 1 1.5 5 3 5 8'),
+  clockHand: new Path2D('M12 7v5l3.5 2'),
+  ghost: new Path2D('M5 20V11a7 7 0 0 1 14 0v9l-2.5-2-2 2-2.5-2-2 2-2.5-2L5 20Z'),
+};
+function drawPwIcon(x,y,key,R){
+  const s=(R*1.7)/24;
+  ctx.save();
+  ctx.translate(x-12*s, y-12*s); ctx.scale(s,s);
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  if(key==='coin'){
+    ctx.fillStyle='#ffb454'; ctx.beginPath(); ctx.arc(12,12,10,0,7); ctx.fill();
+    ctx.fillStyle='#c47a1f'; ctx.beginPath(); ctx.arc(12,12,6.2,0,7); ctx.fill();
+    ctx.fillStyle='#ffe3a8'; ctx.beginPath(); ctx.arc(12,12,2.8,0,7); ctx.fill();
+  } else if(key==='clock'){
+    ctx.strokeStyle='rgba(255,255,255,.95)'; ctx.lineWidth=1.8;
+    ctx.beginPath(); ctx.arc(12,12,9,0,7); ctx.stroke();
+    ctx.stroke(PW_ICON_PATH.clockHand);
+  } else if(key==='ghost'){
+    ctx.strokeStyle='rgba(255,255,255,.95)'; ctx.lineWidth=1.8;
+    ctx.stroke(PW_ICON_PATH.ghost);
+    ctx.fillStyle='rgba(255,255,255,.95)';
+    ctx.beginPath(); ctx.arc(9.5,10.5,1,0,7); ctx.fill();
+    ctx.beginPath(); ctx.arc(14.5,10.5,1,0,7); ctx.fill();
+  } else if(PW_ICON_PATH[key]){
+    ctx.strokeStyle='rgba(255,255,255,.95)'; ctx.lineWidth=1.8;
+    ctx.stroke(PW_ICON_PATH[key]);
+  }
+  ctx.restore();
+}
 function drawItem(x,y,type,sc,t,it){
   if(sc<=0) return;
   const R=(PLAYER_R*0.95)*sc;
@@ -337,9 +374,8 @@ function drawItem(x,y,type,sc,t,it){
     ctx.restore();
   } else {
     ctx.fillStyle='rgba(255,255,255,.14)'; ctx.beginPath(); ctx.arc(x,y,R*1.25,0,7); ctx.fill();
-    ctx.font=`${R*1.7}px -apple-system,system-ui,sans-serif`;
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(PW_EMOJI[type]||'❔', x, y+R*0.05);
+    const iconKey = PW_ICON_TYPE[type];
+    if(iconKey) drawPwIcon(x,y,iconKey,R);
   }
 }
 function drawStar(x,y,outer,inner,pts,rot,col){
