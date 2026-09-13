@@ -222,19 +222,44 @@ function update(dt){
 
     const da=Math.abs(angDiff(player.ang,it.ang));
     const hitWindow = it.type==='hazardBomb' ? 0.20 : 0.13;
-    if(it.expiring || da>=hitWindow || !settled) continue;
+    const isDangerKind = isHazardType(it.type) || it.type==='hazardTwinDecoy';
 
-    const sameRing = it.ring===curRing;
-    const ix=CX+Math.cos(it.ang)*radiusFor(it.ring), iy=CY+Math.sin(it.ang)*radiusFor(it.ring);
+    // Tehlikeler: eskisi gibi açı+halka+"yerleşmiş mi" kontrolüyle — bu
+    // tiplerin zorluğuna/adilliğine dokunmuyoruz.
+    if(isDangerKind){
+      if(it.expiring || da>=hitWindow || !settled) continue;
+      const sameRing = it.ring===curRing;
+      const ix=CX+Math.cos(it.ang)*radiusFor(it.ring), iy=CY+Math.sin(it.ang)*radiusFor(it.ring);
+      if(isHazardType(it.type)){
+        if(!sameRing) continue;
+        if(it.type==='hazardPulse' && !it.pulseDanger) continue;
+        if(player.ghostT>0){ it.alive=false; burst(ix,iy,'#ffffff',10,3); continue; }
+        if(player.invulT<=0){ it.alive=false; hitHazard(ix,iy,it.type); if(state!=='play') return; }
+      } else { // hazardTwinDecoy
+        if(sameRing){ it.alive=false; burst(ix,iy,'#ffb27a',10,3); beep(300,0.05,'sine',0.06); }
+      }
+      session.streakMax=Math.max(session.streakMax,combo);
+      continue;
+    }
 
-    if(isHazardType(it.type)){
-      if(!sameRing) continue;
-      if(it.type==='hazardPulse' && !it.pulseDanger) continue;
-      if(player.ghostT>0){ it.alive=false; burst(ix,iy,'#ffffff',10,3); continue; }
-      if(player.invulT<=0){ it.alive=false; hitHazard(ix,iy,it.type); if(state!=='play') return; }
-    } else if(it.type==='hazardTwinDecoy'){
-      if(sameRing){ it.alive=false; burst(ix,iy,'#ffb27a',10,3); beep(300,0.05,'sine',0.06); }
-    } else if(sameRing || (player.magnetT>0 && !isPower(it.type))){
+    // Toplanabilir öğeler (yıldız/altın/elmas/coin/takviye): açı+"yerleşmiş
+    // mi" yerine oyuncunun O ANKİ gerçek piksel konumuna bakılır. Eskiden
+    // halka geçişi sırasında (henüz "settled" olmadan) tam üstünden geçilen
+    // bir boncuk bile toplanamıyordu — halka değiştirmek için dokunduğun an
+    // tam da bu pencereye denk geliyordu. Ayrıca sabit açısal pencere iç
+    // halkada dış halkaya göre çok daha dar bir gerçek mesafeye denk
+    // geliyordu; piksel mesafesi tüm halkalarda tutarlı bir cömertlik sağlar.
+    const magnetGrab = player.magnetT>0 && !isPower(it.type);
+    let grabbed;
+    if(magnetGrab){
+      grabbed = da<hitWindow && settled; // mıknatıs halka farkı gözetmeden çeker
+    } else {
+      const px=CX+Math.cos(player.ang)*player.curRadius, py=CY+Math.sin(player.ang)*player.curRadius;
+      const iix=CX+Math.cos(it.ang)*radiusFor(it.ring), iiy=CY+Math.sin(it.ang)*radiusFor(it.ring);
+      grabbed = Math.hypot(px-iix, py-iiy) < PLAYER_R*2.6;
+    }
+    if(grabbed){
+      const ix=CX+Math.cos(it.ang)*radiusFor(it.ring), iy=CY+Math.sin(it.ang)*radiusFor(it.ring);
       it.alive=false;
       if(it.type==='gold'){ combo++; score+=5*combo*mult; session.stars++; session.golds++; stats.golds++;
         burst(ix,iy,T.gold,22,5); shake=6; beep(880,0.09,'triangle',0.14); beep(1320,0.10,'sine',0.10); playMelodyNote(combo,0.10); bumpCombo(); checkStreak(ix,iy,mult); }
