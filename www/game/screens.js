@@ -8,6 +8,17 @@ function showScreen(id){
 function setHud(on){ document.getElementById('hud').classList.toggle('show', on);
   document.getElementById('hint').style.display = on?'block':'none'; }
 
+// Her oyun başlangıcında 10 saniyeliğine sol/sağ dokunma bölgelerini
+// gösteren yanıp sönen parmak-izi ipuçları — yeni oyuncu kontrolleri
+// ilk bakışta anlasın diye.
+let tutorialHideTimer=null;
+function showTutorialHint(){
+  const el=document.getElementById('tutorialHint'); if(!el) return;
+  clearTimeout(tutorialHideTimer);
+  el.classList.add('show');
+  tutorialHideTimer=setTimeout(()=>el.classList.remove('show'), 10000);
+}
+
 function goMenu(){ state='menu'; setHud(false); showScreen('menu');
   document.getElementById('menuBest').textContent='En iyi: '+stats.best;
   ensureTodayQuest(); const q=currentQuest();
@@ -42,7 +53,7 @@ function startGame(m,d){
     stats.boosts[pendingBoost]--; saveStats(); activeBoost=pendingBoost;
   }
   pendingBoost=null;
-  resetGame(); state='play'; setHud(true); showScreen(null);
+  resetGame(); state='play'; setHud(true); showScreen(null); showTutorialHint();
   beep(440,0.1,'sine',0.12);
 }
 function pauseGame(){ if(state!=='play') return; state='pause'; showScreen('pause');

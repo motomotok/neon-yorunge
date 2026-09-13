@@ -298,10 +298,10 @@ function addStardust(n){
 const REWARD_AD_COINS = 200, DAILY_AD_REWARD_CAP = 10;
 // Ödül tekli reklam başına 25'ten 200'e çıkarıldı; suistimali önlemek için
 // art arda izlemeyi engelleyen bir bekleme süresi eklendi. AdMob'un
-// ödüllü reklamlar için resmi olarak dayattığı sabit bir "minimum dakika"
+// ödüllü reklamlar için resmi olarak dayattığı sabit bir "minimum saniye"
 // yok (frekans sınırlaması geliştiricinin kendi AdMob panelinden
-// ayarladığı bir şey) — bu yüzden burada istenen 10 dakika kullanıldı.
-const AD_REWARD_COOLDOWN_MS = 10*60*1000;
+// ayarladığı bir şey) — bu yüzden istenen 30 saniye kullanıldı.
+const AD_REWARD_COOLDOWN_MS = 30*1000;
 function adRewardsLeftToday(){
   const t=todayStr();
   if(stats.adRewardsDate!==t){ stats.adRewardsDate=t; stats.adRewardsToday=0; }
@@ -313,8 +313,8 @@ function adCooldownRemainingMs(){
 function watchAdForCoins(){
   const cooldown = adCooldownRemainingMs();
   if(cooldown>0){
-    const mins=Math.ceil(cooldown/60000);
-    queueToast('⏳ Yeni reklam için '+mins+' dk bekle');
+    const secs=Math.ceil(cooldown/1000);
+    queueToast('⏳ Yeni reklam için '+secs+' sn bekle');
     beep(200,0.1,'square',0.1);
     return;
   }
@@ -337,8 +337,8 @@ function syncAdButtons(){
   let html, disabled;
   if(left<=0){ html='Bugünlük Hakkın Doldu'; disabled=true; }
   else if(cooldown>0){
-    const m=Math.floor(cooldown/60000), s=Math.floor((cooldown%60000)/1000);
-    html=icon('clock')+' Bekle '+m+':'+String(s).padStart(2,'0'); disabled=true;
+    const secs=Math.ceil(cooldown/1000);
+    html=icon('clock')+' Bekle '+secs+' sn'; disabled=true;
   } else { html=icon('filmreel')+' Reklam İzle (+'+REWARD_AD_COINS+' '+icon('coin')+')'; disabled=false; }
   ['watchAdCoinsBtn','watchAdCoinsShopBtn'].forEach(id=>{
     const el=document.getElementById(id); if(!el) return;
