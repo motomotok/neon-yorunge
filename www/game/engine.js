@@ -22,6 +22,11 @@ const GAME_STATES = {play:1, pause:1, over:1, revive:1};
 let mode='classic', diffKey='normal';
 let player, items, particles, score, combo, lives, level, elapsed, spawnTimer, shake, flash, freezeFlash;
 let levelFlashT, session, timeLeft, newRecord, timeScale, timeScaleT, activeBoost=null, pendingBoost=null;
+// Boss dalgası: skor eşiklerinde (bkz. BOSS_STAGES) güneşten patlayarak
+// beliren, tek seferlik yoğun bir tehlike dalgası. bossWaveItems o dalganın
+// öğelerine referans tutar; hepsi (kaçırılarak ya da çarpılarak) hayattan
+// çıkınca "temizlendi" sayılır ve oyuncuya ekstra yıldız tozu verilir.
+let bossNextIndex, bossActive, bossWaveItems, bossReward;
 
 const SLOW_DUR=300, MAGNET_DUR=360, INVUL=95, FREEZE_DUR=150, MULT_DUR=360, GHOST_DUR=240;
 const PW = ['shield','slow','magnet','freeze','mult','ghost'];
@@ -40,6 +45,7 @@ function resetGame(){
              coins:0, coinPickups:0, luckyCharges:0, stardustMult:1, revivedUsed:false};
   timeLeft = mode==='time' ? 60 : null;
   newRecord=false; timeScale=1; timeScaleT=0;
+  bossNextIndex=0; bossActive=false; bossWaveItems=[]; bossReward=0;
   if(activeBoost){
     if(activeBoost==='shieldstart') player.shield=true;
     else if(activeBoost==='slowstart') player.slowT=SLOW_DUR;
@@ -79,6 +85,34 @@ function pickHazardKind(){
   let r=rnd()*total;
   for(let i=0;i<HAZARD_KINDS.length;i++){ r-=weights[i]; if(r<=0) return HAZARD_KINDS[i].type; }
   return 'hazard';
+}
+
+// Skor eşiklerinde bir kerelik "boss dalgası": güneşten patlama efektiyle
+// belirir, aynı anda `count` kadar tehlike fırlatır. Zen modda hiç
+// tetiklenmez (o modda zaten hiç tehlike yok). Her eşik bir oyunda yalnızca
+// bir kez tetiklenir (bkz. bossNextIndex, resetGame() ile sıfırlanır).
+const BOSS_STAGES = [
+  {score:1000,  count:3, reward:40},
+  {score:5000,  count:5, reward:100},
+  {score:10000, count:7, reward:200},
+];
+function startBossWave(stageDef){
+  bossActive=true; bossReward=stageDef.reward; bossWaveItems=[];
+  shake=Math.max(shake,20); flash=1;
+  burst(CX,CY,'#ffd24a',40,7); burst(CX,CY,'#ff6b3d',30,6); burst(CX,CY,'#ffffff',20,5);
+  beep(90,0.5,'sawtooth',0.2); beep(140,0.5,'square',0.16); beep(60,0.6,'sine',0.18);
+  showFlash('⚠ BOSS DALGASI!',90); vibrate([30,40,30,40,60]);
+  const startAng = normAng(player.ang + 1.3), spread = 3.2;
+  for(let i=0;i<stageDef.count;i++){
+    const ang = normAng(startAng + (stageDef.count>1 ? (i/(stageDef.count-1))*spread : 0));
+    const ring = Math.floor(rnd()*NUM_RINGS);
+    const type = pickHazardKind();
+    const it = {ang, ring, type, alive:true, pop:0, expiring:false, prevFwd:null,
+      jumpT: type==='hazardJump' ? 70+rnd()*60 : 0,
+      pulsePhase: type==='hazardPulse' ? rnd()*Math.PI*2 : 0, pulseDanger:false,
+      creepT: type==='hazardCreep' ? 50+rnd()*40 : 0, creeped:false, boss:true};
+    items.push(it); bossWaveItems.push(it);
+  }
 }
 
 function spawnItem(atAng){
@@ -183,8 +217,12 @@ function update(dt){
   if(player.ghostT>0) player.ghostT-=dt;
   const mult = (player.multT>0 ? 2 : 1) * (diffCfg.scoreMult||1);
 
-  spawnTimer-=dt;
-  if(spawnTimer<=0){ spawnItem(); spawnTimer=Math.max(14, 40 - elapsed*0.011); }
+  // Boss dalgası sürerken normal rastgele spawn duraklar — "stage" temiz
+  // kalsın, dalganın öğeleriyle karışıp okunaksızlaşmasın.
+  if(!bossActive){
+    spawnTimer-=dt;
+    if(spawnTimer<=0){ spawnItem(); spawnTimer=Math.max(14, 40 - elapsed*0.011); }
+  }
 
   for(const it of items){
     if(!it.alive) continue;
@@ -280,6 +318,20 @@ function update(dt){
   for(let _ir=0;_ir<items.length;_ir++){ if(items[_ir].alive) items[_iw++]=items[_ir]; }
   items.length=_iw;
   if(items.length>30) items.splice(0, items.length-30);
+
+  if(bossActive){
+    bossWaveItems = bossWaveItems.filter(it=>it.alive);
+    if(bossWaveItems.length===0){
+      bossActive=false;
+      addStardust(bossReward);
+      showFlash('DALGA TEMİZLENDİ!',60);
+      queueToast(icon('coin')+' Boss dalgası temizlendi! +'+bossReward);
+      beep(700,0.15,'sine',0.15); beep(1000,0.15,'triangle',0.12); beep(1300,0.18,'sine',0.1);
+    }
+  } else if(!zen && bossNextIndex<BOSS_STAGES.length && score>=BOSS_STAGES[bossNextIndex].score){
+    startBossWave(BOSS_STAGES[bossNextIndex]);
+    bossNextIndex++;
+  }
 
   if(shake>0) shake*=Math.pow(0.86,dt);
   if(flash>0) flash=Math.max(0,flash-dt*0.06);

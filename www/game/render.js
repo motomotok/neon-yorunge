@@ -379,6 +379,14 @@ function drawItem(x,y,type,sc,t,it){
       ctx.beginPath(); ctx.arc(x-Rh*0.55,y-Rh*0.75,Rh*0.22,0,7); ctx.fill();
       ctx.beginPath(); ctx.arc(x+Rh*0.55,y-Rh*0.75,Rh*0.22,0,7); ctx.fill();
     }
+    if(it && it.boss){
+      // Boss dalgasının öğelerini diğer tehlike şekillerinin üstüne titreşen
+      // altın bir halkayla işaretler — tip ne olursa olsun tanınabilir kalır.
+      ctx.strokeStyle=hexA('#ffd24a', 0.55+Math.sin(t*6)*0.25); ctx.lineWidth=2;
+      ctx.setLineDash([4,3]);
+      ctx.beginPath(); ctx.arc(x,y,Rh*1.9,0,7); ctx.stroke();
+      ctx.setLineDash([]);
+    }
   } else if(type==='gold'){
     drawStar(x,y,R*1.2,R*0.55,5,t*1.2,col);
     if(cfg.colorblind){ ctx.setLineDash([4,4]); ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(x,y,R*1.5,0,7); ctx.stroke(); ctx.setLineDash([]); }
