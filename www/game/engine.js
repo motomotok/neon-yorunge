@@ -55,7 +55,7 @@ function normAng(a){ a%=(Math.PI*2); if(a<0)a+=Math.PI*2; return a; }
 function angDiff(a,b){ let d=b-a; while(d>Math.PI)d-=Math.PI*2; while(d<-Math.PI)d+=Math.PI*2; return d; }
 function radiusFor(r){ return RINGS[r]; }
 function easeOut(t){ return 1-Math.pow(1-t,3); }
-function isHazardType(t){ return t==='hazard'||t==='hazardJump'||t==='hazardBomb'||t==='hazardPull'||t==='hazardTwin'||t==='hazardPulse'; }
+function isHazardType(t){ return t==='hazard'||t==='hazardJump'||t==='hazardBomb'||t==='hazardPull'||t==='hazardTwin'||t==='hazardPulse'||t==='hazardCreep'; }
 function isPower(t){ return t==='shield'||t==='slow'||t==='magnet'||t==='freeze'||t==='mult'||t==='ghost'; }
 
 // Skor eşiklerinde açılan gelişmiş tehlike tipleri: eşiğe ulaşınca bir anda
@@ -68,6 +68,7 @@ const HAZARD_KINDS = [
   {type:'hazardPull', min:500,  rampPer:0.00012, cap:0.22},
   {type:'hazardTwin', min:1000, rampPer:0.00012, cap:0.22},
   {type:'hazardPulse',min:1500, rampPer:0.00012, cap:0.22},
+  {type:'hazardCreep',min:2000, rampPer:0.00012, cap:0.20},
 ];
 function pickHazardKind(){
   let total=0;
@@ -106,7 +107,12 @@ function spawnItem(atAng){
   else type='star';
   items.push({ang, ring, type, alive:true, pop:0, expiring:false, prevFwd:null,
     jumpT: type==='hazardJump' ? 70+Math.random()*60 : 0,
-    pulsePhase: type==='hazardPulse' ? rnd()*Math.PI*2 : 0, pulseDanger:false});
+    pulsePhase: type==='hazardPulse' ? rnd()*Math.PI*2 : 0, pulseDanger:false,
+    // Not: oyuncu geç oyunda (bu tip skor 2000+'da açılıyor) halkayı çok
+    // hızlı katlediyor; birkaç saniyelik bir gecikme çoğu zaman öğe zaten
+    // geçildikten sonra dolardı. Gecikme, fark edilir bir "bekleme" hissi
+    // korurken gerçek erişim süresiyle uyumlu kalacak şekilde kısa tutuldu.
+    creepT: type==='hazardCreep' ? 50+rnd()*40 : 0, creeped:false});
   if(type==='hazardTwin'){
     const otherRings=[0,1,2].filter(x=>x!==ring);
     const decoyRing=otherRings[Math.floor(rnd()*otherRings.length)];
@@ -191,6 +197,21 @@ function update(dt){
     if(it.type==='hazardPulse' && !it.expiring){
       it.pulsePhase += dt*0.045;
       it.pulseDanger = Math.sin(it.pulsePhase) > 0.5;
+    }
+    if(it.type==='hazardCreep' && !it.expiring && !it.creeped){
+      it.creepT-=dt;
+      if(it.creepT<=0){
+        it.creeped=true;
+        const creepFwd=normAng(it.ang-player.ang);
+        // Sadece oyuncuya doğru, aradaki mesafenin en fazla %40'ı kadar
+        // ufak bir sıçrama yapar — asla oyuncuyu geçip "arkada" belirmez.
+        if(creepFwd>0.3){
+          const nudge=Math.min(0.5, creepFwd*0.4);
+          it.ang=normAng(it.ang-nudge);
+          const cix=CX+Math.cos(it.ang)*radiusFor(it.ring), ciy=CY+Math.sin(it.ang)*radiusFor(it.ring);
+          burst(cix,ciy,'#ff3aa0',10,3);
+        }
+      }
     }
 
     const fwd=normAng(it.ang-player.ang);

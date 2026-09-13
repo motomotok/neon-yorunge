@@ -314,6 +314,7 @@ function drawItem(x,y,type,sc,t,it){
   if(type==='hazardPull') col='#a97bff';
   else if(isTwinKind) col='#ff8a3d';
   else if(type==='hazardPulse') col = (it && it.pulseDanger===false) ? '#ffd9dc' : '#ff3b52';
+  else if(type==='hazardCreep') col='#ff3aa0';
   else if(isHazardType(type)) col=T.peril;
   else if(type==='gold') col=T.gold;
   else if(type==='star') col=T.star;
@@ -335,11 +336,35 @@ function drawItem(x,y,type,sc,t,it){
       if(!danger) shapeAlpha=0.55;
     }
     ctx.globalAlpha=shapeAlpha;
-    ctx.fillStyle=col; ctx.beginPath();
-    const sp=7;
-    for(let i=0;i<sp*2;i++){ const rr=i%2?Rh*0.6:Rh*1.25; const a=t*1.4+i*Math.PI/sp;
-      const xx=x+Math.cos(a)*rr, yy=y+Math.sin(a)*rr; i?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy); }
-    ctx.closePath(); ctx.fill();
+    // Her tehlike tipi kendine özgü, sabit bir geometrik siluetle çizilir —
+    // böylece tip renk kadar ŞEKİLDEN de bir bakışta ayırt edilebiliyor.
+    // (hazardTwin ile hazardTwinDecoy kasıtlı olarak birebir aynı şekli
+    // paylaşır — ikisini görsel olarak ayırt edilemez kılmak, oyunun
+    // "hangisi gerçek?" mekaniğinin ta kendisi.)
+    if(type==='hazardPulse'){
+      drawStar(x,y,Rh*1.3,Rh*0.5,5,t*1.2,col);
+    } else if(type==='hazardCreep'){
+      // 4 uçlu sivri yıldız: küçük boyutta bile dolgun çokgenlerden (kare,
+      // beşgen, altıgen...) çok farklı bir siluet çizer — kenar sayısına
+      // güvenmek yerine "sivri/dikenli mi, dolgun mu" ayrımı okunurluğu
+      // korur (özellikle telefon ekranında item boyutu çok küçük).
+      drawStar(x,y,Rh*1.35,Rh*0.32,4,t*1.6,col);
+    } else {
+      let sides, rotBase;
+      if(type==='hazardBomb'){ sides=4; rotBase=Math.PI/4; }        // kare
+      else if(type==='hazardJump'){ sides=4; rotBase=0; }           // baklava (döndürülmüş kare)
+      else if(type==='hazardPull'){ sides=5; rotBase=-Math.PI/2; }  // beşgen
+      else if(isTwinKind){ sides=6; rotBase=0; }                    // altıgen
+      else { sides=3; rotBase=-Math.PI/2; }                         // üçgen (temel 'hazard')
+      const rr=Rh*1.12, rot=rotBase+t*0.9;
+      ctx.fillStyle=col; ctx.beginPath();
+      for(let i=0;i<sides;i++){
+        const a=rot+i*Math.PI*2/sides;
+        const xx=x+Math.cos(a)*rr, yy=y+Math.sin(a)*rr;
+        i?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy);
+      }
+      ctx.closePath(); ctx.fill();
+    }
     ctx.globalAlpha=1;
     if(type==='hazardJump'){
       ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.setLineDash([3,5]); ctx.lineWidth=1.5;
