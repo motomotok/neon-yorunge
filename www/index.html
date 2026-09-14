@@ -52,9 +52,13 @@
   <div class="screen menuLive" id="screen-menu">
     <div class="menuTop">
       <div class="menuTopTitle">NEON YÖRÜNGE</div>
-      <div class="menuTopRight">
+      <div class="menuTopStats">
         <span class="walletChip2"><i class="gicon" data-icon="coin"></i> <span id="menuWallet">0</span></span>
         <span class="badge" id="powerLevelLine">⚡ 0/48</span>
+      </div>
+      <div class="menuPremiumChip" id="premiumCard">
+        <span id="premiumStatusText"><i class="gicon" data-icon="gem"></i> Reklamsız Premium</span>
+        <button class="btn small" id="premiumBuyBtn">49 TL</button>
       </div>
     </div>
 
@@ -144,10 +148,6 @@
         <div class="toggle">Renk Körü Simgeler <div class="sw" id="cbSw"></div></div>
       </div>
       <div class="acctRow" id="acctRow">
-        <div class="acctCard" id="premiumCard">
-          <div class="acctStatus" id="premiumStatusText"><i class="gicon" data-icon="gem"></i> Reklamsız Premium</div>
-          <button class="btn small" id="premiumBuyBtn">49 TL</button>
-        </div>
         <div class="acctCard" id="playGamesCard">
           <div class="acctStatus" id="playGamesStatusText"><i class="gicon" data-icon="trophy"></i> Play Games</div>
           <button class="btn alt small" id="playGamesBtn">Bağlan</button>
@@ -157,8 +157,10 @@
       <div class="themes" id="themeGrid"></div>
       <div class="sub" style="margin-top:4px">Orb Rengi</div>
       <div id="skinGrid"></div>
-      <button class="btn alt small" id="legalBtn"><i class="gicon" data-icon="scale"></i> Gizlilik &amp; Yasal</button>
-      <button class="btn alt small" id="clearCacheBtn"><i class="gicon" data-icon="replay"></i> Önbelleği Temizle</button>
+      <div class="row2">
+        <button class="btn alt small" id="legalBtn"><i class="gicon" data-icon="scale"></i> Gizlilik &amp; Yasal</button>
+        <button class="btn alt small" id="clearCacheBtn"><i class="gicon" data-icon="replay"></i> Önbelleği Temizle</button>
+      </div>
     </div>
     <div class="screenFoot">
       <button class="btn alt small" data-go="menu"><i class="gicon" data-icon="back"></i> Geri</button>

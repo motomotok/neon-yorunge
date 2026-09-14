@@ -52,6 +52,15 @@ document.getElementById('soundSw').addEventListener('click', ()=>{ cfg.sound=!cf
 document.getElementById('bigSw').addEventListener('click', ()=>{ cfg.bigButtons=!cfg.bigButtons; saveCfg(); applyAccessibility(); syncSettings(); beep(600,0.06,'sine',0.1); });
 document.getElementById('handSw').addEventListener('click', ()=>{ cfg.leftHand=!cfg.leftHand; saveCfg(); applyAccessibility(); syncSettings(); beep(600,0.06,'sine',0.1); });
 document.getElementById('cbSw').addEventListener('click', ()=>{ cfg.colorblind=!cfg.colorblind; saveCfg(); syncSettings(); beep(600,0.06,'sine',0.1); });
+// Switch küçültüldüğü için dokunma alanı dar kalmasın diye tüm satır
+// tıklanabilir — tıklama zaten switch'in üzerindeyse (çift tetiklemeyi
+// önlemek için) dokunmuyoruz, switch'in kendi dinleyicisi yeterli.
+document.querySelectorAll('.toggleGrid .toggle').forEach(row=>{
+  row.addEventListener('click', e=>{
+    if(e.target.classList.contains('sw')) return;
+    const sw=row.querySelector('.sw'); if(sw) sw.click();
+  });
+});
 document.getElementById('resetStats').addEventListener('click', ()=>{
   stats={best:0,stars:0,games:0,maxLevel:1,magnets:0,golds:0,diamonds:0,unlocked:[],leaderboard:[],
     dailyDate:'',dailyDone:false,dailyScore:0,dailyCount:0,questDate:'',questId:'',questDone:false};
