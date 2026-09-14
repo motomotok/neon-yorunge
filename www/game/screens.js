@@ -81,7 +81,10 @@ function gameOver(reason){
   const scoreBonus = Math.round(Math.floor(runScore/12)*weekendMult());
   addStardust(scoreBonus);
   ensureSeason();
-  stats.seasonXp += Math.max(1, Math.floor(runScore/8));
+  // Bölen 8'den 40'a çıkarıldı: eskiden 2 oyunda 5. kademeye varılabiliyordu
+  // (aşırı hızlı), artık ~2 oyunda 2. kademeye, ~10-12 oyunda 5. kademeye
+  // ulaşılacak şekilde (bkz. SEASON_TIERS'teki yorum).
+  stats.seasonXp += Math.max(1, Math.floor(runScore/40));
   ensureRival();
   saveStats();
   if(mode!=='zen' && window.PlayGames && PlayGames.isNative() && PlayGames.signedIn) PlayGames.submitScore(runScore);

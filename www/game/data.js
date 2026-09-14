@@ -295,13 +295,11 @@ function addStardust(n){
   refreshWallet();
 }
 
-const REWARD_AD_COINS = 200, DAILY_AD_REWARD_CAP = 10;
-// Ödül tekli reklam başına 25'ten 200'e çıkarıldı; suistimali önlemek için
-// art arda izlemeyi engelleyen bir bekleme süresi eklendi. AdMob'un
-// ödüllü reklamlar için resmi olarak dayattığı sabit bir "minimum saniye"
-// yok (frekans sınırlaması geliştiricinin kendi AdMob panelinden
-// ayarladığı bir şey) — bu yüzden istenen 30 saniye kullanıldı.
-const AD_REWARD_COOLDOWN_MS = 30*1000;
+const REWARD_AD_COINS = 150, DAILY_AD_REWARD_CAP = 10;
+// AdMob'un ödüllü reklamlar için resmi olarak dayattığı sabit bir
+// "minimum saniye" yok (frekans sınırlaması geliştiricinin kendi AdMob
+// panelinden ayarladığı bir şey) — bu yüzden istenen 15 saniye kullanıldı.
+const AD_REWARD_COOLDOWN_MS = 15*1000;
 function adRewardsLeftToday(){
   const t=todayStr();
   if(stats.adRewardsDate!==t){ stats.adRewardsDate=t; stats.adRewardsToday=0; }
@@ -378,17 +376,22 @@ function activeSeason(d){
 // XP eşikleri normal ilerlemeye göre %50 artırıldı (bkz. proje talebi) —
 // ödül miktarları (free/premium) değişmedi, sadece kademelere ulaşmak
 // daha uzun sürüyor.
+// XP eşikleri, bir oyundan kazanılan XP'nin skorun 1/40'ı olmasıyla
+// (bkz. gameOver()) birlikte ~2 oyunda 2. kademeye, ~10-12 oyunda
+// 5. kademeye ulaşacak şekilde ayarlandı. Ödül miktarları (free/premium)
+// önceki sürüme göre 10 katına çıkarıldı — kademeler daha yavaş
+// açılıyor ama açıldığında çok daha değerli.
 const SEASON_TIERS = [
-  {xp:120,  free:30,  premium:100},
-  {xp:270,  free:40,  premium:100},
-  {xp:450,  free:50,  premium:100},
-  {xp:660,  free:60,  premium:100},
-  {xp:900,  free:70,  premium:100},
-  {xp:1170, free:90,  premium:100},
-  {xp:1470, free:110, premium:100},
-  {xp:1800, free:130, premium:100, cosmeticSlot:'rings'},
-  {xp:2160, free:160, premium:100, cosmeticSlot:'trails'},
-  {xp:2550, free:200, premium:100, cosmeticSlot:'skins'},
+  {xp:100,  free:300,  premium:1000},
+  {xp:200,  free:400,  premium:1000},
+  {xp:400,  free:500,  premium:1000},
+  {xp:700,  free:600,  premium:1000},
+  {xp:1100, free:700,  premium:1000},
+  {xp:1600, free:900,  premium:1000},
+  {xp:2200, free:1100, premium:1000},
+  {xp:2900, free:1300, premium:1000, cosmeticSlot:'rings'},
+  {xp:3700, free:1600, premium:1000, cosmeticSlot:'trails'},
+  {xp:4600, free:2000, premium:1000, cosmeticSlot:'skins'},
 ];
 function ensureSeason(){
   const k = 'S'+activeSeason().id;

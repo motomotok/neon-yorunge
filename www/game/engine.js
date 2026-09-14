@@ -29,6 +29,9 @@ let levelFlashT, session, timeLeft, newRecord, timeScale, timeScaleT, activeBoos
 let bossNextIndex, bossActive, bossWaveItems, bossReward;
 
 const SLOW_DUR=300, MAGNET_DUR=360, INVUL=95, FREEZE_DUR=150, MULT_DUR=360, GHOST_DUR=240;
+// Kombo başına eklenen hız payı — bkz. update()'teki comboSpeedBonus.
+// diffCfg.speedCap'e göre normal zorlukta tavana ~combo 27'de ulaşılır.
+const COMBO_SPEED_STEP = 0.09;
 const PW = ['shield','slow','magnet','freeze','mult','ghost'];
 // HUD çipleriyle (bkz. chip() çağrıları aşağıda) aynı ikon setine eşler —
 // oyun dünyasındaki takviye topları da render.js'de bu anahtarlarla,
@@ -202,10 +205,14 @@ function update(dt){
   if(player.freezeT>0) targetSpeedMul=0.04; else if(player.slowT>0) targetSpeedMul=0.5;
   player.speedMulEase += (targetSpeedMul-player.speedMulEase)*Math.min(1,0.1*dt);
   const speedMul = player.speedMulEase;
-  // Temel hız artışı artık oynama SÜRESİNE değil SKORA bağlı ve skor
-  // 1500'e ulaşmadan devreye girmiyor — erken oyunda tempo daha uzun süre
-  // sabit kalıyor, sonrası daha yumuşak bir eğimle tavana çıkıyor.
-  player.speed = 1.5 + (zen?0:Math.min(diffCfg.speedCap, Math.max(0,score-1500)*diffCfg.speedRamp));
+  // Hız artışı artık SÜREYE/SKORA değil KOMBOYA bağlı: oyunun başında
+  // (kombo düşükken) top rahat kontrol edilir, ama kombo yükseldikçe —
+  // yani daha çok puan kazandıkça — hızlanır. Bu, yüksek komboyu hem
+  // ödüllü hem riskli kılar: o puanı istiyorsan hıza ayak uydurman gerekir.
+  // Bir tehlikeye çarpıp kombo 1'e dönünce hız da hemen normale döner.
+  // Zen modda devre dışı (zaten tehlike/kayıp yok).
+  const comboSpeedBonus = zen ? 0 : Math.min(diffCfg.speedCap, Math.max(0,combo-1)*COMBO_SPEED_STEP);
+  player.speed = 1.5 + comboSpeedBonus;
   let pullMul=1;
   if(!zen){
     for(const it of items){
