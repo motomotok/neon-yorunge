@@ -3,7 +3,11 @@
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   if(id){ const el=document.getElementById('screen-'+id); if(el) el.classList.add('active'); }
-  document.getElementById('overlay').classList.toggle('hidden', !id);
+  const overlayEl=document.getElementById('overlay');
+  overlayEl.classList.toggle('hidden', !id);
+  // Ana menü hariç her ekranda karartma normal (okunaklı); ana menüde
+  // arkadaki dönen yörünge görünsün diye çok hafif — "canlı menü".
+  overlayEl.classList.toggle('live', id==='menu');
 }
 function setHud(on){ document.getElementById('hud').classList.toggle('show', on);
   document.getElementById('hint').style.display = on?'block':'none'; }
@@ -23,7 +27,7 @@ function goMenu(){ state='menu'; setHud(false); showScreen('menu');
   document.getElementById('menuBest').textContent='En iyi: '+stats.best;
   // Roguelike hissini güçlendiren iki kalıcı gösterge: "karakter seviyesi"
   // (6 yükseltme hattının toplam kademesi) ve deneme sayacı.
-  document.getElementById('powerLevelLine').textContent='⚡ Güç Seviyesi: '+totalPowerLevel()+'/48';
+  document.getElementById('powerLevelLine').textContent='⚡ '+totalPowerLevel()+'/48';
   document.getElementById('runCountLine').textContent='Deneme #'+(stats.games+1);
   ensureTodayQuest(); const q=currentQuest();
   document.getElementById('questLine').textContent='🎯 Günün görevi: '+q.text+(stats.questDone?' ✅':'');

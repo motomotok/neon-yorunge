@@ -36,6 +36,7 @@ function loop(ts){
   updateShootingStars(dt);
   drawBg(dt);
   if(state==='play') update(dt);
+  else if(MENU_STATES[state]) updateIdleOrb(dt);
   drawWorld();
   drawParticles(dt);
   requestAnimationFrame(loop);
@@ -66,8 +67,10 @@ function drawWorld(){
       const rad=radiusFor(it.ring);
       drawItem(CX+Math.cos(it.ang)*rad, CY+Math.sin(it.ang)*rad, it.type, easeOut(Math.max(0,it.pop)), t, it);
     }
-    drawPlayer(t);
   }
+  // Oyuncu küresi gerçek oyunda VE menü ailesindeki ekranlarda (yavaşça
+  // dönerek, "canlı menü") çizilir — sadece boncuk/asteroit menüde yok.
+  if(GAME_STATES[state] || MENU_STATES[state]) drawPlayer(t);
   ctx.restore();
 
   if(flash>0 && GAME_STATES[state]){ ctx.fillStyle=hexA(T.peril, flash*0.4); ctx.fillRect(0,0,W,H); }

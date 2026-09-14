@@ -19,6 +19,9 @@ function resize(){
 
 let state='menu';
 const GAME_STATES = {play:1, pause:1, over:1, revive:1};
+// Menü ailesindeki tüm ekranlar: gerçek oyun burada değil ama oyuncu küresi
+// hâlâ yörüngede yavaşça dönüyor olmalı — "canlı menü" hissi için.
+const MENU_STATES = {menu:1, mode:1, shop:1, settings:1, stats:1, battlepass:1, upgrades:1, howto:1};
 let mode='classic', diffKey='normal';
 let player, items, particles, score, combo, hp, maxHp, level, elapsed, spawnCooldown, shake, flash, freezeFlash;
 let levelFlashT, session, timeLeft, newRecord, timeScale, timeScaleT, activeBoost=null, pendingBoost=null;
@@ -63,6 +66,12 @@ function resetGame(){
   for(let i=0;i<4;i++) spawnItem(player.ang + 1.4 + i*0.95, seedRings[i]);
   updateHud();
 }
+
+// Menü ailesindeki ekranlarda (bkz. MENU_STATES) gerçek fizik/çarpışma
+// çalışmaz, ama oyuncu küresi görünürde kalıp yavaşça dönsün diye —
+// "canlı menü" hissi. Hız/kombo gibi hiçbir gerçek oyun değişkenine
+// bağlı değil, sabit ve yavaş.
+function updateIdleOrb(dt){ player.ang += 0.006*dt; }
 
 function normAng(a){ a%=(Math.PI*2); if(a<0)a+=Math.PI*2; return a; }
 function angDiff(a,b){ let d=b-a; while(d>Math.PI)d-=Math.PI*2; while(d<-Math.PI)d+=Math.PI*2; return d; }

@@ -49,28 +49,36 @@
 
 <div id="overlay">
 
-  <div class="screen active" id="screen-menu">
-    <h1>NEON<br>YÖRÜNGE</h1>
-    <div class="sub">Halkalar arasında dans et, yıldızları topla, evreni geç.</div>
-    <div class="walletBig"><i class="gicon" data-icon="coin"></i> <span id="menuWallet">0</span></div>
-    <span class="badge" id="powerLevelLine">⚡ Güç Seviyesi: 0/48</span>
-    <div class="muted" id="runCountLine" style="margin-top:-4px">Deneme #1</div>
-    <div class="col">
-      <button class="btn" data-go="mode"><i class="gicon" data-icon="play"></i> OYNA</button>
-      <button class="btn alt" data-go="upgrades"><i class="gicon" data-icon="lightning"></i> YÜKSELTMELER</button>
-      <div class="menuGrid2">
-        <button class="btn alt small" data-go="shop"><i class="gicon" data-icon="cart"></i> MAĞAZA</button>
-        <button class="btn alt small" data-go="battlepass"><i class="gicon" data-icon="ticket"></i> SEZON</button>
-        <button class="btn alt small" data-go="settings">AYARLAR</button>
-        <button class="btn alt small" data-go="stats">İSTATİSTİKLER</button>
+  <div class="screen menuLive" id="screen-menu">
+    <div class="menuTop">
+      <div class="menuTopTitle">NEON YÖRÜNGE</div>
+      <div class="menuTopRight">
+        <span class="walletChip2"><i class="gicon" data-icon="coin"></i> <span id="menuWallet">0</span></span>
+        <span class="badge" id="powerLevelLine">⚡ 0/48</span>
       </div>
-      <button class="btn alt small" data-go="howto">NASIL OYNANIR</button>
     </div>
-    <div class="muted" id="menuBest">En iyi: 0</div>
-    <div class="muted" id="questLine">🎯 Günün görevi: —</div>
-    <div class="muted" id="rivalLine">🎯 —</div>
-    <div class="muted" id="streakLine">🔥 —</div>
-    <div class="versionTag" id="versionTag"></div>
+
+    <div class="menuSideDock left">
+      <button class="menuDockBtn" data-go="shop"><i class="gicon" data-icon="cart"></i><span>Mağaza</span></button>
+      <button class="menuDockBtn" data-go="upgrades"><i class="gicon" data-icon="lightning"></i><span>Yükselt</span></button>
+      <button class="menuDockBtn" data-go="battlepass"><i class="gicon" data-icon="ticket"></i><span>Sezon</span></button>
+    </div>
+    <div class="menuSideDock right">
+      <button class="menuDockBtn" data-go="settings"><i class="gicon" data-icon="gear"></i><span>Ayarlar</span></button>
+      <button class="menuDockBtn" data-go="stats"><i class="gicon" data-icon="chart"></i><span>İstatistik</span></button>
+      <button class="menuDockBtn" data-go="howto"><i class="gicon" data-icon="book"></i><span>Nasıl?</span></button>
+    </div>
+
+    <button class="btn menuStartBtn" data-go="mode"><i class="gicon" data-icon="play"></i> BAŞLA</button>
+
+    <div class="menuFooter">
+      <div class="muted" id="runCountLine">Deneme #1</div>
+      <div class="muted" id="menuBest">En iyi: 0</div>
+      <div class="muted" id="questLine">🎯 Günün görevi: —</div>
+      <div class="muted" id="rivalLine">🎯 —</div>
+      <div class="muted" id="streakLine">🔥 —</div>
+      <div class="versionTag" id="versionTag"></div>
+    </div>
   </div>
 
   <div class="screen" id="screen-mode">

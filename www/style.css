@@ -34,6 +34,11 @@ body{
   backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);transition:opacity .3s ease;
   overflow:hidden;}
 #overlay.hidden{opacity:0;pointer-events:none;}
+/* "Canlı menü": ana menüde arkadaki (kendi kendine dönen) yörünge net görünsün
+   diye karartma çok hafif — diğer tüm ekranlar (mağaza/ayarlar/vb.) yoğun
+   metin/kart içerdiği için normal opak halini koruyor. */
+#overlay.live{background:radial-gradient(120% 90% at 50% 28%, rgba(20,24,60,.12), rgba(5,6,15,.35));
+  backdrop-filter:blur(.5px);-webkit-backdrop-filter:blur(.5px);}
 #overlay::before,#overlay::after{content:'';position:absolute;border-radius:50%;
   filter:blur(50px);pointer-events:none;mix-blend-mode:screen;opacity:.35;z-index:0;
   will-change:transform;}
@@ -108,7 +113,7 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
   box-shadow:0 1px 0 rgba(255,255,255,.06) inset,0 6px 18px rgba(0,0,0,.4);}
 .btn.alt:active{filter:brightness(1.25);}
 .btn.small{width:auto;padding:10px 18px;font-size:13.5px;border-radius:14px;}
-#modeStartBtn, #screen-menu > .col > .btn:first-child{
+#modeStartBtn, .menuStartBtn{
   animation:ctaPulse 2.6s ease-in-out infinite;}
 @keyframes ctaPulse{
   0%,100%{box-shadow:0 0 0 1px rgba(255,255,255,.05) inset,0 -3px 10px rgba(0,0,0,.16) inset,0 10px 26px -6px rgba(84,224,255,.55),0 3px 10px rgba(0,0,0,.35);}
@@ -118,6 +123,42 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
 .row2{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;width:100%;}
 .menuGrid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;width:100%;}
 .menuGrid2 .btn{width:100%;}
+
+/* Canlı menü iskeleti: standart .screen'in ortalı-dikey-liste davranışı yerine,
+   tüm çocuklar mutlak konumlandırılıp ekranın kenarlarına/merkezine sabitlenir
+   — böylece arkada dönen yörünge/orb her zaman net görünür kalır. */
+#screen-menu{max-width:none;width:100%;height:100dvh;max-height:100dvh;padding:0;overflow:hidden;}
+#screen-menu::before,#screen-menu::after{content:none;margin:0;}
+
+.menuTop{position:absolute;top:calc(env(safe-area-inset-top) + 60px);left:16px;right:16px;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;z-index:2;}
+.menuTopTitle{font-family:var(--font-display);font-weight:900;font-size:clamp(14px,4vw,18px);letter-spacing:1.5px;
+  background:linear-gradient(90deg,var(--star),var(--player));-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 10px rgba(120,180,255,.3));}
+.menuTopRight{display:flex;align-items:center;gap:8px;}
+.walletChip2{display:flex;align-items:center;gap:5px;background:rgba(5,6,15,.5);border:1px solid var(--glass-brd-soft);
+  border-radius:999px;padding:5px 11px;font-weight:700;font-size:13px;backdrop-filter:blur(3px);}
+.walletChip2 .gicon{width:15px;height:15px;}
+#powerLevelLine{font-size:10.5px;padding:5px 10px;background:rgba(5,6,15,.5);backdrop-filter:blur(3px);}
+
+.menuSideDock{position:absolute;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;z-index:2;}
+.menuSideDock.left{left:calc(env(safe-area-inset-left) + 10px);}
+.menuSideDock.right{right:calc(env(safe-area-inset-right) + 10px);}
+.menuDockBtn{display:flex;flex-direction:column;align-items:center;gap:3px;background:rgba(5,6,15,.5);
+  border:1px solid var(--glass-brd-soft);border-radius:16px;padding:10px 7px;width:58px;color:#eaf2ff;cursor:pointer;
+  backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);transition:transform .12s ease,background .15s ease;}
+.menuDockBtn:active{transform:scale(.92);background:rgba(84,224,255,.18);}
+.menuDockBtn .gicon{width:19px;height:19px;color:var(--star);}
+.menuDockBtn span{font-size:10px;font-weight:600;opacity:.85;white-space:nowrap;}
+
+.menuStartBtn{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;
+  width:min(210px,58vw);padding:15px 14px;}
+
+.menuFooter{position:absolute;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom) + 10px);
+  display:flex;flex-direction:column;align-items:center;gap:2px;z-index:2;
+  background:rgba(5,6,15,.4);border-radius:16px;padding:8px 12px;backdrop-filter:blur(3px);}
+.menuFooter .muted{font-size:11px;opacity:.8;}
+.menuFooter .versionTag{position:static;margin-top:2px;}
 
 .legend{display:flex;gap:16px 22px;flex-wrap:wrap;justify-content:center;font-size:14px;opacity:.9;}
 .legend div{display:flex;align-items:center;gap:8px;}

@@ -83,6 +83,10 @@ const ICON_SVG = {
   cross: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>',
 
   pause: '<svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor"/><rect x="14" y="4" width="4" height="16" rx="1" fill="currentColor"/></svg>',
+
+  gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v2.4M12 19.1v2.4M4.5 6.5l2 1.4M17.5 16.1l2 1.4M2.5 12h2.4M19.1 12h2.4M4.5 17.5l2-1.4M17.5 7.9l2-1.4M6.5 19.5l1.4-2M16.1 6.5l1.4-2M6.5 4.5l1.4 2M16.1 17.5l1.4 2"/></svg>',
+
+  book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5A2 2 0 0 1 6 3h13v16H6a2 2 0 0 0-2 2V4.5Z"/><path d="M4 19a2 2 0 0 1 2-2h13"/><path d="M9 7h7M9 10.5h7"/></svg>',
 };
 
 function iconMarkup(key){ return ICON_SVG[key] || ''; }
