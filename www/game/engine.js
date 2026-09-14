@@ -31,7 +31,7 @@ let levelFlashT, session, timeLeft, newRecord, timeScale, timeScaleT, activeBoos
 // çıkınca "temizlendi" sayılır ve oyuncuya ekstra yıldız tozu verilir.
 let bossNextIndex, bossActive, bossWaveItems, bossReward;
 
-const SLOW_DUR=300, MAGNET_DUR=360, INVUL=95, FREEZE_DUR=150, MULT_DUR=360, GHOST_DUR=240;
+const SLOW_DUR=300, MAGNET_DUR=360, INVUL=47.5, FREEZE_DUR=150, MULT_DUR=360, GHOST_DUR=240; // INVUL eskiden 95'ti, yarıya indirildi
 // Kombo başına eklenen hız payı — bkz. update()'teki comboSpeedBonus.
 // diffCfg.speedCap'e göre normal zorlukta tavana ~combo 27'de ulaşılır.
 const COMBO_SPEED_STEP = 0.09;

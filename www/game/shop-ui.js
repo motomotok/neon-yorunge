@@ -184,10 +184,32 @@ function onShopCardClick(category, item){
   } else {
     setEquipped(category, item.id);
     beep(600,0.06,'sine',0.1);
-    renderSkins(); renderThemeGrid(); syncShopIfOpen();
+    // Zaten sahip olunan bir kozmetiği tekrar takarken (en sık yapılan işlem,
+    // örn. izler arasında gezinme) tüm #shopGrid'i yıkıp yeniden kurmuyoruz —
+    // bu, kaydırma sırasında kartların anlık "kayması"na yol açıyordu. Sadece
+    // etkilenen kartların rozetini/sınıfını güncelliyoruz.
+    if(category==='skins') renderSkins();
+    if(category==='themes') renderThemeGrid();
+    updateEquippedBadges(category);
   }
 }
 function syncShopIfOpen(){ if(state==='shop') renderShopTab(); }
+// #shopGrid'i baştan kurmadan sadece "takılı" rozetini günceller — halihazırda
+// sahip olunan bir kozmetiği tekrar seçerken (mağaza açıkken) tüm kartları
+// yıkıp yeniden oluşturmanın kaydırma pozisyonunda/yerleşiminde yarattığı
+// görsel "kayma"yı önler. Kilit/fiyat durumu değişmiyorsa (satın alma değil,
+// sahip olunanı takma) bu yeterli.
+function updateEquippedBadges(category){
+  if(state!=='shop' || shopTab!==category) return;
+  const equippedId=getEquipped(category);
+  document.querySelectorAll('#shopGrid .shopCard').forEach(card=>{
+    if(card.classList.contains('locked')) return;
+    const isEq = card.dataset.id===equippedId;
+    card.classList.toggle('equipped', isEq);
+    const priceEl=card.querySelector('.price');
+    if(priceEl) priceEl.innerHTML = isEq ? `${icon('check')} Takılı` : 'Sahip';
+  });
+}
 
 let shopTab='themes';
 function shopItemsFor(cat){
@@ -239,6 +261,7 @@ function renderShopGrid(category){
     const equipped=getEquipped(category)===item.id;
     const card=document.createElement('div');
     card.className='shopCard'+(equipped?' equipped':'')+(!unlocked?' locked':'');
+    card.dataset.id=item.id;
     let priceHtml;
     if(!unlocked && item.gate.type==='coin'){
       const isDeal = category===stats.dealCategory && item.id===stats.dealId;
