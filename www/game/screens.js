@@ -21,6 +21,10 @@ function showTutorialHint(){
 
 function goMenu(){ state='menu'; setHud(false); showScreen('menu');
   document.getElementById('menuBest').textContent='En iyi: '+stats.best;
+  // Roguelike hissini güçlendiren iki kalıcı gösterge: "karakter seviyesi"
+  // (6 yükseltme hattının toplam kademesi) ve deneme sayacı.
+  document.getElementById('powerLevelLine').textContent='⚡ Güç Seviyesi: '+totalPowerLevel()+'/48';
+  document.getElementById('runCountLine').textContent='Deneme #'+(stats.games+1);
   ensureTodayQuest(); const q=currentQuest();
   document.getElementById('questLine').textContent='🎯 Günün görevi: '+q.text+(stats.questDone?' ✅':'');
   ensureRival();
@@ -56,6 +60,11 @@ function startGame(m,d){
   pendingBoost=null;
   resetGame(); state='play'; setHud(true); showScreen(null); showTutorialHint();
   beep(440,0.1,'sine',0.12);
+  // En az bir kalıcı yükseltme alınmışsa, deneme başında kısa bir "güç
+  // özeti" — oyuncu kasarak kazandığı gücü her denemede hissetsin.
+  if(mode!=='zen' && totalPowerLevel()>0){
+    queueToast('▶ Deneme #'+(stats.games+1)+' — '+maxHp+' Can ile başlıyorsun');
+  }
 }
 function pauseGame(){ if(state!=='play') return; state='pause'; showScreen('pause');
   document.getElementById('zenFinishBtn').style.display = mode==='zen' ? 'block' : 'none'; }
@@ -80,7 +89,10 @@ function gameOver(reason){
   }
   checkAchievements({runScore, level, session, mode, elapsedSec});
   const scoreBonus = Math.round(Math.floor(runScore/12)*weekendMult()*(1+upgradeBonus('coinPct')));
-  addStardust(scoreBonus);
+  // Zen modunda ("sonsuz mod") ne boncuk toplama ne de bu bonus cüzdana
+  // yansır — risk almadan sınırsız kasmayı önlemek için (bkz. engine.js'de
+  // boncuk toplama).
+  if(mode!=='zen') addStardust(scoreBonus);
   ensureSeason();
   // Bölen 8'den 40'a çıkarıldı: eskiden 2 oyunda 5. kademeye varılabiliyordu
   // (aşırı hızlı), artık ~2 oyunda 2. kademeye, ~10-12 oyunda 5. kademeye
@@ -96,10 +108,14 @@ function gameOver(reason){
   document.getElementById('finalScore').textContent=runScore;
   const melodyOctave=Math.floor(session.streakMax/MELODY_SCALE.length);
   const melodyText = melodyOctave>0 ? (' · Melodi: Oktav '+melodyOctave) : '';
-  document.getElementById('overStats').textContent=reasonText+'En iyi: '+stats.best+' · Seviye '+level+melodyText;
+  document.getElementById('overStats').textContent='Deneme #'+stats.games+' · '+reasonText+'En iyi: '+stats.best+' · Seviye '+level+melodyText;
   document.getElementById('recordBadge').innerHTML = newRecord ? `<span class="badge">${icon('trophy')} YENİ REKOR!</span>` : '';
-  const totalEarned = session.coins + scoreBonus;
-  document.getElementById('coinsEarned').innerHTML = `${icon('coin')} +${totalEarned} <span style="opacity:.6;font-size:12px">(${session.coins} toplama + ${scoreBonus} puan bonusu)</span>`;
+  if(mode==='zen'){
+    document.getElementById('coinsEarned').innerHTML = `${icon('moon')} Zen modu — yıldız tozu kazanılmaz (pratik modu)`;
+  } else {
+    const totalEarned = session.coins + scoreBonus;
+    document.getElementById('coinsEarned').innerHTML = `${icon('coin')} +${totalEarned} <span style="opacity:.6;font-size:12px">(${session.coins} toplama + ${scoreBonus} puan bonusu)</span>`;
+  }
   setHud(false); showScreen('over'); syncAdButtons();
   beep(200,0.3,'sine',0.12);
   if(!stats.premiumNoAds){

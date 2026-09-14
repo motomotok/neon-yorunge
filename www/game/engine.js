@@ -40,7 +40,7 @@ const PW_ICON_TYPE = {shield:'shield', slow:'clock', magnet:'magnet', freeze:'ho
 
 function resetGame(){
   player = { ang:-Math.PI/2, targetRing:0, curRadius:radiusFor(0), speed:1.6, speedMulEase:1,
-             shield:false, slowT:0, magnetT:0, invulT:0, freezeT:0, multT:0, ghostT:0 };
+             shieldHits:0, slowT:0, magnetT:0, invulT:0, freezeT:0, multT:0, ghostT:0 };
   items=[]; particles=[]; score=0; combo=1;
   maxHp = mode==='zen' ? 9999 : maxHpFor(); hp = maxHp;
   level=1; elapsed=0; spawnCooldown=0; shake=0; flash=0; freezeFlash=0; levelFlashT=0;
@@ -50,7 +50,7 @@ function resetGame(){
   newRecord=false; timeScale=1; timeScaleT=0;
   bossNextIndex=0; bossActive=false; bossWaveItems=[]; bossReward=0;
   if(activeBoost){
-    if(activeBoost==='shieldstart') player.shield=true;
+    if(activeBoost==='shieldstart') player.shieldHits=shieldHitsFor();
     else if(activeBoost==='slowstart') player.slowT=SLOW_DUR;
     else if(activeBoost==='luckystart') session.luckyCharges=3;
     else if(activeBoost==='coinrush') session.stardustMult=1.5;
@@ -342,7 +342,7 @@ function update(dt){
   if(player.freezeT>0) player.freezeT-=dt;
   if(player.multT>0) player.multT-=dt;
   if(player.ghostT>0) player.ghostT-=dt;
-  const mult = (player.multT>0 ? 2 : 1) * (diffCfg.scoreMult||1);
+  const mult = (player.multT>0 ? 2+upgradeBonus('multPower') : 1) * (diffCfg.scoreMult||1);
 
   // Boss dalgası sürerken normal akış duraklar — "stage" temiz kalsın,
   // dalganın öğeleriyle karışıp okunaksızlaşmasın.
@@ -436,7 +436,11 @@ function update(dt){
         // takviyesi) ve weekendMult() ile bağımsız kaynaklar olarak çarpılır.
         const base=(3+Math.floor(rnd()*4))+upgradeBonus('itemCoin');
         const gained=Math.round(base*(1+upgradeBonus('coinPct'))*session.stardustMult*weekendMult());
-        addStardust(gained); session.coins+=gained; session.coinPickups++;
+        // Zen modunda ("sonsuz mod") risk/tehlike olmadığı için sınırsız
+        // güvenli kasmayı önlemek adına toplama görsel/sesle aynen
+        // kalıyor ama cüzdana (stats.stardust) hiç yansımıyor.
+        if(mode!=='zen') addStardust(gained);
+        session.coins+=gained; session.coinPickups++;
         burst(ix,iy,'#ffb454',18,4.5); shake=4; beep(950,0.08,'triangle',0.13); beep(1400,0.06,'sine',0.1);
       }
       else { activatePower(it.type,ix,iy); }
@@ -479,7 +483,7 @@ function hitHazard(ix,iy,subtype){
   const px=CX+Math.cos(player.ang)*player.curRadius, py=CY+Math.sin(player.ang)*player.curRadius;
   // Bu fonksiyondaki tüm sesler "rakiplere çarpma" anına ait olduğundan
   // melodi-kombosu sesi kısma kuralından muaf tutulur (5. parametre).
-  if(player.shield){ player.shield=false; session.shieldSaved=true; burst(px,py,'#5efc82',26,5); shake=9;
+  if(player.shieldHits>0){ player.shieldHits--; session.shieldSaved=true; burst(px,py,'#5efc82',26,5); shake=9;
     beep(300,0.2,'square',0.14,true); return; }
   const dmg = HAZARD_DAMAGE[subtype]||1;
   hp = Math.max(0, hp-dmg); combo=1; shake=Math.min(20, 8+dmg*1.2); flash=1; session.hits++;
@@ -519,7 +523,7 @@ function activatePower(type,x,y){
   // Takviye Süresi yükseltmesi (kalıcı) tüm zamanlı güçlendirmelerin
   // süresini çarpar — kalkanın süresi yok, etkilenmiyor.
   const durMul = 1+upgradeBonus('boostDur');
-  if(type==='shield'){ player.shield=true; burst(x,y,'#5efc82',20,5); beep(700,0.12,'sine',0.13); beep(1050,0.12,'triangle',0.1); }
+  if(type==='shield'){ player.shieldHits=shieldHitsFor(); burst(x,y,'#5efc82',20,5); beep(700,0.12,'sine',0.13); beep(1050,0.12,'triangle',0.1); }
   else if(type==='slow'){ player.slowT=SLOW_DUR*durMul; burst(x,y,'#7aa2ff',20,5); beep(400,0.2,'sine',0.13); }
   else if(type==='magnet'){ player.magnetT=MAGNET_DUR*durMul; session.magnets++; stats.magnets++; burst(x,y,'#ff7ae0',20,5); beep(600,0.14,'triangle',0.13); beep(900,0.14,'sine',0.1); }
   else if(type==='freeze'){ player.freezeT=FREEZE_DUR*durMul; freezeFlash=1; burst(x,y,'#7fe8ff',20,5); beep(500,0.18,'sine',0.13); }
@@ -562,7 +566,7 @@ function updateHud(){
     if(_hud.timer!==timerText){ document.getElementById('timerHud').textContent=timerText; _hud.timer=timerText; }
   }
   let html='';
-  if(player.shield) html+=`<div class="pwchip">${icon('shield')}</div>`;
+  if(player.shieldHits>0) html+=`<div class="pwchip">${icon('shield')}${player.shieldHits>1?' ×'+player.shieldHits:''}</div>`;
   if(player.slowT>0) html+=chip('clock', player.slowT/SLOW_DUR);
   if(player.magnetT>0) html+=chip('magnet', player.magnetT/MAGNET_DUR);
   if(player.freezeT>0) html+=chip('hourglass', player.freezeT/FREEZE_DUR);

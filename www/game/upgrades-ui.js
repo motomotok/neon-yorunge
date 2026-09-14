@@ -1,8 +1,10 @@
 // Kalıcı yükseltmeler (roguelike meta-progression) ekranı. Veri/mantık
 // (META_UPGRADES, upgradeLevel/upgradeBonus/nextUpgradeTier/buyUpgrade)
 // data.js'de; burada sadece kartları çizip satın alma akışını bağlıyoruz.
-// Desen shop-ui.js'deki renderBoostsShop()'un birebir aynısı — mevcut
-// showPurchaseConfirm() onay diyaloğu doğrudan yeniden kullanılıyor.
+// Not: mağazadaki showPurchaseConfirm() onay diyaloğu KASITLI olarak
+// kullanılmıyor — burası sık ziyaret edilen, "kasarak harca" ekranı,
+// her satın almada ekstra bir onay adımı akışı gereksiz yavaşlatıyordu.
+// Tek tıkla anında satın alınıyor.
 function renderUpgrades(){
   const grid=document.getElementById('upgradesGrid'); if(!grid) return;
   grid.innerHTML='';
@@ -18,18 +20,16 @@ function renderUpgrades(){
       : `<div class="price ok">${icon('check')} Maks</div>`;
     card.innerHTML = `<div class="boostIcon">${icon(track.icon)}</div>`
       +`<div class="cn">${track.name}</div>`
-      +`<div class="bdesc">${lvl}/5 kademe · şu an: ${curText}<br>${nextText}</div>`
+      +`<div class="bdesc">${lvl}/8 kademe · şu an: ${curText}<br>${nextText}</div>`
       +priceHtml;
     if(tier){
       card.addEventListener('click', ()=>{
         if((stats.stardust||0)<tier.cost){ queueToast('🪙 Yetersiz Yıldız Tozu'); beep(200,0.1,'square',0.1); return; }
-        showPurchaseConfirm(track.icon, track.name, tier.cost, ()=>{
-          if(buyUpgrade(key)){
-            queueToast('✅ '+track.name+' yükseltildi!');
-            beep(700,0.1,'sine',0.13); beep(1000,0.1,'triangle',0.12);
-            renderUpgrades();
-          }
-        });
+        if(buyUpgrade(key)){
+          queueToast('✅ '+track.name+' yükseltildi! ('+(lvl+1)+'/8)');
+          beep(700,0.1,'sine',0.13); beep(1000,0.1,'triangle',0.12);
+          renderUpgrades();
+        }
       });
     }
     grid.appendChild(card);

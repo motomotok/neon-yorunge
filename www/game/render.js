@@ -258,7 +258,7 @@ function drawPlayer(t){
     ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(px,py,PLAYER_R,0,7); ctx.fill();
     ctx.globalAlpha=1;
   }
-  if(player.shield){
+  if(player.shieldHits>0){
     ctx.strokeStyle='#5efc82'; ctx.lineWidth=3; ctx.globalAlpha=0.8+Math.sin(t*8)*0.2;
     ctx.beginPath(); ctx.arc(px,py,PLAYER_R*1.9,0,7); ctx.stroke(); ctx.globalAlpha=1;
   }

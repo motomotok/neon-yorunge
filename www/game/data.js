@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '1.2.0';
+const GAME_VERSION = '1.3.0';
 
 const THEMES = {
   neon:      {name:'Neon',       star:'#54e0ff', gold:'#ffd24a', peril:'#ff4d6d', player:'#a97bff', sun:'#8ad8ff', bg0:'#05060f', bg1:'#0b0f2a', sf:'#9fb8ff', gate:{type:'free'}},
@@ -96,49 +96,45 @@ const BOOSTS = [
 // tek oyunluk değil, satın alındığı andan itibaren TÜM gelecek oyunlarda
 // geçerli. Ölünce (ya da ana menüden istediğin an) Yükseltmeler ekranından
 // aynı yıldız tozuyla satın alınır — böylece her yeni deneme bir öncekinden
-// biraz daha güçlü başlar. Her hat 5 kademeli; `add` değerleri KÜMÜLATİF
-// olarak toplanır (bkz. upgradeBonus()). Maliyetler ve artış oranları
-// kademeler arası ~1.5-2.2x büyüyecek şekilde tasarlandı.
+// biraz daha güçlü başlar.
+//
+// TEK bir formül, tüm hatlarda aynı: 8 kademe, maliyet GEOMETRİK dizi
+// (her kademe bir öncekinden ×1.5 pahalı), etki her kademede SABİT bir
+// miktar (E0) ekler — incremental-oyun tasarımında standart bir kalıp:
+// sabit güç artışı + büyüyen maliyet = doğal azalan getiri eğrisi. Her
+// hattı sadece 2 parametre tanımlar: C0 (1. kademe maliyeti) ve E0
+// (kademe başına etki). Geometrik dizi toplamı C0×(1.5^8-1)/0.5 ≈
+// C0×49.26 olduğundan, hedeflenen toplam maliyetten C0=hedef/49.26 ile
+// geri çözüldü — 6 hattın toplamı ~50.000 yıldız tozu olacak şekilde.
+function buildTiers(C0, E0){
+  const tiers=[];
+  for(let i=1;i<=8;i++) tiers.push({cost:Math.round(C0*Math.pow(1.5,i-1)/10)*10, add:E0});
+  return tiers;
+}
 const META_UPGRADES = {
   hp: {
     name:'Can Kapasitesi', icon:'heart', format:n=>'+'+n+' can',
-    tiers:[
-      {cost:200,  add:2},
-      {cost:450,  add:2},
-      {cost:900,  add:3},
-      {cost:1600, add:3},
-      {cost:2600, add:4},
-    ],
+    tiers: buildTiers(240, 2), // hedef ~12.000, taban 3 -> tavan 19 can
   },
   coinPct: {
     name:'Yıldız Tozu Bonusu', icon:'sparkle', format:n=>'+%'+(Math.round(n*1000)/10),
-    tiers:[
-      {cost:300,  add:0.02},
-      {cost:600,  add:0.025},
-      {cost:1100, add:0.03},
-      {cost:1800, add:0.035},
-      {cost:2800, add:0.04},
-    ],
+    tiers: buildTiers(200, 0.02), // hedef ~10.000, tavan %16 kazanç çarpanı
   },
   itemCoin: {
     name:'Boncuk Değeri', icon:'coin', format:n=>'+'+n+' '+icon('coin'),
-    tiers:[
-      {cost:500,  add:3},
-      {cost:700,  add:5},
-      {cost:1000, add:7},
-      {cost:1500, add:10},
-      {cost:2200, add:15},
-    ],
+    tiers: buildTiers(180, 5), // hedef ~9.000, tavan +40 boncuk başına
   },
   boostDur: {
     name:'Takviye Süresi', icon:'hourglass', format:n=>'+%'+(Math.round(n*1000)/10),
-    tiers:[
-      {cost:350,  add:0.05},
-      {cost:700,  add:0.08},
-      {cost:1300, add:0.11},
-      {cost:2200, add:0.14},
-      {cost:3400, add:0.17},
-    ],
+    tiers: buildTiers(140, 0.025), // hedef ~7.000, tavan %20 (yavaşlatma/mıknatıs/dondurma/hayalet)
+  },
+  shieldPower: {
+    name:'Kalkan Gücü', icon:'shield', format:n=>Math.floor(n)+' vuruş',
+    tiers: buildTiers(120, 0.5), // hedef ~6.000, taban 1 -> tavan 5 vuruş emer
+  },
+  multPower: {
+    name:'Çarpan Gücü', icon:'lightning', format:n=>'×'+(Math.round((2+n)*100)/100),
+    tiers: buildTiers(120, 0.15), // hedef ~6.000, taban ×2 -> tavan ×3.2 puan çarpanı
   },
 };
 function upgradeLevel(key){ return (stats.upgrades && stats.upgrades[key]) || 0; }
@@ -152,12 +148,20 @@ function buyUpgrade(key){
   const tier=nextUpgradeTier(key);
   if(!tier || (stats.stardust||0)<tier.cost) return false;
   stats.stardust-=tier.cost;
-  if(!stats.upgrades) stats.upgrades={hp:0,coinPct:0,itemCoin:0,boostDur:0};
+  if(!stats.upgrades) stats.upgrades={hp:0,coinPct:0,itemCoin:0,boostDur:0,shieldPower:0,multPower:0};
   stats.upgrades[key]=upgradeLevel(key)+1;
   saveStats(); refreshWallet();
   return true;
 }
 function maxHpFor(){ return 3 + upgradeBonus('hp'); }
+// Taban kalkan 1 vuruş emer; Kalkan Gücü her kademede +0.5 "yarım vuruş"
+// ekler (bkz. buildTiers(120,0.5) yukarıda) — floor ile tam vuruşa çevrilir.
+function shieldHitsFor(){ return 1+Math.floor(upgradeBonus('shieldPower')); }
+// Güç Seviyesi: 6 hattın kademe toplamı (0-48) — roguelike'ın "karakter
+// seviyesi" karşılığı, ana menüde tek bakışta ilerlemeyi gösterir.
+function totalPowerLevel(){
+  return Object.keys(META_UPGRADES).reduce((s,k)=>s+upgradeLevel(k), 0);
+}
 
 function isUnlockedItem(category, item){
   if(item.gate.type==='free') return true;
@@ -214,7 +218,7 @@ let stats = load('neonYorungeStats', {
   rivalLeague:[],
   seasonKey:'', seasonXp:0, seasonPremium:false,
   seasonClaimedFree:[], seasonClaimedPremium:[],
-  upgrades:{hp:0, coinPct:0, itemCoin:0, boostDur:0},
+  upgrades:{hp:0, coinPct:0, itemCoin:0, boostDur:0, shieldPower:0, multPower:0},
 });
 function load(k,def){ try{ return Object.assign({}, def, JSON.parse(localStorage.getItem(k)||'{}')); }catch(e){ return def; } }
 function saveCfg(){ try{ localStorage.setItem('neonYorungeCfg', JSON.stringify(cfg)); }catch(e){} }
