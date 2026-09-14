@@ -29,6 +29,7 @@ document.querySelectorAll('[data-go]').forEach(b=>{
   b.addEventListener('click', e=>{ e.stopPropagation();
     const g=b.dataset.go;
     if(g==='mode') goMode();
+    else if(g==='quickstart') startGame('classic','normal');
     else if(g==='menu') goMenu();
     else if(g==='howto') goHowto();
     else if(g==='settings') goSettings();

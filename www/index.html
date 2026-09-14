@@ -60,7 +60,7 @@
 
     <div class="menuSideDock left">
       <button class="menuDockBtn" data-go="shop"><i class="gicon" data-icon="cart"></i><span>Mağaza</span></button>
-      <button class="menuDockBtn" data-go="upgrades"><i class="gicon" data-icon="lightning"></i><span>Yükselt</span></button>
+      <button class="menuDockBtn" data-go="mode"><i class="gicon" data-icon="gamepad"></i><span>Modlar</span></button>
       <button class="menuDockBtn" data-go="battlepass"><i class="gicon" data-icon="ticket"></i><span>Sezon</span></button>
     </div>
     <div class="menuSideDock right">
@@ -69,7 +69,13 @@
       <button class="menuDockBtn" data-go="howto"><i class="gicon" data-icon="book"></i><span>Nasıl?</span></button>
     </div>
 
-    <button class="btn menuStartBtn" data-go="mode"><i class="gicon" data-icon="play"></i> BAŞLA</button>
+    <div class="menuCenter">
+      <button class="btn menuStartBtn" data-go="quickstart"><i class="gicon" data-icon="play"></i> BAŞLA</button>
+      <div class="menuUpgradeWrap">
+        <button class="btn menuUpgradeBtn" data-go="upgrades"><i class="gicon" data-icon="lightning"></i> YÜKSELT</button>
+        <div class="menuUpgradeTag">💪 Her kayıpta daha güçlü çık</div>
+      </div>
+    </div>
 
     <div class="menuFooter">
       <div class="muted" id="runCountLine">Deneme #1</div>
