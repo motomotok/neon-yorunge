@@ -21,7 +21,7 @@
 <div id="hud">
   <div class="hudTop">
     <div><div class="lbl">Puan</div><div class="val" id="scoreHud">0</div>
-      <div id="lives"></div></div>
+      <div id="hpBarWrap"><div id="hpBarFill"></div></div><div id="hpText"></div></div>
     <div class="center">
       <div class="lbl" id="levelLbl">Seviye</div><div class="val" id="levelHud">1</div>
       <div class="lbl" id="timerLbl" style="display:none">Süre</div><div class="val" id="timerHud" style="display:none">60</div>
@@ -55,6 +55,7 @@
     <div class="walletBig"><i class="gicon" data-icon="coin"></i> <span id="menuWallet">0</span></div>
     <div class="col">
       <button class="btn" data-go="mode"><i class="gicon" data-icon="play"></i> OYNA</button>
+      <button class="btn alt" data-go="upgrades"><i class="gicon" data-icon="lightning"></i> YÜKSELTMELER</button>
       <div class="menuGrid2">
         <button class="btn alt small" data-go="shop"><i class="gicon" data-icon="cart"></i> MAĞAZA</button>
         <button class="btn alt small" data-go="battlepass"><i class="gicon" data-icon="ticket"></i> SEZON</button>
@@ -176,6 +177,20 @@
     </div>
   </div>
 
+  <div class="screen fullpin" id="screen-upgrades">
+    <div class="screenHead">
+      <h2><i class="gicon" data-icon="lightning"></i> Yükseltmeler</h2>
+      <div class="walletBig"><i class="gicon" data-icon="coin"></i> <span id="upgradesWallet">0</span></div>
+      <div class="sub">Yıldız tozuyla kalıcı yükseltmeler satın al — her satın alım TÜM gelecek oyunlarda geçerli.</div>
+    </div>
+    <div class="screenBody">
+      <div class="shopGrid" id="upgradesGrid"></div>
+    </div>
+    <div class="screenFoot">
+      <button class="btn alt small" data-go="menu"><i class="gicon" data-icon="back"></i> Geri</button>
+    </div>
+  </div>
+
   <div class="screen fullpin" id="screen-shop">
     <div class="screenHead">
       <h2><i class="gicon" data-icon="cart"></i> Kozmik Mağaza</h2>
@@ -227,7 +242,7 @@
 
   <div class="screen" id="screen-revive">
     <h2>💔 Son Şansın</h2>
-    <div class="sub">Reklam izleyip <b>1 canla</b> devam edebilirsin.<br>(<span id="reviveCountdown">6</span> sn içinde seç)</div>
+    <div class="sub">Reklam izleyip <b><span id="reviveHpAmount">1</span> canla</b> devam edebilirsin.<br>(<span id="reviveCountdown">6</span> sn içinde seç)</div>
     <div class="col">
       <button class="btn" id="reviveWatchBtn"><i class="gicon" data-icon="tv"></i> İzle ve Devam Et</button>
       <button class="btn alt small" id="reviveSkipBtn">Vazgeç</button>
@@ -242,6 +257,7 @@
     <div class="walletBig" style="font-size:16px;padding:6px 16px;" id="coinsEarned"><i class="gicon" data-icon="coin"></i> +0</div>
     <div class="col">
       <button class="btn" id="retryBtn"><i class="gicon" data-icon="replay"></i> TEKRAR</button>
+      <button class="btn alt" data-go="upgrades"><i class="gicon" data-icon="lightning"></i> YÜKSELT</button>
       <button class="btn alt small" id="watchAdCoinsBtn"><i class="gicon" data-icon="filmreel"></i> Reklam İzle (+150 <i class="gicon" data-icon="coin"></i>)</button>
       <div class="row2">
         <button class="btn alt small" id="shareBtn"><i class="gicon" data-icon="share"></i> Paylaş</button>
@@ -288,6 +304,7 @@
 <script src="game/screens.js"></script>
 <script src="game/shop-ui.js"></script>
 <script src="game/battlepass-ui.js"></script>
+<script src="game/upgrades-ui.js"></script>
 <script src="game/input.js"></script>
 <script src="game/main.js"></script>
 </body>

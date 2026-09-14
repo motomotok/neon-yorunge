@@ -20,7 +20,7 @@ function resize(){
 let state='menu';
 const GAME_STATES = {play:1, pause:1, over:1, revive:1};
 let mode='classic', diffKey='normal';
-let player, items, particles, score, combo, lives, level, elapsed, spawnCooldown, shake, flash, freezeFlash;
+let player, items, particles, score, combo, hp, maxHp, level, elapsed, spawnCooldown, shake, flash, freezeFlash;
 let levelFlashT, session, timeLeft, newRecord, timeScale, timeScaleT, activeBoost=null, pendingBoost=null;
 // Boss dalgası: skor eşiklerinde (bkz. BOSS_STAGES) güneşten patlayarak
 // beliren, tek seferlik yoğun bir tehlike dalgası. bossWaveItems o dalganın
@@ -42,7 +42,7 @@ function resetGame(){
   player = { ang:-Math.PI/2, targetRing:0, curRadius:radiusFor(0), speed:1.6, speedMulEase:1,
              shield:false, slowT:0, magnetT:0, invulT:0, freezeT:0, multT:0, ghostT:0 };
   items=[]; particles=[]; score=0; combo=1;
-  lives = mode==='zen' ? 999 : diffCfg.lives;
+  maxHp = mode==='zen' ? 9999 : maxHpFor(); hp = maxHp;
   level=1; elapsed=0; spawnCooldown=0; shake=0; flash=0; freezeFlash=0; levelFlashT=0;
   session = {stars:0, golds:0, diamonds:0, magnets:0, hits:0, shieldSaved:false, streakMax:0,
              coins:0, coinPickups:0, luckyCharges:0, stardustMult:1, revivedUsed:false};
@@ -83,6 +83,13 @@ const HAZARD_KINDS = [
   {type:'hazardPulse',min:1500, rampPer:0.00012, cap:0.22},
   {type:'hazardCreep',min:2000, rampPer:0.00012, cap:0.20},
 ];
+// Her tip kaç HP götürür — açılma eşiğine ve mekanik zorluğuna göre
+// kademeli artıyor (bkz. hitHazard()). Temel/erken tipler hafif, sinsi
+// (en geç açılan) hazardCreep en ağır — Can Kapasitesi yükseltmesiyle
+// dengelenmesi gereken asıl risk bu.
+const HAZARD_DAMAGE = {
+  hazard:1, hazardJump:1, hazardBomb:2, hazardPull:3, hazardTwin:4, hazardPulse:6, hazardCreep:10,
+};
 function pickHazardKind(){
   let total=0;
   const weights=HAZARD_KINDS.map(h=>{
@@ -423,7 +430,12 @@ function update(dt){
       else if(it.type==='star'){ combo++; score+=combo*mult; session.stars++;
         burst(ix,iy,T.star,14,4); shake=3; playMelodyNote(combo,0.16); bumpCombo(); checkStreak(ix,iy,mult); }
       else if(it.type==='coin'){
-        const gained=Math.round((3+Math.floor(rnd()*4))*session.stardustMult*weekendMult());
+        // Boncuk Değeri yükseltmesi (kalıcı) tabana sabit ek yapar, Yıldız
+        // Tozu Bonusu yükseltmesi (kalıcı) SONRASINDA çarpan olarak
+        // uygulanır — session.stardustMult (tek oyunluk "Toz Rüzgarı"
+        // takviyesi) ve weekendMult() ile bağımsız kaynaklar olarak çarpılır.
+        const base=(3+Math.floor(rnd()*4))+upgradeBonus('itemCoin');
+        const gained=Math.round(base*(1+upgradeBonus('coinPct'))*session.stardustMult*weekendMult());
         addStardust(gained); session.coins+=gained; session.coinPickups++;
         burst(ix,iy,'#ffb454',18,4.5); shake=4; beep(950,0.08,'triangle',0.13); beep(1400,0.06,'sine',0.1);
       }
@@ -440,9 +452,10 @@ function update(dt){
     bossWaveItems = bossWaveItems.filter(it=>it.alive);
     if(bossWaveItems.length===0){
       bossActive=false;
-      addStardust(bossReward);
+      const finalReward=Math.round(bossReward*(1+upgradeBonus('coinPct')));
+      addStardust(finalReward);
       showFlash('DALGA TEMİZLENDİ!',60);
-      queueToast(icon('coin')+' Boss dalgası temizlendi! +'+bossReward);
+      queueToast(icon('coin')+' Boss dalgası temizlendi! +'+finalReward);
       beep(700,0.15,'sine',0.15); beep(1000,0.15,'triangle',0.12); beep(1300,0.18,'sine',0.1);
     }
   } else if(!zen && bossNextIndex<BOSS_STAGES.length && score>=BOSS_STAGES[bossNextIndex].score){
@@ -468,10 +481,10 @@ function hitHazard(ix,iy,subtype){
   // melodi-kombosu sesi kısma kuralından muaf tutulur (5. parametre).
   if(player.shield){ player.shield=false; session.shieldSaved=true; burst(px,py,'#5efc82',26,5); shake=9;
     beep(300,0.2,'square',0.14,true); return; }
-  const power = subtype==='hazardBomb' ? 1.6 : 1;
-  lives--; combo=1; shake=16*power; flash=1; session.hits++;
+  const dmg = HAZARD_DAMAGE[subtype]||1;
+  hp = Math.max(0, hp-dmg); combo=1; shake=Math.min(20, 8+dmg*1.2); flash=1; session.hits++;
   burst(ix,iy,T.peril,34,6); beep(120,0.4,'sawtooth',0.2,true); beep(80,0.5,'square',0.15,true); vibrate([40,30,40]);
-  if(lives<=0){
+  if(hp<=0){
     if(mode!=='zen' && !session.revivedUsed) offerRevive();
     else gameOver();
   }
@@ -481,6 +494,7 @@ function hitHazard(ix,iy,subtype){
 let reviveTimer=null;
 function offerRevive(){
   state='revive'; showScreen('revive');
+  const hpEl=document.getElementById('reviveHpAmount'); if(hpEl) hpEl.textContent=Math.max(1,Math.ceil(maxHp/2));
   let secs=6;
   const cd=document.getElementById('reviveCountdown'); if(cd) cd.textContent=secs;
   clearInterval(reviveTimer);
@@ -492,7 +506,7 @@ function offerRevive(){
 function acceptRevive(){
   clearInterval(reviveTimer);
   Ads.showRewarded(()=>{
-    session.revivedUsed=true; lives=1; combo=1; player.invulT=INVUL*3;
+    session.revivedUsed=true; hp=Math.max(1,Math.ceil(maxHp/2)); combo=1; player.invulT=INVUL*3;
     state='play'; showScreen(null); queueToast('✨ Devam ediyorsun!');
   }, ()=>{ declineRevive(); });
 }
@@ -502,12 +516,15 @@ function declineRevive(){
 }
 
 function activatePower(type,x,y){
+  // Takviye Süresi yükseltmesi (kalıcı) tüm zamanlı güçlendirmelerin
+  // süresini çarpar — kalkanın süresi yok, etkilenmiyor.
+  const durMul = 1+upgradeBonus('boostDur');
   if(type==='shield'){ player.shield=true; burst(x,y,'#5efc82',20,5); beep(700,0.12,'sine',0.13); beep(1050,0.12,'triangle',0.1); }
-  else if(type==='slow'){ player.slowT=SLOW_DUR; burst(x,y,'#7aa2ff',20,5); beep(400,0.2,'sine',0.13); }
-  else if(type==='magnet'){ player.magnetT=MAGNET_DUR; session.magnets++; stats.magnets++; burst(x,y,'#ff7ae0',20,5); beep(600,0.14,'triangle',0.13); beep(900,0.14,'sine',0.1); }
-  else if(type==='freeze'){ player.freezeT=FREEZE_DUR; freezeFlash=1; burst(x,y,'#7fe8ff',20,5); beep(500,0.18,'sine',0.13); }
-  else if(type==='mult'){ player.multT=MULT_DUR; burst(x,y,'#ffd24a',20,5); beep(750,0.14,'triangle',0.13); }
-  else if(type==='ghost'){ player.ghostT=GHOST_DUR; burst(x,y,'#ffffff',20,5); beep(450,0.16,'sine',0.13); }
+  else if(type==='slow'){ player.slowT=SLOW_DUR*durMul; burst(x,y,'#7aa2ff',20,5); beep(400,0.2,'sine',0.13); }
+  else if(type==='magnet'){ player.magnetT=MAGNET_DUR*durMul; session.magnets++; stats.magnets++; burst(x,y,'#ff7ae0',20,5); beep(600,0.14,'triangle',0.13); beep(900,0.14,'sine',0.1); }
+  else if(type==='freeze'){ player.freezeT=FREEZE_DUR*durMul; freezeFlash=1; burst(x,y,'#7fe8ff',20,5); beep(500,0.18,'sine',0.13); }
+  else if(type==='mult'){ player.multT=MULT_DUR*durMul; burst(x,y,'#ffd24a',20,5); beep(750,0.14,'triangle',0.13); }
+  else if(type==='ghost'){ player.ghostT=GHOST_DUR*durMul; burst(x,y,'#ffffff',20,5); beep(450,0.16,'sine',0.13); }
   score+=10*(diffCfg.scoreMult||1); shake=6; vibrate(15);
 }
 
@@ -520,14 +537,18 @@ function bumpCombo(){
 // alır — her karede (60/sn) unconditional DOM yazımı yerine, sadece
 // gerçekten değişen elemanlar güncellenir (davranış aynı, gereksiz
 // reflow/style recalculation önlenir).
-const _hud = {score:null, combo:null, level:null, lives:null, isTime:null, timer:null, pw:null, flash:null, wallet:null};
+const _hud = {score:null, combo:null, level:null, hp:null, hpText:null, isTime:null, timer:null, pw:null, flash:null, wallet:null};
 function updateHud(){
   if(_hud.score!==score){ document.getElementById('scoreHud').textContent=score; _hud.score=score; }
   const comboText='x'+combo;
   if(_hud.combo!==comboText){ document.getElementById('combo').textContent=comboText; _hud.combo=comboText; }
   if(_hud.level!==level){ document.getElementById('levelHud').textContent=level; _hud.level=level; }
-  const livesText = mode==='zen' ? '∞' : (lives>0 ? icon('heart').repeat(lives) : '');
-  if(_hud.lives!==livesText){ document.getElementById('lives').innerHTML=livesText; _hud.lives=livesText; }
+  // Can artık sabit kalp sayısı değil, değişken bir HP bar (bkz. §4 plan) —
+  // "3 can" yerine "3-17 arası HP", tehlike tipine göre değişen hasar alıyor.
+  const hpPct = mode==='zen' ? 100 : Math.max(0, Math.round(hp/maxHp*100));
+  if(_hud.hp!==hpPct){ document.getElementById('hpBarFill').style.width=hpPct+'%'; _hud.hp=hpPct; }
+  const hpText = mode==='zen' ? '∞' : hp+'/'+maxHp;
+  if(_hud.hpText!==hpText){ document.getElementById('hpText').textContent=hpText; _hud.hpText=hpText; }
   const isTime = mode==='time';
   if(_hud.isTime!==isTime){
     document.getElementById('timerLbl').style.display = isTime?'block':'none';

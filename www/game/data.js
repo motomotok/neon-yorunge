@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '1.1.0';
+const GAME_VERSION = '1.2.0';
 
 const THEMES = {
   neon:      {name:'Neon',       star:'#54e0ff', gold:'#ffd24a', peril:'#ff4d6d', player:'#a97bff', sun:'#8ad8ff', bg0:'#05060f', bg1:'#0b0f2a', sf:'#9fb8ff', gate:{type:'free'}},
@@ -92,6 +92,73 @@ const BOOSTS = [
   {id:'coinrush',    name:'Toz Rüzgarı',    desc:'Bu oyunda kazanılan yıldız tozu %50 fazla', icon:'sparkle', price:1300},
 ];
 
+// Kalıcı yükseltmeler (roguelike meta-progression): BOOSTS'un aksine
+// tek oyunluk değil, satın alındığı andan itibaren TÜM gelecek oyunlarda
+// geçerli. Ölünce (ya da ana menüden istediğin an) Yükseltmeler ekranından
+// aynı yıldız tozuyla satın alınır — böylece her yeni deneme bir öncekinden
+// biraz daha güçlü başlar. Her hat 5 kademeli; `add` değerleri KÜMÜLATİF
+// olarak toplanır (bkz. upgradeBonus()). Maliyetler ve artış oranları
+// kademeler arası ~1.5-2.2x büyüyecek şekilde tasarlandı.
+const META_UPGRADES = {
+  hp: {
+    name:'Can Kapasitesi', icon:'heart', format:n=>'+'+n+' can',
+    tiers:[
+      {cost:200,  add:2},
+      {cost:450,  add:2},
+      {cost:900,  add:3},
+      {cost:1600, add:3},
+      {cost:2600, add:4},
+    ],
+  },
+  coinPct: {
+    name:'Yıldız Tozu Bonusu', icon:'sparkle', format:n=>'+%'+(Math.round(n*1000)/10),
+    tiers:[
+      {cost:300,  add:0.02},
+      {cost:600,  add:0.025},
+      {cost:1100, add:0.03},
+      {cost:1800, add:0.035},
+      {cost:2800, add:0.04},
+    ],
+  },
+  itemCoin: {
+    name:'Boncuk Değeri', icon:'coin', format:n=>'+'+n+' '+icon('coin'),
+    tiers:[
+      {cost:500,  add:3},
+      {cost:700,  add:5},
+      {cost:1000, add:7},
+      {cost:1500, add:10},
+      {cost:2200, add:15},
+    ],
+  },
+  boostDur: {
+    name:'Takviye Süresi', icon:'hourglass', format:n=>'+%'+(Math.round(n*1000)/10),
+    tiers:[
+      {cost:350,  add:0.05},
+      {cost:700,  add:0.08},
+      {cost:1300, add:0.11},
+      {cost:2200, add:0.14},
+      {cost:3400, add:0.17},
+    ],
+  },
+};
+function upgradeLevel(key){ return (stats.upgrades && stats.upgrades[key]) || 0; }
+function upgradeBonus(key){
+  const lvl=upgradeLevel(key), tiers=META_UPGRADES[key].tiers;
+  let s=0; for(let i=0;i<lvl;i++) s+=tiers[i].add;
+  return s;
+}
+function nextUpgradeTier(key){ return META_UPGRADES[key].tiers[upgradeLevel(key)] || null; }
+function buyUpgrade(key){
+  const tier=nextUpgradeTier(key);
+  if(!tier || (stats.stardust||0)<tier.cost) return false;
+  stats.stardust-=tier.cost;
+  if(!stats.upgrades) stats.upgrades={hp:0,coinPct:0,itemCoin:0,boostDur:0};
+  stats.upgrades[key]=upgradeLevel(key)+1;
+  saveStats(); refreshWallet();
+  return true;
+}
+function maxHpFor(){ return 3 + upgradeBonus('hp'); }
+
 function isUnlockedItem(category, item){
   if(item.gate.type==='free') return true;
   if(item.gate.type==='achievement') return stats.unlocked.includes(item.gate.id);
@@ -147,6 +214,7 @@ let stats = load('neonYorungeStats', {
   rivalLeague:[],
   seasonKey:'', seasonXp:0, seasonPremium:false,
   seasonClaimedFree:[], seasonClaimedPremium:[],
+  upgrades:{hp:0, coinPct:0, itemCoin:0, boostDur:0},
 });
 function load(k,def){ try{ return Object.assign({}, def, JSON.parse(localStorage.getItem(k)||'{}')); }catch(e){ return def; } }
 function saveCfg(){ try{ localStorage.setItem('neonYorungeCfg', JSON.stringify(cfg)); }catch(e){} }
@@ -155,10 +223,13 @@ function saveStats(){ try{ localStorage.setItem('neonYorungeStats', JSON.stringi
 // speedRamp artık SKORA bağlı (bkz. engine.js update() — skor 1500'e kadar
 // hiç devreye girmiyor) ve eskisine göre %20 daha yumuşak — ani/aşırı hız
 // artışı hissini azaltmak için.
+// "lives" alanı kaldırıldı: can artık zorluktan bağımsız, sadece Can
+// Kapasitesi yükseltmesinden geliyor (bkz. maxHpFor()). Zorluk hâlâ
+// tehlike sıklığı/hızı ve skor çarpanını belirlemeye devam ediyor.
 const DIFF = {
-  easy:{label:'Kolay', lives:4, hazBase:0.05, hazRamp:0.00025, hazCap:0.14, speedRamp:0.00056, speedCap:2.0, scoreMult:0.8},
-  normal:{label:'Normal', lives:3, hazBase:0.09, hazRamp:0.00045, hazCap:0.22, speedRamp:0.00088, speedCap:2.4, scoreMult:1.0},
-  hard:{label:'Zor', lives:2, hazBase:0.14, hazRamp:0.0008, hazCap:0.34, speedRamp:0.00128, speedCap:2.9, scoreMult:1.35},
+  easy:{label:'Kolay', hazBase:0.05, hazRamp:0.00025, hazCap:0.14, speedRamp:0.00056, speedCap:2.0, scoreMult:0.8},
+  normal:{label:'Normal', hazBase:0.09, hazRamp:0.00045, hazCap:0.22, speedRamp:0.00088, speedCap:2.4, scoreMult:1.0},
+  hard:{label:'Zor', hazBase:0.14, hazRamp:0.0008, hazCap:0.34, speedRamp:0.00128, speedCap:2.9, scoreMult:1.35},
 };
 let diffCfg = DIFF.normal;
 

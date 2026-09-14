@@ -35,6 +35,7 @@ document.querySelectorAll('[data-go]').forEach(b=>{
     else if(g==='stats') goStats();
     else if(g==='shop') goShop();
     else if(g==='battlepass') goBattlepass();
+    else if(g==='upgrades') goUpgrades();
   });
 });
 document.getElementById('retryBtn').addEventListener('click', e=>{ e.stopPropagation(); startGame(); });

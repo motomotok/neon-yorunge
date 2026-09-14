@@ -38,6 +38,7 @@ function goStats(){ state='stats'; setHud(false); showScreen('stats'); syncStats
 function goMode(){ state='mode'; setHud(false); showScreen('mode'); refreshDailyStatus(); renderBoostRow(); }
 function goShop(){ state='shop'; setHud(false); showScreen('shop'); ensureDailyDeal(); refreshWallet(); renderDealBanner(); renderShopTab(); syncAdButtons(); }
 function goBattlepass(){ state='battlepass'; setHud(false); showScreen('battlepass'); renderBattlepass(); }
+function goUpgrades(){ state='upgrades'; setHud(false); showScreen('upgrades'); refreshWallet(); renderUpgrades(); }
 
 function startGame(m,d){
   m = m || mode; d = d || diffKey;
@@ -78,7 +79,7 @@ function gameOver(reason){
     stats.questDone=true; queueToast('🎯 Günlük görev tamamlandı: '+q.text);
   }
   checkAchievements({runScore, level, session, mode, elapsedSec});
-  const scoreBonus = Math.round(Math.floor(runScore/12)*weekendMult());
+  const scoreBonus = Math.round(Math.floor(runScore/12)*weekendMult()*(1+upgradeBonus('coinPct')));
   addStardust(scoreBonus);
   ensureSeason();
   // Bölen 8'den 40'a çıkarıldı: eskiden 2 oyunda 5. kademeye varılabiliyordu

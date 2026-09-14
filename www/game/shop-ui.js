@@ -111,7 +111,7 @@ function refreshDailyStatus(){
 
 function refreshWallet(){
   const v = stats.stardust||0;
-  ['walletHud','shopWallet','menuWallet'].forEach(id=>{
+  ['walletHud','shopWallet','menuWallet','upgradesWallet'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.textContent=v;
   });
 }
