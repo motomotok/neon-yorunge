@@ -20,7 +20,7 @@ function resize(){
 let state='menu';
 const GAME_STATES = {play:1, pause:1, over:1, revive:1};
 let mode='classic', diffKey='normal';
-let player, items, particles, score, combo, lives, level, elapsed, spawnTimer, shake, flash, freezeFlash;
+let player, items, particles, score, combo, lives, level, elapsed, spawnCooldown, shake, flash, freezeFlash;
 let levelFlashT, session, timeLeft, newRecord, timeScale, timeScaleT, activeBoost=null, pendingBoost=null;
 // Boss dalgası: skor eşiklerinde (bkz. BOSS_STAGES) güneşten patlayarak
 // beliren, tek seferlik yoğun bir tehlike dalgası. bossWaveItems o dalganın
@@ -43,7 +43,7 @@ function resetGame(){
              shield:false, slowT:0, magnetT:0, invulT:0, freezeT:0, multT:0, ghostT:0 };
   items=[]; particles=[]; score=0; combo=1;
   lives = mode==='zen' ? 999 : diffCfg.lives;
-  level=1; elapsed=0; spawnTimer=0; shake=0; flash=0; freezeFlash=0; levelFlashT=0;
+  level=1; elapsed=0; spawnCooldown=0; shake=0; flash=0; freezeFlash=0; levelFlashT=0;
   session = {stars:0, golds:0, diamonds:0, magnets:0, hits:0, shieldSaved:false, streakMax:0,
              coins:0, coinPickups:0, luckyCharges:0, stardustMult:1, revivedUsed:false};
   timeLeft = mode==='time' ? 60 : null;
@@ -56,7 +56,11 @@ function resetGame(){
     else if(activeBoost==='coinrush') session.stardustMult=1.5;
     activeBoost=null;
   }
-  for(let i=0;i<4;i++) spawnItem(player.ang + 1.4 + i*0.95);
+  // İlk 4 tohum öğe: açılar zaten eşit aralıklı, halkaları da dengeli
+  // dağıtalım (tamamen rastgele bırakılırsa 4'ü de aynı halkaya düşebilir).
+  const seedRings=[0,1,2,0];
+  for(let i=seedRings.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [seedRings[i],seedRings[j]]=[seedRings[j],seedRings[i]]; }
+  for(let i=0;i<4;i++) spawnItem(player.ang + 1.4 + i*0.95, seedRings[i]);
   updateHud();
 }
 
@@ -110,9 +114,17 @@ function startBossWave(stageDef){
   beep(90,0.5,'sawtooth',0.2); beep(140,0.5,'square',0.16); beep(60,0.6,'sine',0.18);
   showFlash('⚠ BOSS DALGASI!',90); vibrate([30,40,30,40,60]);
   const startAng = normAng(player.ang + 1.3), spread = 3.2;
+  // Halkaları mümkün olduğunca eşit dağıt — sıra karışık ama sayım eşit
+  // (örn. 5 öğe -> {0,1,2} üzerinden 2/2/1 gibi). Eskiden her öğe bağımsız
+  // rastgele halka seçiyordu; bu da şans eseri hepsinin aynı (genelde en
+  // iç) halkaya düşüp dalgayı "tek halkada dolanıp geçilen" sıkıcı bir
+  // koridora çevirebiliyordu — asıl şikayet tam buydu.
+  const ringPlan=[];
+  for(let i=0;i<stageDef.count;i++) ringPlan.push(i%NUM_RINGS);
+  for(let i=ringPlan.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [ringPlan[i],ringPlan[j]]=[ringPlan[j],ringPlan[i]]; }
   for(let i=0;i<stageDef.count;i++){
     const ang = normAng(startAng + (stageDef.count>1 ? (i/(stageDef.count-1))*spread : 0));
-    const ring = Math.floor(rnd()*NUM_RINGS);
+    const ring = ringPlan[i];
     const type = pickHazardKind();
     const it = {ang, ring, type, alive:true, pop:0, expiring:false, prevFwd:null,
       jumpT: type==='hazardJump' ? 70+rnd()*60 : 0,
@@ -122,21 +134,28 @@ function startBossWave(stageDef){
   }
 }
 
-function spawnItem(atAng){
+// atAng/atRing verilirse doğrudan o açı+halkaya yerleştirir (yoğunluk
+// sistemi zaten çakışmasız bir yer bulup buraya iletir); ikisi de
+// verilmezse resetGame()'in ilk tohumlaması için basit bir arama yapar.
+// İkisi de başarıyla yerleştirilip yerleştirilmediğini boolean döner.
+function spawnItem(atAng, atRing){
   const zen = mode==='zen';
   const hazChance = zen ? 0 : Math.min(diffCfg.hazCap, diffCfg.hazBase + elapsed*diffCfg.hazRamp);
-  let ang, ring, tries=0, ok=false;
-  do{
-    ring=Math.floor(rnd()*NUM_RINGS);
-    ang=normAng(atAng!=null ? atAng : (player.ang + 1.5 + rnd()*3.0));
-    ok=true;
-    for(const it of items){
-      if(!it.alive || it.expiring || it.ring!==ring) continue;
-      if(Math.abs(angDiff(it.ang,ang))<MIN_GAP){ ok=false; break; }
-    }
-    tries++;
-  } while(!ok && tries<12);
-  if(!ok) return;
+  let ang=atAng, ring=atRing;
+  if(ang==null || ring==null){
+    let tries=0, ok=false;
+    do{
+      ring = atRing!=null ? atRing : Math.floor(rnd()*NUM_RINGS);
+      ang = atAng!=null ? atAng : normAng(player.ang + 1.5 + rnd()*3.0);
+      ok=true;
+      for(const it of items){
+        if(!it.alive || it.expiring || it.ring!==ring) continue;
+        if(Math.abs(angDiff(it.ang,ang))<MIN_GAP){ ok=false; break; }
+      }
+      tries++;
+    } while(!ok && tries<12);
+    if(!ok) return false;
+  }
   let type; let r=rnd();
   if(session.luckyCharges>0 && r<hazChance){ session.luckyCharges--; r=hazChance; }
   if(r < hazChance){
@@ -147,7 +166,7 @@ function spawnItem(atAng){
   else if(r < hazChance+0.25) type='gold';
   else type='star';
   items.push({ang, ring, type, alive:true, pop:0, expiring:false, prevFwd:null,
-    jumpT: type==='hazardJump' ? 70+Math.random()*60 : 0,
+    jumpT: type==='hazardJump' ? 70+rnd()*60 : 0,
     pulsePhase: type==='hazardPulse' ? rnd()*Math.PI*2 : 0, pulseDanger:false,
     // Not: oyuncu geç oyunda (bu tip skor 2000+'da açılıyor) halkayı çok
     // hızlı katlediyor; birkaç saniyelik bir gecikme çoğu zaman öğe zaten
@@ -158,6 +177,84 @@ function spawnItem(atAng){
     const otherRings=[0,1,2].filter(x=>x!==ring);
     const decoyRing=otherRings[Math.floor(rnd()*otherRings.length)];
     items.push({ang, ring:decoyRing, type:'hazardTwinDecoy', alive:true, pop:0, expiring:false, prevFwd:null, jumpT:0});
+  }
+  return true;
+}
+
+// ---- Akış (spawn) yönetimi: yoğunluk temelli, halka dengeleyen -------
+// Eski sistem sadece bir zamanlayıcıyla, SÜREYE bağlı olarak, TAMAMEN
+// rastgele bir halkaya tek bir öğe koyuyordu. Bunun somut sonuçları:
+//  1) Halka seçimi dengesizdi — şans eseri art arda hep aynı halkaya
+//     düşebiliyordu ("hep en alt halkada dolanıp geçtim" şikayeti).
+//  2) Çakışma kontrolü SADECE aynı halkadaki öğelere bakıyordu — farklı
+//     halkalarda tam aynı açıda iki öğe (örn. kalkan + canavar) rahatça
+//     üst üste binebiliyordu.
+//  3) Zamanlayıcı SÜREYE bağlıydı, topun dönme hızına değil — top
+//     hızlanınca (bkz. comboSpeedBonus) birim açı başına düşen öğe
+//     yoğunluğu görünmez şekilde SEYRELİYORDU; ayrıca şans eseri önde
+//     "boş" bir alan varsa bir sonraki spawn'a kadar hiçbir şey olmuyordu.
+//
+// Yeni sistem oyuncunun ÖNÜNDEKİ (LOOKAHEAD radyan) pencereyi her karede
+// izler, o pencerede HALKA BAZINDA kaç öğe olduğunu sayar, hedef
+// yoğunluğun altındaysa EN BOŞ halkaya, tüm halkalara göre çakışmasız bir
+// açıya yeni bir öğe yerleştirir. Pencere AÇISAL olduğu için top
+// hızlanınca pencere daha çabuk "tükeniyor" — sistem otomatik olarak
+// daha sık spawn ediyor; yani akış hızı topun dönme hızına doğal olarak
+// bağlı (ek olarak izin verilen en kısa spawn aralığı da doğrudan
+// player.speed'e göre kısalıyor, bkz. updateSpawns). Hedef yoğunluğa
+// ayrıca yavaş bir sinüs dalgası binmiş durumda (targetDensity) — bu da
+// kör rastgeleliğe bırakmak yerine KASITLI, tasarlanmış yoğun/sakin anlar
+// (refleks testi / nefes alma) yaratıyor; "bazen sinirlendirip bazen
+// keyif verme" hissi buradan geliyor.
+const LOOKAHEAD = 3.2;        // oyuncunun önünde izlenen açısal pencere (radyan)
+const CROSS_RING_GAP = 0.30;  // farklı halkalardaki öğeler arası minimum açı — tam üst üste binmesinler
+function targetDensity(){
+  if(mode==='zen') return 2.4; // zen'de tehlike yok, toplanacak şey hep bulunsun
+  const base = 2.6 + Math.min(1.6, elapsed*0.00035);  // zamanla hafifçe artan taban
+  const wave = Math.sin(elapsed*0.012) * 0.9;         // ~9 saniyelik yoğun/sakin nabzı
+  return Math.max(1.5, base + wave);
+}
+function itemsAheadByRing(){
+  const perRing=[0,0,0]; let total=0;
+  for(const it of items){
+    if(!it.alive || it.expiring) continue;
+    const fwd = normAng(it.ang-player.ang);
+    if(fwd < LOOKAHEAD){ perRing[it.ring]++; total++; }
+  }
+  return {perRing, total};
+}
+function trySpawnOnRing(ring){
+  let ang, tries=0, ok=false;
+  do{
+    ang = normAng(player.ang + 1.2 + rnd()*(LOOKAHEAD-1.0));
+    ok = true;
+    for(const it of items){
+      if(!it.alive || it.expiring) continue;
+      const gap = Math.abs(angDiff(it.ang, ang));
+      if(it.ring===ring){ if(gap<MIN_GAP){ ok=false; break; } }
+      else if(gap<CROSS_RING_GAP){ ok=false; break; } // farklı halkada da tam üst üste binmesin
+    }
+    tries++;
+  } while(!ok && tries<10);
+  if(!ok) return false;
+  return spawnItem(ang, ring);
+}
+function updateSpawns(dt){
+  spawnCooldown -= dt;
+  if(spawnCooldown>0) return;
+  const {perRing, total} = itemsAheadByRing();
+  if(total >= targetDensity()) return;
+  // En boş halkayı önce dene (yığılmayı önler); eşit doluluklarda
+  // rastgele sırayla (önce karıştır, SONRA doluluğa göre kararlı sırala —
+  // sort() içinde rnd() çağırmak yanlış/kararsız sonuç verirdi).
+  const order=[0,1,2];
+  for(let i=order.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [order[i],order[j]]=[order[j],order[i]]; }
+  order.sort((a,b)=>perRing[a]-perRing[b]);
+  for(const ring of order){
+    if(trySpawnOnRing(ring)){
+      spawnCooldown = Math.max(3, 7/(player.speed/1.5));
+      return;
+    }
   }
 }
 
@@ -240,12 +337,9 @@ function update(dt){
   if(player.ghostT>0) player.ghostT-=dt;
   const mult = (player.multT>0 ? 2 : 1) * (diffCfg.scoreMult||1);
 
-  // Boss dalgası sürerken normal rastgele spawn duraklar — "stage" temiz
-  // kalsın, dalganın öğeleriyle karışıp okunaksızlaşmasın.
-  if(!bossActive){
-    spawnTimer-=dt;
-    if(spawnTimer<=0){ spawnItem(); spawnTimer=Math.max(14, 40 - elapsed*0.011); }
-  }
+  // Boss dalgası sürerken normal akış duraklar — "stage" temiz kalsın,
+  // dalganın öğeleriyle karışıp okunaksızlaşmasın.
+  if(!bossActive) updateSpawns(dt);
 
   for(const it of items){
     if(!it.alive) continue;
