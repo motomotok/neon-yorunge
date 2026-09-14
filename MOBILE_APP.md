@@ -289,10 +289,10 @@ Bu bölüm kod değil, **Play Console'da elle doldurman gereken formlar** için
 hazır cevaplar içerir.
 
 ### Gizlilik Politikası URL'si
-`www/privacy.html` GitHub Pages'te şu adreste yayında (kontrol edildi, 200 dönüyor):
-`https://motomotok.github.io/neon-yorunge/www/privacy.html`
-(Pages kök dizinden yayın yaptığı için `/www/` segmenti URL'de olmak ZORUNDA —
-`/privacy.html` doğrudan 404 verir.) Bu URL'yi
+`www/privacy.html` şu adreste yayında (kontrol edildi, 200 dönüyor):
+`https://paslagame.com.tr/privacy.html`
+(GitHub Pages artık www/ klasörünü GitHub Actions ile doğrudan kök olarak
+yayınlıyor — `/www/` segmenti URL'de YOK.) Bu URL'yi
 Play Console → App content → Privacy policy alanına yapıştır. Sayfa hem
 Türkçe KVKK aydınlatma metni hem İngilizce özet içerir, iletişim adresi
 `paslagameinfo@gmail.com`. Aynı sayfa uygulama içinde Ayarlar →

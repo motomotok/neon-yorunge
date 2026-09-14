@@ -76,7 +76,7 @@ Oyun → Arcade (Games → Arcade)
 paslagameinfo@gmail.com
 
 ## Gizlilik Politikası URL'si
-https://motomotok.github.io/neon-yorunge/www/privacy.html
+https://paslagame.com.tr/privacy.html
 
 ## Grafik varlıkları
 - Uygulama ikonu (512×512): `www/icons/icon-512.png`

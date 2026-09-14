@@ -2,7 +2,7 @@
 
 Tek dosyalık, tarayıcıda çalışan bir refleks/arcade oyunu. Kurulum yok, sunucu yok — iPad, telefon veya bilgisayarda aç, oyna. Artık PWA olarak ana ekrana da eklenebilir.
 
-🎮 **Oyna:** https://motomotok.github.io/neon-yorunge/
+🎮 **Oyna:** https://paslagame.com.tr/
 
 ## Nasıl oynanır?
 
