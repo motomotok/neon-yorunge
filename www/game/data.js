@@ -1,6 +1,13 @@
 // Oyun verisi: temalar, kozmetikler, mağaza kilitleri, ayarlar/istatistik
 // kalıcılığı (localStorage), zorluk tabloları, seed'li RNG, günlük görevler,
 // başarımlar ve yıldız tozu (coin) ekonomisi.
+
+// Ana menüde küçük bir etiket olarak gösterilir (bkz. main.js) — bir
+// güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
+// görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
+// küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
+const GAME_VERSION = '1.1.0';
+
 const THEMES = {
   neon:      {name:'Neon',       star:'#54e0ff', gold:'#ffd24a', peril:'#ff4d6d', player:'#a97bff', sun:'#8ad8ff', bg0:'#05060f', bg1:'#0b0f2a', sf:'#9fb8ff', gate:{type:'free'}},
   sunset:    {name:'Gün Batımı', star:'#ff9e64', gold:'#ffd93d', peril:'#ff2e63', player:'#ff6bd6', sun:'#ffb37b', bg0:'#160a14', bg1:'#2a0f24', sf:'#ffd0b0', gate:{type:'free'}},

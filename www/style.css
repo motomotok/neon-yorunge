@@ -210,6 +210,9 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
   box-shadow:0 0 22px rgba(255,210,74,.5);animation:pop .4s ease;}
 @keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
 .muted{opacity:.65;font-size:14px;letter-spacing:.5px;}
+/* Ana menüdeki küçük sürüm etiketi — bir güncelleme push edildiğinde
+   gerçekten cihaza yansıyıp yansımadığını görsel olarak doğrulamak için. */
+.versionTag{opacity:.35;font-size:10.5px;letter-spacing:1px;margin-top:2px;font-family:var(--font-ui);}
 
 #hud{position:fixed;inset:0;z-index:10;pointer-events:none;display:none;}
 #hud.show{display:block;}

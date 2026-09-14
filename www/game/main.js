@@ -1,6 +1,7 @@
 // Bootstrap: tüm modüller yüklendikten sonra tek seferlik başlatma çağrıları.
 // Bu dosya her zaman script sırasının EN SONUNDA yer almalı.
 hydrateIcons();
+document.getElementById('versionTag').textContent = 'v'+GAME_VERSION;
 resize(); initStars(); applyTheme(cfg.theme); applyAccessibility(); ensureTodayQuest(); handleDailyReturn(); resetGame(); renderThemeGrid(); goMenu();
 Ads.init();
 syncAdButtons();
