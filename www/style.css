@@ -332,6 +332,31 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
 .tutLabel{font-family:var(--font-ui);font-size:10.5px;font-weight:800;letter-spacing:1px;
   color:#fff;background:rgba(0,0,0,.45);padding:3px 10px;border-radius:999px;white-space:nowrap;}
 
+/* İlk-oyun rehberli tutorial'ı: mesaj kutusu, hedef vurgulama, kapanış ekranı. */
+#tutorialBox{position:fixed;top:calc(env(safe-area-inset-top) + 68px);left:50%;
+  transform:translateX(-50%) translateY(-10px);z-index:40;max-width:min(340px,86vw);width:100%;
+  background:rgba(10,14,30,.94);border:1px solid rgba(255,255,255,.16);border-radius:18px;
+  padding:16px 20px 14px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;
+  opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;
+  box-shadow:0 14px 34px rgba(0,0,0,.5);}
+#tutorialBox.show{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0);}
+#tutorialBoxMsg{font-size:14.5px;font-weight:700;line-height:1.4;}
+#tutorialSkipBtn{position:absolute;top:6px;right:10px;background:none;border:none;color:#8f97b5;
+  font-size:11px;font-weight:600;cursor:pointer;padding:4px 6px;text-decoration:underline;}
+
+.tutorialTarget{position:relative;z-index:41;outline:3px solid var(--star);outline-offset:3px;
+  border-radius:16px;animation:tutorialTargetPulse 1.1s ease-in-out infinite;}
+@keyframes tutorialTargetPulse{0%,100%{box-shadow:0 0 0 0 rgba(84,224,255,.55);}50%{box-shadow:0 0 0 10px rgba(84,224,255,0);}}
+.tutorialDim{opacity:.3;pointer-events:none;filter:grayscale(.5);transition:opacity .2s;}
+
+#tutorialOutro{position:fixed;inset:0;z-index:42;display:none;align-items:center;justify-content:center;
+  flex-direction:column;gap:24px;background:radial-gradient(120% 90% at 50% 30%, rgba(20,24,60,.85), rgba(5,6,15,.97));
+  padding:20px;text-align:center;}
+#tutorialOutro.show{display:flex;}
+.tutorialOutroLine{font-family:var(--font-display);font-weight:800;font-size:clamp(22px,7vw,32px);letter-spacing:.5px;
+  background:linear-gradient(90deg,var(--star),var(--player));-webkit-background-clip:text;background-clip:text;color:transparent;
+  max-width:320px;line-height:1.3;text-shadow:0 0 30px rgba(120,180,255,.3);}
+
 #toast{position:fixed;top:calc(env(safe-area-inset-top) + 14px);left:50%;
   transform:translate(-50%,-140%);background:rgba(10,14,30,.94);border:1px solid rgba(255,255,255,.15);
   padding:11px 20px;border-radius:999px;font-weight:700;font-size:13px;z-index:30;

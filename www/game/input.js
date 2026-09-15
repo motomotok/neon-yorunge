@@ -28,8 +28,18 @@ document.querySelectorAll('#statsTabs .stab').forEach(el=>{
 document.querySelectorAll('[data-go]').forEach(b=>{
   b.addEventListener('click', e=>{ e.stopPropagation();
     const g=b.dataset.go;
+    // Tutorial sırasında bir sonraki adımın beklediği hedeften başka bir
+    // yere gidilmesini engeller (ör. Yetenekler'e dokunması beklenirken
+    // Ana Menü'ye tıklanması) — script'in dışına çıkılamaz.
+    if(tutorialActive && typeof tutorialExpectedNav==='function'){
+      const expected=tutorialExpectedNav();
+      if(expected && g!==expected){ if(typeof tutorialNudge==='function') tutorialNudge(); return; }
+    }
     if(g==='mode') goMode();
-    else if(g==='quickstart') startGame('classic','normal');
+    else if(g==='quickstart'){
+      if(!stats.tutorialDone && typeof startTutorial==='function') startTutorial();
+      else startGame('classic','normal');
+    }
     else if(g==='menu') goMenu();
     else if(g==='howto') goHowto();
     else if(g==='settings') goSettings();
@@ -48,6 +58,8 @@ document.getElementById('reviveSkipBtn').addEventListener('click', e=>{ e.stopPr
 document.getElementById('resumeBtn').addEventListener('click', e=>{ e.stopPropagation(); resumeGame(); });
 document.getElementById('zenFinishBtn').addEventListener('click', e=>{ e.stopPropagation(); gameOver('zen'); });
 document.getElementById('pauseBtn').addEventListener('click', e=>{ e.stopPropagation(); pauseGame(); });
+document.getElementById('tutorialSkipBtn').addEventListener('click', e=>{ e.stopPropagation(); if(typeof tutorialSkip==='function') tutorialSkip(); });
+document.getElementById('tutorialOutroBtn').addEventListener('click', e=>{ e.stopPropagation(); if(typeof tutorialStartRealGame==='function') tutorialStartRealGame(); });
 document.getElementById('soundSw').addEventListener('click', ()=>{ cfg.sound=!cfg.sound; saveCfg(); syncSettings(); if(cfg.sound) beep(700,0.08,'sine',0.12); });
 document.getElementById('bigSw').addEventListener('click', ()=>{ cfg.bigButtons=!cfg.bigButtons; saveCfg(); applyAccessibility(); syncSettings(); beep(600,0.06,'sine',0.1); });
 document.getElementById('handSw').addEventListener('click', ()=>{ cfg.leftHand=!cfg.leftHand; saveCfg(); applyAccessibility(); syncSettings(); beep(600,0.06,'sine',0.1); });

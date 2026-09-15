@@ -256,6 +256,9 @@ function trySpawnOnRing(ring){
   return spawnItem(ang, ring);
 }
 function updateSpawns(dt){
+  // Tutorial kendi öğelerini elle (tutorial.js) sahneye koyuyor — normal
+  // rastgele spawn tamamen susturulur, senaryo hiç bozulmasın.
+  if(tutorialActive) return;
   spawnCooldown -= dt;
   if(spawnCooldown>0) return;
   const {perRing, total} = itemsAheadByRing();
@@ -275,11 +278,16 @@ function updateSpawns(dt){
 }
 
 function tap(x){
+  // Tutorial'ın coin/tehlike adımlarında (senaryo öğesi oyuncunun O ANKİ
+  // halkasına göre yerleştirildiği için) halka değiştirmek öğeyi
+  // kaçırmasına yol açar — bu adımlarda dokunma geçici olarak devre dışı.
+  if(tutorialActive && typeof tutorialTapAllowed==='function' && !tutorialTapAllowed()) return;
   const goOut = x >= W/2;
   const next = player.targetRing + (goOut ? 1 : -1);
   if(next < 0 || next > NUM_RINGS-1) return;
   player.targetRing = next;
   beep(goOut?620:420,0.07,'triangle',0.10);
+  if(tutorialActive && typeof tutorialOnTap==='function') tutorialOnTap(goOut);
 }
 
 function burst(x,y,color,n,spd){
@@ -405,7 +413,11 @@ function update(dt){
         if(!sameRing) continue;
         if(it.type==='hazardPulse' && !it.pulseDanger) continue;
         if(player.ghostT>0){ it.alive=false; burst(ix,iy,'#ffffff',10,3); continue; }
-        if(player.invulT<=0){ it.alive=false; hitHazard(ix,iy,it.type); if(state!=='play') return; }
+        if(player.invulT<=0){
+          it.alive=false;
+          if(it.tutorialTag && typeof tutorialOnItemResolved==='function') tutorialOnItemResolved(it.tutorialTag);
+          hitHazard(ix,iy,it.type); if(state!=='play') return;
+        }
       } else { // hazardTwinDecoy
         if(sameRing){ it.alive=false; burst(ix,iy,'#ffb27a',10,3); beep(300,0.05,'sine',0.06); }
       }
@@ -451,6 +463,7 @@ function update(dt){
         if(mode!=='zen') addStardust(gained);
         session.coins+=gained; session.coinPickups++;
         burst(ix,iy,'#ffb454',18,4.5); shake=4; beep(950,0.08,'triangle',0.13); beep(1400,0.06,'sine',0.1);
+        if(it.tutorialTag && typeof tutorialOnItemResolved==='function') tutorialOnItemResolved(it.tutorialTag);
       }
       else { activatePower(it.type,ix,iy); }
     }
@@ -498,7 +511,11 @@ function hitHazard(ix,iy,subtype){
   hp = Math.max(0, hp-dmg); combo=1; shake=Math.min(20, 8+dmg*1.2); flash=1; session.hits++;
   burst(ix,iy,T.peril,34,6); beep(120,0.4,'sawtooth',0.2,true); beep(80,0.5,'square',0.15,true); vibrate([40,30,40]);
   if(hp<=0){
-    if(mode!=='zen' && !session.revivedUsed) offerRevive();
+    // Tutorial'da ölüm senaryonun bir parçası — reklamlı "devam et" ekranı
+    // (offerRevive) akışı kesip 6 saniyelik bir bekleme dayatır, bu yüzden
+    // tutorial sırasında doğrudan oyun-sonuna gidilir.
+    if(tutorialActive) gameOver();
+    else if(mode!=='zen' && !session.revivedUsed) offerRevive();
     else gameOver();
   }
   else { player.invulT=INVUL; beep(220,0.15,'square',0.1,true); }

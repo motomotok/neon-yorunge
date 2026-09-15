@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '1.4.7';
+const GAME_VERSION = '1.5.0';
 
 const THEMES = {
   neon:      {name:'Neon',       star:'#54e0ff', gold:'#ffd24a', peril:'#ff4d6d', player:'#a97bff', sun:'#8ad8ff', bg0:'#05060f', bg1:'#0b0f2a', sf:'#9fb8ff', gate:{type:'free'}},
@@ -228,6 +228,7 @@ let stats = load('neonYorungeStats', {
   seasonKey:'', seasonXp:0, seasonPremium:false,
   seasonClaimedFree:[], seasonClaimedPremium:[],
   upgrades:{hp:0, coinPct:0, itemCoin:0, boostDur:0, shieldPower:0, multPower:0},
+  tutorialDone:false,
 });
 function load(k,def){ try{ return Object.assign({}, def, JSON.parse(localStorage.getItem(k)||'{}')); }catch(e){ return def; } }
 function saveCfg(){ try{ localStorage.setItem('neonYorungeCfg', JSON.stringify(cfg)); }catch(e){} }

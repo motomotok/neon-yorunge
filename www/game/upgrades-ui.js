@@ -10,7 +10,7 @@ function renderUpgrades(){
   grid.innerHTML='';
   Object.keys(META_UPGRADES).forEach(key=>{
     const track=META_UPGRADES[key], lvl=upgradeLevel(key), tier=nextUpgradeTier(key);
-    const card=document.createElement('div'); card.className='shopCard boostCard';
+    const card=document.createElement('div'); card.className='shopCard boostCard'; card.dataset.key=key;
     const curText = lvl>0 ? track.format(upgradeBonus(key)) : 'Henüz alınmadı';
     const nextText = tier
       ? `Sıradaki: ${track.format(tier.add)}`
@@ -29,6 +29,7 @@ function renderUpgrades(){
           queueToast('✅ '+track.name+' yükseltildi! ('+(lvl+1)+'/8)');
           beep(700,0.1,'sine',0.13); beep(1000,0.1,'triangle',0.12);
           renderUpgrades();
+          if(tutorialActive && typeof tutorialOnUpgradeBought==='function') tutorialOnUpgradeBought(key);
         }
       });
     }
