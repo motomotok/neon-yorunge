@@ -46,16 +46,20 @@ function tutorialStepAwaitRight(){
   tutorialShow('Şimdi SAĞ tarafa dokun, dış halkaya geç.');
   tutorialShowTapHint('right');
 }
+// Öğeler oyuncunun O ANKİ açısının TAM KARŞISINA (180°) yerleştiriliyor —
+// oyuncu orb'un yörüngede süzülüp öğeye ulaşmasını rahatça izlesin diye
+// (eskiden ~30° idi, çok hızlı/ani oluyordu — bkz. kullanıcı geri bildirimi).
+const TUTORIAL_ITEM_DIST = Math.PI;
 function tutorialStepCoin(){
-  tutorialShow('Önündeki yıldız tozunu topla!');
-  items.push({ang: normAng(player.ang+0.55), ring: player.targetRing, type:'coin', alive:true, pop:0,
+  tutorialShow('Karşıdaki yıldız tozuna doğru süzül ve topla!');
+  items.push({ang: normAng(player.ang+TUTORIAL_ITEM_DIST), ring: player.targetRing, type:'coin', alive:true, pop:0,
     expiring:false, prevFwd:null, jumpT:0, pulsePhase:0, pulseDanger:false, creepT:0, creeped:false,
     tutorialTag:'coin'});
 }
 function tutorialStepHazard(){
-  tutorialShow('Dikkat, bir tehlike geliyor!');
+  tutorialShow('Dikkat, karşıdan bir tehlike geliyor!');
   hp = 1; // Ölümü öğretmek için bilinçli müdahale — tek vuruşta oyun sonu garanti olsun diye.
-  items.push({ang: normAng(player.ang+0.55), ring: player.targetRing, type:'hazard', alive:true, pop:0,
+  items.push({ang: normAng(player.ang+TUTORIAL_ITEM_DIST), ring: player.targetRing, type:'hazard', alive:true, pop:0,
     expiring:false, prevFwd:null, jumpT:0, pulsePhase:0, pulseDanger:false, creepT:0, creeped:false,
     tutorialTag:'hazard'});
 }
