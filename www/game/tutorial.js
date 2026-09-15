@@ -17,6 +17,11 @@ function startTutorial(){
   // böylece hem SOL (1→0) hem SAĞ (0→1) geçerli birer hamle oluyor.
   player.targetRing = 1; player.curRadius = radiusFor(1);
   state='play'; setHud(true); showScreen(null);
+  // Duraklat butonu üzerinden Ayarlar/Duraklat ekranına, oradan da "ANA
+  // MENÜ"ye kaçılıp tutorial'ın script dışına çıkması mümkündü (kendi
+  // kendine iyileşiyordu ama temiz değildi) — oynanış adımları boyunca
+  // duraklat butonu tamamen kaldırılıyor, tutorialFinish() geri getiriyor.
+  tutorialHideEl(document.getElementById('pauseBtn'));
   tutorialGoStep('intro');
 }
 
@@ -72,6 +77,10 @@ function tutorialStepGameOver(){
 }
 function tutorialStepBuyHp(){
   addStardust(240); // Can Kapasitesi'nin 1. kademesi tam bu kadar — ilk yeteneğini açabilsin diye küçük bir hoşgeldin hediyesi.
+  // "Gelişmeyi Sıfırla" bu ekranda satın alma kartlarının DIŞINDA (screenFoot'ta)
+  // durduğu için spotlight/dim kapsamına girmiyordu — oyuncu ona basarsa
+  // az önce verilen hediye stardust'ı sıfırlayıp adımı tıkanmaya sokabilirdi.
+  tutorialHideEl(document.getElementById('resetProgressBtn'));
   const cards=[...document.querySelectorAll('#upgradesGrid .shopCard')];
   const hpCard=cards.find(c=>c.dataset.key==='hp');
   cards.forEach(c=>{ if(c!==hpCard) tutorialDim(c); });
@@ -79,7 +88,6 @@ function tutorialStepBuyHp(){
   tutorialShow('İlk kalıcı yeteneğini aç: Can Kapasitesi!');
 }
 function tutorialStepBackToMenu(){
-  tutorialHideEl(document.getElementById('resetProgressBtn'));
   tutorialSpotlight(document.querySelector('#screen-upgrades [data-go="menu"]'));
   tutorialShow('Harika! Şimdi geri dön.');
 }
@@ -122,7 +130,7 @@ function tutorialNudge(){
 
 function tutorialFinish(){
   tutorialActive=false; tutorialStep=null;
-  tutorialClearSpotlight(); tutorialHide(); tutorialHideTapHint();
+  tutorialClearSpotlight(); tutorialRestoreHidden(); tutorialHide(); tutorialHideTapHint();
   const el=document.getElementById('tutorialOutro'); if(el) el.classList.remove('show');
   stats.tutorialDone=true; saveStats();
 }

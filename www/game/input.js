@@ -125,10 +125,17 @@ window.addEventListener('keydown', e=>{
     if(state==='play') tap(0);
   } else if(e.code==='Space'){
     e.preventDefault();
+    // Ok tuşları tap() üzerinden geçtiği için tutorial'ın kendi koruması
+    // (tutorialTapAllowed) zaten devrede; ama SPACE/P/Escape doğrudan
+    // startGame()/goMode()/pauseGame() çağırıyor — bunlar tutorial'ın
+    // dispatcher korumasından geçmiyor, script dışına çıkılabilir
+    // (ör. oyun-sonu adımında SPACE'e basılırsa gerçek bir oyun başlardı).
+    if(tutorialActive) return;
     if(state==='menu') goMode();
     else if(state==='over') startGame();
     else if(state==='pause') resumeGame();
   } else if(e.code==='KeyP' || e.code==='Escape'){
+    if(tutorialActive) return;
     if(state==='play') pauseGame(); else if(state==='pause') resumeGame();
   }
 });
