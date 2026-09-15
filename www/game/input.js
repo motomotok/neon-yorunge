@@ -64,7 +64,7 @@ document.querySelectorAll('.toggleGrid .toggle').forEach(row=>{
 document.getElementById('resetProgressBtn').addEventListener('click', ()=>{
   showPurchaseConfirm('replay', 'Gelişmeyi Sıfırla', null, ()=>{
     resetProgression(); renderUpgrades();
-    queueToast('🔄 Yükseltmeler ve yıldız tozu sıfırlandı — baştan güçlenebilirsin!');
+    queueToast('🔄 Yetenekler ve yıldız tozu sıfırlandı — baştan güçlenebilirsin!');
     beep(300,0.15,'square',0.12);
   }, 'Tüm yükseltme kademelerin ve yıldız tozu bakiyen sıfırlanacak. İstatistiklerine (en iyi skor, başarımlar, sahip olduğun kozmetikler vb.) dokunulmaz. Emin misin?');
 });
