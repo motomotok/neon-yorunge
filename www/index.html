@@ -190,7 +190,6 @@
       <div class="card" id="leagueCard" style="display:none"><b><i class="gicon" data-icon="flag"></i> Rakipler Ligi</b><div id="leagueList"></div></div>
     </div>
     <div class="screenFoot">
-      <button class="btn alt small" id="resetStats">İstatistikleri Sıfırla</button>
       <button class="btn alt small" data-go="menu"><i class="gicon" data-icon="back"></i> Geri</button>
     </div>
   </div>
@@ -205,6 +204,7 @@
       <div class="shopGrid" id="upgradesGrid"></div>
     </div>
     <div class="screenFoot">
+      <button class="btn alt small" id="resetProgressBtn"><i class="gicon" data-icon="replay"></i> Gelişmeyi Sıfırla</button>
       <button class="btn alt small" data-go="menu"><i class="gicon" data-icon="back"></i> Geri</button>
     </div>
   </div>
@@ -290,7 +290,7 @@
   <div class="card" style="max-width:300px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center;">
     <div id="pcIcon" style="font-size:34px;"></div>
     <div id="pcName" style="font-size:15px;font-weight:800;"></div>
-    <div class="sub" style="margin:0">Satın almak istiyor musun?</div>
+    <div class="sub" id="pcMessage" style="margin:0">Satın almak istiyor musun?</div>
     <div id="pcPrice" style="font-size:18px;font-weight:800;color:#ffd28a;"></div>
     <div class="row2" style="margin-top:4px">
       <button class="btn small" id="pcYesBtn"><i class="gicon" data-icon="check"></i> Evet</button>

@@ -61,10 +61,12 @@ document.querySelectorAll('.toggleGrid .toggle').forEach(row=>{
     const sw=row.querySelector('.sw'); if(sw) sw.click();
   });
 });
-document.getElementById('resetStats').addEventListener('click', ()=>{
-  stats={best:0,stars:0,games:0,maxLevel:1,magnets:0,golds:0,diamonds:0,unlocked:[],leaderboard:[],
-    dailyDate:'',dailyDone:false,dailyScore:0,dailyCount:0,questDate:'',questId:'',questDone:false};
-  saveStats(); syncStats(); beep(300,0.15,'square',0.12);
+document.getElementById('resetProgressBtn').addEventListener('click', ()=>{
+  showPurchaseConfirm('replay', 'Gelişmeyi Sıfırla', null, ()=>{
+    resetProgression(); renderUpgrades();
+    queueToast('🔄 Yükseltmeler ve yıldız tozu sıfırlandı — baştan güçlenebilirsin!');
+    beep(300,0.15,'square',0.12);
+  }, 'Tüm yükseltme kademelerin ve yıldız tozu bakiyen sıfırlanacak. İstatistiklerine (en iyi skor, başarımlar, sahip olduğun kozmetikler vb.) dokunulmaz. Emin misin?');
 });
 document.getElementById('pcYesBtn').addEventListener('click', e=>{ e.stopPropagation();
   const cb=pendingPurchase; hidePurchaseConfirm(); if(cb) cb();

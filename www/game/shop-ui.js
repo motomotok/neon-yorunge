@@ -152,11 +152,18 @@ function renderDealBanner(){
 }
 
 let pendingPurchase = null;
-function showPurchaseConfirm(iconKey, name, price, onYes){
+// price=null olursa fiyat satırı gizlenir ve varsayılan "Satın almak
+// istiyor musun?" yerine `message` kullanılır — bu diyalog satın almanın
+// yanı sıra genel "emin misin?" onayları için de (bkz. resetProgression)
+// kullanılabilsin diye.
+function showPurchaseConfirm(iconKey, name, price, onYes, message){
   pendingPurchase = onYes;
   document.getElementById('pcIcon').innerHTML = icon(iconKey);
   document.getElementById('pcName').textContent = name;
-  document.getElementById('pcPrice').innerHTML = icon('coin')+' '+price;
+  document.getElementById('pcMessage').textContent = message || 'Satın almak istiyor musun?';
+  const priceEl=document.getElementById('pcPrice');
+  if(price==null){ priceEl.style.display='none'; }
+  else { priceEl.style.display='block'; priceEl.innerHTML = icon('coin')+' '+price; }
   document.getElementById('purchaseConfirmOverlay').style.display = 'flex';
   beep(500,0.05,'sine',0.08);
 }

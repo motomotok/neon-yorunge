@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '1.4.4';
+const GAME_VERSION = '1.4.5';
 
 const THEMES = {
   neon:      {name:'Neon',       star:'#54e0ff', gold:'#ffd24a', peril:'#ff4d6d', player:'#a97bff', sun:'#8ad8ff', bg0:'#05060f', bg1:'#0b0f2a', sf:'#9fb8ff', gate:{type:'free'}},
@@ -161,6 +161,15 @@ function shieldHitsFor(){ return 1+Math.floor(upgradeBonus('shieldPower')); }
 // seviyesi" karşılığı, ana menüde tek bakışta ilerlemeyi gösterir.
 function totalPowerLevel(){
   return Object.keys(META_UPGRADES).reduce((s,k)=>s+upgradeLevel(k), 0);
+}
+// Sadece kalıcı yükseltme sistemini (kademeler + yıldız tozu bakiyesi)
+// sıfırlar — oyuncu baştan güçlenmek isterse. İstatistikler (en iyi skor,
+// başarımlar, liderlik, toplam biriktirilen yıldız tozu, sahip olunan
+// kozmetikler/takviyeler, sezon ilerlemesi vb.) BİLEREK dokunulmadan kalır.
+function resetProgression(){
+  stats.upgrades = {hp:0, coinPct:0, itemCoin:0, boostDur:0, shieldPower:0, multPower:0};
+  stats.stardust = 0;
+  saveStats(); refreshWallet();
 }
 
 function isUnlockedItem(category, item){
