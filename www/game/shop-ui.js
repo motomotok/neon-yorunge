@@ -1,7 +1,6 @@
 // Ayarlar / mağaza / istatistik ekranlarının DOM render'ı ve satın alma
 // mantığı. Oyun fiziğine dokunmaz, sadece data.js'deki kataloglar ile
 // #screen-* elemanlarını senkronize eder.
-const MODE_LABEL = {classic:'Klasik', time:'Zaman', zen:'Zen', daily:'Günlük'};
 function syncSettings(){
   document.getElementById('soundSw').classList.toggle('on', cfg.sound);
   document.getElementById('bigSw').classList.toggle('on', cfg.bigButtons);
@@ -26,18 +25,18 @@ function syncPlayGamesUI(){
   }
   card.style.display='flex';
   if(row) row.classList.remove('single');
-  if(PlayGames.signedIn){ txt.innerHTML=icon('check')+' Bağlandın!'; btn.textContent='Skor Tablosu'; }
-  else { txt.innerHTML=icon('trophy')+' Play Games'; btn.textContent='Bağlan'; }
+  if(PlayGames.signedIn){ txt.innerHTML=icon('check')+' '+t('playgames_connected'); btn.textContent=t('playgames_leaderboard_btn'); }
+  else { txt.innerHTML=icon('trophy')+' '+t('playgames_label'); btn.textContent=t('playgames_connect'); }
 }
 function syncPremiumUI(price){
   const txt=document.getElementById('premiumStatusText');
   const btn=document.getElementById('premiumBuyBtn');
   if(!txt || !btn) return;
   if(stats.premiumNoAds){
-    txt.innerHTML=icon('check')+' Premium aktif!';
+    txt.innerHTML=icon('check')+' '+t('premium_active_short');
     btn.style.display='none';
   } else {
-    txt.innerHTML=icon('gem')+' Reklamsız Premium';
+    txt.innerHTML=icon('gem')+' '+t('premium_label');
     btn.style.display='inline-block';
     btn.textContent=price || (window.Premium ? Premium.FALLBACK_PRICE_TEXT : '49 TL');
   }
@@ -67,8 +66,9 @@ function renderRivalLeague(){
   ensureRivalLeague();
   el.innerHTML = stats.rivalLeague.map(r=>{
     const beaten = stats.best>=r.score;
+    const rn = cfg.lang==='tr' ? turkishAccusative(r.name) : r.name;
     return `<div class="row" style="${beaten?'opacity:.55':''}">
-      <span class="k">${beaten?icon('check'):icon('target')} ${turkishAccusative(r.name)} geç</span>
+      <span class="k">${beaten?icon('check'):icon('target')} ${t('rival_beat_row',{name:rn})}</span>
       <span class="v">${r.score}</span>
     </div>`;
   }).join('');
@@ -80,7 +80,7 @@ function renderSkins(){
     const d=document.createElement('div');
     d.className='skinDot'+(cfg.skin===sk.id?' sel':'')+(unlocked?'':' locked');
     d.style.background = sk.rainbow ? 'conic-gradient(from 0deg,#ff5e5e,#ffd24a,#5efc82,#54e0ff,#a97bff,#ff5e5e)' : sk.color;
-    d.title=sk.name;
+    d.title=t(sk.nameKey);
     d.addEventListener('click', ()=>onShopCardClick('skins', sk));
     grid.appendChild(d);
   });
@@ -92,21 +92,21 @@ function renderAchievements(){
     const unlocked=stats.unlocked.includes(a.id); if(unlocked) count++;
     const d=document.createElement('div');
     d.className='achItem'+(unlocked?' unlocked':'');
-    d.title=a.desc;
-    d.innerHTML=`<div class="ic">${icon(a.icon)}</div><div>${a.name}</div>`;
+    d.title=t(a.descKey);
+    d.innerHTML=`<div class="ic">${icon(a.icon)}</div><div>${t(a.nameKey)}</div>`;
     grid.appendChild(d);
   });
   document.getElementById('achCount').textContent=count;
 }
 function renderLeaderboard(){
   const el=document.getElementById('lbList');
-  if(!stats.leaderboard.length){ el.innerHTML='<div class="row"><span class="k">Henüz kayıt yok</span></div>'; return; }
-  el.innerHTML = stats.leaderboard.map(e=>`<div class="row"><span class="k">${e.date} · ${MODE_LABEL[e.mode]||e.mode}</span><span class="v">${e.score}</span></div>`).join('');
+  if(!stats.leaderboard.length){ el.innerHTML=`<div class="row"><span class="k">${t('no_records')}</span></div>`; return; }
+  el.innerHTML = stats.leaderboard.map(e=>`<div class="row"><span class="k">${e.date} · ${modeLabel(e.mode)}</span><span class="v">${e.score}</span></div>`).join('');
 }
 function refreshDailyStatus(){
-  const t=todayStr();
-  const done = stats.dailyDate===t && stats.dailyDone;
-  document.getElementById('dailyStatus').textContent = done ? ('Bugün oynadın · Skor: '+stats.dailyScore) : 'Herkes aynı düzen, tek deneme';
+  const td=todayStr();
+  const done = stats.dailyDate===td && stats.dailyDone;
+  document.getElementById('dailyStatus').textContent = done ? t('mode_daily_played',{score:stats.dailyScore}) : t('mode_daily_desc');
 }
 
 function refreshWallet(){
@@ -135,20 +135,20 @@ function purchase(category, item){
   if(item.gate.type!=='coin') return false;
   const price = effectivePrice(category, item);
   if(stats.stardust < price){
-    queueToast('🪙 Yetersiz Yıldız Tozu — '+(price-stats.stardust)+' eksik');
+    queueToast(t('insufficient_stardust',{n:price-stats.stardust}));
     beep(200,0.12,'square',0.1); return false;
   }
   stats.stardust -= price;
   stats.owned[category].push(item.id);
   saveStats(); refreshWallet();
-  queueToast('✅ '+item.name+' satın alındı!');
+  queueToast(t('purchased_toast',{name:t(item.nameKey)}));
   beep(700,0.1,'sine',0.13); beep(1000,0.1,'triangle',0.12);
   return true;
 }
 function renderDealBanner(){
   const el=document.getElementById('dealBanner'); if(!el) return;
   const deal=activeDeal();
-  el.innerHTML = deal ? (icon('flame')+' Günün Fırsatı: '+deal.item.name+' %'+Math.round(DEAL_DISCOUNT*100)+' indirimli!') : '';
+  el.innerHTML = deal ? (icon('flame')+' '+t('deal_banner',{name:t(deal.item.nameKey), pct:Math.round(DEAL_DISCOUNT*100)})) : '';
 }
 
 let pendingPurchase = null;
@@ -160,7 +160,7 @@ function showPurchaseConfirm(iconKey, name, price, onYes, message){
   pendingPurchase = onYes;
   document.getElementById('pcIcon').innerHTML = icon(iconKey);
   document.getElementById('pcName').textContent = name;
-  document.getElementById('pcMessage').textContent = message || 'Satın almak istiyor musun?';
+  document.getElementById('pcMessage').textContent = message || t('purchase_confirm_default');
   const priceEl=document.getElementById('pcPrice');
   if(price==null){ priceEl.style.display='none'; }
   else { priceEl.style.display='block'; priceEl.innerHTML = icon('coin')+' '+price; }
@@ -176,16 +176,16 @@ function onShopCardClick(category, item){
   const unlocked = isUnlockedItem(category, item);
   if(!unlocked){
     if(item.gate.type==='coin'){
-      showPurchaseConfirm('palette', item.name, effectivePrice(category,item), ()=>{
+      showPurchaseConfirm('palette', t(item.nameKey), effectivePrice(category,item), ()=>{
         if(purchase(category,item)) setEquipped(category, item.id);
         renderSkins(); renderThemeGrid(); syncShopIfOpen();
       });
     } else if(item.gate.type==='seasonpass'){
-      queueToast('🔒 '+item.name+' — Sezon Bileti ilerlemesiyle açılır. Sezon bitince bir daha alınamaz!');
+      queueToast(t('locked_seasonpass_toast',{name:t(item.nameKey)}));
       beep(200,0.1,'square',0.1);
     } else {
       const ach=ACHIEVEMENTS.find(a=>a.id===item.gate.id);
-      queueToast('🔒 '+item.name+' kilitli: '+(ach?ach.desc:''));
+      queueToast(t('locked_achievement_toast',{name:t(item.nameKey), desc:ach?t(ach.descKey):''}));
       beep(200,0.1,'square',0.1);
     }
   } else {
@@ -214,7 +214,7 @@ function updateEquippedBadges(category){
     const isEq = card.dataset.id===equippedId;
     card.classList.toggle('equipped', isEq);
     const priceEl=card.querySelector('.price');
-    if(priceEl) priceEl.innerHTML = isEq ? `${icon('check')} Takılı` : 'Sahip';
+    if(priceEl) priceEl.innerHTML = isEq ? `${icon('check')} ${t('equipped_badge')}` : t('owned_badge');
   });
 }
 
@@ -278,13 +278,13 @@ function renderShopGrid(category){
     }
     else if(!unlocked && item.gate.type==='achievement'){
       const ach=ACHIEVEMENTS.find(a=>a.id===item.gate.id);
-      priceHtml=`<div class="price lockreq">${icon('lock')} ${ach?ach.name:''}</div>`;
+      priceHtml=`<div class="price lockreq">${icon('lock')} ${ach?t(ach.nameKey):''}</div>`;
     } else if(!unlocked && item.gate.type==='seasonpass'){
       const sName = SEASONS.find(s=>s.id===item.gate.season);
-      priceHtml=`<div class="price lockreq">${icon('ticket')} ${sName?sName.name+' Ödülü':'Sezon Ödülü'}</div>`;
-    } else if(equipped) priceHtml=`<div class="price ok">${icon('check')} Takılı</div>`;
-    else priceHtml=`<div class="price ok">Sahip</div>`;
-    card.innerHTML = swatchHtml(category,item)+`<div class="cn">${item.name}</div>`+priceHtml;
+      priceHtml=`<div class="price lockreq">${icon('ticket')} ${sName?t('season_reward_badge',{name:t(sName.nameKey)}):t('season_reward_generic')}</div>`;
+    } else if(equipped) priceHtml=`<div class="price ok">${icon('check')} ${t('equipped_badge')}</div>`;
+    else priceHtml=`<div class="price ok">${t('owned_badge')}</div>`;
+    card.innerHTML = swatchHtml(category,item)+`<div class="cn">${t(item.nameKey)}</div>`+priceHtml;
     card.addEventListener('click', ()=>onShopCardClick(category,item));
     grid.appendChild(card);
   });
@@ -294,12 +294,12 @@ function renderBoostsShop(){
   BOOSTS.forEach(b=>{
     const owned=stats.boosts[b.id]||0;
     const card=document.createElement('div'); card.className='shopCard boostCard';
-    card.innerHTML = `<div class="boostIcon">${icon(b.icon)}</div><div class="cn">${b.name}</div><div class="bdesc">${b.desc}</div><div class="price">${icon('coin')} ${b.price}</div><div class="ownedTag">Envanter: ${owned}</div>`;
+    card.innerHTML = `<div class="boostIcon">${icon(b.icon)}</div><div class="cn">${t(b.nameKey)}</div><div class="bdesc">${t(b.descKey)}</div><div class="price">${icon('coin')} ${b.price}</div><div class="ownedTag">${t('inventory_label',{n:owned})}</div>`;
     card.addEventListener('click', ()=>{
-      if(stats.stardust<b.price){ queueToast('🪙 Yetersiz Yıldız Tozu'); beep(200,0.1,'square',0.1); return; }
-      showPurchaseConfirm(b.icon, b.name, b.price, ()=>{
+      if(stats.stardust<b.price){ queueToast(t('insufficient_stardust_short')); beep(200,0.1,'square',0.1); return; }
+      showPurchaseConfirm(b.icon, t(b.nameKey), b.price, ()=>{
         stats.stardust-=b.price; stats.boosts[b.id]=(stats.boosts[b.id]||0)+1; saveStats(); refreshWallet();
-        queueToast('✅ '+b.name+' envantere eklendi'); beep(700,0.1,'sine',0.13); beep(1000,0.1,'triangle',0.12);
+        queueToast(t('boost_bought_toast',{name:t(b.nameKey)})); beep(700,0.1,'sine',0.13); beep(1000,0.1,'triangle',0.12);
         renderBoostsShop();
       });
     });
@@ -315,7 +315,7 @@ function renderBoostRow(){
   row.innerHTML='';
   const noneChip=document.createElement('div');
   noneChip.className='diffChip'+(!pendingBoost?' sel':'');
-  noneChip.textContent='Yok';
+  noneChip.textContent=t('boost_none');
   noneChip.addEventListener('click', ()=>{ pendingBoost=null; renderBoostRow(); beep(400,0.05,'sine',0.08); });
   row.appendChild(noneChip);
   BOOSTS.forEach(b=>{
@@ -323,35 +323,35 @@ function renderBoostRow(){
     if(owned<=0) return;
     const chip=document.createElement('div');
     chip.className='diffChip'+(pendingBoost===b.id?' sel':'');
-    chip.textContent=b.icon+' '+b.name+' ×'+owned;
+    chip.textContent=b.icon+' '+t(b.nameKey)+' ×'+owned;
     chip.addEventListener('click', ()=>{ pendingBoost=b.id; renderBoostRow(); beep(400,0.05,'sine',0.08); });
     row.appendChild(chip);
   });
 }
 
 async function shareScore(){
-  const text=`Neon Yörünge'de ${score} puan yaptım! 🌌`;
+  const text=t('share_text',{score});
   if(navigator.share){
     try{ await navigator.share({title:'Neon Yörünge', text, url:location.href}); }catch(e){}
   } else if(navigator.clipboard){
-    try{ await navigator.clipboard.writeText(text+' '+location.href); queueToast('📋 Panoya kopyalandı'); }catch(e){ queueToast('Kopyalanamadı'); }
-  } else queueToast('Paylaşım desteklenmiyor');
+    try{ await navigator.clipboard.writeText(text+' '+location.href); queueToast(t('toast_share_copied')); }catch(e){ queueToast(t('toast_share_copy_failed')); }
+  } else queueToast(t('toast_share_unsupported'));
 }
 
 function renderThemeGrid(){
   const grid=document.getElementById('themeGrid'); grid.innerHTML='';
   Object.keys(THEMES).forEach(key=>{
-    const t=THEMES[key];
-    const item = Object.assign({id:key}, t);
+    const th=THEMES[key];
+    const item = Object.assign({id:key}, th);
     const unlocked = isUnlockedItem('themes', item);
     const d=document.createElement('div'); d.className='theme'+(!unlocked?' locked':''); d.dataset.key=key;
     const themeIsDeal = !unlocked && stats.dealCategory==='themes' && stats.dealId===key;
     const priceTag = !unlocked
       ? (themeIsDeal
-        ? `<div class="price" style="font-size:10.5px;color:#ffd28a;margin-top:2px">${icon('flame')} <s style="opacity:.6">${t.gate.price}</s> ${icon('coin')} ${effectivePrice('themes',item)}</div>`
-        : `<div class="price" style="font-size:10.5px;color:#ffd28a;margin-top:2px">${icon('coin')} ${t.gate.price}</div>`)
+        ? `<div class="price" style="font-size:10.5px;color:#ffd28a;margin-top:2px">${icon('flame')} <s style="opacity:.6">${th.gate.price}</s> ${icon('coin')} ${effectivePrice('themes',item)}</div>`
+        : `<div class="price" style="font-size:10.5px;color:#ffd28a;margin-top:2px">${icon('coin')} ${th.gate.price}</div>`)
       : '';
-    d.innerHTML=`<div class="swatch"><span style="background:${t.star}"></span><span style="background:${t.gold}"></span><span style="background:${t.peril}"></span><span style="background:${t.player}"></span></div><div class="tn">${t.name}</div>${priceTag}`;
+    d.innerHTML=`<div class="swatch"><span style="background:${th.star}"></span><span style="background:${th.gold}"></span><span style="background:${th.peril}"></span><span style="background:${th.player}"></span></div><div class="tn">${t(th.nameKey)}</div>${priceTag}`;
     d.addEventListener('click', ()=>onShopCardClick('themes', item));
     grid.appendChild(d);
   });

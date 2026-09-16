@@ -209,6 +209,17 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
 .swatch span{width:12px;height:12px;border-radius:50%;box-shadow:0 0 6px currentColor;}
 .theme .tn{font-size:11px;font-weight:700;line-height:1.2;letter-spacing:.2px;}
 
+.langGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:100%;margin-bottom:14px;}
+.langCard{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.015)) padding-box,
+      linear-gradient(160deg,var(--glass-brd-soft),transparent) border-box;
+  border:2px solid transparent;border-radius:14px;padding:10px 6px;cursor:pointer;
+  display:flex;flex-direction:column;gap:5px;align-items:center;
+  transition:border-color .15s, transform .12s, box-shadow .15s;}
+.langCard:active{transform:scale(.96);}
+.langCard.sel{border-color:var(--star);box-shadow:0 0 18px rgba(84,224,255,.35),0 0 0 1px rgba(84,224,255,.15) inset;}
+.langFlag{font-size:26px;line-height:1;}
+.langCard .langName{font-size:11px;font-weight:700;line-height:1.2;letter-spacing:.2px;text-align:center;}
+
 .toggle{display:flex;align-items:center;justify-content:space-between;width:100%;
   background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02)) padding-box,
       linear-gradient(160deg,var(--glass-brd-soft),transparent) border-box;

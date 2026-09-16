@@ -6,18 +6,18 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '1.5.2';
+const GAME_VERSION = '1.6.0';
 
 const THEMES = {
-  neon:      {name:'Neon',       star:'#54e0ff', gold:'#ffd24a', peril:'#ff4d6d', player:'#a97bff', sun:'#8ad8ff', bg0:'#05060f', bg1:'#0b0f2a', sf:'#9fb8ff', gate:{type:'free'}},
-  sunset:    {name:'Gün Batımı', star:'#ff9e64', gold:'#ffd93d', peril:'#ff2e63', player:'#ff6bd6', sun:'#ffb37b', bg0:'#160a14', bg1:'#2a0f24', sf:'#ffd0b0', gate:{type:'free'}},
-  matrix:    {name:'Matrix',     star:'#39ff14', gold:'#c6ff3b', peril:'#ff0055', player:'#00ffc3', sun:'#7dffb0', bg0:'#020a05', bg1:'#03160b', sf:'#7dff9f', gate:{type:'free'}},
-  ice:       {name:'Buz',        star:'#7fdbff', gold:'#eaf9ff', peril:'#ff5e78', player:'#4fc3ff', sun:'#bdecff', bg0:'#05101a', bg1:'#0a2033', sf:'#bfe6ff', gate:{type:'free'}},
-  vaporwave: {name:'Vaporwave',  star:'#ff6ec7', gold:'#7afcff', peril:'#ff2f6e', player:'#8a5fff', sun:'#ff9ee8', bg0:'#0f0620', bg1:'#1d0a3a', sf:'#c9a8ff', gate:{type:'coin', price:3200}},
-  gilded:    {name:'Altın Çağ',  star:'#ffe08a', gold:'#fff4c2', peril:'#ff5a3c', player:'#ffd24a', sun:'#fff6da', bg0:'#120d02', bg1:'#241a05', sf:'#ffe9a8', gate:{type:'coin', price:3200}},
-  void:      {name:'Kara Madde', star:'#c9c9ff', gold:'#8f8fff', peril:'#ff3d6b', player:'#4a3fff', sun:'#e0e0ff', bg0:'#020204', bg1:'#08060f', sf:'#8888aa', gate:{type:'coin', price:4000}},
-  inferno:   {name:'İnferno',    star:'#ffb454', gold:'#ffe08a', peril:'#ff2e2e', player:'#ff5a1f', sun:'#ffcf8a', bg0:'#170502', bg1:'#2c0a03', sf:'#ffb27a', gate:{type:'coin', price:5600}},
-  celestial: {name:'Semavi',     star:'#7fffd4', gold:'#ffe9a8', peril:'#ff4d8a', player:'#2fe6c4', sun:'#bff7ea', bg0:'#01100e', bg1:'#03201b', sf:'#8ff5da', gate:{type:'coin', price:6000}},
+  neon:      {nameKey:'theme_neon',      star:'#54e0ff', gold:'#ffd24a', peril:'#ff4d6d', player:'#a97bff', sun:'#8ad8ff', bg0:'#05060f', bg1:'#0b0f2a', sf:'#9fb8ff', gate:{type:'free'}},
+  sunset:    {nameKey:'theme_sunset',    star:'#ff9e64', gold:'#ffd93d', peril:'#ff2e63', player:'#ff6bd6', sun:'#ffb37b', bg0:'#160a14', bg1:'#2a0f24', sf:'#ffd0b0', gate:{type:'free'}},
+  matrix:    {nameKey:'theme_matrix',    star:'#39ff14', gold:'#c6ff3b', peril:'#ff0055', player:'#00ffc3', sun:'#7dffb0', bg0:'#020a05', bg1:'#03160b', sf:'#7dff9f', gate:{type:'free'}},
+  ice:       {nameKey:'theme_ice',       star:'#7fdbff', gold:'#eaf9ff', peril:'#ff5e78', player:'#4fc3ff', sun:'#bdecff', bg0:'#05101a', bg1:'#0a2033', sf:'#bfe6ff', gate:{type:'free'}},
+  vaporwave: {nameKey:'theme_vaporwave', star:'#ff6ec7', gold:'#7afcff', peril:'#ff2f6e', player:'#8a5fff', sun:'#ff9ee8', bg0:'#0f0620', bg1:'#1d0a3a', sf:'#c9a8ff', gate:{type:'coin', price:3200}},
+  gilded:    {nameKey:'theme_gilded',    star:'#ffe08a', gold:'#fff4c2', peril:'#ff5a3c', player:'#ffd24a', sun:'#fff6da', bg0:'#120d02', bg1:'#241a05', sf:'#ffe9a8', gate:{type:'coin', price:3200}},
+  void:      {nameKey:'theme_void',      star:'#c9c9ff', gold:'#8f8fff', peril:'#ff3d6b', player:'#4a3fff', sun:'#e0e0ff', bg0:'#020204', bg1:'#08060f', sf:'#8888aa', gate:{type:'coin', price:4000}},
+  inferno:   {nameKey:'theme_inferno',   star:'#ffb454', gold:'#ffe08a', peril:'#ff2e2e', player:'#ff5a1f', sun:'#ffcf8a', bg0:'#170502', bg1:'#2c0a03', sf:'#ffb27a', gate:{type:'coin', price:5600}},
+  celestial: {nameKey:'theme_celestial', star:'#7fffd4', gold:'#ffe9a8', peril:'#ff4d8a', player:'#2fe6c4', sun:'#bff7ea', bg0:'#01100e', bg1:'#03201b', sf:'#8ff5da', gate:{type:'coin', price:6000}},
 };
 let T = THEMES.neon;
 function applyTheme(key){
@@ -31,21 +31,21 @@ function applyTheme(key){
 }
 
 const SKINS = [
-  {id:'default', name:'Mor Orb',    color:'#a97bff', gate:{type:'free'}},
-  {id:'verdant', name:'Yeşil Orb',  color:'#5efc82', gate:{type:'achievement', id:'shield'}},
-  {id:'solar',   name:'Altın Orb',  color:'#ffd24a', gate:{type:'achievement', id:'lvl5'}},
-  {id:'aurora',  name:'Elmas Orb',  color:'#7fe8ff', gate:{type:'achievement', id:'diamondhunter'}},
-  {id:'crimson', name:'Kızıl Orb',  color:'#ff4d6d', gate:{type:'achievement', id:'combo15'}},
-  {id:'ember',   name:'Kor Orb',    color:'#ff8a3d', gate:{type:'coin', price:2000}},
-  {id:'frost',   name:'Buz Orb',    color:'#bfe8ff', gate:{type:'coin', price:2000}},
-  {id:'toxic',   name:'Toksik Orb', color:'#baff3d', gate:{type:'coin', price:2800}},
-  {id:'obsidian',name:'Obsidyen Orb', color:'#7d6fae', gate:{type:'coin', price:2800}},
-  {id:'prism',   name:'Prizma Orb', color:'#ffffff', gate:{type:'coin', price:5200}, rainbow:true},
-  {id:'plasma',    name:'Plazma Orb',   color:'#ff5ec4', gate:{type:'coin', price:5600}},
-  {id:'starlight', name:'Yıldız Işığı Orb', color:'#eaf2ff', gate:{type:'coin', price:6400}},
-  {id:'shadow',    name:'Gölge Orb',    color:'#3a2f55', gate:{type:'coin', price:7200}},
-  {id:'season1_orb', name:'1. Sezon Orbu', color:'#54e0ff', gate:{type:'seasonpass', season:1}, rainbow:true},
-  {id:'season2_orb', name:'2. Sezon Orbu', color:'#ff8a3d', gate:{type:'seasonpass', season:2}, rainbow:true},
+  {id:'default', nameKey:'skin_default', color:'#a97bff', gate:{type:'free'}},
+  {id:'verdant', nameKey:'skin_verdant', color:'#5efc82', gate:{type:'achievement', id:'shield'}},
+  {id:'solar',   nameKey:'skin_solar',   color:'#ffd24a', gate:{type:'achievement', id:'lvl5'}},
+  {id:'aurora',  nameKey:'skin_aurora',  color:'#7fe8ff', gate:{type:'achievement', id:'diamondhunter'}},
+  {id:'crimson', nameKey:'skin_crimson', color:'#ff4d6d', gate:{type:'achievement', id:'combo15'}},
+  {id:'ember',   nameKey:'skin_ember',   color:'#ff8a3d', gate:{type:'coin', price:2000}},
+  {id:'frost',   nameKey:'skin_frost',   color:'#bfe8ff', gate:{type:'coin', price:2000}},
+  {id:'toxic',   nameKey:'skin_toxic',   color:'#baff3d', gate:{type:'coin', price:2800}},
+  {id:'obsidian',nameKey:'skin_obsidian', color:'#7d6fae', gate:{type:'coin', price:2800}},
+  {id:'prism',   nameKey:'skin_prism',   color:'#ffffff', gate:{type:'coin', price:5200}, rainbow:true},
+  {id:'plasma',    nameKey:'skin_plasma',    color:'#ff5ec4', gate:{type:'coin', price:5600}},
+  {id:'starlight', nameKey:'skin_starlight', color:'#eaf2ff', gate:{type:'coin', price:6400}},
+  {id:'shadow',    nameKey:'skin_shadow',    color:'#3a2f55', gate:{type:'coin', price:7200}},
+  {id:'season1_orb', nameKey:'skin_season1orb', color:'#54e0ff', gate:{type:'seasonpass', season:1}, rainbow:true},
+  {id:'season2_orb', nameKey:'skin_season2orb', color:'#ff8a3d', gate:{type:'seasonpass', season:2}, rainbow:true},
 ];
 function playerColor(){
   const sk=SKINS.find(s=>s.id===cfg.skin)||SKINS[0];
@@ -55,41 +55,41 @@ function playerColor(){
 }
 
 const TRAILS = [
-  {id:'classic', name:'Klasik',        gate:{type:'free'}},
-  {id:'sparkle', name:'Kıvılcım',      gate:{type:'coin', price:1600}},
-  {id:'comet',   name:'Kuyruklu Yıldız', gate:{type:'coin', price:2400}},
-  {id:'rainbow', name:'Gökkuşağı',     gate:{type:'coin', price:3600}},
-  {id:'pixel',   name:'Piksel',        gate:{type:'coin', price:2100}},
-  {id:'ribbon',  name:'Kurdele',       gate:{type:'coin', price:2600}},
-  {id:'quantum', name:'Kuantum',       gate:{type:'coin', price:4000}},
-  {id:'phantom', name:'Hayalet İz',    gate:{type:'coin', price:4400}},
-  {id:'season1_trail', name:'1. Sezon İzi', gate:{type:'seasonpass', season:1}},
-  {id:'season2_trail', name:'2. Sezon İzi', gate:{type:'seasonpass', season:2}},
+  {id:'classic', nameKey:'trail_classic', gate:{type:'free'}},
+  {id:'sparkle', nameKey:'trail_sparkle', gate:{type:'coin', price:1600}},
+  {id:'comet',   nameKey:'trail_comet',   gate:{type:'coin', price:2400}},
+  {id:'rainbow', nameKey:'trail_rainbow', gate:{type:'coin', price:3600}},
+  {id:'pixel',   nameKey:'trail_pixel',   gate:{type:'coin', price:2100}},
+  {id:'ribbon',  nameKey:'trail_ribbon',  gate:{type:'coin', price:2600}},
+  {id:'quantum', nameKey:'trail_quantum', gate:{type:'coin', price:4000}},
+  {id:'phantom', nameKey:'trail_phantom', gate:{type:'coin', price:4400}},
+  {id:'season1_trail', nameKey:'trail_season1', gate:{type:'seasonpass', season:1}},
+  {id:'season2_trail', nameKey:'trail_season2', gate:{type:'seasonpass', season:2}},
 ];
 const SUNS = [
-  {id:'classic',   name:'Klasik Yıldız',  gate:{type:'free'}},
-  {id:'redgiant',  name:'Kızıl Dev',      gate:{type:'coin', price:2000}},
-  {id:'blackhole', name:'Kara Delik',     gate:{type:'coin', price:4400}},
-  {id:'nebula',    name:'Nebula',         gate:{type:'coin', price:2800}},
-  {id:'crystal',   name:'Kristal Çekirdek', gate:{type:'coin', price:2800}},
-  {id:'quasar',    name:'Kuasar',         gate:{type:'coin', price:4800}},
-  {id:'supernova', name:'Süpernova',      gate:{type:'coin', price:5200}},
+  {id:'classic',   nameKey:'sun_classic',   gate:{type:'free'}},
+  {id:'redgiant',  nameKey:'sun_redgiant',  gate:{type:'coin', price:2000}},
+  {id:'blackhole', nameKey:'sun_blackhole', gate:{type:'coin', price:4400}},
+  {id:'nebula',    nameKey:'sun_nebula',    gate:{type:'coin', price:2800}},
+  {id:'crystal',   nameKey:'sun_crystal',   gate:{type:'coin', price:2800}},
+  {id:'quasar',    nameKey:'sun_quasar',    gate:{type:'coin', price:4800}},
+  {id:'supernova', nameKey:'sun_supernova', gate:{type:'coin', price:5200}},
 ];
 const RINGSTYLES = [
-  {id:'classic', name:'Klasik',     gate:{type:'free'}},
-  {id:'dotted',  name:'Noktalı',    gate:{type:'coin', price:1300}},
-  {id:'glow',    name:'Parlak',     gate:{type:'coin', price:2400}},
-  {id:'double',  name:'Çift Çizgi', gate:{type:'coin', price:2100}},
-  {id:'pulse',   name:'Nabız',      gate:{type:'coin', price:2800}},
-  {id:'circuit', name:'Devre',      gate:{type:'coin', price:3200}},
-  {id:'season1_ring', name:'1. Sezon Çemberi', gate:{type:'seasonpass', season:1}},
-  {id:'season2_ring', name:'2. Sezon Çemberi', gate:{type:'seasonpass', season:2}},
+  {id:'classic', nameKey:'ring_classic', gate:{type:'free'}},
+  {id:'dotted',  nameKey:'ring_dotted',  gate:{type:'coin', price:1300}},
+  {id:'glow',    nameKey:'ring_glow',    gate:{type:'coin', price:2400}},
+  {id:'double',  nameKey:'ring_double',  gate:{type:'coin', price:2100}},
+  {id:'pulse',   nameKey:'ring_pulse',   gate:{type:'coin', price:2800}},
+  {id:'circuit', nameKey:'ring_circuit', gate:{type:'coin', price:3200}},
+  {id:'season1_ring', nameKey:'ring_season1', gate:{type:'seasonpass', season:1}},
+  {id:'season2_ring', nameKey:'ring_season2', gate:{type:'seasonpass', season:2}},
 ];
 const BOOSTS = [
-  {id:'shieldstart', name:'Kalkanla Başla', desc:'Oyuna kalkan aktifken başlarsın', icon:'shield', price:1000},
-  {id:'slowstart',   name:'Yavaş Açılış',   desc:'İlk saniyelerde orb yavaş döner', icon:'hourglass', price:800},
-  {id:'luckystart',  name:'Şanslı Açılış',  desc:'İlk 3 tehlikeli an güvenliye çevrilir', icon:'clover', price:900},
-  {id:'coinrush',    name:'Toz Rüzgarı',    desc:'Bu oyunda kazanılan yıldız tozu %50 fazla', icon:'sparkle', price:1300},
+  {id:'shieldstart', nameKey:'boost_shieldstart_name', descKey:'boost_shieldstart_desc', icon:'shield', price:1000},
+  {id:'slowstart',   nameKey:'boost_slowstart_name',   descKey:'boost_slowstart_desc',   icon:'hourglass', price:800},
+  {id:'luckystart',  nameKey:'boost_luckystart_name',  descKey:'boost_luckystart_desc',  icon:'clover', price:900},
+  {id:'coinrush',    nameKey:'boost_coinrush_name',    descKey:'boost_coinrush_desc',    icon:'sparkle', price:1300},
 ];
 
 // Kalıcı yükseltmeler (roguelike meta-progression): BOOSTS'un aksine
@@ -113,27 +113,27 @@ function buildTiers(C0, E0){
 }
 const META_UPGRADES = {
   hp: {
-    name:'Can Kapasitesi', icon:'heart', format:n=>'+'+n+' can',
+    nameKey:'up_hp_name', icon:'heart', format:n=>'+'+n+' '+t('unit_hp'),
     tiers: buildTiers(240, 2), // hedef ~12.000, taban 3 -> tavan 19 can
   },
   coinPct: {
-    name:'Yıldız Tozu Bonusu', icon:'sparkle', format:n=>'+%'+(Math.round(n*1000)/10),
+    nameKey:'up_coinpct_name', icon:'sparkle', format:n=>'+%'+(Math.round(n*1000)/10),
     tiers: buildTiers(200, 0.02), // hedef ~10.000, tavan %16 kazanç çarpanı
   },
   itemCoin: {
-    name:'Boncuk Değeri', icon:'coin', format:n=>'+'+n+' '+icon('coin'),
+    nameKey:'up_itemcoin_name', icon:'coin', format:n=>'+'+n+' '+icon('coin'),
     tiers: buildTiers(180, 5), // hedef ~9.000, tavan +40 boncuk başına
   },
   boostDur: {
-    name:'Takviye Süresi', icon:'hourglass', format:n=>'+%'+(Math.round(n*1000)/10),
+    nameKey:'up_boostdur_name', icon:'hourglass', format:n=>'+%'+(Math.round(n*1000)/10),
     tiers: buildTiers(140, 0.025), // hedef ~7.000, tavan %20 (yavaşlatma/mıknatıs/dondurma/hayalet)
   },
   shieldPower: {
-    name:'Kalkan Gücü', icon:'shield', format:n=>Math.floor(n)+' vuruş',
+    nameKey:'up_shieldpower_name', icon:'shield', format:n=>Math.floor(n)+' '+t('unit_hits'),
     tiers: buildTiers(120, 0.5), // hedef ~6.000, taban 1 -> tavan 5 vuruş emer
   },
   multPower: {
-    name:'Çarpan Gücü', icon:'lightning', format:n=>'×'+(Math.round((2+n)*100)/100),
+    nameKey:'up_multpower_name', icon:'lightning', format:n=>'×'+(Math.round((2+n)*100)/100),
     tiers: buildTiers(120, 0.15), // hedef ~6.000, taban ×2 -> tavan ×3.2 puan çarpanı
   },
 };
@@ -214,7 +214,7 @@ function effectivePrice(category, item){
   return item.gate.price;
 }
 
-let cfg = load('neonYorungeCfg', {sound:true, theme:'neon', skin:'default', trail:'classic', sun:'classic', ringStyle:'classic', bigButtons:false, leftHand:false, colorblind:false});
+let cfg = load('neonYorungeCfg', {sound:true, theme:'neon', skin:'default', trail:'classic', sun:'classic', ringStyle:'classic', bigButtons:false, leftHand:false, colorblind:false, lang:'tr'});
 let stats = load('neonYorungeStats', {
   best:0, stars:0, games:0, maxLevel:1, magnets:0, golds:0, diamonds:0,
   unlocked:[], leaderboard:[], dailyDate:'', dailyDone:false, dailyScore:0, dailyCount:0,
@@ -327,30 +327,30 @@ const LOGIN_STREAK_REWARDS = [20,30,40,60,80,100,150];
 // ödülünü verir. `stats.lastSeenDate` bugünse fonksiyon no-op'tur, bu
 // yüzden aynı gün içinde tekrar çağrılması güvenlidir.
 function handleDailyReturn(){
-  const t = todayStr();
-  if(stats.lastSeenDate === t) return;
-  const gap = stats.lastSeenDate ? daysBetweenStr(stats.lastSeenDate, t) : 0;
+  const td = todayStr();
+  if(stats.lastSeenDate === td) return;
+  const gap = stats.lastSeenDate ? daysBetweenStr(stats.lastSeenDate, td) : 0;
   if(gap>=3){
     const bonus = Math.min(300, gap*20);
     addStardust(bonus);
-    queueToast('👋 Seni özledik! '+gap+' gündür yoktun — +'+bonus+' 🪙');
+    queueToast(t('toast_welcome_back',{gap, bonus}));
   }
   stats.loginStreak = (gap===1) ? (stats.loginStreak||0)+1 : 1;
   const day = Math.min(stats.loginStreak, LOGIN_STREAK_REWARDS.length);
   const reward = LOGIN_STREAK_REWARDS[day-1];
   addStardust(reward);
-  queueToast('🔥 Giriş serisi '+stats.loginStreak+'. gün — +'+reward+' 🪙');
-  stats.lastSeenDate = t;
+  queueToast(t('toast_login_streak',{n:stats.loginStreak, reward}));
+  stats.lastSeenDate = td;
   saveStats();
 }
 
 const QUEST_POOL = [
-  {id:'magnet3', text:'3 mıknatıs topla', check:s=>s.magnets>=3},
-  {id:'gold2', text:'2 altın yıldız topla', check:s=>s.golds>=2},
-  {id:'survive90', text:'Can kaybetmeden 90 saniye hayatta kal', check:(s,c)=>c.elapsedSec>=90 && s.hits===0},
-  {id:'level3', text:'3. seviyeye ulaş', check:(s,c)=>c.level>=3},
-  {id:'diamond1', text:'1 elmas topla', check:s=>s.diamonds>=1},
-  {id:'coin5', text:'5 yıldız tozu parçası topla', check:s=>s.coinPickups>=5},
+  {id:'magnet3', textKey:'quest_magnet3', check:s=>s.magnets>=3},
+  {id:'gold2', textKey:'quest_gold2', check:s=>s.golds>=2},
+  {id:'survive90', textKey:'quest_survive90', check:(s,c)=>c.elapsedSec>=90 && s.hits===0},
+  {id:'level3', textKey:'quest_level3', check:(s,c)=>c.level>=3},
+  {id:'diamond1', textKey:'quest_diamond1', check:s=>s.diamonds>=1},
+  {id:'coin5', textKey:'quest_coin5', check:s=>s.coinPickups>=5},
 ];
 function ensureTodayQuest(){
   const t=todayStr();
@@ -361,18 +361,18 @@ function ensureTodayQuest(){
 function currentQuest(){ return QUEST_POOL.find(q=>q.id===stats.questId)||QUEST_POOL[0]; }
 
 const ACHIEVEMENTS = [
-  {id:'first', icon:'star', name:'İlk Adım', desc:'İlk oyununu tamamla', reward:50, check:(s)=>s.games>=1},
-  {id:'hundred', icon:'star', name:'Yüzler Kulübü', desc:'Tek oyunda 100+ puan yap', reward:80, check:(s,c)=>c.runScore>=100},
-  {id:'lvl5', icon:'rocket', name:'Hızlı Başlangıç', desc:'5. seviyeye ulaş', reward:100, check:(s,c)=>c.level>=5},
-  {id:'shield', icon:'shield', name:'Zırhlı', desc:'Kalkanla bir çarpışmayı savuştur', reward:80, check:(s,c)=>c.session.shieldSaved},
-  {id:'magnetmaster', icon:'magnet', name:'Mıknatıs Ustası', desc:'Toplam 10 mıknatıs topla', reward:120, check:(s)=>s.magnets>=10},
-  {id:'diamondhunter', icon:'gem', name:'Elmas Avcısı', desc:'Toplam 5 elmas topla', reward:150, check:(s)=>s.diamonds>=5},
-  {id:'combo15', icon:'flame', name:'Kombo Kralı', desc:'Tek oyunda 15 combo yap', reward:120, check:(s,c)=>c.session.streakMax>=15},
-  {id:'zenmaster', icon:'moon', name:'Zen Ustası', desc:'Zen modda 2 dakika oyna', reward:100, check:(s,c)=>c.mode==='zen' && c.elapsedSec>=120},
-  {id:'dailyexplorer', icon:'calendar', name:'Günlük Kaşif', desc:'Bir günlük mücadeleyi tamamla', reward:100, check:(s)=>s.dailyCount>=1},
-  {id:'legend', icon:'trophy', name:'Efsane', desc:'En iyi skorun 500+ olsun', reward:300, check:(s)=>s.best>=500},
-  {id:'richling', icon:'coin', name:'Yıldız Tozu Zengini', desc:'Toplamda 1000 yıldız tozu biriktir', reward:150, check:(s)=>s.lifetimeStardust>=1000},
-  {id:'collector', icon:'palette', name:'Koleksiyoncu', desc:'5 kozmetik eşya satın al', reward:200, check:(s)=>Object.values(s.owned).reduce((n,arr)=>n+arr.length,0)>=5},
+  {id:'first', icon:'star', nameKey:'ach_first_name', descKey:'ach_first_desc', reward:50, check:(s)=>s.games>=1},
+  {id:'hundred', icon:'star', nameKey:'ach_hundred_name', descKey:'ach_hundred_desc', reward:80, check:(s,c)=>c.runScore>=100},
+  {id:'lvl5', icon:'rocket', nameKey:'ach_lvl5_name', descKey:'ach_lvl5_desc', reward:100, check:(s,c)=>c.level>=5},
+  {id:'shield', icon:'shield', nameKey:'ach_shield_name', descKey:'ach_shield_desc', reward:80, check:(s,c)=>c.session.shieldSaved},
+  {id:'magnetmaster', icon:'magnet', nameKey:'ach_magnetmaster_name', descKey:'ach_magnetmaster_desc', reward:120, check:(s)=>s.magnets>=10},
+  {id:'diamondhunter', icon:'gem', nameKey:'ach_diamondhunter_name', descKey:'ach_diamondhunter_desc', reward:150, check:(s)=>s.diamonds>=5},
+  {id:'combo15', icon:'flame', nameKey:'ach_combo15_name', descKey:'ach_combo15_desc', reward:120, check:(s,c)=>c.session.streakMax>=15},
+  {id:'zenmaster', icon:'moon', nameKey:'ach_zenmaster_name', descKey:'ach_zenmaster_desc', reward:100, check:(s,c)=>c.mode==='zen' && c.elapsedSec>=120},
+  {id:'dailyexplorer', icon:'calendar', nameKey:'ach_dailyexplorer_name', descKey:'ach_dailyexplorer_desc', reward:100, check:(s)=>s.dailyCount>=1},
+  {id:'legend', icon:'trophy', nameKey:'ach_legend_name', descKey:'ach_legend_desc', reward:300, check:(s)=>s.best>=500},
+  {id:'richling', icon:'coin', nameKey:'ach_richling_name', descKey:'ach_richling_desc', reward:150, check:(s)=>s.lifetimeStardust>=1000},
+  {id:'collector', icon:'palette', nameKey:'ach_collector_name', descKey:'ach_collector_desc', reward:200, check:(s)=>Object.values(s.owned).reduce((n,arr)=>n+arr.length,0)>=5},
 ];
 function checkAchievements(c){
   const newly=[];
@@ -380,7 +380,7 @@ function checkAchievements(c){
     if(stats.unlocked.includes(a.id)) continue;
     if(a.check(stats,c)){ stats.unlocked.push(a.id); addStardust(a.reward); newly.push(a); }
   }
-  if(newly.length){ saveStats(); newly.forEach(a=>queueToast(icon(a.icon)+' Başarı: '+a.name+'  +'+a.reward+' '+icon('coin'))); }
+  if(newly.length){ saveStats(); newly.forEach(a=>queueToast(icon(a.icon)+' '+t('toast_achievement',{name:t(a.nameKey), reward:a.reward})+' '+icon('coin'))); }
 }
 function addStardust(n){
   stats.stardust += n; stats.lifetimeStardust = (stats.lifetimeStardust||0) + n;
@@ -404,16 +404,16 @@ function watchAdForCoins(){
   const cooldown = adCooldownRemainingMs();
   if(cooldown>0){
     const secs=Math.ceil(cooldown/1000);
-    queueToast('⏳ Yeni reklam için '+secs+' sn bekle');
+    queueToast(t('toast_ad_wait',{n:secs}));
     beep(200,0.1,'square',0.1);
     return;
   }
-  if(adRewardsLeftToday()<=0){ queueToast('🎬 Bugünlük reklam hakkın doldu, yarın tekrar gel!'); beep(200,0.1,'square',0.1); return; }
+  if(adRewardsLeftToday()<=0){ queueToast(t('toast_ad_cap_reached')); beep(200,0.1,'square',0.1); return; }
   Ads.showRewarded(()=>{
     stats.adRewardsToday=(stats.adRewardsToday||0)+1;
     stats.lastAdRewardAt=Date.now();
     addStardust(REWARD_AD_COINS); saveStats();
-    queueToast('🎬 Reklam izlendi: +'+REWARD_AD_COINS+' 🪙');
+    queueToast(t('toast_ad_watched',{n:REWARD_AD_COINS}));
     beep(700,0.1,'sine',0.13); beep(1000,0.1,'triangle',0.12);
     syncAdButtons();
   }, ()=>{});
@@ -425,11 +425,11 @@ function syncAdButtons(){
   const cooldown = adCooldownRemainingMs();
   const left = adRewardsLeftToday();
   let html, disabled;
-  if(left<=0){ html='Bugünlük Hakkın Doldu'; disabled=true; }
+  if(left<=0){ html=t('ad_cap_btn'); disabled=true; }
   else if(cooldown>0){
     const secs=Math.ceil(cooldown/1000);
-    html=icon('clock')+' Bekle '+secs+' sn'; disabled=true;
-  } else { html=icon('filmreel')+' Reklam İzle (+'+REWARD_AD_COINS+' '+icon('coin')+')'; disabled=false; }
+    html=icon('clock')+' '+t('ad_wait_btn',{n:secs}); disabled=true;
+  } else { html=icon('filmreel')+' '+t('ad_watch_btn',{n:REWARD_AD_COINS})+' '+icon('coin')+')'; disabled=false; }
   ['watchAdCoinsBtn','watchAdCoinsShopBtn'].forEach(id=>{
     const el=document.getElementById(id); if(!el) return;
     el.innerHTML = html; el.disabled = disabled; el.style.opacity = disabled ? 0.55 : 1;
@@ -448,8 +448,8 @@ function syncAdButtons(){
 // eşyası olarak kalır. Son tanımlı sezon takvimde süresi dolsa bile aktif
 // kalmaya devam eder — yeni bir sezon eklenene kadar "sonsuza kadar" sürer.
 const SEASONS = [
-  {id:1, name:'1. Sezon', start:'2026-07-22', days:30},
-  {id:2, name:'2. Sezon', start:'2026-08-21', days:30},
+  {id:1, nameKey:'season1_name', start:'2026-07-22', days:30},
+  {id:2, nameKey:'season2_name', start:'2026-08-21', days:30},
 ];
 function seasonDayIndex(startStr, d){
   const start = new Date(startStr+'T00:00:00');
@@ -514,7 +514,7 @@ function claimSeasonTier(index, track){
     }
   }
   saveStats();
-  queueToast('🎫 Sezon kademesi '+(index+1)+' alındı!');
+  queueToast(t('season_tier_claimed_toast',{n:index+1}));
   beep(700,0.1,'sine',0.13); beep(1000,0.1,'triangle',0.12);
   return true;
 }

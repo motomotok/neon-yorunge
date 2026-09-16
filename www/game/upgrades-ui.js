@@ -11,22 +11,22 @@ function renderUpgrades(){
   Object.keys(META_UPGRADES).forEach(key=>{
     const track=META_UPGRADES[key], lvl=upgradeLevel(key), tier=nextUpgradeTier(key);
     const card=document.createElement('div'); card.className='shopCard boostCard'; card.dataset.key=key;
-    const curText = lvl>0 ? track.format(upgradeBonus(key)) : 'Henüz alınmadı';
+    const curText = lvl>0 ? track.format(upgradeBonus(key)) : t('upgrade_not_taken');
     const nextText = tier
-      ? `Sıradaki: ${track.format(tier.add)}`
-      : 'TAVANA ULAŞILDI';
+      ? t('upgrade_next',{text:track.format(tier.add)})
+      : t('upgrade_maxed');
     const priceHtml = tier
       ? `<div class="price">${icon('coin')} ${tier.cost}</div>`
-      : `<div class="price ok">${icon('check')} Maks</div>`;
+      : `<div class="price ok">${icon('check')} ${t('upgrade_max_badge')}</div>`;
     card.innerHTML = `<div class="boostIcon">${icon(track.icon)}</div>`
-      +`<div class="cn">${track.name}</div>`
-      +`<div class="bdesc">${lvl}/8 kademe · şu an: ${curText}<br>${nextText}</div>`
+      +`<div class="cn">${t(track.nameKey)}</div>`
+      +`<div class="bdesc">${t('upgrade_tier_line',{lvl, cur:curText, next:nextText})}</div>`
       +priceHtml;
     if(tier){
       card.addEventListener('click', ()=>{
-        if((stats.stardust||0)<tier.cost){ queueToast('🪙 Yetersiz Yıldız Tozu'); beep(200,0.1,'square',0.1); return; }
+        if((stats.stardust||0)<tier.cost){ queueToast(t('insufficient_stardust_short')); beep(200,0.1,'square',0.1); return; }
         if(buyUpgrade(key)){
-          queueToast('✅ '+track.name+' yükseltildi! ('+(lvl+1)+'/8)');
+          queueToast(t('upgrade_bought_toast',{name:t(track.nameKey), lvl:lvl+1}));
           beep(700,0.1,'sine',0.13); beep(1000,0.1,'triangle',0.12);
           renderUpgrades();
           if(tutorialActive && typeof tutorialOnUpgradeBought==='function') tutorialOnUpgradeBought(key);

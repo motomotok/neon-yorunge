@@ -24,19 +24,22 @@ function showTutorialHint(){
 }
 
 function goMenu(){ state='menu'; setHud(false); showScreen('menu');
-  document.getElementById('menuBest').textContent='En iyi: '+stats.best;
+  document.getElementById('menuBest').textContent=t('menu_best',{n:stats.best});
   // Roguelike hissini güçlendiren iki kalıcı gösterge: "karakter seviyesi"
   // (6 yükseltme hattının toplam kademesi) ve deneme sayacı.
   document.getElementById('powerLevelLine').textContent='⚡ '+totalPowerLevel()+'/48';
-  document.getElementById('runCountLine').textContent='Deneme #'+(stats.games+1);
+  document.getElementById('runCountLine').textContent=t('run_count_line',{n:stats.games+1});
   ensureTodayQuest(); const q=currentQuest();
-  document.getElementById('questLine').textContent='🎯 Günün görevi: '+q.text+(stats.questDone?' ✅':'');
+  document.getElementById('questLine').textContent=t('quest_line',{text:t(q.textKey)})+(stats.questDone?' ✅':'');
   ensureRival();
-  document.getElementById('rivalLine').textContent='🎯 '+turkishAccusative(stats.rivalName)+' geç: '+stats.rivalScore+' puan';
+  // Türkçe hâl eki (turkishAccusative) sadece 'tr' dilinde geçerli bir gramer
+  // kuralı — diğer dillerde düz isim kullanılıyor (bkz. i18n mimarisi).
+  const rivalName = cfg.lang==='tr' ? turkishAccusative(stats.rivalName) : stats.rivalName;
+  document.getElementById('rivalLine').textContent=t('rival_line',{name:rivalName, score:stats.rivalScore});
   const streakEl=document.getElementById('streakLine');
   if(streakEl){
-    let txt='🔥 '+stats.loginStreak+' gün üst üste giriş';
-    if(weekendMult()>1) txt+='  ·  ⚡ Hafta sonu: +%20 yıldız tozu';
+    let txt=t('streak_line',{n:stats.loginStreak});
+    if(weekendMult()>1) txt+='  ·  '+t('weekend_bonus_suffix');
     streakEl.textContent=txt;
   }
   refreshWallet();
@@ -48,6 +51,7 @@ function goStats(){ state='stats'; setHud(false); showScreen('stats'); syncStats
 function goMode(){ state='mode'; setHud(false); showScreen('mode'); refreshDailyStatus(); renderBoostRow(); }
 function goShop(){ state='shop'; setHud(false); showScreen('shop'); ensureDailyDeal(); refreshWallet(); renderDealBanner(); renderShopTab(); syncAdButtons(); }
 function goBattlepass(){ state='battlepass'; setHud(false); showScreen('battlepass'); renderBattlepass(); }
+function goLanguage(){ state='language'; setHud(false); showScreen('language'); if(typeof syncLangDockButton==='function') syncLangDockButton(); }
 function goUpgrades(){ state='upgrades'; setHud(false); showScreen('upgrades'); refreshWallet(); renderUpgrades();
   if(tutorialActive && typeof tutorialOnNav==='function') tutorialOnNav('upgrades');
 }
@@ -58,8 +62,8 @@ function startGame(m,d){
   mode=m; diffKey = (mode==='daily') ? 'normal' : d;
   diffCfg = DIFF[diffKey];
   if(mode==='daily'){
-    const t=todayStr();
-    if(stats.dailyDate===t && stats.dailyDone){ queueToast('Bugün günlük mücadeleni tamamladın, yarın tekrar gel!'); goMode(); return; }
+    const td=todayStr();
+    if(stats.dailyDate===td && stats.dailyDone){ queueToast(t('toast_daily_done')); goMode(); return; }
     rngFn = mulberry32(dateSeed());
   } else rngFn = Math.random;
   if(pendingBoost && (stats.boosts[pendingBoost]||0)>0){
@@ -71,7 +75,7 @@ function startGame(m,d){
   // En az bir kalıcı yükseltme alınmışsa, deneme başında kısa bir "güç
   // özeti" — oyuncu kasarak kazandığı gücü her denemede hissetsin.
   if(mode!=='zen' && totalPowerLevel()>0){
-    queueToast('▶ Deneme #'+(stats.games+1)+' — '+maxHp+' Can ile başlıyorsun');
+    queueToast(t('run_start_power',{n:stats.games+1, hp:maxHp}));
   }
 }
 function pauseGame(){ if(state!=='play') return; state='pause'; showScreen('pause');
@@ -93,7 +97,7 @@ function gameOver(reason){
   ensureTodayQuest();
   const q=currentQuest();
   if(!stats.questDone && q.check(session,{elapsedSec, level})){
-    stats.questDone=true; queueToast('🎯 Günlük görev tamamlandı: '+q.text);
+    stats.questDone=true; queueToast(t('toast_quest_done',{text:t(q.textKey)}));
   }
   checkAchievements({runScore, level, session, mode, elapsedSec});
   const scoreBonus = Math.round(Math.floor(runScore/12)*weekendMult()*(1+upgradeBonus('coinPct')));
@@ -109,20 +113,23 @@ function gameOver(reason){
   ensureRival();
   saveStats();
   if(mode!=='zen' && window.PlayGames && PlayGames.isNative() && PlayGames.signedIn) PlayGames.submitScore(runScore);
-  if(beatenRival) queueToast('🏆 '+turkishAccusative(beatenRival)+' geçtin! Yeni hedef: '+stats.rivalName+' — '+stats.rivalScore);
+  if(beatenRival){
+    const beatenName = cfg.lang==='tr' ? turkishAccusative(beatenRival) : beatenRival;
+    queueToast(t('toast_rival_beaten',{name:beatenName, name2:stats.rivalName, score:stats.rivalScore}));
+  }
   let reasonText='';
-  if(reason==='time') reasonText='⏰ Süre doldu · ';
-  else if(reason==='zen') reasonText='🧘 Oturum tamamlandı · ';
+  if(reason==='time') reasonText=t('reason_time');
+  else if(reason==='zen') reasonText=t('reason_zen');
   document.getElementById('finalScore').textContent=runScore;
   const melodyOctave=Math.floor(session.streakMax/MELODY_SCALE.length);
-  const melodyText = melodyOctave>0 ? (' · Melodi: Oktav '+melodyOctave) : '';
-  document.getElementById('overStats').textContent='Deneme #'+stats.games+' · '+reasonText+'En iyi: '+stats.best+' · Seviye '+level+melodyText;
-  document.getElementById('recordBadge').innerHTML = newRecord ? `<span class="badge">${icon('trophy')} YENİ REKOR!</span>` : '';
+  const melodyText = melodyOctave>0 ? t('melody_octave',{n:melodyOctave}) : '';
+  document.getElementById('overStats').textContent=t('over_stats_line',{n:stats.games, reason:reasonText, best:stats.best, level, melody:melodyText});
+  document.getElementById('recordBadge').innerHTML = newRecord ? `<span class="badge">${icon('trophy')} ${t('new_record_badge')}</span>` : '';
   if(mode==='zen'){
-    document.getElementById('coinsEarned').innerHTML = `${icon('moon')} Zen modu — yıldız tozu kazanılmaz (pratik modu)`;
+    document.getElementById('coinsEarned').innerHTML = `${icon('moon')} ${t('zen_no_stardust')}`;
   } else {
     const totalEarned = session.coins + scoreBonus;
-    document.getElementById('coinsEarned').innerHTML = `${icon('coin')} +${totalEarned} <span style="opacity:.6;font-size:12px">(${session.coins} toplama + ${scoreBonus} puan bonusu)</span>`;
+    document.getElementById('coinsEarned').innerHTML = `${icon('coin')} +${totalEarned} <span style="opacity:.6;font-size:12px">${t('coins_earned_detail',{pickups:session.coins, bonus:scoreBonus})}</span>`;
   }
   setHud(false); showScreen('over'); syncAdButtons();
   beep(200,0.3,'sine',0.12);

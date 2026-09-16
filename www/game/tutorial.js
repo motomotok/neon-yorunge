@@ -41,14 +41,14 @@ function tutorialGoStep(step){
 }
 
 function tutorialStepIntro(){
-  tutorialShow('Bu senin orb\'un — merkezdeki yörüngede dönüyor.', {cta:'Anladım', onCta:()=>tutorialGoStep('awaitLeft')});
+  tutorialShow(t('tut_step_intro'), {cta:t('tut_cta_understood'), onCta:()=>tutorialGoStep('awaitLeft')});
 }
 function tutorialStepAwaitLeft(){
-  tutorialShow('SOL tarafa dokun, iç halkaya geç.');
+  tutorialShow(t('tut_step_awaitleft'));
   tutorialShowTapHint('left');
 }
 function tutorialStepAwaitRight(){
-  tutorialShow('Şimdi SAĞ tarafa dokun, dış halkaya geç.');
+  tutorialShow(t('tut_step_awaitright'));
   tutorialShowTapHint('right');
 }
 // Öğeler oyuncunun O ANKİ açısının TAM KARŞISINA (180°) yerleştiriliyor —
@@ -56,13 +56,13 @@ function tutorialStepAwaitRight(){
 // (eskiden ~30° idi, çok hızlı/ani oluyordu — bkz. kullanıcı geri bildirimi).
 const TUTORIAL_ITEM_DIST = Math.PI;
 function tutorialStepCoin(){
-  tutorialShow('Karşıdaki yıldız tozuna doğru süzül ve topla!');
+  tutorialShow(t('tut_step_coin'));
   items.push({ang: normAng(player.ang+TUTORIAL_ITEM_DIST), ring: player.targetRing, type:'coin', alive:true, pop:0,
     expiring:false, prevFwd:null, jumpT:0, pulsePhase:0, pulseDanger:false, creepT:0, creeped:false,
     tutorialTag:'coin'});
 }
 function tutorialStepHazard(){
-  tutorialShow('Dikkat, karşıdan bir tehlike geliyor!');
+  tutorialShow(t('tut_step_hazard'));
   hp = 1; // Ölümü öğretmek için bilinçli müdahale — tek vuruşta oyun sonu garanti olsun diye.
   items.push({ang: normAng(player.ang+TUTORIAL_ITEM_DIST), ring: player.targetRing, type:'hazard', alive:true, pop:0,
     expiring:false, prevFwd:null, jumpT:0, pulsePhase:0, pulseDanger:false, creepT:0, creeped:false,
@@ -73,7 +73,7 @@ function tutorialStepGameOver(){
   tutorialHideEl(document.getElementById('watchAdCoinsBtn'));
   tutorialHideEl(document.querySelector('#screen-over .row2'));
   tutorialSpotlight(document.querySelector('#screen-over [data-go="upgrades"]'));
-  tutorialShow('Güçlenmek için YETENEKLER\'e dokun.');
+  tutorialShow(t('tut_step_gameover'));
 }
 function tutorialStepBuyHp(){
   addStardust(240); // Can Kapasitesi'nin 1. kademesi tam bu kadar — ilk yeteneğini açabilsin diye küçük bir hoşgeldin hediyesi.
@@ -85,11 +85,11 @@ function tutorialStepBuyHp(){
   const hpCard=cards.find(c=>c.dataset.key==='hp');
   cards.forEach(c=>{ if(c!==hpCard) tutorialDim(c); });
   tutorialSpotlight(hpCard);
-  tutorialShow('İlk kalıcı yeteneğini aç: Can Kapasitesi!');
+  tutorialShow(t('tut_step_buyhp'));
 }
 function tutorialStepBackToMenu(){
   tutorialSpotlight(document.querySelector('#screen-upgrades [data-go="menu"]'));
-  tutorialShow('Harika! Şimdi geri dön.');
+  tutorialShow(t('tut_step_backtomenu'));
 }
 function tutorialStepOutro(){
   tutorialHide();

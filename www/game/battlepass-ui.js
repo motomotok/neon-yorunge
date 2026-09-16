@@ -7,12 +7,12 @@ function syncSeasonPassUI(price){
   const btn=document.getElementById('seasonPassBuyBtn');
   if(!txt || !btn) return;
   if(stats.seasonPremium){
-    txt.innerHTML=icon('check')+' Sezon Bileti aktif — bu ay premium ödülleri alabilirsin!';
+    txt.innerHTML=icon('check')+' '+t('seasonpass_active');
     btn.style.display='none';
   } else {
-    txt.innerHTML=icon('ticket')+' Premium çizgi ile daha büyük ödüller';
+    txt.innerHTML=icon('ticket')+' '+t('seasonpass_promo');
     btn.style.display='inline-block';
-    btn.innerHTML=icon('ticket')+' Sezon Bileti — '+(price || (window.SeasonPass ? SeasonPass.FALLBACK_PRICE_TEXT : '29 TL'));
+    btn.innerHTML=icon('ticket')+' '+t('seasonpass_buy_btn',{price:price || (window.SeasonPass ? SeasonPass.FALLBACK_PRICE_TEXT : '29 TL')});
   }
 }
 
@@ -20,7 +20,7 @@ function renderBattlepass(){
   ensureSeason();
   const s = activeSeason();
   const daysLeft = Math.max(0, s.days - seasonDayIndex(s.start, new Date()));
-  document.getElementById('seasonXpLine').textContent = stats.seasonXp+' XP · '+s.name+' · '+daysLeft+' gün kaldı';
+  document.getElementById('seasonXpLine').textContent = t('season_xp_line',{xp:stats.seasonXp, name:t(s.nameKey), days:daysLeft});
   syncSeasonPassUI();
   const wrap=document.getElementById('battlepassTiers'); wrap.innerHTML='';
   SEASON_TIERS.forEach((tier,i)=>{
@@ -29,7 +29,7 @@ function renderBattlepass(){
     const premClaimed = stats.seasonClaimedPremium.includes(i);
     const tile=document.createElement('div');
     tile.className='bpTile';
-    tile.innerHTML=`<div class="bpTier">Kademe ${i+1}</div><div class="bpXp">${tier.xp} XP</div>`;
+    tile.innerHTML=`<div class="bpTier">${t('bp_tier_label',{n:i+1})}</div><div class="bpXp">${tier.xp} XP</div>`;
 
     const freeBtn=document.createElement('button');
     freeBtn.className='bpChip'+(freeClaimed?' claimed':reached?' claimable':' locked');

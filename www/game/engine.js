@@ -21,7 +21,7 @@ let state='menu';
 const GAME_STATES = {play:1, pause:1, over:1, revive:1};
 // Menü ailesindeki tüm ekranlar: gerçek oyun burada değil ama oyuncu küresi
 // hâlâ yörüngede yavaşça dönüyor olmalı — "canlı menü" hissi için.
-const MENU_STATES = {menu:1, mode:1, shop:1, settings:1, stats:1, battlepass:1, upgrades:1, howto:1};
+const MENU_STATES = {menu:1, mode:1, shop:1, settings:1, stats:1, battlepass:1, upgrades:1, howto:1, language:1};
 let mode='classic', diffKey='normal';
 let player, items, particles, score, combo, hp, maxHp, level, elapsed, spawnCooldown, shake, flash, freezeFlash;
 let levelFlashT, session, timeLeft, newRecord, timeScale, timeScaleT, activeBoost=null, pendingBoost=null;
@@ -128,7 +128,7 @@ function startBossWave(stageDef){
   shake=Math.max(shake,20); flash=1;
   burst(CX,CY,'#ffd24a',40,7); burst(CX,CY,'#ff6b3d',30,6); burst(CX,CY,'#ffffff',20,5);
   beep(90,0.5,'sawtooth',0.2); beep(140,0.5,'square',0.16); beep(60,0.6,'sine',0.18);
-  showFlash('⚠ BOSS DALGASI!',90); vibrate([30,40,30,40,60]);
+  showFlash('⚠ '+t('flash_boss_wave'),90); vibrate([30,40,30,40,60]);
   const startAng = normAng(player.ang + 1.3), spread = 3.2;
   // Halkaları mümkün olduğunca eşit dağıt — sıra karışık ama sayım eşit
   // (örn. 5 öğe -> {0,1,2} üzerinden 2/2/1 gibi). Eskiden her öğe bağımsız
@@ -302,7 +302,7 @@ function checkStreak(ix,iy,mult){
   if(combo>0 && combo%MELODY_SCALE.length===0){
     const octave=combo/MELODY_SCALE.length;
     score+=20*octave*mult; timeScale=0.3; timeScaleT=16;
-    showFlash('MELODİ x'+octave+'!',50); burst(ix,iy,'#ffffff',18,5);
+    showFlash(t('flash_melody',{n:octave}),50); burst(ix,iy,'#ffffff',18,5);
     const root=melodyFreq(combo-1);
     beep(root,0.16,'triangle',0.16,true); beep(root*1.25,0.16,'sine',0.12,true); beep(root*1.5,0.18,'sine',0.10,true);
   }
@@ -312,7 +312,7 @@ function update(dt){
   elapsed+=dt;
   const zen = mode==='zen';
   const nl = zen ? level : 1 + Math.floor(elapsed/720);
-  if(nl>level){ level=nl; beep(660,0.1,'triangle',0.13); beep(990,0.12,'sine',0.10); showFlash('SEVİYE '+level,70); vibrate([10,50,10]); }
+  if(nl>level){ level=nl; beep(660,0.1,'triangle',0.13); beep(990,0.12,'sine',0.10); showFlash(t('flash_level',{n:level}),70); vibrate([10,50,10]); }
 
   if(mode==='time'){
     timeLeft -= dt/60;
@@ -480,8 +480,8 @@ function update(dt){
       bossActive=false;
       const finalReward=Math.round(bossReward*(1+upgradeBonus('coinPct')));
       addStardust(finalReward);
-      showFlash('DALGA TEMİZLENDİ!',60);
-      queueToast(icon('coin')+' Boss dalgası temizlendi! +'+finalReward);
+      showFlash(t('flash_wave_cleared'),60);
+      queueToast(icon('coin')+' '+t('toast_boss_cleared',{n:finalReward}));
       beep(700,0.15,'sine',0.15); beep(1000,0.15,'triangle',0.12); beep(1300,0.18,'sine',0.1);
     }
   } else if(!zen && bossNextIndex<BOSS_STAGES.length && score>=BOSS_STAGES[bossNextIndex].score){
@@ -522,14 +522,17 @@ function hitHazard(ix,iy,subtype){
 }
 
 let reviveTimer=null;
+function reviveSubRender(hpVal, secs){
+  const el=document.getElementById('reviveSub'); if(el) el.innerHTML=t('revive_sub_html',{hp:hpVal, sec:secs});
+}
 function offerRevive(){
   state='revive'; showScreen('revive');
-  const hpEl=document.getElementById('reviveHpAmount'); if(hpEl) hpEl.textContent=Math.max(1,Math.ceil(maxHp/2));
+  const hpVal=Math.max(1,Math.ceil(maxHp/2));
   let secs=6;
-  const cd=document.getElementById('reviveCountdown'); if(cd) cd.textContent=secs;
+  reviveSubRender(hpVal, secs);
   clearInterval(reviveTimer);
   reviveTimer=setInterval(()=>{
-    secs--; if(cd) cd.textContent=secs;
+    secs--; reviveSubRender(hpVal, secs);
     if(secs<=0){ clearInterval(reviveTimer); declineRevive(); }
   },1000);
 }
@@ -537,7 +540,7 @@ function acceptRevive(){
   clearInterval(reviveTimer);
   Ads.showRewarded(()=>{
     session.revivedUsed=true; hp=Math.max(1,Math.ceil(maxHp/2)); combo=1; player.invulT=INVUL*3;
-    state='play'; showScreen(null); queueToast('✨ Devam ediyorsun!');
+    state='play'; showScreen(null); queueToast(t('revive_continue_toast'));
   }, ()=>{ declineRevive(); });
 }
 function declineRevive(){

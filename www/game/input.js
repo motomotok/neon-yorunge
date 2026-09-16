@@ -47,6 +47,7 @@ document.querySelectorAll('[data-go]').forEach(b=>{
     else if(g==='shop') goShop();
     else if(g==='battlepass') goBattlepass();
     else if(g==='upgrades') goUpgrades();
+    else if(g==='language') goLanguage();
   });
 });
 document.getElementById('retryBtn').addEventListener('click', e=>{ e.stopPropagation(); startGame(); });
@@ -74,11 +75,11 @@ document.querySelectorAll('.toggleGrid .toggle').forEach(row=>{
   });
 });
 document.getElementById('resetProgressBtn').addEventListener('click', ()=>{
-  showPurchaseConfirm('replay', 'Gelişmeyi Sıfırla', null, ()=>{
+  showPurchaseConfirm('replay', t('reset_progress_btn'), null, ()=>{
     resetProgression(); renderUpgrades();
-    queueToast('🔄 Yetenekler ve yıldız tozu sıfırlandı — baştan güçlenebilirsin!');
+    queueToast(t('reset_progress_toast'));
     beep(300,0.15,'square',0.12);
-  }, 'Tüm yükseltme kademelerin ve yıldız tozu bakiyen sıfırlanacak. İstatistiklerine (en iyi skor, başarımlar, sahip olduğun kozmetikler vb.) dokunulmaz. Emin misin?');
+  }, t('reset_progress_confirm'));
 });
 document.getElementById('pcYesBtn').addEventListener('click', e=>{ e.stopPropagation();
   const cb=pendingPurchase; hidePurchaseConfirm(); if(cb) cb();
@@ -89,16 +90,16 @@ document.getElementById('purchaseConfirmOverlay').addEventListener('click', e=>{
 });
 document.getElementById('premiumBuyBtn').addEventListener('click', e=>{ e.stopPropagation();
   if(window.Premium && Premium.isNative()){ Premium.purchase(); }
-  else { queueToast('💎 Premium satın alma yalnızca Play Store uygulamasında kullanılabilir.'); }
+  else { queueToast(t('toast_premium_native_only')); }
 });
 document.getElementById('seasonPassBuyBtn').addEventListener('click', e=>{ e.stopPropagation();
   if(window.SeasonPass && SeasonPass.isNative()){ SeasonPass.purchase(); }
-  else { queueToast('🎫 Sezon Bileti satın alma yalnızca Play Store uygulamasında kullanılabilir.'); }
+  else { queueToast(t('seasonpass_native_only_toast')); }
 });
 document.getElementById('playGamesBtn').addEventListener('click', e=>{ e.stopPropagation();
-  if(!window.PlayGames || !PlayGames.isNative()){ queueToast('🏆 Play Games yalnızca Play Store uygulamasında kullanılabilir.'); return; }
+  if(!window.PlayGames || !PlayGames.isNative()){ queueToast(t('toast_playgames_native_only')); return; }
   if(PlayGames.signedIn){ PlayGames.showLeaderboard(); return; }
-  PlayGames.signIn().then(ok=>{ syncPlayGamesUI(); if(ok) queueToast('🏆 Play Games\'e bağlandın!'); else queueToast('🏆 Bağlanılamadı, tekrar dene.'); });
+  PlayGames.signIn().then(ok=>{ syncPlayGamesUI(); if(ok) queueToast(t('toast_playgames_connected')); else queueToast(t('toast_playgames_failed')); });
 });
 document.getElementById('privacyBtn').addEventListener('click', e=>{ e.stopPropagation(); window.open('privacy.html','_blank'); });
 document.getElementById('licensesBtn').addEventListener('click', e=>{ e.stopPropagation(); window.open('licenses.html','_blank'); });
@@ -161,10 +162,10 @@ async function clearAppCache(){
       const keys=await caches.keys();
       await Promise.all(keys.map(k=>caches.delete(k)));
     }
-    queueToast(icon('check')+' Önbellek temizlendi, yenileniyor…');
+    queueToast(icon('check')+' '+t('cache_cleared_toast'));
     setTimeout(()=>location.reload(true), 400);
   }catch(e){
-    queueToast('Önbellek temizlenemedi, tekrar dene.');
+    queueToast(t('cache_clear_failed_toast'));
   }
 }
 document.getElementById('clearCacheBtn').addEventListener('click', e=>{ e.stopPropagation(); clearAppCache(); });

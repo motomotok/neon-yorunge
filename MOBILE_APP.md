@@ -13,6 +13,7 @@ açtığında canlıya geçmen için.
 www/index.html           → sadece HTML iskeleti + script/style include'ları
 www/style.css            → tüm oyun CSS'i
 www/game/data.js         → temalar/kozmetikler/mağaza, ayar+istatistik kalıcılığı, RNG, görev/başarım, coin ekonomisi
+www/game/i18n.js         → 15 dilli yerelleştirme (LANGUAGES, STRINGS, t()/applyLanguage()/setLanguage())
 www/game/fx.js           → ses (beep), titreşim, toast bildirimleri
 www/game/engine.js       → canvas kurulumu, oyuncu/eşya fiziği, çarpışma, güç-yükseltme, revive akışı
 www/game/render.js       → requestAnimationFrame döngüsü ve tüm canvas çizimi
