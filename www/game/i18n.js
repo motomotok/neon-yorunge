@@ -20,6 +20,33 @@ const LANGUAGES = [
   {code:'pl', flag:'🇵🇱', native:'Polski'},
 ];
 function langFlag(code){ const l=LANGUAGES.find(x=>x.code===code); return l?l.flag:'🏳️'; }
+// Bayrak EMOJİ'si yerine kendi çizdiğimiz basit vektör bayraklar kullanılıyor —
+// Windows/bazı Android sürümlerinde bayrak emojisi sistem fontu tarafından
+// desteklenmeyip iki harfli ülke koduna ("TR", "GB" gibi düz metne) geri
+// düşebiliyor (bkz. kullanıcı ekran görüntüsü). icons.js zaten aynı gerekçeyle
+// sistem emojisi yerine SVG ikon kullanıyor (bkz. o dosyanın başındaki not) —
+// aynı prensibi bayraklara da uyguluyoruz: platformdan bağımsız, her zaman
+// aynı görünen basit/stilize bayrak SVG'leri (30x20 viewBox, gerçek bayrak
+// oranı). `icon()`/`ICON_SVG` sistemine dahil edilmedi çünkü o sistem tek
+// renkli (currentColor) ikonlar için, bayraklar çok renkli.
+const FLAG_SVG = {
+  tr:'<svg viewBox="0 0 30 20"><rect width="30" height="20" fill="#E30A17"/><circle cx="12" cy="10" r="5" fill="#fff"/><circle cx="13.4" cy="10" r="4" fill="#E30A17"/><path d="M19.5 7.8 20.1 9.6 22 9.6 20.4 10.7 21 12.5 19.5 11.3 18 12.5 18.6 10.7 17 9.6 18.9 9.6Z" fill="#fff"/></svg>',
+  en:'<svg viewBox="0 0 30 20"><rect width="30" height="20" fill="#012169"/><path d="M0 0L30 20M30 0L0 20" stroke="#fff" stroke-width="4"/><path d="M0 0L30 20M30 0L0 20" stroke="#C8102E" stroke-width="2"/><path d="M15 0V20M0 10H30" stroke="#fff" stroke-width="6"/><path d="M15 0V20M0 10H30" stroke="#C8102E" stroke-width="3.5"/></svg>',
+  de:'<svg viewBox="0 0 30 20"><rect width="30" height="6.67" fill="#000"/><rect y="6.67" width="30" height="6.67" fill="#DD0000"/><rect y="13.33" width="30" height="6.67" fill="#FFCE00"/></svg>',
+  fr:'<svg viewBox="0 0 30 20"><rect width="10" height="20" fill="#0055A4"/><rect x="10" width="10" height="20" fill="#fff"/><rect x="20" width="10" height="20" fill="#EF4135"/></svg>',
+  es:'<svg viewBox="0 0 30 20"><rect width="30" height="5" fill="#AA151B"/><rect y="5" width="30" height="10" fill="#F1BF00"/><rect y="15" width="30" height="5" fill="#AA151B"/></svg>',
+  pt:'<svg viewBox="0 0 30 20"><rect width="30" height="20" fill="#009739"/><polygon points="15,2 28,10 15,18 2,10" fill="#FEDD00"/><circle cx="15" cy="10" r="5.2" fill="#012169"/></svg>',
+  it:'<svg viewBox="0 0 30 20"><rect width="10" height="20" fill="#009246"/><rect x="10" width="10" height="20" fill="#fff"/><rect x="20" width="10" height="20" fill="#CE2B37"/></svg>',
+  ru:'<svg viewBox="0 0 30 20"><rect width="30" height="6.67" fill="#fff"/><rect y="6.67" width="30" height="6.67" fill="#0039A6"/><rect y="13.33" width="30" height="6.67" fill="#D52B1E"/></svg>',
+  ar:'<svg viewBox="0 0 30 20"><rect width="30" height="20" fill="#006C35"/><rect x="4" y="13.5" width="20" height="1.3" fill="#fff"/><rect x="21" y="12.2" width="4" height="1.3" fill="#fff" transform="rotate(20 23 12.85)"/></svg>',
+  ja:'<svg viewBox="0 0 30 20"><rect width="30" height="20" fill="#fff"/><circle cx="15" cy="10" r="5.5" fill="#BC002D"/></svg>',
+  ko:'<svg viewBox="0 0 30 20"><rect width="30" height="20" fill="#fff"/><circle cx="15" cy="10" r="5" fill="#C60C30"/><path d="M15 5a2.5 2.5 0 000 5 2.5 2.5 0 010 5 5 5 0 010-10Z" fill="#003478"/></svg>',
+  zh:'<svg viewBox="0 0 30 20"><rect width="30" height="20" fill="#DE2910"/><polygon points="6,4 6.9,6.6 9.6,6.6 7.4,8.2 8.2,10.8 6,9.2 3.8,10.8 4.6,8.2 2.4,6.6 5.1,6.6" fill="#FFDE00"/></svg>',
+  hi:'<svg viewBox="0 0 30 20"><rect width="30" height="6.67" fill="#FF9933"/><rect y="6.67" width="30" height="6.67" fill="#fff"/><rect y="13.33" width="30" height="6.67" fill="#138808"/><circle cx="15" cy="10" r="2.2" fill="none" stroke="#000080" stroke-width="0.5"/></svg>',
+  id:'<svg viewBox="0 0 30 20"><rect width="30" height="10" fill="#CE1126"/><rect y="10" width="30" height="10" fill="#fff"/></svg>',
+  pl:'<svg viewBox="0 0 30 20"><rect width="30" height="10" fill="#fff"/><rect y="10" width="30" height="10" fill="#DC143C"/></svg>',
+};
+function flagSvg(code){ return FLAG_SVG[code] || '<svg viewBox="0 0 30 20"><rect width="30" height="20" fill="#333"/></svg>'; }
 
 const STRINGS = {
   // --- HUD ---
@@ -420,7 +447,7 @@ function applyLanguage(){
   syncLangDockButton();
 }
 function syncLangDockButton(){
-  const el=document.getElementById('langFlagIcon'); if(el) el.textContent = langFlag(cfg.lang);
+  const el=document.getElementById('langFlagIcon'); if(el) el.innerHTML = flagSvg(cfg.lang);
   document.querySelectorAll('.langCard').forEach(c=>c.classList.toggle('sel', c.dataset.code===cfg.lang));
 }
 // Bayrak/dil ızgarasını bir kez kurar (bootstrap'te main.js'den çağrılır) —
@@ -434,7 +461,7 @@ function renderLangGrid(){
     const d=document.createElement('div');
     d.className='langCard'+(cfg.lang===l.code?' sel':'');
     d.dataset.code=l.code;
-    d.innerHTML=`<div class="langFlag">${l.flag}</div><div class="langName">${l.native}</div>`;
+    d.innerHTML=`<div class="langFlag">${flagSvg(l.code)}</div><div class="langName">${l.native}</div>`;
     d.addEventListener('click', ()=>{ setLanguage(l.code); if(typeof beep==='function') beep(500,0.06,'sine',0.1); });
     grid.appendChild(d);
   });
