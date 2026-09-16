@@ -223,6 +223,11 @@ bundle gerektirmez, npm paketi Cordova plugin sistemi üzerinden doğrudan çal�
   (minSdk 22→23, compileSdk/targetSdk 34→35) ve `android/build.gradle` (AGP 8.2.1→8.5.2,
   Gradle wrapper 8.2.1→8.7) güncellendi. Android 5.1 (API 22) desteği kaldırıldı —
   günümüzde pratikte hiç kullanıcısı kalmamış bir sürüm.
+- ⚠️ 16 Eylül 2026'da closed-beta build'i alırken Google'ın `play-services-games-v2`
+  kütüphanesinin güncel sürümü (22.1.0) minSdk 24 şart koşmaya başladığı için build
+  `processReleaseMainManifest` adımında hata verdi — `minSdkVersion` 23→24'e
+  yükseltilerek düzeltildi (Android 7.0 Nougat, günümüzde pazarın ~%99'unu kapsıyor,
+  pratikte kayıp yok).
 
 ### 🎫 Sezon Bileti (Battle-Pass) — ücretsiz + ücretli çizgi
 
