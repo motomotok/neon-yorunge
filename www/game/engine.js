@@ -477,7 +477,13 @@ function update(dt){
         burst(ix,iy,T.gold,22,5); shake=6; beep(880,0.09,'triangle',0.14); beep(1320,0.10,'sine',0.10); playMelodyNote(combo,0.10); bumpCombo(); checkStreak(ix,iy,mult); }
       else if(it.type==='diamond'){ combo++; addScore((20+level*4)*mult); session.stars++; session.diamonds++; stats.diamonds++;
         burst(ix,iy,'#eafcff',26,6); shake=8; beep(1200,0.1,'triangle',0.15); beep(1600,0.12,'sine',0.12); playMelodyNote(combo,0.12); bumpCombo(); checkStreak(ix,iy,mult); }
-      else if(it.type==='star'){ combo++; addScore(combo*mult); session.stars++;
+      else if(it.type==='star'){ combo++;
+        // Yıldızın tam merkezine ne kadar yakın toplandığına göre küçük bir
+        // "hassasiyet" küsuratı eklenir (0-0.99) — skorun her zaman anlamlı
+        // ondalıklara sahip xx.xx hissini korumasının tek kaynağı bu; diğer
+        // tüm kazanımlar (altın/elmas/boncuk/takviye) tam sayı kalıyor ama
+        // toplam zaten bu küsuratı taşımaya devam ediyor.
+        addScore(combo*mult + rnd()*0.99); session.stars++;
         burst(ix,iy,T.star,14,4); shake=3; playMelodyNote(combo,0.16); bumpCombo(); checkStreak(ix,iy,mult); }
       else if(it.type==='coin'){
         // Boncuk Değeri yükseltmesi (kalıcı) tabana sabit ek yapar, Yıldız
