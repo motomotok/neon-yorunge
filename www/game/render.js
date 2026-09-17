@@ -357,6 +357,25 @@ function drawItem(x,y,type,sc,t,it){
   g.addColorStop(0, hexA(col,glowAlpha)); g.addColorStop(1,'rgba(0,0,0,0)');
   ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,R*2.4,0,7); ctx.fill();
 
+  // Yeni asset'ler hepsi aynı "sci-fi metal" tarzda olduğundan, tehlikeli
+  // mi toplanabilir mi olduğu sanat üslubundan artık anlaşılmıyor — bu
+  // yüzden şekil/renk ne olursa olsun TÜM tehlikeler etrafında yanıp sönen
+  // kırmızı kesik bir "tehlike halkası", toplanabilir/güçlendirmelerde ise
+  // sakin beyaz bir halka çizilir. Oyuncu artık sanata değil sadece bu
+  // halkaya bakarak "kaç/topla" kararı verebilir (decoy da gerçek hazardTwin
+  // ile bilerek aynı işareti taşır — "hangisi gerçek?" mekaniği bu).
+  if(isHazardType(type) || type==='hazardTwinDecoy'){
+    const ringPulse = 0.5+Math.sin(t*9)*0.35;
+    ctx.strokeStyle=hexA('#ff2440', ringPulse); ctx.lineWidth=2.8;
+    ctx.setLineDash([6,5]);
+    ctx.beginPath(); ctx.arc(x,y,R*2.15,0,7); ctx.stroke();
+    ctx.setLineDash([]);
+  } else {
+    const safePulse = 0.35+Math.sin(t*3)*0.15;
+    ctx.strokeStyle=hexA('#ffffff', safePulse); ctx.lineWidth=1.6;
+    ctx.beginPath(); ctx.arc(x,y,R*2.0,0,7); ctx.stroke();
+  }
+
   // Elle üretilmiş görsel asset'i olan (ve yüklenmiş) tipler için: eski
   // vektör çizim yerine bu görseli döndürerek çiz. Asset'i olmayan tipler
   // (örn. 'star') veya henüz yüklenmemişse eskisi gibi vektöre düşülür —
