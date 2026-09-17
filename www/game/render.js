@@ -323,7 +323,11 @@ const ITEM_SPIN_SPEED = {
 };
 function drawItemImage(x,y,imageKey,R,t,alpha,extraScale){
   const im = ITEM_IMAGES[imageKey];
-  const size = R*2.75*(extraScale||1);
+  // Asset'ler kendi içinde parıltı için bolca boşluk bırakıyor (asıl motif
+  // kare kanvasın ~%78'i); vektör şekillerle aynı R çarpanını kullanınca
+  // ekranda "ne olduğu anlaşılmayacak" kadar küçük kalıyordu — bu yüzden
+  // vektöre göre belirgin daha büyük çiziliyor.
+  const size = R*4.8*(extraScale||1);
   ctx.save();
   ctx.globalAlpha = alpha!=null ? alpha : 1;
   ctx.translate(x,y);
@@ -500,7 +504,7 @@ function drawBossTelegraph(t, tel){
   ctx.fillStyle=g; ctx.beginPath(); ctx.arc(CX,CY,glowR,0,7); ctx.fill();
   ctx.save(); ctx.translate(CX,CY); ctx.rotate(t*(2.2+tel.t*2.4));
   if(imgReady('telegraph')){
-    const size=R*3.1;
+    const size=R*4.6;
     ctx.drawImage(ITEM_IMAGES.telegraph, -size/2, -size/2, size, size);
   } else {
     drawStar(0,0,R*1.3,R*0.5,6,0,'#eafcff');
