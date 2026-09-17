@@ -311,6 +311,27 @@ function drawPwIcon(x,y,key,R){
   }
   ctx.restore();
 }
+// Elle kesilmiş asset'ler için tip başına dönüş hızı — "sabit durmasın,
+// dönsün" hissi için her tip hafifçe farklı bir hızda döner (bkz.
+// icon-assets.js: ITEM_IMAGES). Kalp döndürülmeyip sadece nabız gibi
+// büyütülüp küçültülüyor, dönen bir kalp tuhaf dururdu.
+const ITEM_SPIN_SPEED = {
+  hazard:0.35, hazardJump:0.45, hazardBomb:0.3, hazardPull:0.4, hazardTwin:0.35,
+  hazardCreep:0.5, hazardPulseDanger:0.55, hazardPulseSafe:0.4,
+  gold:0.4, diamond:0.35, coin:1.8,
+  shield:0.25, slow:0.3, magnet:0.3, freeze:0.3, mult:0.25, ghost:0.15,
+};
+function drawItemImage(x,y,imageKey,R,t,alpha,extraScale){
+  const im = ITEM_IMAGES[imageKey];
+  const size = R*2.75*(extraScale||1);
+  ctx.save();
+  ctx.globalAlpha = alpha!=null ? alpha : 1;
+  ctx.translate(x,y);
+  const spin = ITEM_SPIN_SPEED[imageKey];
+  if(spin) ctx.rotate(t*spin);
+  ctx.drawImage(im, -size/2, -size/2, size, size);
+  ctx.restore();
+}
 function drawItem(x,y,type,sc,t,it){
   if(sc<=0) return;
   const R=(PLAYER_R*0.95)*sc;
@@ -331,6 +352,30 @@ function drawItem(x,y,type,sc,t,it){
   const g=ctx.createRadialGradient(x,y,0,x,y,R*2.4);
   g.addColorStop(0, hexA(col,glowAlpha)); g.addColorStop(1,'rgba(0,0,0,0)');
   ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,R*2.4,0,7); ctx.fill();
+
+  // Elle üretilmiş görsel asset'i olan (ve yüklenmiş) tipler için: eski
+  // vektör çizim yerine bu görseli döndürerek çiz. Asset'i olmayan tipler
+  // (örn. 'star') veya henüz yüklenmemişse eskisi gibi vektöre düşülür —
+  // böylece bağlantı yavaşsa bile kırık/eksik görsel hiç görünmez.
+  let imgKey = type==='hazardTwinDecoy' ? 'hazardTwin'
+    : type==='hazardPulse' ? ((it && it.pulseDanger===false) ? 'hazardPulseSafe' : 'hazardPulseDanger')
+    : ITEM_IMAGE_FILES[type] ? type : null;
+  if(imgKey && imgReady(imgKey)){
+    if(type==='heart'){
+      const pulse=1+Math.sin(t*5)*0.08;
+      drawItemImage(x,y,imgKey,R,t,1,pulse);
+    } else {
+      const alpha = type==='hazardTwinDecoy' ? (0.4+Math.sin(t*9)*0.25) : 1;
+      drawItemImage(x,y,imgKey,R,t,alpha);
+    }
+    if(it && it.boss){
+      ctx.strokeStyle=hexA('#ffd24a', 0.55+Math.sin(t*6)*0.25); ctx.lineWidth=2;
+      ctx.setLineDash([4,3]);
+      ctx.beginPath(); ctx.arc(x,y,R*1.9,0,7); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    return;
+  }
 
   if(isHazardType(type) || type==='hazardTwinDecoy'){
     let Rh = type==='hazardBomb' ? R*1.5 : R;
@@ -454,7 +499,12 @@ function drawBossTelegraph(t, tel){
   g.addColorStop(0, hexA('#5ad1ff',0.85)); g.addColorStop(0.5, hexA('#5ad1ff',0.32)); g.addColorStop(1,'rgba(0,0,0,0)');
   ctx.fillStyle=g; ctx.beginPath(); ctx.arc(CX,CY,glowR,0,7); ctx.fill();
   ctx.save(); ctx.translate(CX,CY); ctx.rotate(t*(2.2+tel.t*2.4));
-  drawStar(0,0,R*1.3,R*0.5,6,0,'#eafcff');
+  if(imgReady('telegraph')){
+    const size=R*3.1;
+    ctx.drawImage(ITEM_IMAGES.telegraph, -size/2, -size/2, size, size);
+  } else {
+    drawStar(0,0,R*1.3,R*0.5,6,0,'#eafcff');
+  }
   ctx.restore();
   ctx.strokeStyle=hexA('#5ad1ff',0.6+Math.sin(t*pulseSpeed)*0.3); ctx.lineWidth=2.2; ctx.setLineDash([3,4]);
   ctx.beginPath(); ctx.arc(CX,CY,R*1.9,0,7); ctx.stroke(); ctx.setLineDash([]);

@@ -14,6 +14,9 @@ www/index.html           → sadece HTML iskeleti + script/style include'ları
 www/style.css            → tüm oyun CSS'i
 www/game/data.js         → temalar/kozmetikler/mağaza, ayar+istatistik kalıcılığı, RNG, görev/başarım, coin ekonomisi
 www/game/i18n.js         → 15 dilli yerelleştirme (LANGUAGES, STRINGS, t()/applyLanguage()/setLanguage())
+www/game/icon-assets.js  → oyun içi öğe görselleri (ITEM_IMAGES, imgReady()) — bkz. www/assets/icons/
+www/assets/icons/        → elle kesilmiş, şeffaflaştırılmış PNG'ler (19 adet, 256x256, kullanıcının AI ile
+                            ürettiği görsellerden); 'star' asset'i yok, o hep vektör kalıyor
 www/game/fx.js           → ses (beep), titreşim, toast bildirimleri
 www/game/engine.js       → canvas kurulumu, oyuncu/eşya fiziği, çarpışma, güç-yükseltme, revive akışı
 www/game/render.js       → requestAnimationFrame döngüsü ve tüm canvas çizimi
@@ -262,6 +265,23 @@ bundle gerektirmez, npm paketi Cordova plugin sistemi üzerinden doğrudan çal�
   hissi tamamen kalktı. Ayrıca uyarı penceresi 50 puandan 10 puana indirildi
   (`BOSS_WARN_WINDOW`) — artık 990/4990/9990'da başlıyor, 1000/5000/10000'de
   patlıyor.
+- 17 Eylül 2026 (v1.7.3): yıldız (star) toplama formülüne 0-0.99 arası küçük
+  bir küsurat eklendi (`rnd()*0.99`, engine.js) — sadece tam sayı gösteren
+  skorlar xx.xx hissini kaybediyordu, artık skor neredeyse her zaman anlamlı
+  ondalık taşıyor.
+- 17 Eylül 2026 (v1.8.0): oyun içi öğeler artık kullanıcının AI ile ürettiği
+  gerçek görsellerle çiziliyor — kullanıcının paylaştığı 20 hücrelik görsel
+  sayfası Python/Pillow ile programatik olarak kesildi (histerezis eşiklemeyle
+  arka plan/glow ayrıştırması, `hysteresis_mask()`), şeffaflaştırıldı, 256×256
+  PNG'ye küçültülüp `www/assets/icons/`'a kondu. 19 asset: 7 tehlike, 4
+  toplanabilir (yıldız/star hariç — o setde yoktu, hâlâ vektör), 6 güç-
+  yükseltmesi, 1 boss. `www/game/icon-assets.js` (`ITEM_IMAGES`/`imgReady()`)
+  önceden yükler; `render.js`'teki `drawItem()`/`drawBossTelegraph()` asset
+  hazırsa görseli tip başına farklı hızda döndürerek çizer (`ITEM_SPIN_SPEED`),
+  hazır değilse (veya asset yoksa) sorunsuzca eski vektör çizime düşer —
+  hiçbir zaman kırık görsel riski yok. hazardPulse için iki ayrı görsel
+  (danger/safe) kullanılıyor, hazardTwinDecoy hazardTwin ile aynı görseli
+  paylaşıyor (asıl mekanik zaten bu).
 
 ### 🎫 Sezon Bileti (Battle-Pass) — ücretsiz + ücretli çizgi
 
