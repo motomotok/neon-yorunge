@@ -360,20 +360,16 @@ function drawItem(x,y,type,sc,t,it){
   // Yeni asset'ler hepsi aynı "sci-fi metal" tarzda olduğundan, tehlikeli
   // mi toplanabilir mi olduğu sanat üslubundan artık anlaşılmıyor — bu
   // yüzden şekil/renk ne olursa olsun TÜM tehlikeler etrafında yanıp sönen
-  // kırmızı kesik bir "tehlike halkası", toplanabilir/güçlendirmelerde ise
-  // sakin beyaz bir halka çizilir. Oyuncu artık sanata değil sadece bu
-  // halkaya bakarak "kaç/topla" kararı verebilir (decoy da gerçek hazardTwin
-  // ile bilerek aynı işareti taşır — "hangisi gerçek?" mekaniği bu).
+  // kırmızı kesik bir "tehlike halkası" çizilir (toplanabilir/güçlendirme-
+  // lerde hiçbir halka yok — halkasız olmak zaten "güvenli" demek).
+  // Decoy da gerçek hazardTwin ile bilerek aynı işareti taşır — "hangisi
+  // gerçek?" mekaniği bu.
   if(isHazardType(type) || type==='hazardTwinDecoy'){
     const ringPulse = 0.5+Math.sin(t*9)*0.35;
     ctx.strokeStyle=hexA('#ff2440', ringPulse); ctx.lineWidth=2.8;
     ctx.setLineDash([6,5]);
     ctx.beginPath(); ctx.arc(x,y,R*2.15,0,7); ctx.stroke();
     ctx.setLineDash([]);
-  } else {
-    const safePulse = 0.35+Math.sin(t*3)*0.15;
-    ctx.strokeStyle=hexA('#ffffff', safePulse); ctx.lineWidth=1.6;
-    ctx.beginPath(); ctx.arc(x,y,R*2.0,0,7); ctx.stroke();
   }
 
   // Elle üretilmiş görsel asset'i olan (ve yüklenmiş) tipler için: eski
@@ -382,6 +378,7 @@ function drawItem(x,y,type,sc,t,it){
   // böylece bağlantı yavaşsa bile kırık/eksik görsel hiç görünmez.
   let imgKey = type==='hazardTwinDecoy' ? 'hazardTwin'
     : type==='hazardPulse' ? ((it && it.pulseDanger===false) ? 'hazardPulseSafe' : 'hazardPulseDanger')
+    : type==='star' ? 'coin'
     : ITEM_IMAGE_FILES[type] ? type : null;
   if(imgKey && imgReady(imgKey)){
     if(type==='heart'){

@@ -282,6 +282,24 @@ bundle gerektirmez, npm paketi Cordova plugin sistemi üzerinden doğrudan çal�
   hiçbir zaman kırık görsel riski yok. hazardPulse için iki ayrı görsel
   (danger/safe) kullanılıyor, hazardTwinDecoy hazardTwin ile aynı görseli
   paylaşıyor (asıl mekanik zaten bu).
+- 17 Eylül 2026 (v1.8.1-1.9.0): kullanıcı geri bildirimiyle asset entegrasyonu
+  ince ayarı — (1) asset boyutları R×2.75/×3.1'den R×4.8/×4.6'ya büyütüldü,
+  küçük boyutta ne oldukları seçilmiyordu; (2) yeni asset'ler hepsi aynı
+  "sci-fi metal" tarzda olduğundan tehlike/toplanabilir ayrımı kayboldu —
+  artık tip ne olursa olsun TÜM tehlikelerin etrafında yanıp sönen kırmızı
+  kesik bir halka var (render.js, `isHazardType` bloğu); (3) **oynanış
+  sadeleştirmesi**: toplanabilirler yıldız/boncuk/elmas/can'a (4 tip),
+  güç-yükseltmeleri kalkan/mıknatıs/yavaşlatma/çarpana (4 tip) indirildi —
+  **altın** (gold) ve **zaman dondurma/hayalet** (freeze/ghost) kaldırıldı.
+  `engine.js`: `PW` dizisinden freeze/ghost çıkarıldı, `spawnItem()`'dan gold
+  branch'i silindi (payı otomatik olarak 'star'a devretti), gold toplama
+  bloğu kaldırıldı. `data.js`: `QUEST_POOL`'dan artık imkansız olan `gold2`
+  görevi silindi (META_UPGRADES/ACHIEVEMENTS/BOOSTS'ta gold/freeze/ghost'a
+  özel bir kayıt olmadığı için onlara dokunulmadı). `render.js`: 'star' tipi
+  artık 'coin' asset'ini kullanıyor (kullanıcı isteğiyle görsel tutarlılık
+  için). Nasıl Oynanır ekranındaki güç-yükseltmeleri/kazanımlar kartları ve
+  ana menü lejantı 15 dilde güncellendi. `www/assets/icons/`'dan gold.png,
+  freeze.png, ghost.png silindi (artık hiç kullanılmıyor).
 
 ### 🎫 Sezon Bileti (Battle-Pass) — ücretsiz + ücretli çizgi
 
