@@ -12,13 +12,16 @@ const ITEM_IMAGE_FILES = {
   hazardPulseDanger: 'hazardPulseDanger.png',
   hazardPulseSafe: 'hazardPulseSafe.png',
   hazardCreep: 'hazardCreep.png',
+  gold: 'gold.png',
   diamond: 'diamond.png',
   coin: 'coin.png',
   heart: 'heart.png',
   shield: 'shield.png',
   slow: 'slow.png',
   magnet: 'magnet.png',
+  freeze: 'freeze.png',
   mult: 'mult.png',
+  ghost: 'ghost.png',
   telegraph: 'telegraph.png',
 };
 const ITEM_IMAGES = {};

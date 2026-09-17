@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '1.9.0';
+const GAME_VERSION = '1.8.2';
 
 const THEMES = {
   neon:      {nameKey:'theme_neon',      star:'#54e0ff', gold:'#ffd24a', peril:'#ff4d6d', player:'#a97bff', sun:'#8ad8ff', bg0:'#05060f', bg1:'#0b0f2a', sf:'#9fb8ff', gate:{type:'free'}},
@@ -126,7 +126,7 @@ const META_UPGRADES = {
   },
   boostDur: {
     nameKey:'up_boostdur_name', icon:'hourglass', format:n=>'+%'+(Math.round(n*1000)/10),
-    tiers: buildTiers(140, 0.025), // hedef ~7.000, tavan %20 (yavaşlatma/mıknatıs/çarpan)
+    tiers: buildTiers(140, 0.025), // hedef ~7.000, tavan %20 (yavaşlatma/mıknatıs/dondurma/hayalet)
   },
   shieldPower: {
     nameKey:'up_shieldpower_name', icon:'shield', format:n=>Math.floor(n)+' '+t('unit_hits'),
@@ -346,6 +346,7 @@ function handleDailyReturn(){
 
 const QUEST_POOL = [
   {id:'magnet3', textKey:'quest_magnet3', check:s=>s.magnets>=3},
+  {id:'gold2', textKey:'quest_gold2', check:s=>s.golds>=2},
   {id:'survive90', textKey:'quest_survive90', check:(s,c)=>c.elapsedSec>=90 && s.hits===0},
   {id:'level3', textKey:'quest_level3', check:(s,c)=>c.level>=3},
   {id:'diamond1', textKey:'quest_diamond1', check:s=>s.diamonds>=1},
