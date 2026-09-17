@@ -30,6 +30,17 @@ let levelFlashT, session, timeLeft, newRecord, timeScale, timeScaleT, activeBoos
 // öğelerine referans tutar; hepsi (kaçırılarak ya da çarpılarak) hayattan
 // çıkınca "temizlendi" sayılır ve oyuncuya ekstra yıldız tozu verilir.
 let bossNextIndex, bossActive, bossWaveItems, bossReward;
+// Boss'un gelişini önceden hisettiren "telegraph": eşikten BOSS_WARN_WINDOW
+// puan önce başlar, merkezden dışa doğru büyüyen farklı renkte bir yaratık
+// olarak çizilir (bkz. render.js: drawBossTelegraph), eşiğe ulaşınca patlar
+// ve tam o anda startBossWave() zaten tetiklenir.
+let bossTelegraph;
+// Can (kalp) düşürme: HP dolu değilken, düşük ama fark edilir bir ihtimalle
+// belirir. HEART_SCORE_GAP bir kere düşünce art arda gelmesini engeller —
+// oyuncu tam HP'ye dönene kadar başka biri beklemez, ama "otomatik doldurma"
+// gibi hissettirmesin diye aralarda anlamlı bir skor mesafesi zorunlu.
+let lastHeartScore;
+const HEART_CHANCE = 0.06, HEART_SCORE_GAP = 300;
 
 const SLOW_DUR=300, MAGNET_DUR=360, INVUL=47.5, FREEZE_DUR=150, MULT_DUR=360, GHOST_DUR=240; // INVUL eskiden 95'ti, yarıya indirildi
 // Kombo başına eklenen hız payı — bkz. update()'teki comboSpeedBonus.
@@ -51,7 +62,8 @@ function resetGame(){
              coins:0, coinPickups:0, luckyCharges:0, stardustMult:1, revivedUsed:false};
   timeLeft = mode==='time' ? 60 : null;
   newRecord=false; timeScale=1; timeScaleT=0;
-  bossNextIndex=0; bossActive=false; bossWaveItems=[]; bossReward=0;
+  bossNextIndex=0; bossActive=false; bossWaveItems=[]; bossReward=0; bossTelegraph=null;
+  lastHeartScore=-HEART_SCORE_GAP;
   if(activeBoost){
     if(activeBoost==='shieldstart') player.shieldHits=shieldHitsFor();
     else if(activeBoost==='slowstart') player.slowT=SLOW_DUR;
@@ -123,13 +135,22 @@ const BOSS_STAGES = [
 // hızı — dalganın toplam açısal uzunluğu (~1.3 başlangıç payı + 3.2 yayılım
 // + pay) bu hızla en az ~6.5 saniyede kat edilir.
 const BOSS_SLOW_RATE = 0.012;
+// Telegraph'ın patlayacağı eşiğe kaç puan kala belirmeye başladığı (bkz.
+// bossTelegraph, update() içindeki hesaplama). 1000-50=950 gibi.
+const BOSS_WARN_WINDOW = 50;
 function startBossWave(stageDef){
+  // Telegraph zaten bir açı boyunca merkezden dışa büyümüştü; patlama tam
+  // o noktada olsun ki "yaratık patladı, dalga ondan çıktı" hissi net olsun.
+  const teleAng = bossTelegraph ? bossTelegraph.ang : normAng(player.ang+1.3);
+  bossTelegraph = null;
   bossActive=true; bossReward=stageDef.reward; bossWaveItems=[];
   shake=Math.max(shake,20); flash=1;
+  const bx=CX+Math.cos(teleAng)*RINGS[2], by=CY+Math.sin(teleAng)*RINGS[2];
+  burst(bx,by,'#5ad1ff',34,7); burst(bx,by,'#ffffff',22,6);
   burst(CX,CY,'#ffd24a',40,7); burst(CX,CY,'#ff6b3d',30,6); burst(CX,CY,'#ffffff',20,5);
   beep(90,0.5,'sawtooth',0.2); beep(140,0.5,'square',0.16); beep(60,0.6,'sine',0.18);
   showFlash('⚠ '+t('flash_boss_wave'),90); vibrate([30,40,30,40,60]);
-  const startAng = normAng(player.ang + 1.3), spread = 3.2;
+  const startAng = teleAng, spread = 3.2;
   // Halkaları mümkün olduğunca eşit dağıt — sıra karışık ama sayım eşit
   // (örn. 5 öğe -> {0,1,2} üzerinden 2/2/1 gibi). Eskiden her öğe bağımsız
   // rastgele halka seçiyordu; bu da şans eseri hepsinin aynı (genelde en
@@ -172,15 +193,21 @@ function spawnItem(atAng, atRing){
     } while(!ok && tries<12);
     if(!ok) return false;
   }
-  let type; let r=rnd();
-  if(session.luckyCharges>0 && r<hazChance){ session.luckyCharges--; r=hazChance; }
-  if(r < hazChance){
-    type = pickHazardKind();
-  } else if(r < hazChance+0.03) type='diamond';
-  else if(r < hazChance+0.08) type=PW[Math.floor(rnd()*PW.length)];
-  else if(r < hazChance+0.14) type='coin';
-  else if(r < hazChance+0.25) type='gold';
-  else type='star';
+  let type;
+  const heartEligible = !zen && hp<maxHp && (score-lastHeartScore)>=HEART_SCORE_GAP;
+  if(heartEligible && rnd()<HEART_CHANCE){
+    type='heart'; lastHeartScore=score;
+  } else {
+    let r=rnd();
+    if(session.luckyCharges>0 && r<hazChance){ session.luckyCharges--; r=hazChance; }
+    if(r < hazChance){
+      type = pickHazardKind();
+    } else if(r < hazChance+0.03) type='diamond';
+    else if(r < hazChance+0.08) type=PW[Math.floor(rnd()*PW.length)];
+    else if(r < hazChance+0.14) type='coin';
+    else if(r < hazChance+0.25) type='gold';
+    else type='star';
+  }
   items.push({ang, ring, type, alive:true, pop:0, expiring:false, prevFwd:null,
     jumpT: type==='hazardJump' ? 70+rnd()*60 : 0,
     pulsePhase: type==='hazardPulse' ? rnd()*Math.PI*2 : 0, pulseDanger:false,
@@ -465,6 +492,12 @@ function update(dt){
         burst(ix,iy,'#ffb454',18,4.5); shake=4; beep(950,0.08,'triangle',0.13); beep(1400,0.06,'sine',0.1);
         if(it.tutorialTag && typeof tutorialOnItemResolved==='function') tutorialOnItemResolved(it.tutorialTag);
       }
+      else if(it.type==='heart'){
+        hp=Math.min(maxHp,hp+1);
+        burst(ix,iy,'#ff5d8f',24,5); shake=4;
+        beep(660,0.12,'sine',0.14); beep(880,0.14,'triangle',0.12); vibrate([20,20,20]);
+        queueToast(icon('heart')+' '+t('toast_heart_gain'));
+      }
       else { activatePower(it.type,ix,iy); }
     }
     session.streakMax=Math.max(session.streakMax,combo);
@@ -487,6 +520,18 @@ function update(dt){
   } else if(!zen && bossNextIndex<BOSS_STAGES.length && score>=BOSS_STAGES[bossNextIndex].score){
     startBossWave(BOSS_STAGES[bossNextIndex]);
     bossNextIndex++;
+  } else if(!zen && bossNextIndex<BOSS_STAGES.length){
+    const stage = BOSS_STAGES[bossNextIndex], warnStart = stage.score-BOSS_WARN_WINDOW;
+    if(score>=warnStart){
+      if(!bossTelegraph || bossTelegraph.stageIndex!==bossNextIndex){
+        bossTelegraph = {stageIndex:bossNextIndex, ang:normAng(player.ang+1.3), t:0};
+        showFlash('⚠ '+t('flash_boss_incoming'),50);
+      }
+      bossTelegraph.t = Math.min(1,(score-warnStart)/BOSS_WARN_WINDOW);
+      shake=Math.max(shake, bossTelegraph.t*bossTelegraph.t*10);
+    } else if(bossTelegraph){
+      bossTelegraph=null;
+    }
   }
 
   if(shake>0) shake*=Math.pow(0.86,dt);

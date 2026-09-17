@@ -229,6 +229,18 @@ bundle gerektirmez, npm paketi Cordova plugin sistemi üzerinden doğrudan çal�
   `processReleaseMainManifest` adımında hata verdi — `minSdkVersion` 23→24'e
   yükseltilerek düzeltildi (Android 7.0 Nougat, günümüzde pazarın ~%99'unu kapsıyor,
   pratikte kayıp yok).
+- 17 Eylül 2026 (v1.7.0): üç oynanış geliştirmesi eklendi — (1) **Can (kalp)
+  düşürme**: HP dolu değilken, ~%6 ihtimalle (her seferinde en az 300 puan ara ile)
+  yeşilimsi-pembe bir kalp beliriyor, toplanınca +1 can veriyor (`HEART_CHANCE`/
+  `HEART_SCORE_GAP`, `engine.js`); (2) **Nasıl Oynanır ekranı genişletildi**:
+  tüm 7 tehlike tipinin hasarını ve yıldız/altın/elmas/boncuk/can kazanımlarını
+  listeleyen iki yeni kısa kart + boss dalgası açıklaması eklendi
+  (`howto_hazards_html`/`howto_gains_html`/`howto_boss_html`, i18n.js, 15 dilde);
+  (3) **Boss geliş sahnesi**: eşikten (950/4950/9950) 50 puan önce ekranın
+  ortasından mavi-beyaz, her şeyden farklı renkte bir yaratık büyüyerek çıkıyor,
+  eşiğe (1000/5000/10000) ulaşınca tam o noktada patlayıp mevcut boss dalgasını
+  başlatıyor (`bossTelegraph`, `BOSS_WARN_WINDOW`, `drawBossTelegraph()` — engine.js/
+  render.js).
 
 ### 🎫 Sezon Bileti (Battle-Pass) — ücretsiz + ücretli çizgi
 

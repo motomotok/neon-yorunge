@@ -68,6 +68,8 @@ function drawWorld(){
       drawItem(CX+Math.cos(it.ang)*rad, CY+Math.sin(it.ang)*rad, it.type, easeOut(Math.max(0,it.pop)), t, it);
     }
   }
+  if(GAME_STATES[state] && bossTelegraph) drawBossTelegraph(t, bossTelegraph);
+
   // Oyuncu küresi gerçek oyunda VE menü ailesindeki ekranlarda (yavaşça
   // dönerek, "canlı menü") çizilir — sadece boncuk/asteroit menüde yok.
   if(GAME_STATES[state] || MENU_STATES[state]) drawPlayer(t);
@@ -323,6 +325,7 @@ function drawItem(x,y,type,sc,t,it){
   else if(type==='star') col=T.star;
   else if(type==='diamond') col='#eafcff';
   else if(type==='coin') col='#ffb454';
+  else if(type==='heart') col='#ff5d8f';
   else col='#ffffff';
   const glowAlpha = type==='hazardTwinDecoy' ? 0.3+Math.sin(t*9)*0.15 : 0.6;
   const g=ctx.createRadialGradient(x,y,0,x,y,R*2.4);
@@ -408,6 +411,10 @@ function drawItem(x,y,type,sc,t,it){
     ctx.fillStyle='#c47a1f'; ctx.beginPath(); ctx.arc(0,0,R*0.62,0,7); ctx.fill();
     ctx.fillStyle='#ffe3a8'; ctx.beginPath(); ctx.arc(0,0,R*0.28,0,7); ctx.fill();
     ctx.restore();
+  } else if(type==='heart'){
+    const pulse=1+Math.sin(t*5)*0.08;
+    drawHeartShape(x,y,R*1.15*pulse,col);
+    ctx.fillStyle='rgba(255,255,255,.85)'; ctx.beginPath(); ctx.arc(x-R*0.22,y-R*0.18,R*0.22,0,7); ctx.fill();
   } else {
     ctx.fillStyle='rgba(255,255,255,.14)'; ctx.beginPath(); ctx.arc(x,y,R*1.25,0,7); ctx.fill();
     const iconKey = PW_ICON_TYPE[type];
@@ -419,6 +426,37 @@ function drawStar(x,y,outer,inner,pts,rot,col){
   for(let i=0;i<pts*2;i++){ const rr=i%2?inner:outer; const a=rot+i*Math.PI/pts-Math.PI/2;
     const xx=x+Math.cos(a)*rr, yy=y+Math.sin(a)*rr; i?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy); }
   ctx.closePath(); ctx.fill();
+}
+function drawHeartShape(x,y,r,col){
+  ctx.save(); ctx.translate(x,y); ctx.fillStyle=col;
+  ctx.beginPath();
+  ctx.moveTo(0,r*0.32);
+  ctx.bezierCurveTo(0,-r*0.28, -r*1.05,-r*0.28, -r*1.05,r*0.32);
+  ctx.bezierCurveTo(-r*1.05,r*0.82, -r*0.35,r*1.05, 0,r*1.35);
+  ctx.bezierCurveTo(r*0.35,r*1.05, r*1.05,r*0.82, r*1.05,r*0.32);
+  ctx.bezierCurveTo(r*1.05,-r*0.28, 0,-r*0.28, 0,r*0.32);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+// Boss'un gelişini önceden hissettiren yaratık: merkezden (güneşten) dışa
+// doğru, oyuncu tehlikelerinin hiçbirinde kullanılmayan farklı bir renkle
+// (elektrik mavisi) büyüyerek yaklaşır — bkz. engine.js bossTelegraph.
+function drawBossTelegraph(t, tel){
+  const scale = 1+tel.stageIndex*0.25;
+  const maxR = RINGS[2]*1.05;
+  const rr = maxR*easeOut(tel.t);
+  const x=CX+Math.cos(tel.ang)*rr, y=CY+Math.sin(tel.ang)*rr;
+  const pulse = 1+Math.sin(t*14)*0.18*tel.t;
+  const R = (PLAYER_R*1.3 + tel.t*PLAYER_R*1.1)*pulse*scale;
+  const glowR = R*3.4;
+  const g=ctx.createRadialGradient(x,y,0,x,y,glowR);
+  g.addColorStop(0, hexA('#5ad1ff',0.85)); g.addColorStop(0.5, hexA('#5ad1ff',0.32)); g.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,glowR,0,7); ctx.fill();
+  ctx.save(); ctx.translate(x,y); ctx.rotate(t*3.2);
+  drawStar(0,0,R*1.3,R*0.5,6,0,'#eafcff');
+  ctx.restore();
+  ctx.strokeStyle=hexA('#5ad1ff',0.6+Math.sin(t*10)*0.3); ctx.lineWidth=2.2; ctx.setLineDash([3,4]);
+  ctx.beginPath(); ctx.arc(x,y,R*1.9,0,7); ctx.stroke(); ctx.setLineDash([]);
 }
 function drawParticles(dt){
   for(const p of particles){
