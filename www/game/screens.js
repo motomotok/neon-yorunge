@@ -12,19 +12,20 @@ function showScreen(id){
 function setHud(on){ document.getElementById('hud').classList.toggle('show', on);
   document.getElementById('hint').style.display = on?'block':'none'; }
 
-// Her oyun başlangıcında 10 saniyeliğine sol/sağ dokunma bölgelerini
+// Her oyun başlangıcında 5 saniyeliğine sol/sağ dokunma bölgelerini
 // gösteren yanıp sönen parmak-izi ipuçları — yeni oyuncu kontrolleri
-// ilk bakışta anlasın diye.
+// ilk bakışta anlasın diye (bkz. style.css'teki tutBlink/tutRipple, süre
+// kısaldığı için daha hızlı yanıp sönecek şekilde hızlandırıldı).
 let tutorialHideTimer=null;
 function showTutorialHint(){
   const el=document.getElementById('tutorialHint'); if(!el) return;
   clearTimeout(tutorialHideTimer);
   el.classList.add('show');
-  tutorialHideTimer=setTimeout(()=>el.classList.remove('show'), 10000);
+  tutorialHideTimer=setTimeout(()=>el.classList.remove('show'), 5000);
 }
 
 function goMenu(){ state='menu'; setHud(false); showScreen('menu');
-  document.getElementById('menuBest').textContent=t('menu_best',{n:stats.best});
+  document.getElementById('menuBest').textContent=t('menu_best',{n:stats.best.toFixed(2)});
   // Roguelike hissini güçlendiren iki kalıcı gösterge: "karakter seviyesi"
   // (6 yükseltme hattının toplam kademesi) ve deneme sayacı.
   document.getElementById('powerLevelLine').textContent='⚡ '+totalPowerLevel()+'/48';
@@ -35,7 +36,7 @@ function goMenu(){ state='menu'; setHud(false); showScreen('menu');
   // Türkçe hâl eki (turkishAccusative) sadece 'tr' dilinde geçerli bir gramer
   // kuralı — diğer dillerde düz isim kullanılıyor (bkz. i18n mimarisi).
   const rivalName = cfg.lang==='tr' ? turkishAccusative(stats.rivalName) : stats.rivalName;
-  document.getElementById('rivalLine').textContent=t('rival_line',{name:rivalName, score:stats.rivalScore});
+  document.getElementById('rivalLine').textContent=t('rival_line',{name:rivalName, score:stats.rivalScore.toFixed(2)});
   const streakEl=document.getElementById('streakLine');
   if(streakEl){
     let txt=t('streak_line',{n:stats.loginStreak});
@@ -120,10 +121,10 @@ function gameOver(reason){
   let reasonText='';
   if(reason==='time') reasonText=t('reason_time');
   else if(reason==='zen') reasonText=t('reason_zen');
-  document.getElementById('finalScore').textContent=runScore;
+  document.getElementById('finalScore').textContent=runScore.toFixed(2);
   const melodyOctave=Math.floor(session.streakMax/MELODY_SCALE.length);
   const melodyText = melodyOctave>0 ? t('melody_octave',{n:melodyOctave}) : '';
-  document.getElementById('overStats').textContent=t('over_stats_line',{n:stats.games, reason:reasonText, best:stats.best, level, melody:melodyText});
+  document.getElementById('overStats').textContent=t('over_stats_line',{n:stats.games, reason:reasonText, best:stats.best.toFixed(2), level, melody:melodyText});
   document.getElementById('recordBadge').innerHTML = newRecord ? `<span class="badge">${icon('trophy')} ${t('new_record_badge')}</span>` : '';
   if(mode==='zen'){
     document.getElementById('coinsEarned').innerHTML = `${icon('moon')} ${t('zen_no_stardust')}`;

@@ -438,25 +438,26 @@ function drawHeartShape(x,y,r,col){
   ctx.closePath(); ctx.fill();
   ctx.restore();
 }
-// Boss'un gelişini önceden hissettiren yaratık: merkezden (güneşten) dışa
-// doğru, oyuncu tehlikelerinin hiçbirinde kullanılmayan farklı bir renkle
-// (elektrik mavisi) büyüyerek yaklaşır — bkz. engine.js bossTelegraph.
+// Boss'un gelişini önceden hissettiren yaratık: tam güneşin üstünde,
+// oyuncu tehlikelerinin hiçbirinde kullanılmayan farklı bir renkle
+// (elektrik mavisi) sadece BÜYÜYEREK belirir — ekranda rastgele bir yöne
+// kaymıyor, hep merkezde/güneşte kalıyor ki "ortadan geliyor" net olsun.
+// Eşiğe yaklaştıkça hem döner hem daha hızlı nabız atar.
 function drawBossTelegraph(t, tel){
   const scale = 1+tel.stageIndex*0.25;
-  const maxR = RINGS[2]*1.05;
-  const rr = maxR*easeOut(tel.t);
-  const x=CX+Math.cos(tel.ang)*rr, y=CY+Math.sin(tel.ang)*rr;
-  const pulse = 1+Math.sin(t*14)*0.18*tel.t;
-  const R = (PLAYER_R*1.3 + tel.t*PLAYER_R*1.1)*pulse*scale;
+  const growT = easeOut(tel.t);
+  const pulseSpeed = 6+tel.t*16;
+  const pulse = 1+Math.sin(t*pulseSpeed)*0.16*(0.35+tel.t*0.65);
+  const R = (PLAYER_R*0.5 + growT*PLAYER_R*2.2)*pulse*scale;
   const glowR = R*3.4;
-  const g=ctx.createRadialGradient(x,y,0,x,y,glowR);
+  const g=ctx.createRadialGradient(CX,CY,0,CX,CY,glowR);
   g.addColorStop(0, hexA('#5ad1ff',0.85)); g.addColorStop(0.5, hexA('#5ad1ff',0.32)); g.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,glowR,0,7); ctx.fill();
-  ctx.save(); ctx.translate(x,y); ctx.rotate(t*3.2);
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(CX,CY,glowR,0,7); ctx.fill();
+  ctx.save(); ctx.translate(CX,CY); ctx.rotate(t*(2.2+tel.t*2.4));
   drawStar(0,0,R*1.3,R*0.5,6,0,'#eafcff');
   ctx.restore();
-  ctx.strokeStyle=hexA('#5ad1ff',0.6+Math.sin(t*10)*0.3); ctx.lineWidth=2.2; ctx.setLineDash([3,4]);
-  ctx.beginPath(); ctx.arc(x,y,R*1.9,0,7); ctx.stroke(); ctx.setLineDash([]);
+  ctx.strokeStyle=hexA('#5ad1ff',0.6+Math.sin(t*pulseSpeed)*0.3); ctx.lineWidth=2.2; ctx.setLineDash([3,4]);
+  ctx.beginPath(); ctx.arc(CX,CY,R*1.9,0,7); ctx.stroke(); ctx.setLineDash([]);
 }
 function drawParticles(dt){
   for(const p of particles){

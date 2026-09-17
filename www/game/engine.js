@@ -85,6 +85,10 @@ function resetGame(){
 // bağlı değil, sabit ve yavaş.
 function updateIdleOrb(dt){ player.ang += 0.006*dt; }
 
+// Zorluk çarpanı (0.8/1.35) yüzünden puan artışları küsuratlı olabiliyor;
+// her ekleme sonrası kuruşa (2 ondalık) yuvarlamazsak kayan nokta hatası
+// birikip "44.999999999" gibi uzun/çirkin değerlere yol açıyordu.
+function addScore(n){ score = Math.round((score+n)*100)/100; }
 function normAng(a){ a%=(Math.PI*2); if(a<0)a+=Math.PI*2; return a; }
 function angDiff(a,b){ let d=b-a; while(d>Math.PI)d-=Math.PI*2; while(d<-Math.PI)d+=Math.PI*2; return d; }
 function radiusFor(r){ return RINGS[r]; }
@@ -136,21 +140,19 @@ const BOSS_STAGES = [
 // + pay) bu hızla en az ~6.5 saniyede kat edilir.
 const BOSS_SLOW_RATE = 0.012;
 // Telegraph'ın patlayacağı eşiğe kaç puan kala belirmeye başladığı (bkz.
-// bossTelegraph, update() içindeki hesaplama). 1000-50=950 gibi.
-const BOSS_WARN_WINDOW = 50;
+// bossTelegraph, update() içindeki hesaplama). 1000-10=990 gibi.
+const BOSS_WARN_WINDOW = 10;
 function startBossWave(stageDef){
-  // Telegraph zaten bir açı boyunca merkezden dışa büyümüştü; patlama tam
-  // o noktada olsun ki "yaratık patladı, dalga ondan çıktı" hissi net olsun.
-  const teleAng = bossTelegraph ? bossTelegraph.ang : normAng(player.ang+1.3);
+  // Telegraph tam güneşin üstünde büyümüştü; patlama da tam orada olsun ki
+  // "yaratık güneşten patladı, dalga ondan çıktı" hissi net olsun.
   bossTelegraph = null;
   bossActive=true; bossReward=stageDef.reward; bossWaveItems=[];
   shake=Math.max(shake,20); flash=1;
-  const bx=CX+Math.cos(teleAng)*RINGS[2], by=CY+Math.sin(teleAng)*RINGS[2];
-  burst(bx,by,'#5ad1ff',34,7); burst(bx,by,'#ffffff',22,6);
+  burst(CX,CY,'#5ad1ff',34,7); burst(CX,CY,'#ffffff',22,6);
   burst(CX,CY,'#ffd24a',40,7); burst(CX,CY,'#ff6b3d',30,6); burst(CX,CY,'#ffffff',20,5);
   beep(90,0.5,'sawtooth',0.2); beep(140,0.5,'square',0.16); beep(60,0.6,'sine',0.18);
   showFlash('⚠ '+t('flash_boss_wave'),90); vibrate([30,40,30,40,60]);
-  const startAng = teleAng, spread = 3.2;
+  const startAng = normAng(player.ang + 1.3), spread = 3.2;
   // Halkaları mümkün olduğunca eşit dağıt — sıra karışık ama sayım eşit
   // (örn. 5 öğe -> {0,1,2} üzerinden 2/2/1 gibi). Eskiden her öğe bağımsız
   // rastgele halka seçiyordu; bu da şans eseri hepsinin aynı (genelde en
@@ -328,7 +330,7 @@ function showFlash(text,dur){ levelFlashT=dur; document.getElementById('levelFla
 function checkStreak(ix,iy,mult){
   if(combo>0 && combo%MELODY_SCALE.length===0){
     const octave=combo/MELODY_SCALE.length;
-    score+=20*octave*mult; timeScale=0.3; timeScaleT=16;
+    addScore(20*octave*mult); timeScale=0.3; timeScaleT=16;
     showFlash(t('flash_melody',{n:octave}),50); burst(ix,iy,'#ffffff',18,5);
     const root=melodyFreq(combo-1);
     beep(root,0.16,'triangle',0.16,true); beep(root*1.25,0.16,'sine',0.12,true); beep(root*1.5,0.18,'sine',0.10,true);
@@ -471,11 +473,11 @@ function update(dt){
     if(grabbed){
       const ix=CX+Math.cos(it.ang)*radiusFor(it.ring), iy=CY+Math.sin(it.ang)*radiusFor(it.ring);
       it.alive=false;
-      if(it.type==='gold'){ combo++; score+=5*combo*mult; session.stars++; session.golds++; stats.golds++;
+      if(it.type==='gold'){ combo++; addScore(5*combo*mult); session.stars++; session.golds++; stats.golds++;
         burst(ix,iy,T.gold,22,5); shake=6; beep(880,0.09,'triangle',0.14); beep(1320,0.10,'sine',0.10); playMelodyNote(combo,0.10); bumpCombo(); checkStreak(ix,iy,mult); }
-      else if(it.type==='diamond'){ combo++; score+=(20+level*4)*mult; session.stars++; session.diamonds++; stats.diamonds++;
+      else if(it.type==='diamond'){ combo++; addScore((20+level*4)*mult); session.stars++; session.diamonds++; stats.diamonds++;
         burst(ix,iy,'#eafcff',26,6); shake=8; beep(1200,0.1,'triangle',0.15); beep(1600,0.12,'sine',0.12); playMelodyNote(combo,0.12); bumpCombo(); checkStreak(ix,iy,mult); }
-      else if(it.type==='star'){ combo++; score+=combo*mult; session.stars++;
+      else if(it.type==='star'){ combo++; addScore(combo*mult); session.stars++;
         burst(ix,iy,T.star,14,4); shake=3; playMelodyNote(combo,0.16); bumpCombo(); checkStreak(ix,iy,mult); }
       else if(it.type==='coin'){
         // Boncuk Değeri yükseltmesi (kalıcı) tabana sabit ek yapar, Yıldız
@@ -524,7 +526,7 @@ function update(dt){
     const stage = BOSS_STAGES[bossNextIndex], warnStart = stage.score-BOSS_WARN_WINDOW;
     if(score>=warnStart){
       if(!bossTelegraph || bossTelegraph.stageIndex!==bossNextIndex){
-        bossTelegraph = {stageIndex:bossNextIndex, ang:normAng(player.ang+1.3), t:0};
+        bossTelegraph = {stageIndex:bossNextIndex, t:0};
         showFlash('⚠ '+t('flash_boss_incoming'),50);
       }
       bossTelegraph.t = Math.min(1,(score-warnStart)/BOSS_WARN_WINDOW);
@@ -603,7 +605,7 @@ function activatePower(type,x,y){
   else if(type==='freeze'){ player.freezeT=FREEZE_DUR*durMul; freezeFlash=1; burst(x,y,'#7fe8ff',20,5); beep(500,0.18,'sine',0.13); }
   else if(type==='mult'){ player.multT=MULT_DUR*durMul; burst(x,y,'#ffd24a',20,5); beep(750,0.14,'triangle',0.13); }
   else if(type==='ghost'){ player.ghostT=GHOST_DUR*durMul; burst(x,y,'#ffffff',20,5); beep(450,0.16,'sine',0.13); }
-  score+=10*(diffCfg.scoreMult||1); shake=6; vibrate(15);
+  addScore(10*(diffCfg.scoreMult||1)); shake=6; vibrate(15);
 }
 
 function bumpCombo(){
@@ -617,7 +619,7 @@ function bumpCombo(){
 // reflow/style recalculation önlenir).
 const _hud = {score:null, combo:null, level:null, hp:null, hpText:null, isTime:null, timer:null, pw:null, flash:null, wallet:null};
 function updateHud(){
-  if(_hud.score!==score){ document.getElementById('scoreHud').textContent=score; _hud.score=score; }
+  if(_hud.score!==score){ document.getElementById('scoreHud').textContent=score.toFixed(2); _hud.score=score; }
   const comboText='x'+combo;
   if(_hud.combo!==comboText){ document.getElementById('combo').textContent=comboText; _hud.combo=comboText; }
   if(_hud.level!==level){ document.getElementById('levelHud').textContent=level; _hud.level=level; }

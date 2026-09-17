@@ -241,6 +241,27 @@ bundle gerektirmez, npm paketi Cordova plugin sistemi üzerinden doğrudan çal�
   eşiğe (1000/5000/10000) ulaşınca tam o noktada patlayıp mevcut boss dalgasını
   başlatıyor (`bossTelegraph`, `BOSS_WARN_WINDOW`, `drawBossTelegraph()` — engine.js/
   render.js).
+- 17 Eylül 2026 (v1.7.1): kullanıcı geri bildirimiyle 4 düzeltme —
+  (1) **Puan yuvarlama**: zorluk çarpanı (0.8×/1.35×) yüzünden `44.999999999`
+  gibi uzun ondalıklı skorlar oluşabiliyordu; artık her puan eklemesinde
+  kuruşa (2 ondalık) yuvarlanıyor (`addScore()`, engine.js) ve tüm skor
+  gösterimleri (HUD, oyun sonu, en iyi skor, skor tablosu, rakip) `.toFixed(2)`
+  ile tutarlı xx.xx biçiminde gösteriliyor; (2) **Nasıl Oynanır'daki tehlike
+  ikonları**: geçen sürümde kullanılan ⬥⬠⬡✴️✦ gibi "dingbat" Unicode
+  sembolleri bazı cihaz fontlarında güvenilir/renkli render edilmiyordu (tıpkı
+  önceki bayrak-emoji sorunundaki gibi) — artık mevcut `.dot` renkli nokta
+  sistemiyle (zaten Yıldız/Altın/Elmas/Asteroit lejantında kullanılan), oyun
+  içindeki gerçek tehlike renkleriyle birebir eşleşecek şekilde gösteriliyor;
+  (3) **Dokunma ipuçları**: oyun başındaki sol/sağ dokunma göstergeleri
+  10 saniye yerine 5 saniye gösteriliyor, yanıp sönme hızı da artırıldı
+  (1.5s → 0.7s, style.css `tutBlink`/`tutRipple`); (4) **Boss geliş sahnesi
+  düzeltmesi**: önceki sürümde yaratık sabit bir açı boyunca merkezden dış
+  halkaya doğru KAYIYORDU — bu bazı oyunlarda "rastgele bir yerden geliyor"
+  gibi görünüyordu. Artık tamamen güneşin üstünde sabit kalıp sadece
+  büyüyor/nabız atıyor (`drawBossTelegraph()`, render.js), rastgele konum
+  hissi tamamen kalktı. Ayrıca uyarı penceresi 50 puandan 10 puana indirildi
+  (`BOSS_WARN_WINDOW`) — artık 990/4990/9990'da başlıyor, 1000/5000/10000'de
+  patlıyor.
 
 ### 🎫 Sezon Bileti (Battle-Pass) — ücretsiz + ücretli çizgi
 

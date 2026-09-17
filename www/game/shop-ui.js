@@ -52,7 +52,7 @@ function renderStatsTab(){
   document.getElementById('leagueCard').style.display = statsTab==='league' ? 'block' : 'none';
 }
 function syncStats(){
-  document.getElementById('stBest').textContent=stats.best;
+  document.getElementById('stBest').textContent=stats.best.toFixed(2);
   document.getElementById('stStars').textContent=stats.stars;
   document.getElementById('stGames').textContent=stats.games;
   document.getElementById('stLevel').textContent=stats.maxLevel;
@@ -69,7 +69,7 @@ function renderRivalLeague(){
     const rn = cfg.lang==='tr' ? turkishAccusative(r.name) : r.name;
     return `<div class="row" style="${beaten?'opacity:.55':''}">
       <span class="k">${beaten?icon('check'):icon('target')} ${t('rival_beat_row',{name:rn})}</span>
-      <span class="v">${r.score}</span>
+      <span class="v">${r.score.toFixed(2)}</span>
     </div>`;
   }).join('');
 }
@@ -101,12 +101,12 @@ function renderAchievements(){
 function renderLeaderboard(){
   const el=document.getElementById('lbList');
   if(!stats.leaderboard.length){ el.innerHTML=`<div class="row"><span class="k">${t('no_records')}</span></div>`; return; }
-  el.innerHTML = stats.leaderboard.map(e=>`<div class="row"><span class="k">${e.date} · ${modeLabel(e.mode)}</span><span class="v">${e.score}</span></div>`).join('');
+  el.innerHTML = stats.leaderboard.map(e=>`<div class="row"><span class="k">${e.date} · ${modeLabel(e.mode)}</span><span class="v">${e.score.toFixed(2)}</span></div>`).join('');
 }
 function refreshDailyStatus(){
   const td=todayStr();
   const done = stats.dailyDate===td && stats.dailyDone;
-  document.getElementById('dailyStatus').textContent = done ? t('mode_daily_played',{score:stats.dailyScore}) : t('mode_daily_desc');
+  document.getElementById('dailyStatus').textContent = done ? t('mode_daily_played',{score:stats.dailyScore.toFixed(2)}) : t('mode_daily_desc');
 }
 
 function refreshWallet(){
