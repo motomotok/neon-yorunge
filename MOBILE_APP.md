@@ -262,6 +262,18 @@ bundle gerektirmez, npm paketi Cordova plugin sistemi üzerinden doğrudan çal�
   hissi tamamen kalktı. Ayrıca uyarı penceresi 50 puandan 10 puana indirildi
   (`BOSS_WARN_WINDOW`) — artık 990/4990/9990'da başlıyor, 1000/5000/10000'de
   patlıyor.
+- 21 Eylül 2026 (v1.9.3): (1) **Android düzeltmeleri** — telefonda (Redmi Note 9,
+  WebView) menü hiç görünmüyordu: `100dvh` bu WebView'de 0'a çözülüyor, `#screen-menu`
+  ve `.screen.fullpin` 0 yüksekliğe çöküyordu. Yükseklik artık `engine.js resize()`
+  içinde `--app-h` CSS değişkenine yazılıyor (`style.css: var(--app-h,100vh)`).
+  Ayrıca `premium.js`'teki cordova-plugin-purchase v13'te olmayan
+  `store.when().owned()` çağrısı native'de yakalanmamış TypeError fırlatıyordu,
+  kaldırıldı (sahiplik zaten `productUpdated` içinde). (2) **Oynanış sadeleştirmesi**:
+  toplanabilirler yıldız/boncuk/elmas/can'a, güç-yükseltmeleri kalkan/mıknatıs/
+  yavaşlatma/çarpana indirildi (altın, zaman dondurma, hayalet kaldırıldı; artık
+  imkansız `gold2` günlük görevi silindi; Nasıl Oynanır ve ana menü lejantı 15 dilde
+  güncellendi). (3) AI ile üretilmiş görsel asset'ler denendi ama kullanıcı isteğiyle
+  tamamen kaldırıldı (v1.8.x revert'leri) — öğeler yine vektör çiziliyor.
 
 ### 🎫 Sezon Bileti (Battle-Pass) — ücretsiz + ücretli çizgi
 

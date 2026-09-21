@@ -9,6 +9,10 @@ const NUM_RINGS = 3, MIN_GAP = 0.55;
 function resize(){
   DPR = Math.min(window.devicePixelRatio||1, 2);
   W = window.innerWidth; H = window.innerHeight;
+  // Bazı Android WebView'lerde (örn. Redmi Note 9) 100dvh 0'a çözülüyor ve
+  // tüm menü/ekranlar çökeyip görünmez oluyordu; gerçek yüksekliği CSS'e
+  // JS ile veriyoruz (style.css: var(--app-h,100vh)).
+  document.documentElement.style.setProperty('--app-h', H+'px');
   cv.width=W*DPR; cv.height=H*DPR; cv.style.width=W+'px'; cv.style.height=H+'px';
   ctx.setTransform(DPR,0,0,DPR,0,0);
   CX=W/2; CY=H/2;
@@ -46,7 +50,7 @@ const SLOW_DUR=300, MAGNET_DUR=360, INVUL=47.5, FREEZE_DUR=150, MULT_DUR=360, GH
 // Kombo başına eklenen hız payı — bkz. update()'teki comboSpeedBonus.
 // diffCfg.speedCap'e göre normal zorlukta tavana ~combo 27'de ulaşılır.
 const COMBO_SPEED_STEP = 0.09;
-const PW = ['shield','slow','magnet','freeze','mult','ghost'];
+const PW = ['shield','slow','magnet','mult'];
 // HUD çipleriyle (bkz. chip() çağrıları aşağıda) aynı ikon setine eşler —
 // oyun dünyasındaki takviye topları da render.js'de bu anahtarlarla,
 // sistem emojisi yerine oyunun kendi SVG ikonlarıyla çizilir.
@@ -207,7 +211,6 @@ function spawnItem(atAng, atRing){
     } else if(r < hazChance+0.03) type='diamond';
     else if(r < hazChance+0.08) type=PW[Math.floor(rnd()*PW.length)];
     else if(r < hazChance+0.14) type='coin';
-    else if(r < hazChance+0.25) type='gold';
     else type='star';
   }
   items.push({ang, ring, type, alive:true, pop:0, expiring:false, prevFwd:null,
@@ -473,9 +476,7 @@ function update(dt){
     if(grabbed){
       const ix=CX+Math.cos(it.ang)*radiusFor(it.ring), iy=CY+Math.sin(it.ang)*radiusFor(it.ring);
       it.alive=false;
-      if(it.type==='gold'){ combo++; addScore(5*combo*mult); session.stars++; session.golds++; stats.golds++;
-        burst(ix,iy,T.gold,22,5); shake=6; beep(880,0.09,'triangle',0.14); beep(1320,0.10,'sine',0.10); playMelodyNote(combo,0.10); bumpCombo(); checkStreak(ix,iy,mult); }
-      else if(it.type==='diamond'){ combo++; addScore((20+level*4)*mult); session.stars++; session.diamonds++; stats.diamonds++;
+      if(it.type==='diamond'){ combo++; addScore((20+level*4)*mult); session.stars++; session.diamonds++; stats.diamonds++;
         burst(ix,iy,'#eafcff',26,6); shake=8; beep(1200,0.1,'triangle',0.15); beep(1600,0.12,'sine',0.12); playMelodyNote(combo,0.12); bumpCombo(); checkStreak(ix,iy,mult); }
       else if(it.type==='star'){ combo++;
         // Yıldızın tam merkezine ne kadar yakın toplandığına göre küçük bir

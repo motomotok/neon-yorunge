@@ -30,7 +30,6 @@
     });
     store.when().approved((transaction) => transaction.verify());
     store.when().verified((receipt) => receipt.finish());
-    store.when().owned(() => { onOwned && onOwned(); });
   }
 
   function purchase() {
