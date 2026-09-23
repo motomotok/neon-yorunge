@@ -7,7 +7,7 @@ let W,H,CX,CY,DPR, RINGS=[], PLAYER_R;
 const NUM_RINGS = 3, MIN_GAP = 0.55;
 
 function resize(){
-  DPR = Math.min(window.devicePixelRatio||1, 2);
+  DPR = Math.min(window.devicePixelRatio||1, 1.5);
   W = window.innerWidth; H = window.innerHeight;
   // Bazı Android WebView'lerde (örn. Redmi Note 9) 100dvh 0'a çözülüyor ve
   // tüm menü/ekranlar çökeyip görünmez oluyordu; gerçek yüksekliği CSS'e
@@ -59,7 +59,10 @@ const PW_ICON_TYPE = {shield:'shield', slow:'clock', magnet:'magnet', freeze:'ho
 function resetGame(){
   player = { ang:-Math.PI/2, targetRing:0, curRadius:radiusFor(0), speed:1.6, speedMulEase:1,
              shieldHits:0, slowT:0, magnetT:0, invulT:0, freezeT:0, multT:0, ghostT:0 };
-  items=[]; particles=[]; score=0; combo=1;
+  items=[]; particles=[]; score=0;
+  // Çekirdek Ağacı'ndaki "Refleks" dalı, her denemeyi biraz daha ileriden
+  // (yüksek bir kombodan) başlatır — kalıcı, sıfırlanmayan bir avantaj.
+  combo=1+Math.floor(coreBonus('startCombo'));
   maxHp = mode==='zen' ? 9999 : maxHpFor(); hp = maxHp;
   level=1; elapsed=0; spawnCooldown=0; shake=0; flash=0; freezeFlash=0; levelFlashT=0;
   session = {stars:0, golds:0, diamonds:0, magnets:0, hits:0, shieldSaved:false, streakMax:0,
@@ -183,7 +186,10 @@ function startBossWave(stageDef){
 // İkisi de başarıyla yerleştirilip yerleştirilmediğini boolean döner.
 function spawnItem(atAng, atRing){
   const zen = mode==='zen';
-  const hazChance = zen ? 0 : Math.min(diffCfg.hazCap, diffCfg.hazBase + elapsed*diffCfg.hazRamp);
+  // Çekirdek Ağacı'ndaki "Sağlamlık" dalı tehlike ihtimalini kalıcı olarak
+  // hafifçe düşürür — %30'la sınırlı, zorluk hep anlamlı kalsın diye.
+  const hazSoftMul = 1-Math.min(0.3, coreBonus('hazardSoften'));
+  const hazChance = zen ? 0 : Math.min(diffCfg.hazCap, diffCfg.hazBase + elapsed*diffCfg.hazRamp)*hazSoftMul;
   let ang=atAng, ring=atRing;
   if(ang==null || ring==null){
     let tries=0, ok=false;

@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '1.9.3';
+const GAME_VERSION = '1.10.0';
 
 const THEMES = {
   neon:      {nameKey:'theme_neon',      star:'#54e0ff', gold:'#ffd24a', peril:'#ff4d6d', player:'#a97bff', sun:'#8ad8ff', bg0:'#05060f', bg1:'#0b0f2a', sf:'#9fb8ff', gate:{type:'free'}},
@@ -138,10 +138,14 @@ const META_UPGRADES = {
   },
 };
 function upgradeLevel(key){ return (stats.upgrades && stats.upgrades[key]) || 0; }
+// Kademe (stardust, sıfırlanabilir) + Çekirdek Ağacı (prestij, KALICI) aynı
+// anahtar setini paylaşır — böylece maxHpFor()/shieldHitsFor() ve
+// engine.js'teki her upgradeBonus() çağrısı otomatik olarak ikisinin
+// toplamını görür, ayrı bir entegrasyon noktası gerekmez.
 function upgradeBonus(key){
   const lvl=upgradeLevel(key), tiers=META_UPGRADES[key].tiers;
   let s=0; for(let i=0;i<lvl;i++) s+=tiers[i].add;
-  return s;
+  return s + coreBonus(key);
 }
 function nextUpgradeTier(key){ return META_UPGRADES[key].tiers[upgradeLevel(key)] || null; }
 function buyUpgrade(key){
@@ -170,6 +174,113 @@ function resetProgression(){
   stats.upgrades = {hp:0, coinPct:0, itemCoin:0, boostDur:0, shieldPower:0, multPower:0};
   stats.stardust = 0;
   saveStats(); refreshWallet();
+}
+
+// ---- Süpernova (prestij) ve Çekirdek Ağacı -----------------------------
+// Oyuncuları bir "sona" götüren eşik mekaniği: Kademe (stardust) ağacını
+// ve bakiyeni tamamen sıfırlayıp karşılığında kalıcı bir "Çekirdek"
+// kazanıyorsun. Çekirdekler, HİÇBİR sıfırlamada silinmeyen ayrı bir ağaçta
+// (CORE_TREE) harcanır — her düğüm bir üsttekini açtıktan sonra açılabilir,
+// tıpkı gerçek bir yetenek ağacı gibi. Bu döngü (kasarak kademe doldur ->
+// sıfırla -> kalıcı güç kazan -> baştan kas ama artık daha güçlüsün)
+// Scritchy Scratchy'deki "jeton" kurgusunun buradaki karşılığı.
+//
+// Düğüm etkileri META_UPGRADES ile AYNI anahtarları (hp/coinPct/boostDur/
+// multPower) kullanır ve upgradeBonus() üzerinden otomatik toplanır — SADECE
+// 'startCombo' ve 'hazardSoften' yeni, kalıcı anahtarlar (bkz. engine.js).
+const CORE_TREE = [
+  {id:'core_root', nameKey:'core_root_name', icon:'orbit', cost:0, req:[], effects:{}},
+
+  {id:'core_hp_1', nameKey:'core_hp1_name', icon:'shield', cost:2,  req:['core_root'],  effects:{hp:1}},
+  {id:'core_hp_2', nameKey:'core_hp2_name', icon:'shield', cost:3,  req:['core_hp_1'],  effects:{hp:1}},
+  {id:'core_hp_3', nameKey:'core_hp3_name', icon:'shield', cost:5,  req:['core_hp_2'],  effects:{hp:1}},
+  {id:'core_hp_4', nameKey:'core_hp4_name', icon:'shield', cost:8,  req:['core_hp_3'],  effects:{hp:1}},
+  {id:'core_hp_5', nameKey:'core_hp5_name', icon:'shield', cost:13, req:['core_hp_4'],  effects:{hp:2}},
+
+  {id:'core_wealth_1', nameKey:'core_wealth1_name', icon:'coin', cost:2,  req:['core_root'],     effects:{coinPct:0.01}},
+  {id:'core_wealth_2', nameKey:'core_wealth2_name', icon:'coin', cost:3,  req:['core_wealth_1'], effects:{coinPct:0.01}},
+  {id:'core_wealth_3', nameKey:'core_wealth3_name', icon:'coin', cost:5,  req:['core_wealth_2'], effects:{coinPct:0.015}},
+  {id:'core_wealth_4', nameKey:'core_wealth4_name', icon:'coin', cost:8,  req:['core_wealth_3'], effects:{coinPct:0.015}},
+  {id:'core_wealth_5', nameKey:'core_wealth5_name', icon:'coin', cost:13, req:['core_wealth_4'], effects:{coinPct:0.02}},
+
+  {id:'core_time_1', nameKey:'core_time1_name', icon:'hourglass', cost:2,  req:['core_root'],   effects:{boostDur:0.01}},
+  {id:'core_time_2', nameKey:'core_time2_name', icon:'hourglass', cost:3,  req:['core_time_1'], effects:{boostDur:0.01}},
+  {id:'core_time_3', nameKey:'core_time3_name', icon:'hourglass', cost:5,  req:['core_time_2'], effects:{boostDur:0.015}},
+  {id:'core_time_4', nameKey:'core_time4_name', icon:'hourglass', cost:8,  req:['core_time_3'], effects:{boostDur:0.015}},
+  {id:'core_time_5', nameKey:'core_time5_name', icon:'hourglass', cost:13, req:['core_time_4'], effects:{boostDur:0.02}},
+
+  {id:'core_power_1', nameKey:'core_power1_name', icon:'lightning', cost:3,  req:['core_root'],    effects:{multPower:0.02}},
+  {id:'core_power_2', nameKey:'core_power2_name', icon:'lightning', cost:4,  req:['core_power_1'], effects:{multPower:0.02}},
+  {id:'core_power_3', nameKey:'core_power3_name', icon:'lightning', cost:6,  req:['core_power_2'], effects:{multPower:0.03}},
+  {id:'core_power_4', nameKey:'core_power4_name', icon:'lightning', cost:10, req:['core_power_3'], effects:{multPower:0.03}},
+  {id:'core_power_5', nameKey:'core_power5_name', icon:'lightning', cost:16, req:['core_power_4'], effects:{multPower:0.05}},
+
+  {id:'core_reflex_1', nameKey:'core_reflex1_name', icon:'flame', cost:2, req:['core_root'],     effects:{startCombo:1}},
+  {id:'core_reflex_2', nameKey:'core_reflex2_name', icon:'flame', cost:4, req:['core_reflex_1'], effects:{startCombo:1}},
+  {id:'core_reflex_3', nameKey:'core_reflex3_name', icon:'flame', cost:7, req:['core_reflex_2'], effects:{startCombo:1}},
+
+  {id:'core_calm_1', nameKey:'core_calm1_name', icon:'gear', cost:2, req:['core_root'],   effects:{hazardSoften:0.05}},
+  {id:'core_calm_2', nameKey:'core_calm2_name', icon:'gear', cost:4, req:['core_calm_1'], effects:{hazardSoften:0.05}},
+  {id:'core_calm_3', nameKey:'core_calm3_name', icon:'gear', cost:7, req:['core_calm_2'], effects:{hazardSoften:0.05}},
+
+  {id:'core_capstone', nameKey:'core_capstone_name', icon:'atom', cost:50,
+    req:['core_hp_5','core_wealth_5','core_time_5','core_power_5','core_reflex_3','core_calm_3'],
+    effects:{hp:2, coinPct:0.02, boostDur:0.02, multPower:0.05, startCombo:1, hazardSoften:0.05}},
+];
+// Çekirdek Ağacı'ndaki (dallar, tek tek ekranda bu sırayla dizilir) 6 dal —
+// her biri bir üsttekini gerektiren düz bir zincir, hepsi kökten (core_root)
+// çıkar; capstone hepsinin ucunu birleştirir (bkz. upgrades-ui.js).
+const CORE_BRANCHES = [
+  {labelKey:'core_branch_hp',     ids:['core_hp_1','core_hp_2','core_hp_3','core_hp_4','core_hp_5']},
+  {labelKey:'core_branch_wealth', ids:['core_wealth_1','core_wealth_2','core_wealth_3','core_wealth_4','core_wealth_5']},
+  {labelKey:'core_branch_time',   ids:['core_time_1','core_time_2','core_time_3','core_time_4','core_time_5']},
+  {labelKey:'core_branch_power',  ids:['core_power_1','core_power_2','core_power_3','core_power_4','core_power_5']},
+  {labelKey:'core_branch_reflex', ids:['core_reflex_1','core_reflex_2','core_reflex_3']},
+  {labelKey:'core_branch_calm',   ids:['core_calm_1','core_calm_2','core_calm_3']},
+];
+function coreNode(id){ return CORE_TREE.find(n=>n.id===id); }
+function coreNodeOwned(id){ return (stats.coreUnlocked||[]).includes(id); }
+function coreNodeReqMet(node){ return node.req.every(r=>coreNodeOwned(r)); }
+function coreBonus(key){
+  let s=0;
+  for(const node of CORE_TREE){ if(node.effects[key] && coreNodeOwned(node.id)) s+=node.effects[key]; }
+  return s;
+}
+function buyCoreNode(id){
+  const node=coreNode(id);
+  if(!node || coreNodeOwned(id) || !coreNodeReqMet(node) || (stats.cores||0)<node.cost) return false;
+  stats.cores -= node.cost;
+  stats.coreUnlocked.push(id);
+  saveStats(); refreshWallet();
+  return true;
+}
+// Çekirdek kazanç ağırlıkları: geliştirme ağacı (Kademe toplamı, 0-48) EN
+// yüksek katsayı, en iyi skorda SON sıfırlamadan bu yana yapılan yeni
+// ilerleme ikinci, oynanan yeni oyun sayısı en düşük katsayı. Kare kök
+// kullanılması büyük sayıların (skor binlerce olabiliyor) çekirdek
+// ekonomisini bozmasını engelliyor — incremental oyunlardaki standart
+// "yumuşatma" kalıbı. Skor/oyun sayısı LIFETIME değil, bestAtPrestige/
+// gamesAtPrestige'e göre DELTA hesaplanır — aksi halde tek bir yüksek
+// skorla art arda sıfırlayıp sonsuz çekirdek üretmek mümkün olurdu.
+const CORE_WEIGHTS = {tree:1.8, score:0.085, games:0.05};
+function coresPreview(){
+  const treeFactor = Math.sqrt(totalPowerLevel());
+  const scoreFactor = Math.sqrt(Math.max(0, stats.best - (stats.bestAtPrestige||0)));
+  const gamesFactor = Math.sqrt(Math.max(0, stats.games - (stats.gamesAtPrestige||0)));
+  const raw = treeFactor*CORE_WEIGHTS.tree + scoreFactor*CORE_WEIGHTS.score + gamesFactor*CORE_WEIGHTS.games;
+  return Math.max(0, Math.floor(raw));
+}
+function performPrestige(){
+  const gain = coresPreview();
+  if(gain<=0) return 0;
+  stats.cores = (stats.cores||0)+gain;
+  stats.lifetimeCores = (stats.lifetimeCores||0)+gain;
+  stats.totalPrestiges = (stats.totalPrestiges||0)+1;
+  stats.bestAtPrestige = stats.best;
+  stats.gamesAtPrestige = stats.games;
+  resetProgression();
+  saveStats(); refreshWallet();
+  return gain;
 }
 
 function isUnlockedItem(category, item){
@@ -229,10 +340,26 @@ let stats = load('neonYorungeStats', {
   seasonClaimedFree:[], seasonClaimedPremium:[],
   upgrades:{hp:0, coinPct:0, itemCoin:0, boostDur:0, shieldPower:0, multPower:0},
   tutorialDone:false,
+  cores:0, lifetimeCores:0, totalPrestiges:0, bestAtPrestige:0, gamesAtPrestige:0,
+  coreUnlocked:['core_root'],
 });
 function load(k,def){ try{ return Object.assign({}, def, JSON.parse(localStorage.getItem(k)||'{}')); }catch(e){ return def; } }
-function saveCfg(){ try{ localStorage.setItem('neonYorungeCfg', JSON.stringify(cfg)); }catch(e){} }
-function saveStats(){ try{ localStorage.setItem('neonYorungeStats', JSON.stringify(stats)); }catch(e){} }
+// Senkron localStorage yazımı WebView'de kare kaybettirir; oyun sonunda art arda
+// çağrılan kayıtlar tek yazımda birleşsin diye ertelenir, uygulama arka plana
+// giderken de zorla yazılır.
+let _dirtyCfg=false, _dirtyStats=false, _saveTimer=null;
+function flushSaves(){
+  clearTimeout(_saveTimer); _saveTimer=null;
+  try{
+    if(_dirtyCfg){ _dirtyCfg=false; localStorage.setItem('neonYorungeCfg', JSON.stringify(cfg)); }
+    if(_dirtyStats){ _dirtyStats=false; localStorage.setItem('neonYorungeStats', JSON.stringify(stats)); }
+  }catch(e){}
+}
+function _queueSave(){ if(!_saveTimer) _saveTimer=setTimeout(flushSaves,300); }
+function saveCfg(){ _dirtyCfg=true; _queueSave(); }
+function saveStats(){ _dirtyStats=true; _queueSave(); }
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) flushSaves(); });
+window.addEventListener('pagehide',flushSaves);
 
 // speedRamp artık SKORA bağlı (bkz. engine.js update() — skor 1500'e kadar
 // hiç devreye girmiyor) ve eskisine göre %20 daha yumuşak — ani/aşırı hız

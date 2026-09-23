@@ -53,7 +53,7 @@ function goMode(){ state='mode'; setHud(false); showScreen('mode'); refreshDaily
 function goShop(){ state='shop'; setHud(false); showScreen('shop'); ensureDailyDeal(); refreshWallet(); renderDealBanner(); renderShopTab(); syncAdButtons(); }
 function goBattlepass(){ state='battlepass'; setHud(false); showScreen('battlepass'); renderBattlepass(); }
 function goLanguage(){ state='language'; setHud(false); showScreen('language'); if(typeof syncLangDockButton==='function') syncLangDockButton(); }
-function goUpgrades(){ state='upgrades'; setHud(false); showScreen('upgrades'); refreshWallet(); renderUpgrades();
+function goUpgrades(){ state='upgrades'; setHud(false); showScreen('upgrades'); refreshWallet(); renderUpgrades(); renderUpgradesTab();
   if(tutorialActive && typeof tutorialOnNav==='function') tutorialOnNav('upgrades');
 }
 

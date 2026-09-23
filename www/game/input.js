@@ -24,6 +24,9 @@ document.querySelectorAll('#shopTabs .stab').forEach(el=>{
 document.querySelectorAll('#statsTabs .stab').forEach(el=>{
   el.addEventListener('click', ()=>{ statsTab=el.dataset.statTab; renderStatsTab(); beep(500,0.05,'sine',0.08); });
 });
+document.querySelectorAll('#upgradesTabs .stab').forEach(el=>{
+  el.addEventListener('click', ()=>{ upgradesTab=el.dataset.uptab; renderUpgradesTab(); beep(500,0.05,'sine',0.08); });
+});
 
 document.querySelectorAll('[data-go]').forEach(b=>{
   b.addEventListener('click', e=>{ e.stopPropagation();
@@ -74,13 +77,7 @@ document.querySelectorAll('.toggleGrid .toggle').forEach(row=>{
     const sw=row.querySelector('.sw'); if(sw) sw.click();
   });
 });
-document.getElementById('resetProgressBtn').addEventListener('click', ()=>{
-  showPurchaseConfirm('replay', t('reset_progress_btn'), null, ()=>{
-    resetProgression(); renderUpgrades();
-    queueToast(t('reset_progress_toast'));
-    beep(300,0.15,'square',0.12);
-  }, t('reset_progress_confirm'));
-});
+document.getElementById('resetProgressBtn').addEventListener('click', ()=>{ attemptPrestige(); });
 document.getElementById('pcYesBtn').addEventListener('click', e=>{ e.stopPropagation();
   const cb=pendingPurchase; hidePurchaseConfirm(); if(cb) cb();
 });

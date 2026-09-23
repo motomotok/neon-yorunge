@@ -224,14 +224,30 @@
   <div class="screen fullpin" id="screen-upgrades">
     <div class="screenHead">
       <h2><i class="gicon" data-icon="lightning"></i> <span data-i18n="upgrades_title">Yetenekler</span></h2>
-      <div class="walletBig"><i class="gicon" data-icon="coin"></i> <span id="upgradesWallet">0</span></div>
-      <div class="sub" data-i18n="upgrades_sub">Yıldız tozuyla kalıcı yetenekler kazan — her kazanım TÜM gelecek oyunlarda seninle.</div>
+      <div class="row2" style="gap:8px">
+        <div class="walletBig"><i class="gicon" data-icon="coin"></i> <span id="upgradesWallet">0</span></div>
+        <div class="walletBig core"><i class="gicon" data-icon="atom"></i> <span id="upgradesCoreWallet">0</span></div>
+      </div>
+      <div class="sub" id="upgradesSubText">Yıldız tozuyla kalıcı yetenekler kazan — her kazanım TÜM gelecek oyunlarda seninle.</div>
+      <div class="shopTabs" id="upgradesTabs">
+        <div class="stab sel" data-uptab="tier"><i class="gicon" data-icon="lightning"></i> <span data-i18n="uptab_tier">Kademe</span></div>
+        <div class="stab" data-uptab="core"><i class="gicon" data-icon="atom"></i> <span data-i18n="uptab_core">Çekirdek Ağacı</span></div>
+      </div>
     </div>
     <div class="screenBody">
       <div class="shopGrid" id="upgradesGrid"></div>
+      <div id="coreTreeWrap" style="display:none">
+        <div class="card" id="coreSummaryCard" style="margin-bottom:10px">
+          <div class="row"><span class="k"><i class="gicon" data-icon="atom"></i> <span data-i18n="uptab_core">Çekirdek Ağacı</span></span><span class="v" id="coreProgressText">0/28</span></div>
+        </div>
+        <div class="coreTree" id="coreTree"></div>
+      </div>
     </div>
     <div class="screenFoot">
-      <button class="btn alt small" id="resetProgressBtn"><i class="gicon" data-icon="replay"></i> <span data-i18n="reset_progress_btn">Gelişmeyi Sıfırla</span></button>
+      <div class="card" id="prestigePreviewCard" style="margin-bottom:2px">
+        <div class="sub" id="prestigePreviewText" style="margin:0"></div>
+      </div>
+      <button class="btn alt small" id="resetProgressBtn"><i class="gicon" data-icon="replay"></i> <span data-i18n="reset_progress_btn">Süpernova (Sıfırla)</span></button>
       <button class="btn alt small" data-go="menu"><i class="gicon" data-icon="back"></i> <span data-i18n="btn_back">Geri</span></button>
     </div>
   </div>
@@ -319,7 +335,7 @@
 
 </div>
 
-<div id="purchaseConfirmOverlay" style="display:none;position:fixed;inset:0;z-index:35;align-items:center;justify-content:center;background:rgba(2,3,10,.75);backdrop-filter:blur(2px);padding:20px;">
+<div id="purchaseConfirmOverlay" style="display:none;position:fixed;inset:0;z-index:35;align-items:center;justify-content:center;background:rgba(2,3,10,.75);padding:20px;">
   <div class="card" style="max-width:300px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center;">
     <div id="pcIcon" style="font-size:34px;"></div>
     <div id="pcName" style="font-size:15px;font-weight:800;"></div>
@@ -332,7 +348,7 @@
   </div>
 </div>
 
-<div id="infoPopupOverlay" style="display:none;position:fixed;inset:0;z-index:35;align-items:center;justify-content:center;background:rgba(2,3,10,.75);backdrop-filter:blur(2px);padding:20px;">
+<div id="infoPopupOverlay" style="display:none;position:fixed;inset:0;z-index:35;align-items:center;justify-content:center;background:rgba(2,3,10,.75);padding:20px;">
   <div class="card" style="max-width:300px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center;">
     <div style="font-size:16px;font-weight:800;"><i class="gicon" data-icon="scale"></i> <span data-i18n="legal_title">Gizlilik &amp; Yasal</span></div>
     <button class="btn alt small" id="privacyBtn"><i class="gicon" data-icon="lock"></i> <span data-i18n="privacy_btn">Gizlilik Politikası</span></button>

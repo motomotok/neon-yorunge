@@ -264,8 +264,8 @@ const STRINGS = {
   // --- Yetenekler (kalıcı yükseltmeler) ---
   upgrades_title:{tr:'Yetenekler',en:'Skills',de:'Fähigkeiten',fr:'Compétences',es:'Habilidades',pt:'Habilidades',it:'Abilità',ru:'Навыки',ar:'المهارات',ja:'スキル',ko:'스킬',zh:'技能',hi:'स्किल्स',id:'Skill',pl:'Umiejętności'},
   upgrades_sub:{tr:'Yıldız tozuyla kalıcı yetenekler kazan — her kazanım TÜM gelecek oyunlarda seninle.',en:'Spend stardust on permanent skills — every one stays with you in ALL future runs.',de:'Gib Sternenstaub für dauerhafte Fähigkeiten aus — jede bleibt dir in ALLEN zukünftigen Läufen erhalten.',fr:'Dépense la poussière d’étoile en compétences permanentes — chacune reste acquise dans TOUTES tes futures parties.',es:'Gasta polvo estelar en habilidades permanentes — cada una te acompaña en TODAS tus futuras partidas.',pt:'Gaste poeira estelar em habilidades permanentes — cada uma fica com você em TODAS as partidas futuras.',it:'Spendi polvere stellare in abilità permanenti — ognuna resta con te in TUTTE le partite future.',ru:'Трать звёздную пыль на постоянные навыки — каждый останется с тобой во ВСЕХ будущих попытках.',ar:'أنفق غبار النجوم على مهارات دائمة — تبقى معك في كل الألعاب القادمة.',ja:'スターダストで永続スキルを手に入れよう — 一度獲得すれば今後の全プレイで有効。',ko:'스타더스트로 영구 스킬을 얻으세요 — 한 번 얻으면 앞으로의 모든 게임에 적용됩니다.',zh:'用星尘换取永久技能——每个技能都会在你之后的所有游戏中生效。',hi:'स्टारडस्ट से स्थायी स्किल्स पाओ — हर स्किल भविष्य के सभी खेलों में तुम्हारे साथ रहती है।',id:'Belanjakan stardust untuk skill permanen — setiap skill tetap bersamamu di SEMUA permainan berikutnya.',pl:'Wydawaj pył gwiezdny na trwałe umiejętności — każda zostaje z tobą we WSZYSTKICH kolejnych grach.'},
-  reset_progress_btn:{tr:'Gelişmeyi Sıfırla',en:'Reset Progress',de:'Fortschritt zurücksetzen',fr:'Réinitialiser la progression',es:'Reiniciar progreso',pt:'Redefinir progresso',it:'Reimposta progressi',ru:'Сбросить прогресс',ar:'إعادة ضبط التقدم',ja:'進行状況をリセット',ko:'진행 상황 초기화',zh:'重置进度',hi:'प्रगति रीसेट करें',id:'Reset Progres',pl:'Zresetuj postęp'},
-  reset_progress_confirm:{tr:'Tüm yükseltme kademelerin ve yıldız tozu bakiyen sıfırlanacak. İstatistiklerine (en iyi skor, başarımlar, sahip olduğun kozmetikler vb.) dokunulmaz. Emin misin?',en:'All your skill tiers and stardust balance will be reset. Your stats (best score, achievements, owned cosmetics, etc.) stay untouched. Are you sure?',de:'Alle deine Fähigkeitsstufen und dein Sternenstaub-Guthaben werden zurückgesetzt. Deine Statistiken (bester Punktestand, Erfolge, Kosmetika usw.) bleiben unberührt. Bist du sicher?',fr:'Tous tes paliers de compétences et ton solde de poussière d’étoile seront réinitialisés. Tes statistiques (meilleur score, succès, cosmétiques possédés, etc.) ne sont pas touchées. Es-tu sûr ?',es:'Se restablecerán todos tus niveles de habilidad y tu saldo de polvo estelar. Tus estadísticas (mejor puntuación, logros, cosméticos, etc.) no se ven afectadas. ¿Estás seguro?',pt:'Todos os seus níveis de habilidade e saldo de poeira estelar serão redefinidos. Suas estatísticas (melhor pontuação, conquistas, cosméticos, etc.) não são afetadas. Tem certeza?',it:'Tutti i tuoi livelli di abilità e il saldo di polvere stellare verranno azzerati. Le tue statistiche (miglior punteggio, obiettivi, cosmetici, ecc.) non vengono toccate. Sei sicuro?',ru:'Все уровни навыков и баланс звёздной пыли будут сброшены. Статистика (лучший счёт, достижения, косметика и т.д.) не изменится. Ты уверен?',ar:'سيتم إعادة ضبط جميع مستويات مهاراتك ورصيد غبار النجوم. إحصائياتك (أفضل نتيجة، الإنجازات، المقتنيات، إلخ) لن تتأثر. هل أنت متأكد؟',ja:'すべてのスキル段階とスターダスト残高がリセットされます。統計（ベストスコア、実績、所持コスメなど）はそのままです。よろしいですか？',ko:'모든 스킬 단계와 스타더스트 잔액이 초기화됩니다. 통계(최고 점수, 업적, 보유 코스메틱 등)는 영향받지 않습니다. 계속할까요?',zh:'你的所有技能等级和星尘余额都将被重置。你的统计数据（最高分、成就、已拥有的外观等）不受影响。确定吗？',hi:'तुम्हारे सभी स्किल स्तर और स्टारडस्ट बैलेंस रीसेट हो जाएंगे। तुम्हारे आँकड़े (सर्वश्रेष्ठ स्कोर, उपलब्धियाँ, स्वामित्व वाली वस्तुएँ आदि) अप्रभावित रहेंगे। क्या तुम्हें यकीन है?',id:'Semua tingkat skill dan saldo stardust-mu akan direset. Statistikmu (skor terbaik, pencapaian, kosmetik yang dimiliki, dll.) tidak akan berubah. Yakin?',pl:'Wszystkie poziomy umiejętności i saldo pyłu gwiezdnego zostaną zresetowane. Twoje statystyki (najlepszy wynik, osiągnięcia, posiadane kosmetyki itd.) pozostaną nietknięte. Na pewno?'},
+  reset_progress_btn:{tr:'Süpernova (Sıfırla)',en:'Supernova (Reset)',de:'Fortschritt zurücksetzen',fr:'Réinitialiser la progression',es:'Reiniciar progreso',pt:'Redefinir progresso',it:'Reimposta progressi',ru:'Сбросить прогресс',ar:'إعادة ضبط التقدم',ja:'進行状況をリセット',ko:'진행 상황 초기화',zh:'重置进度',hi:'प्रगति रीसेट करें',id:'Reset Progres',pl:'Zresetuj postęp'},
+  reset_progress_confirm:{tr:'Tüm Kademe yükseltmelerin ve yıldız tozu bakiyen sıfırlanır, karşılığında Çekirdek Ağacı için KALICI Çekirdek kazanırsın. Rekorun, başarımların ve kozmetiklerin etkilenmez. Emin misin?',en:'All your Tier upgrades and stardust balance reset, in exchange for PERMANENT Cores to spend on the Core Tree. Your record, achievements and cosmetics are unaffected. Are you sure?',de:'Alle deine Fähigkeitsstufen und dein Sternenstaub-Guthaben werden zurückgesetzt. Deine Statistiken (bester Punktestand, Erfolge, Kosmetika usw.) bleiben unberührt. Bist du sicher?',fr:'Tous tes paliers de compétences et ton solde de poussière d’étoile seront réinitialisés. Tes statistiques (meilleur score, succès, cosmétiques possédés, etc.) ne sont pas touchées. Es-tu sûr ?',es:'Se restablecerán todos tus niveles de habilidad y tu saldo de polvo estelar. Tus estadísticas (mejor puntuación, logros, cosméticos, etc.) no se ven afectadas. ¿Estás seguro?',pt:'Todos os seus níveis de habilidade e saldo de poeira estelar serão redefinidos. Suas estatísticas (melhor pontuação, conquistas, cosméticos, etc.) não são afetadas. Tem certeza?',it:'Tutti i tuoi livelli di abilità e il saldo di polvere stellare verranno azzerati. Le tue statistiche (miglior punteggio, obiettivi, cosmetici, ecc.) non vengono toccate. Sei sicuro?',ru:'Все уровни навыков и баланс звёздной пыли будут сброшены. Статистика (лучший счёт, достижения, косметика и т.д.) не изменится. Ты уверен?',ar:'سيتم إعادة ضبط جميع مستويات مهاراتك ورصيد غبار النجوم. إحصائياتك (أفضل نتيجة، الإنجازات، المقتنيات، إلخ) لن تتأثر. هل أنت متأكد؟',ja:'すべてのスキル段階とスターダスト残高がリセットされます。統計（ベストスコア、実績、所持コスメなど）はそのままです。よろしいですか？',ko:'모든 스킬 단계와 스타더스트 잔액이 초기화됩니다. 통계(최고 점수, 업적, 보유 코스메틱 등)는 영향받지 않습니다. 계속할까요?',zh:'你的所有技能等级和星尘余额都将被重置。你的统计数据（最高分、成就、已拥有的外观等）不受影响。确定吗？',hi:'तुम्हारे सभी स्किल स्तर और स्टारडस्ट बैलेंस रीसेट हो जाएंगे। तुम्हारे आँकड़े (सर्वश्रेष्ठ स्कोर, उपलब्धियाँ, स्वामित्व वाली वस्तुएँ आदि) अप्रभावित रहेंगे। क्या तुम्हें यकीन है?',id:'Semua tingkat skill dan saldo stardust-mu akan direset. Statistikmu (skor terbaik, pencapaian, kosmetik yang dimiliki, dll.) tidak akan berubah. Yakin?',pl:'Wszystkie poziomy umiejętności i saldo pyłu gwiezdnego zostaną zresetowane. Twoje statystyki (najlepszy wynik, osiągnięcia, posiadane kosmetyki itd.) pozostaną nietknięte. Na pewno?'},
   reset_progress_toast:{tr:'🔄 Yetenekler ve yıldız tozu sıfırlandı — baştan güçlenebilirsin!',en:'🔄 Skills and stardust reset — build your power back up!',de:'🔄 Fähigkeiten und Sternenstaub zurückgesetzt — bau dir deine Stärke neu auf!',fr:'🔄 Compétences et poussière d’étoile réinitialisées — reconstruis ta puissance !',es:'🔄 Habilidades y polvo estelar reiniciados — ¡vuelve a construir tu poder!',pt:'🔄 Habilidades e poeira estelar redefinidas — reconstrua seu poder!',it:'🔄 Abilità e polvere stellare azzerate — ricostruisci il tuo potere!',ru:'🔄 Навыки и звёздная пыль сброшены — набирай силу заново!',ar:'🔄 تمت إعادة ضبط المهارات وغبار النجوم — أعد بناء قوتك!',ja:'🔄 スキルとスターダストがリセットされました — もう一度力を築こう！',ko:'🔄 스킬과 스타더스트가 초기화되었습니다 — 다시 힘을 키워보세요!',zh:'🔄 技能和星尘已重置——重新积累你的力量吧！',hi:'🔄 स्किल्स और स्टारडस्ट रीसेट हो गए — फिर से अपनी शक्ति बनाओ!',id:'🔄 Skill dan stardust direset — bangun kembali kekuatanmu!',pl:'🔄 Umiejętności i pył gwiezdny zresetowane — odbuduj swoją moc!'},
   upgrade_not_taken:{tr:'Henüz alınmadı',en:'Not taken yet',de:'Noch nicht erworben',fr:'Pas encore acquis',es:'Aún no adquirido',pt:'Ainda não adquirido',it:'Non ancora ottenuto',ru:'Ещё не получено',ar:'لم تُكتسب بعد',ja:'まだ未取得',ko:'아직 획득 안 함',zh:'尚未获得',hi:'अभी तक नहीं लिया',id:'Belum diambil',pl:'Jeszcze nie zdobyto'},
   upgrade_next:{tr:'Sıradaki: {text}',en:'Next: {text}',de:'Als Nächstes: {text}',fr:'Suivant : {text}',es:'Siguiente: {text}',pt:'Próximo: {text}',it:'Prossimo: {text}',ru:'Далее: {text}',ar:'التالي: {text}',ja:'次: {text}',ko:'다음: {text}',zh:'下一级：{text}',hi:'अगला: {text}',id:'Berikutnya: {text}',pl:'Następny: {text}'},
@@ -316,6 +316,54 @@ const STRINGS = {
   up_multpower_name:{tr:'Çarpan Gücü',en:'Multiplier Power',de:'Multiplikator-Stärke',fr:'Puissance du multiplicateur',es:'Poder del multiplicador',pt:'Poder do multiplicador',it:'Potenza moltiplicatore',ru:'Сила множителя',ar:'قوة المضاعف',ja:'倍率パワー',ko:'배율 파워',zh:'倍增强度',hi:'मल्टीप्लायर शक्ति',id:'Kekuatan Pengganda',pl:'Moc mnożnika'},
   unit_hp:{tr:'can',en:'HP',de:'LP',fr:'PV',es:'vida',pt:'vida',it:'vite',ru:'HP',ar:'صحة',ja:'HP',ko:'체력',zh:'生命值',hi:'HP',id:'HP',pl:'PŻ'},
   unit_hits:{tr:'vuruş',en:'hits',de:'Treffer',fr:'coups',es:'golpes',pt:'golpes',it:'colpi',ru:'уд.',ar:'ضربات',ja:'回',ko:'회',zh:'次',hi:'वार',id:'pukulan',pl:'trafień'},
+  unit_combo:{tr:'kombo',en:'combo'},
+  unit_hazard:{tr:'tehlike',en:'hazard'},
+
+  // --- Süpernova (prestij) ve Çekirdek Ağacı ---
+  uptab_tier:{tr:'Kademe',en:'Tiers'},
+  uptab_core:{tr:'Çekirdek Ağacı',en:'Core Tree'},
+  core_tree_sub:{tr:'Çekirdek SADECE Süpernova ile kazanılır ve HİÇBİR zaman sıfırlanmaz — her düğüm bir üsttekini gerektirir.',en:'Cores are earned ONLY via Supernova and NEVER reset — each node requires the one above it.'},
+  prestige_preview:{tr:'⚛ Şimdi Süpernova yaparsan +{n} Çekirdek kazanırsın.',en:'⚛ Trigger Supernova now to earn +{n} Core.'},
+  prestige_preview_zero:{tr:'Henüz yeterli ilerleme yok — biraz daha kasıp Kademe doldur, skor kır ya da oyna.',en:'Not enough progress yet — fill more Tiers, beat your score, or play a bit more.'},
+  prestige_zero_toast:{tr:'⚛ Henüz yeterli ilerleme yok, Süpernova boşa gider',en:'⚛ Not enough progress yet for a Supernova'},
+  prestige_done_toast:{tr:'⚛ Süpernova tamamlandı! +{n} Çekirdek kazandın.',en:'⚛ Supernova complete! You earned +{n} Core.'},
+  core_locked_toast:{tr:'🔒 Önce bir üstteki düğümü aç',en:'🔒 Unlock the node above first'},
+  core_insufficient_toast:{tr:'⚛ Yetersiz Çekirdek',en:'⚛ Not enough Cores'},
+  core_node_bought_toast:{tr:'✅ {name} açıldı!',en:'✅ {name} unlocked!'},
+  core_branch_hp:{tr:'Zırh',en:'Armor'},
+  core_branch_wealth:{tr:'Servet',en:'Wealth'},
+  core_branch_time:{tr:'Zaman',en:'Time'},
+  core_branch_power:{tr:'Güç',en:'Power'},
+  core_branch_reflex:{tr:'Refleks',en:'Reflex'},
+  core_branch_calm:{tr:'Sağlamlık',en:'Stability'},
+  core_root_name:{tr:'Çekirdek Uyanışı',en:'Core Awakening'},
+  core_hp1_name:{tr:'Çelik Deri',en:'Steel Skin'},
+  core_hp2_name:{tr:'Kemik Zırhı',en:'Bone Armor'},
+  core_hp3_name:{tr:'Demir İrade',en:'Iron Will'},
+  core_hp4_name:{tr:'Yıldız Zırhı',en:'Starplate'},
+  core_hp5_name:{tr:'Ölümsüz Öz',en:'Undying Core'},
+  core_wealth1_name:{tr:'Altın Dokunuş',en:'Golden Touch'},
+  core_wealth2_name:{tr:'Cömert Yörünge',en:'Generous Orbit'},
+  core_wealth3_name:{tr:'Hazine Avcısı',en:'Treasure Hunter'},
+  core_wealth4_name:{tr:'Yıldız Tüccarı',en:'Star Trader'},
+  core_wealth5_name:{tr:'Servet Efendisi',en:'Lord of Wealth'},
+  core_time1_name:{tr:'Zaman Bükücü',en:'Time Bender'},
+  core_time2_name:{tr:'Uzayan An',en:'Stretched Moment'},
+  core_time3_name:{tr:'Sabır Taşı',en:'Stone of Patience'},
+  core_time4_name:{tr:'Sonsuz Nefes',en:'Endless Breath'},
+  core_time5_name:{tr:'Zaman Efendisi',en:'Lord of Time'},
+  core_power1_name:{tr:'Puan Çekirdeği',en:'Score Core'},
+  core_power2_name:{tr:'Enerji Yükselişi',en:'Energy Surge'},
+  core_power3_name:{tr:'Şimşek Öz',en:'Lightning Core'},
+  core_power4_name:{tr:'Nova Akımı',en:'Nova Current'},
+  core_power5_name:{tr:'Güç Efendisi',en:'Lord of Power'},
+  core_reflex1_name:{tr:'Ani Sıçrayış',en:'Sudden Spark'},
+  core_reflex2_name:{tr:'Keskin Refleks',en:'Sharp Reflex'},
+  core_reflex3_name:{tr:'İçgüdü Ustası',en:'Instinct Master'},
+  core_calm1_name:{tr:'Sakin Yörünge',en:'Calm Orbit'},
+  core_calm2_name:{tr:'Durgun Uzay',en:'Still Space'},
+  core_calm3_name:{tr:'Mutlak Denge',en:'Absolute Balance'},
+  core_capstone_name:{tr:'Süpernova Kalbi',en:'Supernova Heart'},
 
   // --- Sezon Bileti ---
   battlepass_title:{tr:'Sezon Bileti',en:'Season Pass',de:'Season-Pass',fr:'Pass Saison',es:'Pase de Temporada',pt:'Passe de Temporada',it:'Pass Stagionale',ru:'Сезонный пропуск',ar:'تذكرة الموسم',ja:'シーズンパス',ko:'시즌 패스',zh:'赛季通行证',hi:'सीज़न पास',id:'Season Pass',pl:'Przepustka Sezonowa'},
@@ -538,7 +586,7 @@ function refreshAllDynamicUI(){
   if(typeof syncShopIfOpen==='function') syncShopIfOpen();
   if(typeof renderDealBanner==='function') renderDealBanner();
   if(typeof syncAdButtons==='function') syncAdButtons();
-  if(typeof renderUpgrades==='function' && typeof state!=='undefined' && state==='upgrades') renderUpgrades();
+  if(typeof renderUpgrades==='function' && typeof state!=='undefined' && state==='upgrades'){ renderUpgrades(); renderUpgradesTab(); }
   if(typeof renderBattlepass==='function' && typeof state!=='undefined' && state==='battlepass') renderBattlepass();
   if(typeof syncStats==='function' && typeof state!=='undefined' && state==='stats') syncStats();
   if(typeof refreshDailyStatus==='function' && typeof state!=='undefined' && state==='mode') refreshDailyStatus();
