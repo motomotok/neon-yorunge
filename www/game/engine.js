@@ -528,8 +528,12 @@ function update(dt){
         burst(ix,iy,'#ff5d8f',24,5); shake=4;
         beep(660,0.12,'sine',0.14); beep(880,0.14,'triangle',0.12); vibrate([20,20,20]);
         queueToast(icon('heart')+' '+t('toast_heart_gain'));
+        if(it.tutorialTag && typeof tutorialOnItemResolved==='function') tutorialOnItemResolved(it.tutorialTag);
       }
-      else { activatePower(it.type,ix,iy); }
+      else {
+        activatePower(it.type,ix,iy);
+        if(it.tutorialTag && typeof tutorialOnItemResolved==='function') tutorialOnItemResolved(it.tutorialTag);
+      }
     }
     session.streakMax=Math.max(session.streakMax,combo);
   }

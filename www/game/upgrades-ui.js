@@ -74,8 +74,13 @@ function coreEffectText(node){
 // dış ucu ortak, kesikli bir "birleşme halkası"na değiyor, o halka da tek
 // bir çizgiyle en altta capstone'a bağlanıyor; böylece "6 dalın hepsi
 // birleşiyor" hissi, birbirini kesen 6 ayrı çizgi çizmeden veriliyor.
-const CORE_CX=200, CORE_CY=200, CORE_VBW=400, CORE_VBH=480, CORE_RING_R=205;
-const CORE_RADII5=[50,85,115,145,175], CORE_RADII3=[80,128,175];
+// viewBox, 0°/180° dallarındaki (tam yatay) dal etiketlerinin ("GÜÇ",
+// "ZIRH" vb.) sağa/sola taşıp kırpılmaması için düğüm+etiket toplam
+// genişliğine göre CX'ten fazladan pay bırakacak şekilde seçildi — aksi
+// halde container'ın kesişen overflow'u yüzünden tüm diyagram bir yöne
+// kaymış gibi görünüyordu.
+const CORE_CX=220, CORE_CY=200, CORE_VBW=440, CORE_VBH=460, CORE_RING_R=182;
+const CORE_RADII5=[45,75,105,135,160], CORE_RADII3=[70,115,160];
 let _coreLayoutCache=null;
 function coreTreeLayout(){
   if(_coreLayoutCache) return _coreLayoutCache;
@@ -114,16 +119,15 @@ function renderCoreTree(){
   let overlay = '';
   CORE_BRANCHES.forEach((branch,bi)=>{
     const angle = bi*60*Math.PI/180;
-    const lx=CORE_CX+Math.cos(angle)*(CORE_RING_R-12), ly=CORE_CY+Math.sin(angle)*(CORE_RING_R-12);
+    const lx=CORE_CX+Math.cos(angle)*(CORE_RING_R-10), ly=CORE_CY+Math.sin(angle)*(CORE_RING_R-10);
     overlay += `<div class="coreBranchTag" style="left:${(lx/CORE_VBW*100).toFixed(2)}%;top:${(ly/CORE_VBH*100).toFixed(2)}%">${t(branch.labelKey)}</div>`;
   });
   nodes.forEach(n=>{
     const node=coreNode(n.id);
     const owned=coreNodeOwned(n.id), reqMet=coreNodeReqMet(node);
     const stateCls = owned?'owned':(reqMet?'buyable':'locked');
-    const kindCls = n.id==='core_root'?' root':(n.id==='core_capstone'?' capstone':'');
     const wPct=(n.r*2/CORE_VBW*100).toFixed(2), hPct=(n.r*2/CORE_VBH*100).toFixed(2);
-    overlay += `<button class="coreNodeBtn ${stateCls}${kindCls}" data-core-id="${n.id}" `
+    overlay += `<button class="coreNodeBtn ${stateCls}" data-core-id="${n.id}" `
       +`style="left:${(n.x/CORE_VBW*100).toFixed(2)}%;top:${(n.y/CORE_VBH*100).toFixed(2)}%;width:${wPct}%;height:${hPct}%;">`
       +icon(node.icon)+`</button>`;
   });

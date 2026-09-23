@@ -33,9 +33,13 @@ function tutorialGoStep(step){
   else if(step==='awaitLeft') tutorialStepAwaitLeft();
   else if(step==='awaitRight') tutorialStepAwaitRight();
   else if(step==='coin') tutorialStepCoin();
-  else if(step==='hazard') tutorialStepHazard();
+  else if(step==='magnet') tutorialStepMagnet();
+  else if(step==='heart') tutorialStepHeart();
+  else if(step==='hazard1') tutorialStepHazard1();
+  else if(step==='hazard2') tutorialStepHazard2();
   else if(step==='gameover') tutorialStepGameOver();
   else if(step==='buyHp') tutorialStepBuyHp();
+  else if(step==='coreIntro') tutorialStepCoreIntro();
   else if(step==='backToMenu') tutorialStepBackToMenu();
   else if(step==='outro') tutorialStepOutro();
 }
@@ -55,18 +59,38 @@ function tutorialStepAwaitRight(){
 // oyuncu orb'un yörüngede süzülüp öğeye ulaşmasını rahatça izlesin diye
 // (eskiden ~30° idi, çok hızlı/ani oluyordu — bkz. kullanıcı geri bildirimi).
 const TUTORIAL_ITEM_DIST = Math.PI;
+function tutorialSpawnItem(type, tag){
+  items.push({ang: normAng(player.ang+TUTORIAL_ITEM_DIST), ring: player.targetRing, type, alive:true, pop:0,
+    expiring:false, prevFwd:null, jumpT:0, pulsePhase:0, pulseDanger:false, creepT:0, creeped:false,
+    tutorialTag:tag});
+}
 function tutorialStepCoin(){
   tutorialShow(t('tut_step_coin'));
-  items.push({ang: normAng(player.ang+TUTORIAL_ITEM_DIST), ring: player.targetRing, type:'coin', alive:true, pop:0,
-    expiring:false, prevFwd:null, jumpT:0, pulsePhase:0, pulseDanger:false, creepT:0, creeped:false,
-    tutorialTag:'coin'});
+  tutorialSpawnItem('coin','coin');
 }
-function tutorialStepHazard(){
+// Boncuğun ardından mıknatıs ve kalp de topluyoruz — eskiden sadece TEK bir
+// toplanabilir öğretiliyordu, ama oyunda güç takviyeleri ve can toplama da
+// en az boncuk kadar temel bir mekanik (bkz. kullanıcı geri bildirimi).
+function tutorialStepMagnet(){
+  tutorialShow(t('tut_step_magnet'));
+  tutorialSpawnItem('magnet','magnet');
+}
+function tutorialStepHeart(){
+  tutorialShow(t('tut_step_heart'));
+  tutorialSpawnItem('heart','heart');
+}
+// Eskiden hp=1 ile TEK bir tehlikeye değince direkt ölünüyordu — oyuncu
+// "çarpınca can azalır ama hemen ölmezsin" hissini hiç yaşamıyordu. Artık
+// hp=2 ile başlıyor: ilk tehlike bir kez çarpıp hayatta kalıyor (hasar/HP
+// bar'ı görüyor), ikinci tehlike ise gerçek oyundaki gibi oyunu bitiriyor.
+function tutorialStepHazard1(){
   tutorialShow(t('tut_step_hazard'));
-  hp = 1; // Ölümü öğretmek için bilinçli müdahale — tek vuruşta oyun sonu garanti olsun diye.
-  items.push({ang: normAng(player.ang+TUTORIAL_ITEM_DIST), ring: player.targetRing, type:'hazard', alive:true, pop:0,
-    expiring:false, prevFwd:null, jumpT:0, pulsePhase:0, pulseDanger:false, creepT:0, creeped:false,
-    tutorialTag:'hazard'});
+  hp = 2;
+  tutorialSpawnItem('hazard','hazard1');
+}
+function tutorialStepHazard2(){
+  tutorialShow(t('tut_step_hazard2'));
+  tutorialSpawnItem('hazard','hazard2');
 }
 function tutorialStepGameOver(){
   tutorialHideEl(document.getElementById('retryBtn'));
@@ -77,17 +101,30 @@ function tutorialStepGameOver(){
 }
 function tutorialStepBuyHp(){
   addStardust(240); // Can Kapasitesi'nin 1. kademesi tam bu kadar — ilk yeteneğini açabilsin diye küçük bir hoşgeldin hediyesi.
-  // "Gelişmeyi Sıfırla" bu ekranda satın alma kartlarının DIŞINDA (screenFoot'ta)
-  // durduğu için spotlight/dim kapsamına girmiyordu — oyuncu ona basarsa
-  // az önce verilen hediye stardust'ı sıfırlayıp adımı tıkanmaya sokabilirdi.
-  tutorialHideEl(document.getElementById('resetProgressBtn'));
+  // Süpernova butonu artık GİZLENMİYOR, DEVRE DIŞI bırakılıyor — bir sonraki
+  // adımda (coreIntro) aynı butonu görünür halde ışıklandırıp tanıtacağız;
+  // buradaki amaç sadece az önce verilen hediye stardust'ın yanlışlıkla
+  // sıfırlanmasını önlemek (tutorialFinish() geri açıyor).
+  tutorialDisableEl(document.getElementById('resetProgressBtn'));
   const cards=[...document.querySelectorAll('#upgradesGrid .shopCard')];
   const hpCard=cards.find(c=>c.dataset.key==='hp');
   cards.forEach(c=>{ if(c!==hpCard) tutorialDim(c); });
   tutorialSpotlight(hpCard);
   tutorialShow(t('tut_step_buyhp'));
 }
+// Kalıcı yeteneği satın aldıktan hemen sonra, Çekirdek Ağacı'nı (Süpernova
+// prestij sistemi) tanıtan kısa bir bilgi adımı — eskiden hiç
+// öğretilmiyordu. Gerçekten sıfırlama YAPTIRMIYORUZ (yeni oyuncunun daha
+// yeni aldığı yeteneği anlamsız yere silmesin diye buton devre dışı
+// kalıyor), sadece sekmeyi/butonu ışıklandırıp ne işe yaradığını anlatıyor.
+function tutorialStepCoreIntro(){
+  upgradesTab='core'; renderUpgradesTab();
+  tutorialSpotlight(document.querySelector('#upgradesTabs [data-uptab="core"]'));
+  tutorialSpotlight(document.getElementById('resetProgressBtn'));
+  tutorialShow(t('tut_step_coreintro'), {cta:t('tut_cta_understood'), onCta:()=>tutorialGoStep('backToMenu')});
+}
 function tutorialStepBackToMenu(){
+  upgradesTab='tier'; renderUpgradesTab();
   tutorialSpotlight(document.querySelector('#screen-upgrades [data-go="menu"]'));
   tutorialShow(t('tut_step_backtomenu'));
 }
@@ -105,9 +142,12 @@ function tutorialTapAllowed(){
   return tutorialStep==='awaitLeft' || tutorialStep==='awaitRight';
 }
 function tutorialOnItemResolved(tag){
-  // 'hazard' etiketi için asıl adım geçişi tutorialOnGameOver()'da —
+  // 'hazard2' etiketi için asıl adım geçişi tutorialOnGameOver()'da —
   // hitHazard() zaten hp<=0 olduğunda gameOver()'ı senkron tetikliyor.
-  if(tag==='coin' && tutorialStep==='coin') tutorialGoStep('hazard');
+  if(tag==='coin' && tutorialStep==='coin') tutorialGoStep('magnet');
+  else if(tag==='magnet' && tutorialStep==='magnet') tutorialGoStep('heart');
+  else if(tag==='heart' && tutorialStep==='heart') tutorialGoStep('hazard1');
+  else if(tag==='hazard1' && tutorialStep==='hazard1') tutorialGoStep('hazard2');
 }
 function tutorialOnGameOver(){
   tutorialGoStep('gameover');
@@ -122,7 +162,7 @@ function tutorialOnNav(target){
   else if(target==='menu' && tutorialStep==='backToMenu') tutorialGoStep('outro');
 }
 function tutorialOnUpgradeBought(key){
-  if(tutorialStep==='buyHp' && key==='hp') tutorialGoStep('backToMenu');
+  if(tutorialStep==='buyHp' && key==='hp') tutorialGoStep('coreIntro');
 }
 function tutorialNudge(){
   beep(200,0.08,'square',0.1);
@@ -130,7 +170,7 @@ function tutorialNudge(){
 
 function tutorialFinish(){
   tutorialActive=false; tutorialStep=null;
-  tutorialClearSpotlight(); tutorialRestoreHidden(); tutorialHide(); tutorialHideTapHint();
+  tutorialClearSpotlight(); tutorialRestoreHidden(); tutorialRestoreDisabled(); tutorialHide(); tutorialHideTapHint();
   const el=document.getElementById('tutorialOutro'); if(el) el.classList.remove('show');
   stats.tutorialDone=true; saveStats();
 }
@@ -194,4 +234,19 @@ function tutorialHideEl(el){
 function tutorialRestoreHidden(){
   tutorialHiddenEls.forEach(el=>{ el.style.display = el.dataset.tutorialPrevDisplay || ''; delete el.dataset.tutorialPrevDisplay; });
   tutorialHiddenEls=[];
+}
+// Çekirdek Ağacı tanıtımında (coreIntro) Süpernova butonu GÖRÜNÜR ve
+// ışıklandırılmış kalmalı (anlatım onu işaret ediyor) ama tıklanamaz —
+// yeni oyuncu daha yeni aldığı Can Kapasitesi'ni yanlışlıkla sıfırlamasın.
+// tutorialHideEl'den farklı olarak elemanı gizlemez, sadece devre dışı
+// bırakır.
+let tutorialDisabledEls=[];
+function tutorialDisableEl(el){
+  if(!el) return;
+  el.disabled = true;
+  tutorialDisabledEls.push(el);
+}
+function tutorialRestoreDisabled(){
+  tutorialDisabledEls.forEach(el=>{ el.disabled=false; });
+  tutorialDisabledEls=[];
 }
