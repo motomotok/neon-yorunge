@@ -48,9 +48,12 @@ function renderUpgradesTab(){
   document.querySelectorAll('#upgradesTabs .stab').forEach(el=>el.classList.toggle('sel', el.dataset.uptab===upgradesTab));
   const g=document.getElementById('upgradesGrid'), c=document.getElementById('coreTreeWrap');
   if(g) g.style.display = upgradesTab==='tier' ? 'grid' : 'none';
-  if(c) c.style.display = upgradesTab==='core' ? 'block' : 'none';
+  if(c) c.style.display = upgradesTab==='core' ? 'flex' : 'none';
+  // Ağaç ekranı dikeyde ortalamak istediğimiz için (bkz. style.css
+  // #coreTreeWrap flex:1) uzun açıklama metnini gizliyoruz — mekanik zaten
+  // ağacın hemen üstündeki kısa satırda ve her düğümün kendi popup'ında.
   const subEl=document.getElementById('upgradesSubText');
-  if(subEl) subEl.textContent = upgradesTab==='core' ? t('core_tree_sub') : t('upgrades_sub');
+  if(subEl){ subEl.style.display = upgradesTab==='core' ? 'none' : ''; subEl.textContent = t('upgrades_sub'); }
   if(upgradesTab==='core') renderCoreTree();
 }
 const CORE_EFFECT_FORMAT = {

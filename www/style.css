@@ -402,10 +402,13 @@ body.left-hand #walletChip{left:18px;right:auto;}
    Yuvarlaklar sadece ikon taşır; isim/etki/fiyat dokununca açılan
    #coreInfoOverlay'de gösterilir — ekranda aşağı doğru uzayan bir kart
    listesi yerine, tek bakışta sığan kompakt bir diyagram. */
-#coreTreeWrap{width:100%;}
-.coreProgressLine{font-family:var(--font-ui);font-size:13px;font-weight:700;color:#7fe8ff;text-align:center;}
-.coreTreeHint{font-size:11px;color:#8f97b5;text-align:center;margin-bottom:4px;}
-.coreTreeStage{position:relative;width:100%;max-width:380px;aspect-ratio:400/480;margin:0 auto;}
+/* Ağaç ekranın alanı ne kadarsa onu doldurup içeriğini (başlık satırı +
+   diyagram) dikeyde ortalar — üstteki/alttaki metinler kısaltılınca ağaç
+   gerçekten "tam ortada" görünür, sayfanın üstüne yapışık kalmaz. */
+#coreTreeWrap{width:100%;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:0;}
+.coreTree{width:100%;flex:none;}
+.coreProgressLine{font-family:var(--font-ui);font-size:11.5px;font-weight:700;color:#7fe8ff;text-align:center;flex:none;}
+.coreTreeStage{position:relative;width:100%;max-width:380px;aspect-ratio:400/480;margin:0 auto;flex:none;}
 .coreTreeSvg{position:absolute;inset:0;width:100%;height:100%;}
 .coreRing{fill:none;stroke:rgba(255,210,74,.25);stroke-width:1.5;stroke-dasharray:4 6;}
 .coreLine{stroke:rgba(150,180,255,.22);stroke-width:2;transition:stroke .2s;}
