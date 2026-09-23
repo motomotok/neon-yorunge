@@ -154,8 +154,17 @@ const BOSS_SLOW_RATE = 0.012;
 // (örn. eşiğin son birkaç puanına ulaşamıyorsa) boss "askıda" kalmaz, süre
 // dolunca kesin gelir. Skor eşiğine erken ulaşılırsa da (hızlı oyuncu)
 // beklemeden hemen tetiklenir — hangisi önce gelirse.
-const BOSS_WARN_SCORE_GAP = 50;
+const BOSS_WARN_SCORE_GAP = 100;
 const BOSS_WARN_SECONDS = 5;
+// Telegraph'ın "heyecan eğrisi": ilk %60'lık dilimde (5 sn'nin ilk 3
+// saniyesi) yavaş yavaş, sakin bir birikim; son %40'ında (son 2 saniye)
+// hızla ivmelenen, çarpıcı bir yükseliş — "yavaş yavaş heyecanlanıp son
+// 2 saniye yüksek heyecan" hissi. render.js (nabız/parlama) ve buradaki
+// ekran sarsıntısı aynı eğriyi kullanır.
+function bossTelegraphIntensity(tt){
+  if(tt<0.6) return (tt/0.6)*0.3;
+  return 0.3 + Math.pow((tt-0.6)/0.4, 1.4)*0.7;
+}
 function startBossWave(stageDef){
   // Telegraph tam güneşin üstünde büyümüştü; patlama da tam orada olsun ki
   // "yaratık güneşten patladı, dalga ondan çıktı" hissi net olsun.
@@ -544,7 +553,7 @@ function update(dt){
     if(bossTelegraph && bossTelegraph.stageIndex===bossNextIndex){
       const elapsedSec = (performance.now()-bossTelegraph.startTs)/1000;
       bossTelegraph.t = Math.min(1, elapsedSec/BOSS_WARN_SECONDS);
-      shake=Math.max(shake, bossTelegraph.t*bossTelegraph.t*10);
+      shake=Math.max(shake, bossTelegraphIntensity(bossTelegraph.t)*10);
       if(elapsedSec>=BOSS_WARN_SECONDS || score>=stage.score){
         startBossWave(stage);
         bossNextIndex++;

@@ -446,17 +446,23 @@ function drawHeartShape(x,y,r,col){
 function drawBossTelegraph(t, tel){
   const scale = 1+tel.stageIndex*0.25;
   const growT = easeOut(tel.t);
-  const pulseSpeed = 6+tel.t*16;
-  const pulse = 1+Math.sin(t*pulseSpeed)*0.16*(0.35+tel.t*0.65);
+  // bossTelegraphIntensity() (engine.js) ilk 3 saniyede yavaş, son 2
+  // saniyede hızla ivmelenen bir eğri döner — nabız hızı/genliği, parlama
+  // ve dönüş hızı hepsi bu tek eğriden besleniyor, "yavaş yavaş
+  // heyecanlanıp sona doğru patlamak üzereymiş gibi" hissi için.
+  const intensity = bossTelegraphIntensity(tel.t);
+  const pulseSpeed = 5+intensity*24;
+  const pulseAmt = 0.1+intensity*0.42;
+  const pulse = 1+Math.sin(t*pulseSpeed)*pulseAmt;
   const R = (PLAYER_R*0.5 + growT*PLAYER_R*2.2)*pulse*scale;
-  const glowR = R*3.4;
+  const glowR = R*(3.2+intensity*0.7);
   const g=ctx.createRadialGradient(CX,CY,0,CX,CY,glowR);
-  g.addColorStop(0, hexA('#5ad1ff',0.85)); g.addColorStop(0.5, hexA('#5ad1ff',0.32)); g.addColorStop(1,'rgba(0,0,0,0)');
+  g.addColorStop(0, hexA('#5ad1ff',0.72+intensity*0.23)); g.addColorStop(0.5, hexA('#5ad1ff',0.26+intensity*0.18)); g.addColorStop(1,'rgba(0,0,0,0)');
   ctx.fillStyle=g; ctx.beginPath(); ctx.arc(CX,CY,glowR,0,7); ctx.fill();
-  ctx.save(); ctx.translate(CX,CY); ctx.rotate(t*(2.2+tel.t*2.4));
+  ctx.save(); ctx.translate(CX,CY); ctx.rotate(t*(1.5+intensity*3.5));
   drawStar(0,0,R*1.3,R*0.5,6,0,'#eafcff');
   ctx.restore();
-  ctx.strokeStyle=hexA('#5ad1ff',0.6+Math.sin(t*pulseSpeed)*0.3); ctx.lineWidth=2.2; ctx.setLineDash([3,4]);
+  ctx.strokeStyle=hexA('#5ad1ff',0.45+Math.sin(t*pulseSpeed)*(0.18+intensity*0.22)); ctx.lineWidth=2+intensity*1.6; ctx.setLineDash([3,4]);
   ctx.beginPath(); ctx.arc(CX,CY,R*1.9,0,7); ctx.stroke(); ctx.setLineDash([]);
 }
 function drawParticles(dt){
