@@ -237,9 +237,8 @@
     <div class="screenBody">
       <div class="shopGrid" id="upgradesGrid"></div>
       <div id="coreTreeWrap" style="display:none">
-        <div class="card" id="coreSummaryCard" style="margin-bottom:10px">
-          <div class="row"><span class="k"><i class="gicon" data-icon="atom"></i> <span data-i18n="uptab_core">Çekirdek Ağacı</span></span><span class="v" id="coreProgressText">0/28</span></div>
-        </div>
+        <div class="coreProgressLine"><i class="gicon" data-icon="atom"></i> <span data-i18n="uptab_core">Çekirdek Ağacı</span> · <span id="coreProgressText">0/28</span></div>
+        <div class="coreTreeHint" data-i18n="core_tree_hint">Bir düğüme dokun, ne yaptığını gör.</div>
         <div class="coreTree" id="coreTree"></div>
       </div>
     </div>
@@ -344,6 +343,19 @@
     <div class="row2" style="margin-top:4px">
       <button class="btn small" id="pcYesBtn"><i class="gicon" data-icon="check"></i> <span data-i18n="btn_yes">Evet</span></button>
       <button class="btn alt small" id="pcNoBtn"><i class="gicon" data-icon="cross"></i> <span data-i18n="btn_no">Hayır</span></button>
+    </div>
+  </div>
+</div>
+
+<div id="coreInfoOverlay" style="display:none;position:fixed;inset:0;z-index:35;align-items:center;justify-content:center;background:rgba(2,3,10,.75);padding:20px;">
+  <div class="card" style="max-width:280px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center;">
+    <div id="ciIcon" style="font-size:34px;"></div>
+    <div id="ciName" style="font-size:15px;font-weight:800;"></div>
+    <div class="sub" id="ciEffect" style="margin:0"></div>
+    <div id="ciStatus" style="font-size:13px;font-weight:700;"></div>
+    <div class="row2" style="margin-top:4px">
+      <button class="btn small" id="ciActionBtn" style="display:none"></button>
+      <button class="btn alt small" id="ciCloseBtn"><i class="gicon" data-icon="cross"></i> <span data-i18n="close_btn">Kapat</span></button>
     </div>
   </div>
 </div>

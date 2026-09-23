@@ -138,17 +138,24 @@ function pickHazardKind(){
 // tetiklenmez (o modda zaten hiç tehlike yok). Her eşik bir oyunda yalnızca
 // bir kez tetiklenir (bkz. bossNextIndex, resetGame() ile sıfırlanır).
 const BOSS_STAGES = [
-  {score:1000,  count:5, reward:40},
-  {score:5000,  count:7, reward:100},
-  {score:10000, count:9, reward:200},
+  {score:1000,  count:5,  reward:40},
+  {score:3000,  count:6,  reward:65},
+  {score:5000,  count:7,  reward:100},
+  {score:10000, count:9,  reward:200},
+  {score:15000, count:11, reward:280},
 ];
 // Boss dalgası sırasında oyuncunun (mevcut hızından bağımsız) sabit açısal
 // hızı — dalganın toplam açısal uzunluğu (~1.3 başlangıç payı + 3.2 yayılım
 // + pay) bu hızla en az ~6.5 saniyede kat edilir.
 const BOSS_SLOW_RATE = 0.012;
-// Telegraph'ın patlayacağı eşiğe kaç puan kala belirmeye başladığı (bkz.
-// bossTelegraph, update() içindeki hesaplama). 1000-10=990 gibi.
-const BOSS_WARN_WINDOW = 10;
+// Telegraph, eşikten BOSS_WARN_SCORE_GAP puan önce başlar ve SKORDAN
+// BAĞIMSIZ, gerçek zamanlı BOSS_WARN_SECONDS saniye sonra (performance.now()
+// ile ölçülür) boss'u tetikler — oyuncu o aralıkta hiç puan kazanamasa bile
+// (örn. eşiğin son birkaç puanına ulaşamıyorsa) boss "askıda" kalmaz, süre
+// dolunca kesin gelir. Skor eşiğine erken ulaşılırsa da (hızlı oyuncu)
+// beklemeden hemen tetiklenir — hangisi önce gelirse.
+const BOSS_WARN_SCORE_GAP = 50;
+const BOSS_WARN_SECONDS = 5;
 function startBossWave(stageDef){
   // Telegraph tam güneşin üstünde büyümüştü; patlama da tam orada olsun ki
   // "yaratık güneşten patladı, dalga ondan çıktı" hissi net olsun.
@@ -532,20 +539,19 @@ function update(dt){
       queueToast(icon('coin')+' '+t('toast_boss_cleared',{n:finalReward}));
       beep(700,0.15,'sine',0.15); beep(1000,0.15,'triangle',0.12); beep(1300,0.18,'sine',0.1);
     }
-  } else if(!zen && bossNextIndex<BOSS_STAGES.length && score>=BOSS_STAGES[bossNextIndex].score){
-    startBossWave(BOSS_STAGES[bossNextIndex]);
-    bossNextIndex++;
   } else if(!zen && bossNextIndex<BOSS_STAGES.length){
-    const stage = BOSS_STAGES[bossNextIndex], warnStart = stage.score-BOSS_WARN_WINDOW;
-    if(score>=warnStart){
-      if(!bossTelegraph || bossTelegraph.stageIndex!==bossNextIndex){
-        bossTelegraph = {stageIndex:bossNextIndex, t:0};
-        showFlash('⚠ '+t('flash_boss_incoming'),50);
-      }
-      bossTelegraph.t = Math.min(1,(score-warnStart)/BOSS_WARN_WINDOW);
+    const stage = BOSS_STAGES[bossNextIndex], warnStart = stage.score-BOSS_WARN_SCORE_GAP;
+    if(bossTelegraph && bossTelegraph.stageIndex===bossNextIndex){
+      const elapsedSec = (performance.now()-bossTelegraph.startTs)/1000;
+      bossTelegraph.t = Math.min(1, elapsedSec/BOSS_WARN_SECONDS);
       shake=Math.max(shake, bossTelegraph.t*bossTelegraph.t*10);
-    } else if(bossTelegraph){
-      bossTelegraph=null;
+      if(elapsedSec>=BOSS_WARN_SECONDS || score>=stage.score){
+        startBossWave(stage);
+        bossNextIndex++;
+      }
+    } else if(score>=warnStart){
+      bossTelegraph = {stageIndex:bossNextIndex, startTs:performance.now(), t:0};
+      showFlash('⚠ '+t('flash_boss_incoming'),50);
     }
   }
 

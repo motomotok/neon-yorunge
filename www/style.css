@@ -396,32 +396,42 @@ body.left-hand #walletChip{left:18px;right:auto;}
       linear-gradient(160deg,rgba(84,224,255,.4),rgba(84,224,255,.1)) border-box;
   text-shadow:0 0 18px rgba(84,224,255,.4);}
 
-/* Çekirdek Ağacı: kökten (üstte) 6 dalın aşağı doğru dallandığı, her
-   dalın kendi içinde dikey bir zincir olduğu "gerçek ağaç" görünümü —
-   bağlayıcı çizgiler basit border'larla, karmaşık bir SVG grafiksiz. */
-.coreTree{display:flex;flex-direction:column;align-items:center;gap:0;width:100%;}
-.coreRootNode{width:min(220px,70vw);margin-bottom:14px;}
-.coreRootNode .coreNode{width:100%;}
-.coreBranchRow{display:grid;grid-template-columns:repeat(2,1fr);gap:12px 10px;width:100%;}
-.coreBranch{display:flex;flex-direction:column;align-items:center;gap:8px;position:relative;padding-top:14px;}
-.coreBranch::before{content:'';position:absolute;top:0;left:50%;width:2px;height:14px;
-  background:linear-gradient(rgba(150,180,255,.4),rgba(150,180,255,.1));}
-.coreBranchLabel{font-family:var(--font-ui);font-size:11.5px;font-weight:700;letter-spacing:.4px;
-  color:#8f97b5;text-transform:uppercase;}
-.coreNode{width:100%;padding:10px 8px;gap:4px;}
-.coreNode .boostIcon{font-size:22px;}
-.coreNode .cn{font-size:11.5px;}
-.coreNode .bdesc{font-size:9.5px;min-height:14px;}
-.coreNode.locked{opacity:.45;}
-.coreNode.equipped{border-color:#7fe8ff;box-shadow:0 0 12px rgba(84,224,255,.3),0 0 0 1px rgba(84,224,255,.15) inset;}
-.coreBranch .coreNode+.coreNode{position:relative;}
-.coreBranch .coreNode+.coreNode::before{content:'';position:absolute;top:-8px;left:50%;width:2px;height:8px;
-  background:rgba(150,180,255,.25);}
-.coreCapstoneWrap{width:min(240px,72vw);margin-top:16px;position:relative;padding-top:16px;}
-.coreCapstoneWrap::before{content:'';position:absolute;top:0;left:50%;width:2px;height:16px;
-  background:linear-gradient(rgba(255,210,74,.4),rgba(255,210,74,.1));}
-.coreCapstoneWrap .coreNode{width:100%;border-color:rgba(255,210,74,.35);}
-.coreCapstoneWrap .coreNode.equipped{border-color:#ffd24a;box-shadow:0 0 16px rgba(255,210,74,.4),0 0 0 1px rgba(255,210,74,.2) inset;}
+/* Çekirdek Ağacı: kök merkezde, 6 dal 60°'lik dilimlere yayılan gerçek bir
+   radyal ağaç — düğümler dalların UCUNDA birer yuvarlak, aralarındaki
+   bağlantılar tek bir SVG katmanında çizilir (upgrades-ui.js: coreTreeLayout).
+   Yuvarlaklar sadece ikon taşır; isim/etki/fiyat dokununca açılan
+   #coreInfoOverlay'de gösterilir — ekranda aşağı doğru uzayan bir kart
+   listesi yerine, tek bakışta sığan kompakt bir diyagram. */
+#coreTreeWrap{width:100%;}
+.coreProgressLine{font-family:var(--font-ui);font-size:13px;font-weight:700;color:#7fe8ff;text-align:center;}
+.coreTreeHint{font-size:11px;color:#8f97b5;text-align:center;margin-bottom:4px;}
+.coreTreeStage{position:relative;width:100%;max-width:380px;aspect-ratio:400/480;margin:0 auto;}
+.coreTreeSvg{position:absolute;inset:0;width:100%;height:100%;}
+.coreRing{fill:none;stroke:rgba(255,210,74,.25);stroke-width:1.5;stroke-dasharray:4 6;}
+.coreLine{stroke:rgba(150,180,255,.22);stroke-width:2;transition:stroke .2s;}
+.coreLine.on{stroke:rgba(84,224,255,.6);}
+.coreTreeNodes{position:absolute;inset:0;width:100%;height:100%;}
+.coreBranchTag{position:absolute;transform:translate(-50%,-50%);width:64px;text-align:center;
+  font-family:var(--font-ui);font-size:9px;font-weight:700;letter-spacing:.3px;
+  color:#8f97b5;text-transform:uppercase;pointer-events:none;}
+.coreNodeBtn{position:absolute;transform:translate(-50%,-50%);border-radius:50%;
+  border:2px solid rgba(255,255,255,.12);padding:0;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02));
+  transition:transform .12s ease, box-shadow .15s ease, border-color .15s ease;}
+.coreNodeBtn:active{transform:translate(-50%,-50%) scale(.88);}
+.coreNodeBtn .gicon{width:52%;height:52%;color:#eaf2ff;}
+.coreNodeBtn.locked{opacity:.4;}
+.coreNodeBtn.buyable{border-color:#7fe8ff;box-shadow:0 0 10px rgba(84,224,255,.35);}
+.coreNodeBtn.owned{border-color:#7fe8ff;
+  background:linear-gradient(180deg,rgba(84,224,255,.35),rgba(84,224,255,.08));
+  box-shadow:0 0 14px rgba(84,224,255,.45);}
+.coreNodeBtn.root{border-color:#a97bff;
+  background:linear-gradient(180deg,rgba(169,123,255,.32),rgba(169,123,255,.08));}
+.coreNodeBtn.capstone{border-color:rgba(255,210,74,.5);}
+.coreNodeBtn.capstone.owned{border-color:#ffd24a;
+  background:linear-gradient(180deg,rgba(255,210,74,.4),rgba(255,210,74,.1));
+  box-shadow:0 0 16px rgba(255,210,74,.5);}
 
 .shopTabs{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;width:100%;}
 .stab{padding:8px 13px;border-radius:999px;background:rgba(255,255,255,.05);cursor:pointer;

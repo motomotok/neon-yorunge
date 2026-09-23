@@ -78,6 +78,10 @@ document.querySelectorAll('.toggleGrid .toggle').forEach(row=>{
   });
 });
 document.getElementById('resetProgressBtn').addEventListener('click', ()=>{ attemptPrestige(); });
+document.getElementById('ciCloseBtn').addEventListener('click', e=>{ e.stopPropagation(); closeCoreInfo(); });
+document.getElementById('coreInfoOverlay').addEventListener('click', e=>{
+  if(e.target.id==='coreInfoOverlay') closeCoreInfo();
+});
 document.getElementById('pcYesBtn').addEventListener('click', e=>{ e.stopPropagation();
   const cb=pendingPurchase; hidePurchaseConfirm(); if(cb) cb();
 });
