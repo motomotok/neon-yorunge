@@ -467,6 +467,21 @@ body.left-hand #walletChip{left:18px;right:auto;}
   letter-spacing:.2px;transition:opacity .15s,border-color .15s,background .15s;}
 .stab.sel{border-color:var(--accent-2,#a97bff);opacity:1;background:rgba(169,123,255,.14);}
 .shopGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px;width:100%;}
+/* Mağaza kataloğu (Temalar/Orblar/İzler/Güneşler/Halkalar/Takviyeler) satır
+   başına 2 yerine 3 karta sığacak şekilde küçültüldü — Yetenekler
+   ekranındaki #upgradesGrid (metni daha uzun kartlar) buna dahil değil,
+   o eski 2 sütunlu haliyle kalıyor. */
+#shopGrid{grid-template-columns:repeat(3,1fr);gap:7px;}
+#shopGrid .shopCard{padding:9px 5px;gap:5px;}
+#shopGrid .shopCard .cn{font-size:10.5px;line-height:1.2;}
+#shopGrid .shopCard .price{font-size:9.5px;}
+#shopGrid .shopCard .price.lockreq{font-size:8.5px;}
+#shopGrid .shopCard .bdesc{font-size:8.5px;min-height:18px;line-height:1.3;}
+#shopGrid .shopCard .ownedTag{font-size:8.5px;}
+#shopGrid .skinPreview,#shopGrid .sunPreview,#shopGrid .ringPreview{width:32px;height:32px;}
+#shopGrid .trailPreview{height:32px;}
+#shopGrid .swatch span{width:10px;height:10px;}
+#shopGrid .boostCard .boostIcon{font-size:22px;}
 .shopCard{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.015)) padding-box,
       linear-gradient(160deg,var(--glass-brd-soft),transparent) border-box;
   border:2px solid transparent;border-radius:16px;
