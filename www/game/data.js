@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '1.12.3';
+const GAME_VERSION = '1.12.4';
 
 const THEMES = {
   neon:      {nameKey:'theme_neon',      star:'#54e0ff', gold:'#ffd24a', peril:'#ff4d6d', player:'#a97bff', sun:'#8ad8ff', bg0:'#05060f', bg1:'#0b0f2a', sf:'#9fb8ff', gate:{type:'free'}},
@@ -122,7 +122,7 @@ const META_UPGRADES = {
   },
   itemCoin: {
     nameKey:'up_itemcoin_name', icon:'coin', format:n=>'+'+n+' '+icon('coin'),
-    tiers: buildTiers(180, 5), // hedef ~9.000, tavan +40 boncuk başına
+    tiers: buildTiers(180, 5), // hedef ~9.000, tavan +40 parçacık başına
   },
   boostDur: {
     nameKey:'up_boostdur_name', icon:'hourglass', format:n=>'+%'+(Math.round(n*1000)/10),

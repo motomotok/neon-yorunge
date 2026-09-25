@@ -68,9 +68,9 @@ function tutorialStepCoin(){
   tutorialShow(t('tut_step_coin'));
   tutorialSpawnItem('coin','coin');
 }
-// Boncuğun ardından mıknatıs ve kalp de topluyoruz — eskiden sadece TEK bir
+// Parçacığın ardından mıknatıs ve kalp de topluyoruz — eskiden sadece TEK bir
 // toplanabilir öğretiliyordu, ama oyunda güç takviyeleri ve can toplama da
-// en az boncuk kadar temel bir mekanik (bkz. kullanıcı geri bildirimi).
+// en az parçacık kadar temel bir mekanik (bkz. kullanıcı geri bildirimi).
 function tutorialStepMagnet(){
   tutorialShow(t('tut_step_magnet'));
   tutorialSpawnItem('magnet','magnet');

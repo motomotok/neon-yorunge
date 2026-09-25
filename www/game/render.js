@@ -71,7 +71,7 @@ function drawWorld(){
   if(GAME_STATES[state] && bossTelegraph) drawBossTelegraph(t, bossTelegraph);
 
   // Oyuncu küresi gerçek oyunda VE menü ailesindeki ekranlarda (yavaşça
-  // dönerek, "canlı menü") çizilir — sadece boncuk/asteroit menüde yok.
+  // dönerek, "canlı menü") çizilir — sadece parçacık/asteroit menüde yok.
   if(GAME_STATES[state] || MENU_STATES[state]) drawPlayer(t);
   ctx.restore();
 

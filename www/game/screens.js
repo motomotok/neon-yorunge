@@ -102,9 +102,9 @@ function gameOver(reason){
   }
   checkAchievements({runScore, level, session, mode, elapsedSec});
   const scoreBonus = Math.round(Math.floor(runScore/12)*weekendMult()*(1+upgradeBonus('coinPct')));
-  // Zen modunda ("sonsuz mod") ne boncuk toplama ne de bu bonus cüzdana
+  // Zen modunda ("sonsuz mod") ne parçacık toplama ne de bu bonus cüzdana
   // yansır — risk almadan sınırsız kasmayı önlemek için (bkz. engine.js'de
-  // boncuk toplama).
+  // parçacık toplama).
   if(mode!=='zen') addStardust(scoreBonus);
   ensureSeason();
   // Bölen 8'den 40'a çıkarıldı: eskiden 2 oyunda 5. kademeye varılabiliyordu

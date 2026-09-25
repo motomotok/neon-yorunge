@@ -482,7 +482,7 @@ function update(dt){
     // Toplanabilir öğeler (yıldız/altın/elmas/coin/takviye): açı+"yerleşmiş
     // mi" yerine oyuncunun O ANKİ gerçek piksel konumuna bakılır. Eskiden
     // halka geçişi sırasında (henüz "settled" olmadan) tam üstünden geçilen
-    // bir boncuk bile toplanamıyordu — halka değiştirmek için dokunduğun an
+    // bir parçacık bile toplanamıyordu — halka değiştirmek için dokunduğun an
     // tam da bu pencereye denk geliyordu. Ayrıca sabit açısal pencere iç
     // halkada dış halkaya göre çok daha dar bir gerçek mesafeye denk
     // geliyordu; piksel mesafesi tüm halkalarda tutarlı bir cömertlik sağlar.
@@ -504,12 +504,12 @@ function update(dt){
         // Yıldızın tam merkezine ne kadar yakın toplandığına göre küçük bir
         // "hassasiyet" küsuratı eklenir (0-0.99) — skorun her zaman anlamlı
         // ondalıklara sahip xx.xx hissini korumasının tek kaynağı bu; diğer
-        // tüm kazanımlar (altın/elmas/boncuk/takviye) tam sayı kalıyor ama
+        // tüm kazanımlar (altın/elmas/parçacık/takviye) tam sayı kalıyor ama
         // toplam zaten bu küsuratı taşımaya devam ediyor.
         addScore(combo*mult + rnd()*0.99); session.stars++;
         burst(ix,iy,T.star,14,4); shake=3; playMelodyNote(combo,0.16); bumpCombo(); checkStreak(ix,iy,mult); }
       else if(it.type==='coin'){
-        // Boncuk Değeri yükseltmesi (kalıcı) tabana sabit ek yapar, Yıldız
+        // Parçacık Değeri yükseltmesi (kalıcı) tabana sabit ek yapar, Yıldız
         // Tozu Bonusu yükseltmesi (kalıcı) SONRASINDA çarpan olarak
         // uygulanır — session.stardustMult (tek oyunluk "Toz Rüzgarı"
         // takviyesi) ve weekendMult() ile bağımsız kaynaklar olarak çarpılır.
