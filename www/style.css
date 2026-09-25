@@ -435,11 +435,15 @@ body.left-hand #walletChip{left:18px;right:auto;}
 /* aspect-ratio, upgrades-ui.js'deki CORE_VBW/CORE_VBH (440/460) ile BİREBİR
    eşleşmeli — aksi halde yüzde bazlı konumlanan düğümler/etiketler
    diyagramın gerçek boyutuyla uyuşmaz, bir yöne "kaymış" gibi görünür. */
-.coreTreeStage{position:relative;width:100%;max-width:380px;aspect-ratio:440/460;margin:0 auto;flex:none;}
+.coreTreeStage{position:relative;width:100%;max-width:380px;aspect-ratio:580/610;margin:0 auto;flex:none;}
 .coreTreeSvg{position:absolute;inset:0;width:100%;height:100%;}
 .coreRing{fill:none;stroke:rgba(255,210,74,.25);stroke-width:1.5;stroke-dasharray:4 6;}
 .coreLine{stroke:rgba(150,180,255,.22);stroke-width:2;transition:stroke .2s;}
 .coreLine.on{stroke:rgba(84,224,255,.6);}
+/* Kilitli-ve-uzak düğümler artık ayrı bir dokunma hedefi değil, sadece bu
+   küçük noktalar — "ilerisi burada" ipucu, henüz tıklanabilir değil (bir
+   önceki düğüm açılınca kendisi "sırada alınabilir" olup büyüyecek). */
+.coreHintDot{fill:rgba(255,255,255,.16);stroke:rgba(255,255,255,.28);stroke-width:1;}
 .coreTreeNodes{position:absolute;inset:0;width:100%;height:100%;overflow:visible;}
 .coreBranchTag{position:absolute;transform:translate(-50%,-50%);width:56px;text-align:center;
   font-family:var(--font-ui);font-size:8.5px;font-weight:700;letter-spacing:.2px;
@@ -451,15 +455,21 @@ body.left-hand #walletChip{left:18px;right:auto;}
   transition:transform .12s ease, box-shadow .15s ease, border-color .15s ease;}
 .coreNodeBtn:active{transform:translate(-50%,-50%) scale(.88);}
 .coreNodeBtn .gicon{width:52%;height:52%;color:#eaf2ff;}
-/* Durum önceliklidir (kilitli/alınabilir/sahip olunan), kök/capstone artık
-   ayrı bir renk taşımıyor — "yeşil = sahipsin, kırmızı = sırada, senin
-   alabileceğin bu" okuması ağaçtaki HER yuvarlakta (kök ve capstone dahil)
-   aynı, tutarlı kalsın diye. */
-.coreNodeBtn.locked{opacity:.4;}
+/* Durum önceliklidir (kilitli/alınabilir/sahip olunan) — "yeşil = sahipsin,
+   kırmızı = sırada, senin alabileceğin bu" okuması ağaçtaki HER yuvarlakta
+   (kök dahil) aynı, tutarlı kalsın diye. */
 .coreNodeBtn.buyable{border-color:#ff4d6d;box-shadow:0 0 11px rgba(255,77,109,.45);}
 .coreNodeBtn.owned{border-color:#5efc82;
   background:linear-gradient(180deg,rgba(94,252,130,.35),rgba(94,252,130,.08));
   box-shadow:0 0 14px rgba(94,252,130,.45);}
+/* "Sırada alınabilir" (frontier) düğüm dalın diğer tüm düğümlerinden
+   BÜYÜK çiziliyor — o dalda şu an yapılacak TEK anlamlı hamle bu, gözün
+   direkt oraya gitmesi için hem boyut hem hafif bir nabız kullanılıyor. */
+.coreNodeBtn.frontier{animation:coreFrontierPulse 1.8s ease-in-out infinite;}
+@keyframes coreFrontierPulse{
+  0%,100%{box-shadow:0 0 11px rgba(255,77,109,.45);}
+  50%{box-shadow:0 0 20px rgba(255,77,109,.75);}
+}
 
 .shopTabs{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;width:100%;}
 .stab{padding:8px 13px;border-radius:999px;background:rgba(255,255,255,.05);cursor:pointer;

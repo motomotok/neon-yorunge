@@ -74,34 +74,52 @@ function coreEffectText(node){
 // dış ucu ortak, kesikli bir "birleşme halkası"na değiyor, o halka da tek
 // bir çizgiyle en altta capstone'a bağlanıyor; böylece "6 dalın hepsi
 // birleşiyor" hissi, birbirini kesen 6 ayrı çizgi çizmeden veriliyor.
-// viewBox, 0°/180° dallarındaki (tam yatay) dal etiketlerinin ("GÜÇ",
-// "ZIRH" vb.) sağa/sola taşıp kırpılmaması için düğüm+etiket toplam
-// genişliğine göre CX'ten fazladan pay bırakacak şekilde seçildi — aksi
-// halde container'ın kesişen overflow'u yüzünden tüm diyagram bir yöne
-// kaymış gibi görünüyordu.
-const CORE_CX=220, CORE_CY=200, CORE_VBW=440, CORE_VBH=460, CORE_RING_R=182;
-const CORE_RADII5=[45,75,105,135,160], CORE_RADII3=[70,115,160];
-let _coreLayoutCache=null;
+//
+// Düğüm boyutu artık HER düğümde sabit değil, "kademe"ye göre değişiyor:
+//   root   — her zaman sahip, gövde gibi sabit büyük.
+//   owned  — zaten alınmış, orta boy (yeşil).
+//   frontier — o dalda SIRADA alınabilecek TEK düğüm, büyük+nabız (kırmızı) —
+//              gözün direkt gideceği yer burası.
+//   hint   — frontier'dan sonraki, henüz sırası gelmemiş düğümler; küçük
+//            birer nokta, tıklanmıyor, sadece "ileride buraya gidiyor" ipucu.
+// Eskiden dalın TÜM düğümleri aynı boyuttaydı ve adım payı düğüm çapından
+// küçüktü — bu da üst üste binmelerine yol açıyordu (bkz. topografi
+// ölçümü). Artık her adımda GAP sabit kalıyor, boyut kademeye göre
+// değiştiği için üst üste binme matematiksel olarak imkânsız: hint'ler
+// küçük olduğu için sıkışık, frontier büyüdüğünde de önceki/sonraki adım
+// otomatik olarak ondan uzaklaşıyor.
+const CORE_CX=290, CORE_CY=250, CORE_VBW=580, CORE_VBH=610, CORE_RING_R=270;
+const CORE_TIER_R = {root:22, owned:15, frontier:27, hint:7};
+const CORE_GAP = 12;
+function coreNodeTier(id){
+  if(id==='core_root') return 'root';
+  if(coreNodeOwned(id)) return 'owned';
+  // Dallar KESİNLİKLE doğrusal bir zincir (her düğüm bir öncekini
+  // gerektirir) — bu yüzden "sahip değilim ama ön koşulu tamam" durumu bir
+  // dalda HER ZAMAN tam olarak tek bir düğümde doğru olur: frontier budur.
+  return coreNodeReqMet(coreNode(id)) ? 'frontier' : 'hint';
+}
 function coreTreeLayout(){
-  if(_coreLayoutCache) return _coreLayoutCache;
-  const nodes=[{id:'core_root', x:CORE_CX, y:CORE_CY, r:24}];
+  const nodes=[{id:'core_root', x:CORE_CX, y:CORE_CY, r:CORE_TIER_R.root, tier:'root'}];
   const lines=[];
   CORE_BRANCHES.forEach((branch,bi)=>{
     const angle = bi*60*Math.PI/180;
-    const radii = branch.ids.length===5 ? CORE_RADII5 : CORE_RADII3;
-    let px=CORE_CX, py=CORE_CY;
-    branch.ids.forEach((id,ni)=>{
-      const rr=radii[ni];
-      const x=CORE_CX+Math.cos(angle)*rr, y=CORE_CY+Math.sin(angle)*rr;
-      nodes.push({id, x, y, r:17});
+    let runningRadius=0, prevR=CORE_TIER_R.root, px=CORE_CX, py=CORE_CY;
+    branch.ids.forEach(id=>{
+      const tier = coreNodeTier(id);
+      const r = CORE_TIER_R[tier];
+      runningRadius += prevR + CORE_GAP + r;
+      const x=CORE_CX+Math.cos(angle)*runningRadius, y=CORE_CY+Math.sin(angle)*runningRadius;
+      nodes.push({id, x, y, r, tier});
       lines.push({x1:px,y1:py,x2:x,y2:y,to:id});
-      px=x; py=y;
+      px=x; py=y; prevR=r;
     });
   });
+  const capTier = coreNodeTier('core_capstone');
   const capX=CORE_CX, capY=CORE_CY+CORE_RING_R+35;
-  nodes.push({id:'core_capstone', x:capX, y:capY, r:22});
+  nodes.push({id:'core_capstone', x:capX, y:capY, r:CORE_TIER_R[capTier], tier:capTier});
   lines.push({x1:CORE_CX,y1:CORE_CY+CORE_RING_R,x2:capX,y2:capY,to:'core_capstone',ring:true});
-  return (_coreLayoutCache={nodes, lines});
+  return {nodes, lines};
 }
 function renderCoreTree(){
   const wrap=document.getElementById('coreTree'); if(!wrap) return;
@@ -114,6 +132,9 @@ function renderCoreTree(){
   lines.forEach(l=>{
     svg += `<line x1="${l.x1}" y1="${l.y1}" x2="${l.x2}" y2="${l.y2}" class="coreLine${coreNodeOwned(l.to)?' on':''}"/>`;
   });
+  // Hint'ler tıklanabilir bir HTML buton değil, sadece bu katmandaki küçük
+  // bir nokta — gereksiz yere ufak dokunma hedefleri çoğaltmamak için.
+  nodes.forEach(n=>{ if(n.tier==='hint') svg += `<circle cx="${n.x}" cy="${n.y}" r="${n.r}" class="coreHintDot"/>`; });
   svg += '</svg>';
 
   let overlay = '';
@@ -123,9 +144,9 @@ function renderCoreTree(){
     overlay += `<div class="coreBranchTag" style="left:${(lx/CORE_VBW*100).toFixed(2)}%;top:${(ly/CORE_VBH*100).toFixed(2)}%">${t(branch.labelKey)}</div>`;
   });
   nodes.forEach(n=>{
+    if(n.tier==='hint') return;
     const node=coreNode(n.id);
-    const owned=coreNodeOwned(n.id), reqMet=coreNodeReqMet(node);
-    const stateCls = owned?'owned':(reqMet?'buyable':'locked');
+    const stateCls = n.tier==='frontier' ? 'buyable frontier' : 'owned';
     const wPct=(n.r*2/CORE_VBW*100).toFixed(2), hPct=(n.r*2/CORE_VBH*100).toFixed(2);
     overlay += `<button class="coreNodeBtn ${stateCls}" data-core-id="${n.id}" `
       +`style="left:${(n.x/CORE_VBW*100).toFixed(2)}%;top:${(n.y/CORE_VBH*100).toFixed(2)}%;width:${wPct}%;height:${hPct}%;">`
