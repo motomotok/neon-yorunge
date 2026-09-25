@@ -30,7 +30,11 @@ function renderUpgrades(){
       card.addEventListener('click', ()=>{
         if((stats.stardust||0)<tier.cost){ queueToast(t('insufficient_stardust_short')); beep(200,0.1,'square',0.1); return; }
         if(buyUpgrade(key)){
-          queueToast(t('upgrade_bought_toast',{name:t(track.nameKey), lvl:lvl+1}));
+          // Kademe kartları onaysız tek tıkla satın alınıyor — hızlı art arda
+          // tıklanınca (bkz. kullanıcı geri bildirimi) toast kuyruğu bitmek
+          // bilmeyen bir yazı akışına dönüşüyordu. Kartın kendi görsel
+          // güncellemesi (seviye/fiyat) zaten satın alındığını gösteriyor,
+          // ayrıca bir toast'a gerek yok.
           beep(700,0.1,'sine',0.13); beep(1000,0.1,'triangle',0.12);
           renderUpgrades();
           if(tutorialActive && typeof tutorialOnUpgradeBought==='function') tutorialOnUpgradeBought(key);
@@ -183,7 +187,6 @@ function openCoreInfo(id){
     actionBtn.innerHTML=icon('check')+' '+t('btn_yes');
     actionBtn.onclick=()=>{
       if(buyCoreNode(id)){
-        queueToast(icon('atom')+' '+t('core_node_bought_toast',{name:t(node.nameKey)}));
         beep(700,0.1,'sine',0.13); beep(1000,0.1,'triangle',0.12);
         closeCoreInfo(); renderCoreTree(); updatePrestigePreview();
       } else {
@@ -207,9 +210,8 @@ function attemptPrestige(){
   const gain=coresPreview();
   if(gain<=0){ queueToast(t('prestige_zero_toast')); beep(200,0.1,'square',0.1); return; }
   showPurchaseConfirm('replay', t('reset_progress_btn')+' — +'+gain+' ⚛', null, ()=>{
-    const got=performPrestige();
+    performPrestige();
     renderUpgrades(); renderCoreTree(); updatePrestigePreview();
-    queueToast(icon('atom')+' '+t('prestige_done_toast',{n:got}));
     beep(300,0.15,'square',0.12); beep(500,0.15,'triangle',0.1);
   }, t('reset_progress_confirm'));
 }

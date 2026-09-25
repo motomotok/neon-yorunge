@@ -558,7 +558,12 @@ function update(dt){
       const elapsedSec = (performance.now()-bossTelegraph.startTs)/1000;
       bossTelegraph.t = Math.min(1, elapsedSec/BOSS_WARN_SECONDS);
       shake=Math.max(shake, bossTelegraphIntensity(bossTelegraph.t)*10);
-      if(elapsedSec>=BOSS_WARN_SECONDS || score>=stage.score){
+      // Skor eşiğe erken ulaşılsa BİLE animasyon kesilmiyor — telegraph
+      // HER ZAMAN tam BOSS_WARN_SECONDS sürüyor (bkz. kullanıcı geri
+      // bildirimi: oyuncu skoru bir anda yapınca animasyon anında
+      // bitiyordu). Eşik artık sadece uyarının NE ZAMAN BAŞLAYACAĞINI
+      // belirliyor, patlamanın ne zaman olacağını değil.
+      if(elapsedSec>=BOSS_WARN_SECONDS){
         startBossWave(stage);
         bossNextIndex++;
       }
