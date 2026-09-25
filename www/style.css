@@ -208,6 +208,10 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
   border:1px solid transparent;border-radius:18px;
   padding:12px 16px;width:100%;text-align:left;line-height:1.7;font-size:14px;
   box-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 8px 20px -8px rgba(0,0,0,.5);}
+/* Çekirdek düğümü büyüteç popup'ı: arkadaki dönen ağaç/yıldız zemini
+   sızmasın diye tam opak, dönen görselden bağımsız kendi katmanı. */
+.coreInfoCard{background:linear-gradient(180deg,#1a2036,#0e1224) padding-box,
+      linear-gradient(160deg,var(--glass-brd),var(--glass-brd-soft)) border-box;}
 .row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 4px;
   border-bottom:1px solid rgba(255,255,255,.07);}
 .row:last-child{border-bottom:none;}

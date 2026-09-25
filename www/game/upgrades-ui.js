@@ -71,6 +71,12 @@ const CORE_EFFECT_FORMAT = {
 function coreEffectText(node){
   return Object.keys(node.effects).map(k=>CORE_EFFECT_FORMAT[k](node.effects[k])).join(' · ');
 }
+function coreEffectDesc(node){
+  if(node.id==='core_root') return t('core_desc_root');
+  if(node.id==='core_capstone') return t('core_desc_capstone');
+  const k=Object.keys(node.effects)[0];
+  return k ? t('core_desc_'+k) : '';
+}
 
 // Ağacın geometrisi: kök tam merkezde, 6 dal 60°'lik dilimlere yayılıyor,
 // her dalın düğümleri kendi açısında artan yarıçaplarda ("dalın ucuna
@@ -171,6 +177,7 @@ function openCoreInfo(id){
   const owned=coreNodeOwned(id), reqMet=coreNodeReqMet(node);
   document.getElementById('ciIcon').innerHTML=icon(node.icon);
   document.getElementById('ciName').textContent=t(node.nameKey);
+  document.getElementById('ciDesc').textContent=coreEffectDesc(node);
   document.getElementById('ciEffect').textContent=coreEffectText(node);
   const statusEl=document.getElementById('ciStatus');
   const actionBtn=document.getElementById('ciActionBtn');
