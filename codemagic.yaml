@@ -57,24 +57,27 @@ workflows:
             echo "pod install başarısız (deneme $n/3) — 15sn sonra tekrar denenecek..."
             sleep 15
           done
+      - name: Set up keychain
+        script: |
+          # SIRA ÖNEMLİ: "fetch-signing-files --create" Apple'da hiç
+          # sertifika yoksa YENİ bir sertifika + özel anahtar (private key)
+          # ÜRETİYOR ve onu bir keychain'e kaydetmesi gerekiyor. Keychain bu
+          # adımdan ÖNCE hazır değilse "Cannot save Signing Certificates
+          # without certificate private key" hatası veriyor — bu yüzden
+          # keychain'i fetch'ten ÖNCE kuruyoruz (önceki denemede sıra tersti).
+          keychain initialize
       - name: Fetch signing files
         script: |
-          # Bir önceki denemede eksik olan asıl adım buydu: Apple'da bu bundle
-          # ID için App Store dağıtım sertifikası/profili hiç yoktu, bu yüzden
-          # aşağıdaki "use-profiles" hiçbir şey bulamıyordu. Bu komut Apple
-          # Developer Portal'da (API key'in Admin yetkisiyle) var olanı çeker,
-          # yoksa --create ile YENİ sertifika+profil oluşturur.
+          # Apple Developer hesabında bu bundle ID için App Store dağıtım
+          # sertifikası/profili hiç yoktu. Bu komut Apple Developer Portal'da
+          # (API key'in Admin yetkisiyle) var olanı çeker, yoksa --create ile
+          # YENİ sertifika+profil oluşturup az önce hazırlanan keychain'e
+          # kaydeder.
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --create
       - name: Set up signing certificate
         script: |
-          # Bir önceki denemede eksik olan parça: "add-certificates" çağrısından
-          # ÖNCE geçici/varsayılan bir keychain oluşturulup kilidi açılmazsa,
-          # sertifika hiçbir yere gerçekten kaydedilmiyor ve Xcode imzalama
-          # anında sertifikayı bulamıyor — sonuç aynı "no matching profiles"
-          # hatasıymış gibi görünüyor.
-          keychain initialize
           keychain add-certificates
       - name: Set up code signing settings on Xcode project
         script: |
