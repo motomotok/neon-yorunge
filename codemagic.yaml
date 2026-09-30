@@ -35,10 +35,28 @@ workflows:
           # burada YENİDEN üretilmeleri şart, yoksa Xcode eski/boş bir web
           # klasörü paketler.
           npm run build:ads
-          npx cap sync ios
+          # "cap sync ios" kendi içinde "pod install" da çalıştırıyor; bu adım
+          # Google-Mobile-Ads-SDK'yı dl.google.com'dan indiriyor ve CI
+          # makineleriyle Google'ın CDN'i arasında ara sıra geçici ağ zaman
+          # aşımı yaşanabiliyor (bizim ayarımızla ilgili değil) — bu yüzden
+          # 3 denemeye kadar otomatik tekrar deniyoruz.
+          n=0
+          until npx cap sync ios; do
+            n=$((n+1))
+            if [ $n -ge 3 ]; then echo "cap sync ios 3 denemede de başarısız oldu."; exit 1; fi
+            echo "cap sync ios başarısız (deneme $n/3) — 15sn sonra tekrar denenecek..."
+            sleep 15
+          done
       - name: Install CocoaPods dependencies
         script: |
-          cd ios/App && pod install
+          cd ios/App
+          n=0
+          until pod install; do
+            n=$((n+1))
+            if [ $n -ge 3 ]; then echo "pod install 3 denemede de başarısız oldu."; exit 1; fi
+            echo "pod install başarısız (deneme $n/3) — 15sn sonra tekrar denenecek..."
+            sleep 15
+          done
       - name: Fetch signing files
         script: |
           # Bir önceki denemede eksik olan asıl adım buydu: Apple'da bu bundle
