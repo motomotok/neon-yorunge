@@ -21,7 +21,10 @@ workflows:
         distribution_type: app_store
         bundle_identifier: com.motomotok.neonyorunge
     integrations:
-      app_store_connect: appstore_credentials
+      # Codemagic panelinde oluşturduğun key'in ADI (Settings -> Integrations
+      # -> Developer Portal -> Manage keys -> Active listesindeki "NAME"
+      # sütunu) buradakiyle birebir aynı olmalı.
+      app_store_connect: "Codemagic CI"
     scripts:
       - name: Install npm dependencies
         script: |
