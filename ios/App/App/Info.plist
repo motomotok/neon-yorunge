@@ -41,6 +41,14 @@
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 	</array>
+	<!-- Apple, iPad'de Split View/Slide Over (multitasking) desteklenecekse
+	     4 yönün de desteklenmesini zorunlu kılıyor (App Store Connect
+	     yükleme sırasında "Invalid bundle" hatasıyla reddetti). Oyun bilerek
+	     tek yönlü olduğu için multitasking'i tamamen kapatıp "her zaman tam
+	     ekran" işaretliyoruz — tek-yönlü iPad uygulamaları için Apple'ın
+	     kendi onayladığı standart çözüm bu. -->
+	<key>UIRequiresFullScreen</key>
+	<true/>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 
