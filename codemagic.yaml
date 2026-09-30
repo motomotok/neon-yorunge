@@ -8,6 +8,7 @@ workflows:
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
+        BUNDLE_ID: "com.motomotok.neonyorunge"
       node: 20.11.1
       xcode: latest
       cocoapods: default
@@ -40,6 +41,19 @@ workflows:
       - name: Install CocoaPods dependencies
         script: |
           cd ios/App && pod install
+      - name: Fetch signing files
+        script: |
+          # Bir önceki denemede eksik olan asıl adım buydu: Apple'da bu bundle
+          # ID için App Store dağıtım sertifikası/profili hiç yoktu, bu yüzden
+          # aşağıdaki "use-profiles" hiçbir şey bulamıyordu. Bu komut Apple
+          # Developer Portal'da (API key'in Admin yetkisiyle) var olanı çeker,
+          # yoksa --create ile YENİ sertifika+profil oluşturur.
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+      - name: Set up signing certificate
+        script: |
+          keychain add-certificates
       - name: Set up code signing settings on Xcode project
         script: |
           xcode-project use-profiles
