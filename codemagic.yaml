@@ -89,11 +89,14 @@ workflows:
       - name: Set build number
         script: |
           # Apple'a yollanan her build'in numarası bir öncekinden büyük olmalı;
-          # Codemagic'in kendi otomatik artan sayacını (CM_BUILD_NUMBER)
-          # kullanmak ekstra App Store Connect API çağrısı gerektirmiyor,
-          # en basit ve güvenilir yöntem.
+          # Codemagic'in kendi otomatik artan sayacını kullanmak ekstra App
+          # Store Connect API çağrısı gerektirmiyor, en basit ve güvenilir
+          # yöntem. NOT: değişkenin doğru adı BUILD_NUMBER'mış, CM_BUILD_NUMBER
+          # diye yazdığım önceki denemede boş geldiği için agvtool'a hiç
+          # versiyon numarası gitmemiş, o yüzden komut kendi yardım metnini
+          # basıp duruyordu.
           cd $CM_BUILD_DIR/ios/App
-          agvtool new-version -all $CM_BUILD_NUMBER
+          agvtool new-version -all $BUILD_NUMBER
       - name: Build ipa for distribution
         script: |
           xcode-project build-ipa \
