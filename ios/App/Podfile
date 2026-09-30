@@ -18,6 +18,15 @@ end
 
 target 'App' do
   capacitor_pods
+  # @capacitor-community/admob 6.2.0 pins Google-Mobile-Ads-SDK to exactly
+  # 11.3.0, ama Google-Mobile-Ads-SDK'nın kendi podspec'i GoogleUserMessagingPlatform
+  # (UMP, reklam onay/consent SDK'sı) için sadece ">= 1.1" gibi açık uçlu bir
+  # alt sınır veriyor — yani CocoaPods otomatik olarak en YENİ UMP sürümünü
+  # çekiyor. UMP 3.x, admob eklentisinin Swift kodunun kullandığı eski
+  # "UMP"-önekli isimleri (UMPConsentInformation.sharedInstance vb.) Swift
+  # tarafında kaldırmış, bu da derleme hatası veriyor. Eklenti 6.2.0 muhtemelen
+  # eski 2.x UMP sürümüyle test edilmiş; burada onu sabitliyoruz.
+  pod 'GoogleUserMessagingPlatform', '2.6.0'
   # Add your Pods here
 end
 
