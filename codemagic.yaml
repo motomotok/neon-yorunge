@@ -68,13 +68,17 @@ workflows:
           keychain initialize
       - name: Fetch signing files
         script: |
-          # Apple Developer hesabında bu bundle ID için App Store dağıtım
-          # sertifikası/profili hiç yoktu. Bu komut Apple Developer Portal'da
-          # (API key'in Admin yetkisiyle) var olanı çeker, yoksa --create ile
-          # YENİ sertifika+profil oluşturup az önce hazırlanan keychain'e
-          # kaydeder.
+          # Codemagic'in kendi "fetch-signing-files" kodunu inceledim: --create
+          # sertifikayı Apple'da OLUŞTURUYOR ama imzalamak için kullanılacak
+          # özel anahtarı (private key) KENDİLİĞİNDEN üretmiyor — bunu bize
+          # --certificate-key ile vermemiz gerekiyor, yoksa "Cannot save
+          # Signing Certificates without certificate private key" hatası
+          # veriyor (önceki 2 denemede kaçırdığım asıl sebep buydu). Önce
+          # standart bir RSA anahtarı üretip onu veriyoruz.
+          openssl genrsa -out /tmp/cert_key.pem 2048
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
+            --certificate-key=@file:/tmp/cert_key.pem \
             --create
       - name: Set up signing certificate
         script: |
