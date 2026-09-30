@@ -12,15 +12,13 @@ workflows:
       node: 20.11.1
       xcode: latest
       cocoapods: default
-      ios_signing:
-        # Codemagic panelinde: Team settings -> Integrations -> Apple Developer
-        # Portal / App Store Connect -> bir "App Store Connect API key"
-        # entegrasyonu oluştur (Apple Developer hesabın hazır olunca), adını
-        # AŞAĞIDAKİ integrations bloğundaki isimle birebir aynı yap.
-        # Sertifika/profil bu bilgiyle OTOMATİK oluşturulup imzalanıyor —
-        # elle .p12/.mobileprovision indirip yüklemene gerek yok.
-        distribution_type: app_store
-        bundle_identifier: com.motomotok.neonyorunge
+      # NOT: "ios_signing" bloğu BİLEREK yok — o blok varken Codemagic script'ler
+      # hiç çalışmadan ÖNCE kendi otomatik bir sertifika/profil kontrolü
+      # yapıyor; bu kontrol var olanı arıyor ama YENİ oluşturmuyor. Hesapta
+      # henüz hiç App Store dağıtım sertifikası olmadığı için o otomatik
+      # kontrol hep aynı "no matching profiles" hatasıyla anında düşüyor —
+      # aşağıdaki scriptler (ki onlar --create ile gerçekten oluşturuyor) hiç
+      # çalışma şansı bulamıyordu. İmzalamayı tamamen scriptlere bırakıyoruz.
     integrations:
       # Codemagic panelinde oluşturduğun key'in ADI (Settings -> Integrations
       # -> Developer Portal -> Manage keys -> Active listesindeki "NAME"
