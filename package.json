@@ -1,19 +1,21 @@
 {
   "name": "neon-yorunge",
-  "version": "1.12.4",
+  "version": "1.13.0",
   "description": "Neon Yörünge - tarayıcı tabanlı refleks/arcade oyunu ve Android uygulaması",
   "private": true,
   "scripts": {
     "serve": "npx serve www -l 8080",
     "build:ads": "esbuild src/native-ads.js --bundle --format=iife --outfile=www/native-ads-bundle.js",
-    "cap:sync": "npm run build:ads && cap sync android",
+    "cap:sync": "npm run build:ads && cap sync",
     "android:open": "cap open android",
-    "android:debug": "cd android && gradlew.bat assembleDebug"
+    "android:debug": "cd android && gradlew.bat assembleDebug",
+    "ios:open": "cap open ios"
   },
   "dependencies": {
     "@capacitor-community/admob": "^6.2.0",
     "@capacitor/android": "^6.2.0",
     "@capacitor/core": "^6.2.0",
+    "@capacitor/ios": "^6.2.2",
     "@openforge/capacitor-game-connect": "^5.0.2",
     "cordova-plugin-purchase": "^13.18.0"
   },

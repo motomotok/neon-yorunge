@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleDisplayName</key>
+        <string>Neon Yörünge</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>armv7</string>
+	</array>
+	<!-- Oyun sabit dikey ekran için tasarlandı (bkz. Android'deki
+	     android:screenOrientation="portrait" ile aynı karar) — iPad dahil
+	     yatay/baş aşağı döndürmeye izin verilmiyor. -->
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<true/>
+
+	<!-- AdMob App ID — şu an Google'ın RESMİ TEST ID'si kullanılıyor (Android
+	     manifest'teki placeholder ile aynı desen). AdMob hesabında iOS için
+	     ayrı bir uygulama oluşturulunca bu değeri kendi App ID'nizle değiştirin
+	     (bkz. MOBILE_APP.md). Bu anahtar olmadan Google Mobile Ads SDK
+	     başlatılır başlatılmaz uygulama ÇÖKER. -->
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-3940256099942544~1458002511</string>
+
+	<!-- iOS 14.5+ App Tracking Transparency: reklam SDK'sı (AdMob) IDFA'ya
+	     dokunduğu için bu anahtar ZORUNLU — olmadan Apple App Store inceleme
+	     aşamasında reddeder. capacitor.config.json'daki
+	     requestTrackingAuthorization:false ayarı otomatik istek göstermiyor
+	     (kişiselleştirilmemiş reklamlarla devam ediliyor), ama SDK yine de bu
+	     metni kontrol ediyor. -->
+	<key>NSUserTrackingUsageDescription</key>
+	<string>Bu izin, sana daha ilgini çekebilecek reklamlar göstermek için kullanılır.</string>
+
+	<!-- TODO (yalnızca Mac/Xcode'da tamamlanabilir): AdMob'un mediation ağları
+	     için Google'ın güncel SKAdNetworkIdentifier listesini
+	     (https://developers.google.com/admob/ios/general-manifest -> "SKAdNetwork
+	     items") buraya bir <key>SKAdNetworkItems</key> dizisi olarak ekleyin —
+	     eksik olması App Store'a yüklemeyi ENGELLEMEZ ama iOS 14+'ta reklam
+	     doluluk oranını belirgin düşürür, bu yüzden yayından önce eklenmeli. -->
+</dict>
+</plist>

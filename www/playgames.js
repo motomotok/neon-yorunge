@@ -7,8 +7,16 @@
 (function () {
   // Play Console → Play Games Services → Leaderboards'tan alınacak gerçek ID
   // buraya girilmeli (bkz. MOBILE_APP.md). Girilmeden submitScore/showLeaderboard
-  // sessizce başarısız olur, oyunu bozmaz.
-  const LEADERBOARD_ID = 'YOUR_LEADERBOARD_ID';
+  // sessizce başarısız olur, oyunu bozmaz. Bu plugin aynı API'yi Android'de
+  // Google Play Games'e, iOS'ta Apple Game Center'a yönlendiriyor — ama
+  // her mağazanın kendi (App Store Connect / Play Console'da AYRI AYRI
+  // oluşturulan) leaderboard ID'si olduğu için iki sabit gerekiyor.
+  const LEADERBOARD_ID_ANDROID = 'YOUR_LEADERBOARD_ID';
+  const LEADERBOARD_ID_IOS = 'YOUR_IOS_LEADERBOARD_ID';
+  function leaderboardId() {
+    const p = window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform();
+    return p === 'ios' ? LEADERBOARD_ID_IOS : LEADERBOARD_ID_ANDROID;
+  }
 
   let signedIn = false;
 
@@ -28,18 +36,18 @@
   }
 
   function submitScore(score) {
-    const p = plugin();
-    if (!p || !signedIn || LEADERBOARD_ID === 'YOUR_LEADERBOARD_ID') return;
-    p.submitScore({ leaderboardID: LEADERBOARD_ID, totalScoreAmount: Math.round(score) }).catch(() => {});
+    const p = plugin(), id = leaderboardId();
+    if (!p || !signedIn || id === 'YOUR_LEADERBOARD_ID' || id === 'YOUR_IOS_LEADERBOARD_ID') return;
+    p.submitScore({ leaderboardID: id, totalScoreAmount: Math.round(score) }).catch(() => {});
   }
 
   function showLeaderboard() {
-    const p = plugin();
-    if (!p || LEADERBOARD_ID === 'YOUR_LEADERBOARD_ID') {
+    const p = plugin(), id = leaderboardId();
+    if (!p || id === 'YOUR_LEADERBOARD_ID' || id === 'YOUR_IOS_LEADERBOARD_ID') {
       if (window.queueToast) queueToast('🏆 Skor tablosu henüz ayarlanmadı.');
       return;
     }
-    p.showLeaderboard({ leaderboardID: LEADERBOARD_ID }).catch(() => {});
+    p.showLeaderboard({ leaderboardID: id }).catch(() => {});
   }
 
   window.PlayGames = {

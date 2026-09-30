@@ -6,6 +6,10 @@
   "android": {
     "backgroundColor": "#05060f"
   },
+  "ios": {
+    "backgroundColor": "#05060f",
+    "contentInset": "always"
+  },
   "plugins": {
     "AdMob": {
       "requestTrackingAuthorization": false,

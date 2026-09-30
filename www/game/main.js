@@ -32,6 +32,10 @@ if(window.SeasonPass){
   );
 }
 if(window.CdvPurchase && window.CdvPurchase.store){
-  window.CdvPurchase.store.initialize([window.CdvPurchase.Platform.GOOGLE_PLAY]).catch(()=>{});
+  // Hangi mağazada çalıştığımızı Capacitor'e sor — premium.js/season-pass.js'teki
+  // storePlatform() ile aynı ayrım (bkz. oradaki not).
+  const nativePlatform = window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform();
+  const storePlatform = nativePlatform==='ios' ? window.CdvPurchase.Platform.APPLE_APPSTORE : window.CdvPurchase.Platform.GOOGLE_PLAY;
+  window.CdvPurchase.store.initialize([storePlatform]).catch(()=>{});
 }
 requestAnimationFrame(loop);

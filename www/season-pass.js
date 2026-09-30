@@ -12,10 +12,17 @@
 
   // Sadece kaydeder + handler bağlar; store.initialize() main.js'de,
   // Premium.register() ile birlikte, tek seferlik çağrılır (bkz. premium.js).
+  // bkz. premium.js storePlatform() — aynı Google Play / Apple App Store ayrımı.
+  function storePlatform() {
+    const { Platform } = window.CdvPurchase;
+    const p = window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform();
+    return p === 'ios' ? Platform.APPLE_APPSTORE : Platform.GOOGLE_PLAY;
+  }
+
   function register(onOwned, onPriceReady) {
     if (!isAvailable()) return;
-    const { store, ProductType, Platform } = window.CdvPurchase;
-    store.register({ id: PRODUCT_ID, type: ProductType.CONSUMABLE, platform: Platform.GOOGLE_PLAY });
+    const { store, ProductType } = window.CdvPurchase;
+    store.register({ id: PRODUCT_ID, type: ProductType.CONSUMABLE, platform: storePlatform() });
 
     store.when().productUpdated((p) => {
       if (p.id !== PRODUCT_ID) return;

@@ -18,10 +18,21 @@
   // ÇAĞIRMAZ — cordova-plugin-purchase tüm ürünlerin önce register edilmesini,
   // sonra TEK bir initialize() çağrısı yapılmasını beklediği için bu çağrı
   // main.js'de, Premium ve SeasonPass ikisi de register olduktan sonra yapılır.
+  // cordova-plugin-purchase her mağaza için ayrı bir "platform" kaydı bekliyor;
+  // Google Play ile Apple App Store'un ürünleri tamamen ayrı ID havuzlarında
+  // (App Store Connect'te de aynı 'remove_ads' ID'siyle bir ürün oluşturulmalı,
+  // bkz. MOBILE_APP.md) — bu yüzden native tarafın hangi mağazada çalıştığını
+  // Capacitor.getPlatform() ile ayırt ediyoruz.
+  function storePlatform() {
+    const { Platform } = window.CdvPurchase;
+    const p = window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform();
+    return p === 'ios' ? Platform.APPLE_APPSTORE : Platform.GOOGLE_PLAY;
+  }
+
   function register(onOwned, onPriceReady) {
     if (!isAvailable()) return;
-    const { store, ProductType, Platform } = window.CdvPurchase;
-    store.register({ id: PRODUCT_ID, type: ProductType.NON_CONSUMABLE, platform: Platform.GOOGLE_PLAY });
+    const { store, ProductType } = window.CdvPurchase;
+    store.register({ id: PRODUCT_ID, type: ProductType.NON_CONSUMABLE, platform: storePlatform() });
 
     store.when().productUpdated((p) => {
       if (p.id !== PRODUCT_ID) return;
