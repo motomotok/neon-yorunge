@@ -68,17 +68,17 @@ workflows:
           keychain initialize
       - name: Fetch signing files
         script: |
-          # Codemagic'in kendi "fetch-signing-files" kodunu inceledim: --create
-          # sertifikayı Apple'da OLUŞTURUYOR ama imzalamak için kullanılacak
-          # özel anahtarı (private key) KENDİLİĞİNDEN üretmiyor — bunu bize
-          # --certificate-key ile vermemiz gerekiyor, yoksa "Cannot save
-          # Signing Certificates without certificate private key" hatası
-          # veriyor (önceki 2 denemede kaçırdığım asıl sebep buydu). Önce
-          # standart bir RSA anahtarı üretip onu veriyoruz.
-          openssl genrsa -out /tmp/cert_key.pem 2048
+          # ÖNEMLİ: özel anahtar HER build'de yeniden üretilmemeli — ürettikçe
+          # Apple'da eşleşen sertifika bulunamıyor, her seferinde YENİ bir
+          # sertifika oluşturulmaya çalışılıyor ve Apple'ın hesap başına izin
+          # verdiği Distribution sertifika sayısı hızla doluyor (409 hatası
+          # buradan geldi). Doğrusu: anahtarı BİR KERE üretip Codemagic'te
+          # kalıcı bir ortam değişkeni (CERTIFICATE_PRIVATE_KEY, Secure
+          # işaretli) olarak saklamak — her build aynı anahtarı kullanır,
+          # aynı sertifikayı bulup yeniden kullanır.
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --certificate-key=@file:/tmp/cert_key.pem \
+            --certificate-key=@env:CERTIFICATE_PRIVATE_KEY \
             --create
       - name: Set up signing certificate
         script: |
