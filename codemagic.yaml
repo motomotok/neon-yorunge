@@ -53,6 +53,12 @@ workflows:
             --create
       - name: Set up signing certificate
         script: |
+          # Bir önceki denemede eksik olan parça: "add-certificates" çağrısından
+          # ÖNCE geçici/varsayılan bir keychain oluşturulup kilidi açılmazsa,
+          # sertifika hiçbir yere gerçekten kaydedilmiyor ve Xcode imzalama
+          # anında sertifikayı bulamıyor — sonuç aynı "no matching profiles"
+          # hatasıymış gibi görünüyor.
+          keychain initialize
           keychain add-certificates
       - name: Set up code signing settings on Xcode project
         script: |
