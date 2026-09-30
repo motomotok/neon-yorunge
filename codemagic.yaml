@@ -1,0 +1,74 @@
+workflows:
+  ios-testflight:
+    name: iOS — TestFlight
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      groups: []
+      vars:
+        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        XCODE_SCHEME: "App"
+      node: 20.11.1
+      xcode: latest
+      cocoapods: default
+      ios_signing:
+        # Codemagic panelinde: Team settings -> Integrations -> Apple Developer
+        # Portal / App Store Connect -> bir "App Store Connect API key"
+        # entegrasyonu oluştur (Apple Developer hesabın hazır olunca), adını
+        # AŞAĞIDAKİ integrations bloğundaki isimle birebir aynı yap.
+        # Sertifika/profil bu bilgiyle OTOMATİK oluşturulup imzalanıyor —
+        # elle .p12/.mobileprovision indirip yüklemene gerek yok.
+        distribution_type: app_store
+        bundle_identifier: com.motomotok.neonyorunge
+    integrations:
+      app_store_connect: appstore_credentials
+    scripts:
+      - name: Install npm dependencies
+        script: |
+          npm install --legacy-peer-deps
+      - name: Build ads bundle & sync Capacitor iOS project
+        script: |
+          # www/native-ads-bundle.js ve ios/App/App/public/ ikisi de .gitignore'da
+          # (kaynak değil, üretilen dosyalar) — bu yüzden her CI derlemesinde
+          # burada YENİDEN üretilmeleri şart, yoksa Xcode eski/boş bir web
+          # klasörü paketler.
+          npm run build:ads
+          npx cap sync ios
+      - name: Install CocoaPods dependencies
+        script: |
+          cd ios/App && pod install
+      - name: Set up code signing settings on Xcode project
+        script: |
+          xcode-project use-profiles
+      - name: Set build number
+        script: |
+          # Apple'a yollanan her build'in numarası bir öncekinden büyük olmalı;
+          # Codemagic'in kendi otomatik artan sayacını (CM_BUILD_NUMBER)
+          # kullanmak ekstra App Store Connect API çağrısı gerektirmiyor,
+          # en basit ve güvenilir yöntem.
+          cd $CM_BUILD_DIR/ios/App
+          agvtool new-version -all $CM_BUILD_NUMBER
+      - name: Build ipa for distribution
+        script: |
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      email:
+        recipients:
+          - aliaslan625625@gmail.com
+        notify:
+          success: true
+          failure: true
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        # İlk birkaç build'de kapalı kalması daha güvenli — hazır olunca
+        # true yapıp iPhone 11 / iPad mini'nin bağlı olduğu bir Test
+        # Grubu adı ekleyebilirsin (App Store Connect -> TestFlight'ta
+        # oluşturulur):
+        # beta_groups:
+        #   - "İç Test"
