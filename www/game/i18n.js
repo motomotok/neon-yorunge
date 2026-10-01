@@ -54,6 +54,8 @@ const STRINGS = {
   hud_level:{tr:'Seviye',en:'Level',de:'Level',fr:'Niveau',es:'Nivel',pt:'Nível',it:'Livello',ru:'Уровень',ar:'المستوى',ja:'レベル',ko:'레벨',zh:'等级',hi:'स्तर',id:'Level',pl:'Poziom'},
   hud_time:{tr:'Süre',en:'Time',de:'Zeit',fr:'Temps',es:'Tiempo',pt:'Tempo',it:'Tempo',ru:'Время',ar:'الوقت',ja:'時間',ko:'시간',zh:'时间',hi:'समय',id:'Waktu',pl:'Czas'},
   hud_combo:{tr:'Combo',en:'Combo',de:'Combo',fr:'Combo',es:'Combo',pt:'Combo',it:'Combo',ru:'Комбо',ar:'كومبو',ja:'コンボ',ko:'콤보',zh:'连击',hi:'कॉम्बो',id:'Combo',pl:'Combo'},
+  hud_wave:{tr:'Dalga',en:'Wave',de:'Welle',fr:'Vague',es:'Oleada',pt:'Onda',it:'Ondata',ru:'Волна',ar:'موجة',ja:'ウェーブ',ko:'웨이브',zh:'波次',hi:'वेव',id:'Gelombang',pl:'Fala'},
+  hud_power:{tr:'Güç',en:'Power',de:'Kraft',fr:'Puissance',es:'Poder',pt:'Poder',it:'Potere',ru:'Сила',ar:'القوة',ja:'パワー',ko:'파워',zh:'能量',hi:'पावर',id:'Daya',pl:'Moc'},
 
   // --- İpucu / tutorial (statik) ---
   hint_bar:{tr:'SOL → iç halka · SAĞ → dış halka',en:'LEFT → inner ring · RIGHT → outer ring',de:'LINKS → innerer Ring · RECHTS → äußerer Ring',fr:'GAUCHE → anneau intérieur · DROITE → anneau extérieur',es:'IZQUIERDA → anillo interior · DERECHA → anillo exterior',pt:'ESQUERDA → anel interno · DIREITA → anel externo',it:'SINISTRA → anello interno · DESTRA → anello esterno',ru:'ЛЕВО → внутр. кольцо · ПРАВО → внешн. кольцо',ar:'يسار ← الحلقة الداخلية · يمين ← الحلقة الخارجية',ja:'左 → 内側リング · 右 → 外側リング',ko:'왼쪽 → 안쪽 링 · 오른쪽 → 바깥쪽 링',zh:'左 → 内环 · 右 → 外环',hi:'बाएँ → भीतरी रिंग · दाएँ → बाहरी रिंग',id:'KIRI → cincin dalam · KANAN → cincin luar',pl:'LEWO → wewnętrzny pierścień · PRAWO → zewnętrzny pierścień'},

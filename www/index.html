@@ -20,18 +20,39 @@
 <div id="achTooltip" class="achTooltip"></div>
 
 <div id="hud">
-  <div class="hudTop">
-    <div><div class="lbl" data-i18n="hud_score">Puan</div><div class="val" id="scoreHud">0</div>
-      <div id="hpBarWrap"><div id="hpBarFill"></div></div><div id="hpText"></div><div id="goalHint" class="goalHint"></div></div>
-    <div class="center">
+  <div class="hudHealthPanel">
+    <i class="gicon" data-icon="heart"></i>
+    <div class="hudHealthBars">
+      <div id="hpBarWrap"><div id="hpBarFill"></div></div>
+      <div id="hpText"></div>
+    </div>
+  </div>
+  <div class="hudScorePanel">
+    <div class="lbl" data-i18n="hud_score">Puan</div>
+    <div class="val" id="scoreHud">0</div>
+    <div class="hudBestLine" id="bestLiveHud"></div>
+  </div>
+  <button id="pauseBtn"><i class="gicon" data-icon="pause"></i></button>
+  <div id="walletChip"><i class="gicon" data-icon="coin"></i> <span id="walletHud">0</span></div>
+
+  <div class="hudStatPanel">
+    <div class="hudStatRow">
       <div class="lbl" id="levelLbl" data-i18n="hud_level">Seviye</div><div class="val" id="levelHud">1</div>
       <div class="lbl" id="timerLbl" style="display:none" data-i18n="hud_time">Süre</div><div class="val" id="timerHud" style="display:none">60</div>
     </div>
-    <div style="text-align:right"><div class="lbl" data-i18n="hud_combo">Combo</div><div class="val" id="combo">x1</div></div>
+    <div class="hudStatRow">
+      <div class="lbl" data-i18n="hud_combo">Combo</div><div class="val" id="combo">x1</div>
+    </div>
+    <div class="hudStatRow" id="waveRow">
+      <div class="lbl" data-i18n="hud_wave">Dalga</div><div class="val" id="waveHud">1</div>
+    </div>
+    <div id="goalHint" class="goalHint"></div>
   </div>
-  <div id="pw"></div>
-  <button id="pauseBtn"><i class="gicon" data-icon="pause"></i></button>
-  <div id="walletChip"><i class="gicon" data-icon="coin"></i> <span id="walletHud">0</span></div>
+
+  <div class="hudPowerPanel">
+    <div class="hudPowerLabel"><i class="gicon" data-icon="lightning"></i> <span data-i18n="hud_power">Güç</span></div>
+    <div id="pw"></div>
+  </div>
 </div>
 <div id="levelFlash"></div>
 <div class="hint" id="hint" data-i18n="hint_bar">SOL → iç halka &nbsp;·&nbsp; SAĞ → dış halka</div>

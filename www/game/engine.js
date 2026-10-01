@@ -675,9 +675,25 @@ function bumpCombo(){
 // alır — her karede (60/sn) unconditional DOM yazımı yerine, sadece
 // gerçekten değişen elemanlar güncellenir (davranış aynı, gereksiz
 // reflow/style recalculation önlenir).
-const _hud = {score:null, combo:null, level:null, hp:null, hpText:null, isTime:null, timer:null, pw:null, flash:null, wallet:null, goal:null};
+const _hud = {score:null, combo:null, level:null, hp:null, hpText:null, isTime:null, timer:null, pw:null, flash:null, wallet:null, goal:null, bestLive:null, waveActive:null, wave:null};
 function updateHud(){
   if(_hud.score!==score){ document.getElementById('scoreHud').textContent=score.toFixed(2); _hud.score=score; }
+  // Referans görsellerdeki "BEST: X" satırı — mevcut menu_best i18n anahtarı
+  // ("En iyi: {n}") aynen yeniden kullanılıyor, yeni bir çeviri gerekmiyor.
+  const bestText = mode==='zen' ? '' : t('menu_best',{n:stats.best.toFixed(2)});
+  if(_hud.bestLive!==bestText){ document.getElementById('bestLiveHud').textContent=bestText; _hud.bestLive=bestText; }
+  // "Dalga" satırı: sıradaki boss dalgasının numarası (sonsuz boss sistemi
+  // olduğu için sabit bir payda yok, bkz. bossStageFor()). Zen modda boss
+  // hiç yok, satır tamamen gizlenir.
+  const waveActive = mode!=='zen';
+  if(_hud.waveActive!==waveActive){
+    document.getElementById('waveRow').style.display = waveActive ? 'flex' : 'none';
+    _hud.waveActive=waveActive;
+  }
+  if(waveActive){
+    const waveText=String(bossNextIndex+1);
+    if(_hud.wave!==waveText){ document.getElementById('waveHud').textContent=waveText; _hud.wave=waveText; }
+  }
   // "Sıradaki hedef" ipucu: oyuncuya HER AN görünür, somut, yakın bir hedef
   // göster — rekor kırmaya mı yoksa sıradaki boss dalgasına mı daha
   // yakınsa onu seç. Boş string döndürürse (ikisi de uzaksa/boss aktifken)
