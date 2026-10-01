@@ -94,9 +94,22 @@ function renderAchievements(){
     d.className='achItem'+(unlocked?' unlocked':'');
     d.title=t(a.descKey);
     d.innerHTML=`<div class="ic">${icon(a.icon)}</div><div>${t(a.nameKey)}</div>`;
+    d.addEventListener('click', ()=>showAchTooltip(d, a, unlocked));
     grid.appendChild(d);
   });
   document.getElementById('achCount').textContent=count;
+}
+let achTooltipTimer=null;
+function showAchTooltip(targetEl, a, unlocked){
+  const el=document.getElementById('achTooltip'); if(!el) return;
+  clearTimeout(achTooltipTimer);
+  const rect=targetEl.getBoundingClientRect();
+  el.style.left=(rect.left+rect.width/2)+'px';
+  el.style.top=rect.top+'px';
+  const statusLine=(unlocked?'✅ '+t('ach_status_unlocked'):'🔒 '+t('core_locked_status'))+' · +'+a.reward+' '+icon('coin');
+  el.innerHTML=`<b>${t(a.nameKey)}</b>${t(a.descKey)}<span class="rw">${statusLine}</span>`;
+  el.classList.add('show');
+  achTooltipTimer=setTimeout(()=>el.classList.remove('show'), 3800);
 }
 function renderLeaderboard(){
   const el=document.getElementById('lbList');

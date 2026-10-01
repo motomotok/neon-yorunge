@@ -1,6 +1,6 @@
 {
   "name": "neon-yorunge",
-  "version": "1.13.4",
+  "version": "1.13.5",
   "description": "Neon Yörünge - tarayıcı tabanlı refleks/arcade oyunu ve Android uygulaması",
   "private": true,
   "scripts": {

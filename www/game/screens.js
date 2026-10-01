@@ -5,6 +5,7 @@ function showScreen(id){
   if(id){ const el=document.getElementById('screen-'+id); if(el) el.classList.add('active'); }
   const overlayEl=document.getElementById('overlay');
   overlayEl.classList.toggle('hidden', !id);
+  const achTip=document.getElementById('achTooltip'); if(achTip) achTip.classList.remove('show');
   // Ana menü hariç her ekranda karartma normal (okunaklı); ana menüde
   // arkadaki dönen yörünge görünsün diye çok hafif — "canlı menü".
   overlayEl.classList.toggle('live', id==='menu');
