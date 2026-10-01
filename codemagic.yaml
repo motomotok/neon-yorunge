@@ -117,10 +117,15 @@ workflows:
           failure: true
       app_store_connect:
         auth: integration
-        submit_to_testflight: true
-        # İlk birkaç build'de kapalı kalması daha güvenli — hazır olunca
-        # true yapıp iPhone 11 / iPad mini'nin bağlı olduğu bir Test
-        # Grubu adı ekleyebilirsin (App Store Connect -> TestFlight'ta
-        # oluşturulur):
+        # false: build işlendikten sonra sadece Internal Testing grubuna
+        # (Apple incelemesi GEREKTİRMEZ, anında kullanılabilir) otomatik
+        # düşer. true iken Codemagic her build'de ayrıca "External Beta
+        # Review"e göndermeyi DENİYORDU — biz sadece kendi Internal Testing
+        # hesabımızla (Test) test ettiğimiz için buna hiç gerek yoktu, üstelik
+        # bir önceki build Apple'da incelemedeyken yenisi gönderilince
+        # "Another build is in review" hatasıyla her seferinde patlıyordu.
+        # Gerçek dış testçiler eklenip App Store'a gitme vakti gelince true
+        # yapıp aşağıdaki beta_groups'u açabiliriz.
+        submit_to_testflight: false
         # beta_groups:
         #   - "İç Test"
