@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.2.0';
+const GAME_VERSION = '2.3.0';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -39,34 +39,67 @@ function applyTheme(key){
   document.querySelectorAll('.theme').forEach(el=>el.classList.toggle('sel', el.dataset.key===key));
 }
 
+// Oyuncu artık vektörle çizilen bir "orb" değil, gerçek bir pena (mediator)
+// görseli (bkz. render.js drawPlayer — PENA_IMG[cfg.skin] çizilir, `color`
+// alanı sadece iz/hâlo rengi için kalır). İki katman:
+//  - 9 "varsayılan" pena: ilki ücretsiz başlangıç, diğer 8'i Nota (oyun-içi
+//    para) ile satılır — eski renkli orb'ların doğal devamı.
+//  - 9 "premium" pena: GERÇEK PARA (IAP, bkz. www/pena-shop.js). Bunların
+//    çalışması için Play Console + App Store Connect'te AYNI product ID'lerle
+//    (pena_fire, pena_ice, ...) ürün oluşturulması GEREKİR — oluşturulana
+//    kadar satın alma butonu tarayıcıda/mağazada sessizce no-op kalır
+//    (premium.js'teki remove_ads ile birebir aynı davranış).
+// loyalty_orb/season1_orb/season2_orb'un gate'leri (giriş serisi/sezon
+// bileti) BİLEREK dokunulmadı, sadece görselleri pena'ya çevrildi — silinirse
+// o ödül sistemleri sessizce kırılır.
 const SKINS = [
-  {id:'default', nameKey:'skin_default', color:'#a97bff', gate:{type:'free'}},
-  {id:'verdant', nameKey:'skin_verdant', color:'#5efc82', gate:{type:'achievement', id:'shield'}},
-  {id:'solar',   nameKey:'skin_solar',   color:'#ffd24a', gate:{type:'achievement', id:'lvl5'}},
-  {id:'aurora',  nameKey:'skin_aurora',  color:'#7fe8ff', gate:{type:'achievement', id:'diamondhunter'}},
-  {id:'crimson', nameKey:'skin_crimson', color:'#ff4d6d', gate:{type:'achievement', id:'combo15'}},
-  {id:'ember',   nameKey:'skin_ember',   color:'#ff8a3d', gate:{type:'coin', price:2000}},
-  {id:'frost',   nameKey:'skin_frost',   color:'#bfe8ff', gate:{type:'coin', price:2000}},
-  {id:'toxic',   nameKey:'skin_toxic',   color:'#baff3d', gate:{type:'coin', price:2800}},
-  {id:'obsidian',nameKey:'skin_obsidian', color:'#7d6fae', gate:{type:'coin', price:2800}},
-  {id:'prism',   nameKey:'skin_prism',   color:'#ffffff', gate:{type:'coin', price:5200}, rainbow:true},
-  {id:'plasma',    nameKey:'skin_plasma',    color:'#ff5ec4', gate:{type:'coin', price:5600}},
-  {id:'starlight', nameKey:'skin_starlight', color:'#eaf2ff', gate:{type:'coin', price:6400}},
-  {id:'shadow',    nameKey:'skin_shadow',    color:'#3a2f55', gate:{type:'coin', price:7200}},
-  {id:'season1_orb', nameKey:'skin_season1orb', color:'#54e0ff', gate:{type:'seasonpass', season:1}, rainbow:true},
-  {id:'season2_orb', nameKey:'skin_season2orb', color:'#ff8a3d', gate:{type:'seasonpass', season:2}, rainbow:true},
+  {id:'teal',    nameKey:'skin_pena_teal',    img:'img/penas/default/teal.png',    color:'#2fe6c4', gate:{type:'free'}},
+  {id:'magenta', nameKey:'skin_pena_magenta', img:'img/penas/default/magenta.png', color:'#ff4fd8', gate:{type:'coin', price:1800}},
+  {id:'green',   nameKey:'skin_pena_green',   img:'img/penas/default/green.png',   color:'#6dff4a', gate:{type:'coin', price:2200}},
+  {id:'gold',    nameKey:'skin_pena_gold',    img:'img/penas/default/gold.png',    color:'#ffcf3d', gate:{type:'coin', price:2600}},
+  {id:'red',     nameKey:'skin_pena_red',     img:'img/penas/default/red.png',     color:'#ff3b3b', gate:{type:'coin', price:3000}},
+  {id:'maroon',  nameKey:'skin_pena_maroon',  img:'img/penas/default/maroon.png',  color:'#b23a3a', gate:{type:'coin', price:3400}},
+  {id:'purple',  nameKey:'skin_pena_purple',  img:'img/penas/default/purple.png',  color:'#a35bff', gate:{type:'coin', price:3800}},
+  {id:'blue',    nameKey:'skin_pena_blue',    img:'img/penas/default/blue.png',    color:'#3b5bff', gate:{type:'coin', price:4200}},
+  {id:'silver',  nameKey:'skin_pena_silver',  img:'img/penas/default/silver.png',  color:'#d8e4ea', gate:{type:'coin', price:4600}},
+  {id:'pena_fire',      nameKey:'skin_pena_fire',      img:'img/penas/premium/fire.png',      color:'#ff6a1a', gate:{type:'iap', productId:'pena_fire',      fallbackPrice:'₺14.99'}},
+  {id:'pena_ice',       nameKey:'skin_pena_ice',       img:'img/penas/premium/ice.png',       color:'#6fd8ff', gate:{type:'iap', productId:'pena_ice',       fallbackPrice:'₺14.99'}},
+  {id:'pena_toxic',     nameKey:'skin_pena_toxic',     img:'img/penas/premium/toxic.png',     color:'#9aff3d', gate:{type:'iap', productId:'pena_toxic',     fallbackPrice:'₺14.99'}},
+  {id:'pena_lightning', nameKey:'skin_pena_lightning', img:'img/penas/premium/lightning.png', color:'#ffd23d', gate:{type:'iap', productId:'pena_lightning', fallbackPrice:'₺19.99'}},
+  {id:'pena_galaxy',    nameKey:'skin_pena_galaxy',    img:'img/penas/premium/galaxy.png',    color:'#8a5bff', gate:{type:'iap', productId:'pena_galaxy',    fallbackPrice:'₺19.99'}},
+  {id:'pena_pinkswirl', nameKey:'skin_pena_pinkswirl', img:'img/penas/premium/pinkswirl.png', color:'#ff4fa0', gate:{type:'iap', productId:'pena_pinkswirl', fallbackPrice:'₺19.99'}},
+  {id:'pena_wood',      nameKey:'skin_pena_wood',      img:'img/penas/premium/wood.png',      color:'#8a6a3d', gate:{type:'iap', productId:'pena_wood',      fallbackPrice:'₺24.99'}},
+  {id:'pena_lion',      nameKey:'skin_pena_lion',      img:'img/penas/premium/lion.png',      color:'#9a9aa0', gate:{type:'iap', productId:'pena_lion',      fallbackPrice:'₺24.99'}},
+  {id:'pena_diamond',   nameKey:'skin_pena_diamond',   img:'img/penas/premium/diamond.png',   color:'#eaf6ff', gate:{type:'iap', productId:'pena_diamond',   fallbackPrice:'₺29.99'}},
+  {id:'season1_orb', nameKey:'skin_season1orb', img:'img/penas/default/gold.png',    color:'#ffcf3d', gate:{type:'seasonpass', season:1}},
+  {id:'season2_orb', nameKey:'skin_season2orb', img:'img/penas/premium/fire.png',    color:'#ff6a1a', gate:{type:'seasonpass', season:2}},
   // 7 Günlük Giriş Serisi'nin tamamlanma ödülü — ne mağazadan ne sezon
   // biletinden alınabilir, YALNIZCA haftayı hiç kaçırmadan tamamlayınca
-  // kazanılır (bkz. handleDailyReturn). Sıcak altın/beyaz parıltı diğer
-  // tüm orb'lardan farklı, "sadakat" hissi versin diye kasıtlı olarak
-  // gökkuşağı değil, tek renkli ama en parlak/en sıcak ton seçildi.
-  {id:'loyalty_orb', nameKey:'skin_loyaltyorb', color:'#fff3c4', gate:{type:'streak'}},
+  // kazanılır (bkz. handleDailyReturn). Premium elmas pena'yla AYNI görseli
+  // paylaşması bilinçli: "parayla alınacak kadar gösterişli ama bunu
+  // kazandın" hissi için.
+  {id:'loyalty_orb', nameKey:'skin_loyaltyorb', img:'img/penas/premium/diamond.png', color:'#eaf6ff', gate:{type:'streak'}},
 ];
+// Pena/canavar görselleri: tüm id'ler için boot'ta bir kez Image() nesnesi
+// oluşturulur. drawImage() henüz yüklenmemiş bir Image için sessizce no-op
+// olduğundan (hata fırlatmaz) ayrıca bir "yüklendi mi" kontrolüne gerek yok.
+const PENA_IMG = {};
+SKINS.forEach(sk=>{ if(sk.img){ const im=new Image(); im.src=sk.img; PENA_IMG[sk.id]=im; } });
+const MONSTER_IMG = {};
+for(let i=1;i<=16;i++){ const im=new Image(); im.src='img/monsters/monster'+i+'.png'; MONSTER_IMG['monster'+i]=im; }
 function playerColor(){
   const sk=SKINS.find(s=>s.id===cfg.skin)||SKINS[0];
   if(!isUnlockedItem('skins', sk)) return SKINS[0].color;
   if(sk.rainbow) return `hsl(${(performance.now()*0.06)%360},85%,68%)`;
   return sk.color;
+}
+// Oyuncunun gerçekte çizilecek pena görseli — kilitli bir skin eşitlenmiş
+// olsa bile (ör. eski kayıt) playerColor() ile AYNI "kilitliyse varsayılana
+// dön" mantığını izler.
+function penaImg(){
+  const sk=SKINS.find(s=>s.id===cfg.skin)||SKINS[0];
+  const useId = isUnlockedItem('skins', sk) ? sk.id : SKINS[0].id;
+  return PENA_IMG[useId];
 }
 
 const TRAILS = [
@@ -304,6 +337,7 @@ function isUnlockedItem(category, item){
   if(item.gate.type==='coin') return stats.owned[category].includes(item.id);
   if(item.gate.type==='seasonpass') return stats.owned[category].includes(item.id);
   if(item.gate.type==='streak') return stats.owned[category].includes(item.id);
+  if(item.gate.type==='iap') return stats.owned[category].includes(item.id);
   return false;
 }
 
@@ -378,7 +412,7 @@ function seasonXpEventMult(){ return stats.eventType==='xp2x' ? 2 : 1; }
     }
   }catch(e){}
 })();
-let cfg = load('beatOrbitCfg', {sound:true, theme:'neon', skin:'default', trail:'classic', sun:'classic', ringStyle:'classic', bigButtons:false, leftHand:false, colorblind:false, lang:'tr'});
+let cfg = load('beatOrbitCfg', {sound:true, theme:'neon', skin:'teal', trail:'classic', sun:'classic', ringStyle:'classic', bigButtons:false, leftHand:false, colorblind:false, lang:'tr'});
 let stats = load('beatOrbitStats', {
   best:0, stars:0, games:0, maxLevel:1, magnets:0, golds:0, diamonds:0,
   unlocked:[], leaderboard:[], dailyDate:'', dailyDone:false, dailyScore:0, dailyCount:0,

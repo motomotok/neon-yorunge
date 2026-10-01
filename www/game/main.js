@@ -44,6 +44,20 @@ function initIAP(){
       (price)=>{ syncSeasonPassUI(price); }
     );
   }
+  if(window.PenaShop){
+    PenaShop.register(
+      (productId)=>{
+        if(!stats.owned.skins.includes(productId)){
+          stats.owned.skins.push(productId); saveStats();
+          const sk=SKINS.find(s=>s.id===productId);
+          if(sk) queueToast(t('purchased_toast',{name:t(sk.nameKey)}));
+        }
+        setEquipped('skins', productId);
+        syncShopIfOpen(); renderSkins();
+      },
+      (productId, price)=>{ setPenaLivePrice(productId, price); }
+    );
+  }
   // Hangi mağazada çalıştığımızı Capacitor'e sor — premium.js/season-pass.js'teki
   // storePlatform() ile aynı ayrım (bkz. oradaki not).
   const nativePlatform = window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform();

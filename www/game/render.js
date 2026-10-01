@@ -281,7 +281,16 @@ function drawPlayer(t){
     const pg=ctx.createRadialGradient(px,py,0,px,py,PLAYER_R*2.2);
     pg.addColorStop(0,'#ffffff'); pg.addColorStop(0.4, hexA(pc,.85)); pg.addColorStop(1, hexA(pc,0));
     ctx.fillStyle=pg; ctx.beginPath(); ctx.arc(px,py,PLAYER_R*2.2,0,7); ctx.fill();
-    drawNoteShape(px,py,PLAYER_R,'#ffffff',true,0);
+    // Oyuncu artık vektör nota değil, gerçek bir pena (mediator) görseli
+    // (bkz. data.js penaImg()/PENA_IMG) — görsel henüz yüklenmediyse (ilk
+    // birkaç kare) eski nota glifine düşülür ki oyuncu asla görünmez olmasın.
+    const pImg = penaImg();
+    if(pImg && pImg.complete && pImg.naturalWidth>0){
+      const s = PLAYER_R*2.7;
+      ctx.drawImage(pImg, px-s/2, py-s/2, s, s);
+    } else {
+      drawNoteShape(px,py,PLAYER_R,'#ffffff',true,0);
+    }
     ctx.globalAlpha=1;
   }
   if(player.shieldHits>0){
@@ -363,35 +372,15 @@ function drawItem(x,y,type,sc,t,it){
       if(!danger) shapeAlpha=0.55;
     }
     ctx.globalAlpha=shapeAlpha;
-    // Her tehlike tipi kendine özgü, sabit bir geometrik siluetle çizilir —
-    // böylece tip renk kadar ŞEKİLDEN de bir bakışta ayırt edilebiliyor.
-    // (hazardTwin ile hazardTwinDecoy kasıtlı olarak birebir aynı şekli
-    // paylaşır — ikisini görsel olarak ayırt edilemez kılmak, oyunun
-    // "hangisi gerçek?" mekaniğinin ta kendisi.)
-    if(type==='hazardPulse'){
-      drawStar(x,y,Rh*1.3,Rh*0.5,5,t*1.2,col);
-    } else if(type==='hazardCreep'){
-      // 4 uçlu sivri yıldız: küçük boyutta bile dolgun çokgenlerden (kare,
-      // beşgen, altıgen...) çok farklı bir siluet çizer — kenar sayısına
-      // güvenmek yerine "sivri/dikenli mi, dolgun mu" ayrımı okunurluğu
-      // korur (özellikle telefon ekranında item boyutu çok küçük).
-      drawStar(x,y,Rh*1.35,Rh*0.32,4,t*1.6,col);
-    } else {
-      let sides, rotBase;
-      if(type==='hazardBomb'){ sides=4; rotBase=Math.PI/4; }        // kare
-      else if(type==='hazardJump'){ sides=4; rotBase=0; }           // baklava (döndürülmüş kare)
-      else if(type==='hazardPull'){ sides=5; rotBase=-Math.PI/2; }  // beşgen
-      else if(isTwinKind){ sides=6; rotBase=0; }                    // altıgen
-      else { sides=3; rotBase=-Math.PI/2; }                         // üçgen (temel 'hazard')
-      const rr=Rh*1.12, rot=rotBase+t*0.9;
-      ctx.fillStyle=col; ctx.beginPath();
-      for(let i=0;i<sides;i++){
-        const a=rot+i*Math.PI*2/sides;
-        const xx=x+Math.cos(a)*rr, yy=y+Math.sin(a)*rr;
-        i?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy);
-      }
-      ctx.closePath(); ctx.fill();
-    }
+    // Her tehlike tipi artık kendine özgü bir CANAVAR GÖRSELİ taşıyor (eski
+    // vektör poligon/yıldız yerine, bkz. HAZARD_IMG_KEY + data.js MONSTER_IMG)
+    // — tip renk kadar GÖRSELDEN de bir bakışta ayırt edilebiliyor, poligon
+    // siluetlerinden bile daha güçlü bir ayrım. (hazardTwin ile
+    // hazardTwinDecoy kasıtlı olarak birebir aynı görseli paylaşır —
+    // ikisini ayırt edilemez kılmak, oyunun "hangisi gerçek?" mekaniğinin
+    // ta kendisi.)
+    const spin = (type==='hazardJump') ? 0 : t*(type==='hazardCreep'?1.1:type==='hazardPulse'?1.0:0.6);
+    drawHazardImage(x,y,Rh*1.3,col,type,spin);
     ctx.globalAlpha=1;
     if(type==='hazardJump'){
       ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.setLineDash([3,5]); ctx.lineWidth=1.5;
@@ -443,6 +432,36 @@ function drawItem(x,y,type,sc,t,it){
     ctx.fillStyle='rgba(255,255,255,.14)'; ctx.beginPath(); ctx.arc(x,y,R*1.25,0,7); ctx.fill();
     const iconKey = PW_ICON_TYPE[type];
     if(iconKey) drawPwIcon(x,y,iconKey,R);
+  }
+}
+// Tehlike tipi -> canavarlar.jpg'den kesilen görsel (bkz. data.js
+// MONSTER_IMG). col parametresi burada tint için DEĞİL, sadece çağıranın
+// glow/halka efektleri için kullanılmaya devam ediyor — görsel kendi rengini
+// taşıyor, üstüne boyama yapılmıyor.
+// Her tehlike tipi artık kullanıcının verdiği 12 "yaratık davranışı"
+// listesinden, OYUN MEKANİĞİYLE EN İYİ ÖRTÜŞENİ seçilerek eşlendi:
+// Çizik CD (sürekli dönen temel tehlike), MiniDisc (halkalar arası zıplar
+// — hazardJump'ın ZATEN yaptığı şey), 8-Track Kartuş (ağır/büyük —
+// hazardBomb'un 1.5x boyutuyla örtüşüyor), Kaset Bandı (dolanıp çeken —
+// hazardPull'ın çekim alanıyla örtüşüyor), Telefon Bildirimi (aniden beliren,
+// "gerçek mi sahte mi?" — hazardTwin/Decoy mekaniğiyle birebir), Dijital
+// Ekolayzer (ritme göre büyüyüp küçülen çubuklar — hazardPulse'ın boyut
+// nabzıyla birebir), P2P Virüsü (notalarını yemeye çalışan saldırgan böcek —
+// en tehlikeli/en geç açılan hazardCreep ile örtüşüyor).
+const HAZARD_IMG_KEY = {
+  hazard:'monster3', hazardJump:'monster2', hazardBomb:'monster6',
+  hazardPull:'monster1', hazardTwin:'monster16', hazardTwinDecoy:'monster16',
+  hazardPulse:'monster11', hazardCreep:'monster13',
+};
+function drawHazardImage(x,y,size,col,type,rot){
+  const img = MONSTER_IMG[HAZARD_IMG_KEY[type]];
+  if(img && img.complete && img.naturalWidth>0){
+    ctx.save(); ctx.translate(x,y); if(rot) ctx.rotate(rot);
+    ctx.drawImage(img, -size, -size, size*2, size*2);
+    ctx.restore();
+  } else {
+    // Görsel henüz yüklenmediyse (ilk birkaç kare) eski basit daireye düş.
+    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(x,y,size*0.8,0,7); ctx.fill();
   }
 }
 function drawStar(x,y,outer,inner,pts,rot,col){

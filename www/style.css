@@ -308,12 +308,15 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
 .acctCard .acctStatus{font-size:11px;font-weight:700;line-height:1.3;min-height:28px;display:flex;align-items:center;}
 .acctCard .btn.small{width:100%;padding:8px 6px;font-size:11px;white-space:normal;line-height:1.2;}
 
-#skinGrid{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;}
-.skinDot{width:38px;height:38px;border-radius:50%;cursor:pointer;border:3px solid transparent;
-  box-shadow:0 0 12px currentColor;transition:transform .12s;}
+#skinGrid{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+/* Orb'lar (daire) yerine pena (plektrum) görselleri geldiği için artık
+   dairesel kırpma YOK — sivri uç kesilmesin diye yuvarlak köşeli kare. */
+.skinDot{width:42px;height:42px;border-radius:10px;cursor:pointer;border:2px solid transparent;
+  background:rgba(255,255,255,.06);transition:transform .12s;overflow:hidden;}
+.skinDot img{width:100%;height:100%;object-fit:contain;}
 .skinDot:active{transform:scale(.9);}
-.skinDot.sel{border-color:#fff;}
-.skinDot.locked{opacity:.25;filter:grayscale(.7);}
+.skinDot.sel{border-color:#fff;box-shadow:0 0 12px rgba(255,255,255,.5);}
+.skinDot.locked{opacity:.3;filter:grayscale(.7);}
 
 .modeGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:100%;}
 .modeCard{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.015)) padding-box,
@@ -682,6 +685,9 @@ body.left-hand .hudPowerPanel{right:auto;left:18px;}
 .bpChip:disabled{cursor:default;}
 
 .skinPreview{width:44px;height:44px;border-radius:50%;box-shadow:0 0 14px rgba(255,255,255,.15);}
+.penaPreview{border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.05);}
+.penaPreview img{width:100%;height:100%;object-fit:contain;}
+.iapPrice{color:#d8c4ff;}
 .sunPreview{width:44px;height:44px;border-radius:50%;}
 .sunPreview.classic{background:radial-gradient(circle at 40% 35%,#fff,#8ad8ff 60%,transparent 100%);}
 .sunPreview.redgiant{background:radial-gradient(circle at 40% 35%,#fff4e0,#ff8a3d 55%,transparent 100%);}

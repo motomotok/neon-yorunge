@@ -91,7 +91,9 @@ function renderSkins(){
     const unlocked=isUnlockedItem('skins', sk);
     const d=document.createElement('div');
     d.className='skinDot'+(cfg.skin===sk.id?' sel':'')+(unlocked?'':' locked');
-    d.style.background = sk.rainbow ? 'conic-gradient(from 0deg,#ff5e5e,#ffd24a,#5efc82,#54e0ff,#a97bff,#ff5e5e)' : sk.color;
+    // Orb'lar vektörle (renkli daire) çizilirdi; pena'lar gerçek görsel —
+    // arkaplan rengi yerine küçük bir <img> konuyor (bkz. .skinDot img CSS).
+    d.innerHTML = `<img src="${sk.img}" alt="">`;
     d.title=t(sk.nameKey);
     d.addEventListener('click', ()=>onShopCardClick('skins', sk));
     grid.appendChild(d);
@@ -271,12 +273,12 @@ const HOWTO_ICON_SHAPES = {
   diamond:     {kind:'diamond', color:'#fff4e0'},
   particle:    {kind:'coin'},
   heartItem:   {kind:'heart',   color:'#ff5d8f'},
-  hazard:      {kind:'poly', sides:3, rot:-Math.PI/2, color:'#ff5a3c'},
-  hazardBomb:  {kind:'poly', sides:4, rot:Math.PI/4,  color:'#ff5a3c', big:true},
-  hazardPull:  {kind:'poly', sides:5, rot:-Math.PI/2, color:'#ffb454'},
-  hazardTwin:  {kind:'poly', sides:6, rot:0,          color:'#ff8a3d'},
-  hazardPulse: {kind:'spike', pts:5, outer:1.3, inner:0.5,  color:'#ff3b52'},
-  hazardCreep: {kind:'spike', pts:4, outer:1.35, inner:0.32, color:'#d94a1f'},
+  hazard:      {kind:'img', monster:'monster3'},
+  hazardBomb:  {kind:'img', monster:'monster6'},
+  hazardPull:  {kind:'img', monster:'monster1'},
+  hazardTwin:  {kind:'img', monster:'monster16'},
+  hazardPulse: {kind:'img', monster:'monster11'},
+  hazardCreep: {kind:'img', monster:'monster13'},
 };
 function drawHowtoIconShape(ctx2, type, size){
   const cfgS = HOWTO_ICON_SHAPES[type]; if(!cfgS) return;
@@ -329,6 +331,9 @@ function drawHowtoIconShape(ctx2, type, size){
       i?ctx2.lineTo(xx,yy):ctx2.moveTo(xx,yy);
     }
     ctx2.closePath(); ctx2.fill();
+  } else if(cfgS.kind==='img'){
+    const img = MONSTER_IMG[cfgS.monster];
+    if(img && img.complete && img.naturalWidth>0) ctx2.drawImage(img, cx-R*1.3, cy-R*1.3, R*2.6, R*2.6);
   }
 }
 function renderHowtoIcons(){
@@ -362,6 +367,11 @@ function hidePurchaseConfirm(){
   pendingPurchase = null;
 }
 
+// Premium pena'ların (gerçek para, IAP) canlı fiyatı — www/pena-shop.js'in
+// register() çağrısındaki onPriceReady callback'i (main.js) burayı doldurur.
+// Mağaza kurulmadan/tarayıcıda hep boş kalır, kartlar fallbackPrice gösterir.
+const _penaLivePrices = {};
+function setPenaLivePrice(productId, price){ _penaLivePrices[productId]=price; syncShopIfOpen(); }
 function onShopCardClick(category, item){
   const unlocked = isUnlockedItem(category, item);
   if(!unlocked){
@@ -370,6 +380,12 @@ function onShopCardClick(category, item){
         if(purchase(category,item)) setEquipped(category, item.id);
         renderSkins(); renderThemeGrid(); syncShopIfOpen();
       });
+    } else if(item.gate.type==='iap'){
+      // Satın alma onayı burada DEĞİL, native mağaza diyaloğunda gerçekleşir
+      // (bkz. pena-shop.js purchase()) — approved/verified sonrası main.js'teki
+      // PenaShop.register() callback'i stats.owned.skins'e ekleyip ekranı günceller.
+      if(window.PenaShop && PenaShop.isNative()) PenaShop.purchase(item.gate.productId);
+      else queueToast(t('iap_unavailable_toast'));
     } else if(item.gate.type==='seasonpass'){
       queueToast(t('locked_seasonpass_toast',{name:t(item.nameKey)}));
       beep(200,0.1,'square',0.1);
@@ -431,8 +447,7 @@ function swatchHtml(category, item){
     return `<div class="swatch" style="justify-content:center">${['star','gold','peril','player'].map(k=>`<span style="background:${item[k]}"></span>`).join('')}</div>`;
   }
   if(category==='skins'){
-    const bg = item.rainbow ? 'conic-gradient(from 0deg,#ff5e5e,#ffd24a,#5efc82,#54e0ff,#a97bff,#ff5e5e)' : item.color;
-    return `<div class="skinPreview" style="background:${bg}"></div>`;
+    return `<div class="skinPreview penaPreview"><img src="${item.img}" alt=""></div>`;
   }
   if(category==='trails'){
     return `<div class="trailPreview">${[0,1,2,3,4].map(i=>`<i style="${trailDotStyle(item.id,i)}"></i>`).join('')}</div>`;
@@ -477,6 +492,12 @@ function renderShopGrid(category){
       priceHtml=`<div class="price lockreq">${icon('ticket')} ${sName?t('season_reward_badge',{name:t(sName.nameKey)}):t('season_reward_generic')}</div>`;
     } else if(!unlocked && item.gate.type==='streak'){
       priceHtml=`<div class="price lockreq">${icon('calendar')} ${t('streak_reward_badge')}</div>`;
+    } else if(!unlocked && item.gate.type==='iap'){
+      // Gerçek para fiyatı mağazadan geldiyse (_penaLivePrices) onu, gelmediyse
+      // yer tutucu fallbackPrice'ı göster — premium.js'teki tek-ürünlü
+      // desenin (syncPremiumUI) çok-ürünlü karşılığı.
+      const live=_penaLivePrices[item.gate.productId];
+      priceHtml=`<div class="price iapPrice">${icon('gem')} ${live||item.gate.fallbackPrice}</div>`;
     } else if(equipped) priceHtml=`<div class="price ok">${icon('check')} ${t('equipped_badge')}</div>`;
     else priceHtml=`<div class="price ok">${t('owned_badge')}</div>`;
     card.innerHTML = swatchHtml(category,item)+`<div class="cn">${t(item.nameKey)}</div>`+priceHtml;
