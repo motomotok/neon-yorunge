@@ -111,6 +111,18 @@ function showAchTooltip(targetEl, a, unlocked){
   el.classList.add('show');
   achTooltipTimer=setTimeout(()=>el.classList.remove('show'), 3800);
 }
+// Kullanıcı birden fazla başarıma hızlı hızlı bakmak isteyebilir — 3.8sn'nin
+// dolmasını beklemek yerine, açık balonken ekranda başka BİR YERE (başka bir
+// ikon değil) dokununca balon anında kaybolsun. Başka bir ikona basılması bu
+// dinleyiciyi tetiklese de closest('.achItem') onu es geçiyor, o tıklamayı
+// zaten kendi click handler'ı yeni balonu açmak için kullanıyor.
+document.addEventListener('pointerdown', (e)=>{
+  const tip=document.getElementById('achTooltip');
+  if(!tip || !tip.classList.contains('show')) return;
+  if(e.target.closest && e.target.closest('.achItem')) return;
+  clearTimeout(achTooltipTimer);
+  tip.classList.remove('show');
+});
 function renderLeaderboard(){
   const el=document.getElementById('lbList');
   if(!stats.leaderboard.length){ el.innerHTML=`<div class="row"><span class="k">${t('no_records')}</span></div>`; return; }
