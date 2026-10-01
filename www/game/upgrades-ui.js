@@ -5,12 +5,14 @@
 // kullanılmıyor — burası sık ziyaret edilen, "kasarak harca" ekranı,
 // her satın almada ekstra bir onay adımı akışı gereksiz yavaşlatıyordu.
 // Tek tıkla anında satın alınıyor.
+let upgradeJustBoughtKey=null, upgradeJustBoughtTimer=null;
 function renderUpgrades(){
   const grid=document.getElementById('upgradesGrid'); if(!grid) return;
   grid.innerHTML='';
   Object.keys(META_UPGRADES).forEach(key=>{
     const track=META_UPGRADES[key], lvl=upgradeLevel(key), tier=nextUpgradeTier(key);
-    const card=document.createElement('div'); card.className='shopCard boostCard'; card.dataset.key=key;
+    const justBought = key===upgradeJustBoughtKey;
+    const card=document.createElement('div'); card.className='shopCard boostCard'+(justBought?' justBought':''); card.dataset.key=key;
     // upgradeBonus() Kademe (stardust) + Çekirdek Ağacı (kalıcı) toplamını
     // birlikte döner — o yüzden Kademe hâlâ 0/8 olsa bile Çekirdek'ten
     // gelen kalıcı bonus varsa "henüz alınmadı" yerine gerçek değeri göster.
@@ -25,17 +27,22 @@ function renderUpgrades(){
     card.innerHTML = `<div class="boostIcon">${icon(track.icon)}</div>`
       +`<div class="cn">${t(track.nameKey)}</div>`
       +`<div class="bdesc">${t('upgrade_tier_line',{lvl, cur:curText, next:nextText})}</div>`
-      +priceHtml;
+      +priceHtml
+      +(justBought?`<span class="cardCheckBadge">${icon('check')}</span>`:'');
     if(tier){
       card.addEventListener('click', ()=>{
         if((stats.stardust||0)<tier.cost){ queueToast(t('insufficient_stardust_short')); beep(200,0.1,'square',0.1); return; }
         if(buyUpgrade(key)){
           // Kademe kartları onaysız tek tıkla satın alınıyor — hızlı art arda
           // tıklanınca (bkz. kullanıcı geri bildirimi) toast kuyruğu bitmek
-          // bilmeyen bir yazı akışına dönüşüyordu. Kartın kendi görsel
-          // güncellemesi (seviye/fiyat) zaten satın alındığını gösteriyor,
-          // ayrıca bir toast'a gerek yok.
+          // bilmeyen bir yazı akışına dönüşüyordu. Üstte metin yerine, kartın
+          // kendisi birkaç saniyeliğine yeşile "patlayıp" küçük bir tik
+          // gösteriyor — satın alındığı net, spam de imkansız (zamanlayıcı
+          // her yeni satın almada sıfırlanıp en sonuncuya geçiyor).
           beep(700,0.1,'sine',0.13); beep(1000,0.1,'triangle',0.12);
+          upgradeJustBoughtKey=key;
+          clearTimeout(upgradeJustBoughtTimer);
+          upgradeJustBoughtTimer=setTimeout(()=>{ upgradeJustBoughtKey=null; renderUpgrades(); }, 2400);
           renderUpgrades();
           if(tutorialActive && typeof tutorialOnUpgradeBought==='function') tutorialOnUpgradeBought(key);
         }
@@ -48,6 +55,11 @@ function renderUpgrades(){
 
 // ---- Çekirdek Ağacı (prestij) ------------------------------------------
 let upgradesTab='tier';
+// Satın alma anında üstte metin göstermek yerine (bkz. spam geri bildirimi),
+// az önce alınan düğümü birkaç saniyeliğine yeşil bir "pop" + küçük tikle
+// işaretliyoruz — ikinci bir satın alma gelirse zamanlayıcı sıfırlanıp en
+// son alınana geçiyor, asla üst üste binmiyor.
+let coreJustBoughtId=null, coreJustBoughtTimer=null;
 function renderUpgradesTab(){
   document.querySelectorAll('#upgradesTabs .stab').forEach(el=>el.classList.toggle('sel', el.dataset.uptab===upgradesTab));
   const g=document.getElementById('upgradesGrid'), c=document.getElementById('coreTreeWrap');
@@ -157,10 +169,11 @@ function renderCoreTree(){
     if(n.tier==='hint') return;
     const node=coreNode(n.id);
     const stateCls = n.tier==='frontier' ? 'buyable frontier' : 'owned';
+    const justBought = n.id===coreJustBoughtId;
     const wPct=(n.r*2/CORE_VBW*100).toFixed(2), hPct=(n.r*2/CORE_VBH*100).toFixed(2);
-    overlay += `<button class="coreNodeBtn ${stateCls}" data-core-id="${n.id}" `
+    overlay += `<button class="coreNodeBtn ${stateCls}${justBought?' justBought':''}" data-core-id="${n.id}" `
       +`style="left:${(n.x/CORE_VBW*100).toFixed(2)}%;top:${(n.y/CORE_VBH*100).toFixed(2)}%;width:${wPct}%;height:${hPct}%;">`
-      +icon(node.icon)+`</button>`;
+      +icon(node.icon)+(justBought?`<span class="coreNodeCheckBadge">${icon('check')}</span>`:'')+`</button>`;
   });
 
   wrap.innerHTML = `<div class="coreTreeStage">${svg}<div class="coreTreeNodes">${overlay}</div></div>`;
@@ -195,6 +208,9 @@ function openCoreInfo(id){
     actionBtn.onclick=()=>{
       if(buyCoreNode(id)){
         beep(700,0.1,'sine',0.13); beep(1000,0.1,'triangle',0.12);
+        coreJustBoughtId=id;
+        clearTimeout(coreJustBoughtTimer);
+        coreJustBoughtTimer=setTimeout(()=>{ coreJustBoughtId=null; renderCoreTree(); }, 2400);
         closeCoreInfo(); renderCoreTree(); updatePrestigePreview();
       } else {
         queueToast(t('core_insufficient_toast')); beep(200,0.1,'square',0.1);

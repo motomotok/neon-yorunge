@@ -505,6 +505,27 @@ body.left-hand #walletChip{left:18px;right:auto;}
   0%,100%{box-shadow:0 0 11px rgba(255,77,109,.45);}
   50%{box-shadow:0 0 20px rgba(255,77,109,.75);}
 }
+/* Satın alma anının görsel onayı: üstte metin çıkarmak yerine (spam
+   sorununa yol açmıştı) düğümün kendisi 2.4sn'liğine belirgin şekilde
+   yeşile "patlıyor" + köşesinde küçük bir tik rozeti beliriyor. */
+.coreNodeBtn.justBought{animation:coreJustBoughtPop 2.4s ease-out;}
+@keyframes coreJustBoughtPop{
+  0%{box-shadow:0 0 0 rgba(94,252,130,0);transform:translate(-50%,-50%) scale(1);}
+  12%{box-shadow:0 0 30px rgba(94,252,130,1);transform:translate(-50%,-50%) scale(1.25);}
+  40%{box-shadow:0 0 22px rgba(94,252,130,.8);transform:translate(-50%,-50%) scale(1.04);}
+  100%{box-shadow:0 0 14px rgba(94,252,130,.45);transform:translate(-50%,-50%) scale(1);}
+}
+.coreNodeCheckBadge{position:absolute;top:-5px;right:-5px;width:48%;height:48%;min-width:16px;min-height:16px;
+  background:#5efc82;border:2px solid #05060f;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  animation:coreCheckBadgeFade 2.4s ease-out forwards;}
+.coreNodeCheckBadge .gicon{width:62%;height:62%;color:#05060f;}
+@keyframes coreCheckBadgeFade{
+  0%{opacity:0;transform:scale(.3);}
+  15%{opacity:1;transform:scale(1.2);}
+  25%{transform:scale(1);}
+  78%{opacity:1;}
+  100%{opacity:0;}
+}
 
 .shopTabs{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;width:100%;}
 .stab{padding:8px 13px;border-radius:999px;background:rgba(255,255,255,.05);cursor:pointer;
@@ -527,7 +548,7 @@ body.left-hand #walletChip{left:18px;right:auto;}
 #shopGrid .trailPreview{height:32px;}
 #shopGrid .swatch span{width:10px;height:10px;}
 #shopGrid .boostCard .boostIcon{font-size:22px;}
-.shopCard{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.015)) padding-box,
+.shopCard{position:relative;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.015)) padding-box,
       linear-gradient(160deg,var(--glass-brd-soft),transparent) border-box;
   border:2px solid transparent;border-radius:16px;
   padding:14px 10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:7px;
@@ -535,6 +556,20 @@ body.left-hand #walletChip{left:18px;right:auto;}
 .shopCard:active{transform:scale(.95);}
 .shopCard.equipped{border-color:#fff;box-shadow:0 0 16px rgba(255,255,255,.25),0 0 0 1px rgba(255,255,255,.1) inset;}
 .shopCard.locked{opacity:.7;}
+/* Kademe kartlarında satın alma anının görsel onayı — üstte metin yerine
+   (spam geri bildirimine yol açmıştı) kartın kendisi 2.4sn yeşile "patlıyor"
+   + köşesinde küçük bir tik rozeti beliriyor. */
+.shopCard.justBought{animation:cardJustBoughtPop 2.4s ease-out;}
+@keyframes cardJustBoughtPop{
+  0%{border-color:rgba(94,252,130,0);box-shadow:0 0 0 rgba(94,252,130,0);}
+  12%{border-color:#5efc82;box-shadow:0 0 26px rgba(94,252,130,.85);}
+  40%{border-color:#5efc82;box-shadow:0 0 16px rgba(94,252,130,.55);}
+  100%{border-color:transparent;box-shadow:none;}
+}
+.cardCheckBadge{position:absolute;top:-8px;right:-8px;width:26px;height:26px;
+  background:#5efc82;border:2px solid #05060f;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  animation:coreCheckBadgeFade 2.4s ease-out forwards;}
+.cardCheckBadge .gicon{width:62%;height:62%;color:#05060f;}
 .shopCard .cn{font-family:var(--font-ui);font-size:13px;font-weight:700;text-align:center;letter-spacing:.2px;}
 .shopCard .price{font-size:11.5px;font-weight:800;color:#ffd28a;}
 .shopCard .price.ok{color:#6fe28a;}
