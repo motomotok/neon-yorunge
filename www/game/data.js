@@ -6,18 +6,17 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.0.0';
+const GAME_VERSION = '2.1.0';
 
+// 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
+// (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
+// diğer 3'ü satın alınabilir. id'ler değişmedi diye 'neon' korunuyor
+// (applyTheme()'ün THEMES.neon fallback'i buna bağlı).
 const THEMES = {
-  neon:      {nameKey:'theme_neon',      star:'#ffcf7a', gold:'#ffe9b0', peril:'#ff5a3c', player:'#2fe6c4', sun:'#f2c98a', bg0:'#170a08', bg1:'#2b120d', sf:'#ffb98a', gate:{type:'free'}},
-  sunset:    {nameKey:'theme_sunset',    star:'#ff9e64', gold:'#ffd93d', peril:'#ff2e63', player:'#ff6bd6', sun:'#ffb37b', bg0:'#160a14', bg1:'#2a0f24', sf:'#ffd0b0', gate:{type:'free'}},
-  matrix:    {nameKey:'theme_matrix',    star:'#39ff14', gold:'#c6ff3b', peril:'#ff0055', player:'#00ffc3', sun:'#7dffb0', bg0:'#020a05', bg1:'#03160b', sf:'#7dff9f', gate:{type:'free'}},
-  ice:       {nameKey:'theme_ice',       star:'#7fdbff', gold:'#eaf9ff', peril:'#ff5e78', player:'#4fc3ff', sun:'#bdecff', bg0:'#05101a', bg1:'#0a2033', sf:'#bfe6ff', gate:{type:'free'}},
-  vaporwave: {nameKey:'theme_vaporwave', star:'#ff6ec7', gold:'#7afcff', peril:'#ff2f6e', player:'#8a5fff', sun:'#ff9ee8', bg0:'#0f0620', bg1:'#1d0a3a', sf:'#c9a8ff', gate:{type:'coin', price:3200}},
-  gilded:    {nameKey:'theme_gilded',    star:'#ffe08a', gold:'#fff4c2', peril:'#ff5a3c', player:'#ffd24a', sun:'#fff6da', bg0:'#120d02', bg1:'#241a05', sf:'#ffe9a8', gate:{type:'coin', price:3200}},
-  void:      {nameKey:'theme_void',      star:'#c9c9ff', gold:'#8f8fff', peril:'#ff3d6b', player:'#4a3fff', sun:'#e0e0ff', bg0:'#020204', bg1:'#08060f', sf:'#8888aa', gate:{type:'coin', price:4000}},
-  inferno:   {nameKey:'theme_inferno',   star:'#ffb454', gold:'#ffe08a', peril:'#ff2e2e', player:'#ff5a1f', sun:'#ffcf8a', bg0:'#170502', bg1:'#2c0a03', sf:'#ffb27a', gate:{type:'coin', price:5600}},
-  celestial: {nameKey:'theme_celestial', star:'#7fffd4', gold:'#ffe9a8', peril:'#ff4d8a', player:'#2fe6c4', sun:'#bff7ea', bg0:'#01100e', bg1:'#03201b', sf:'#8ff5da', gate:{type:'coin', price:6000}},
+  neon:           {nameKey:'theme_neon',           star:'#ffcf7a', gold:'#ffe9b0', peril:'#ff5a3c', player:'#2fe6c4', sun:'#f2c98a', bg0:'#170a08', bg1:'#2b120d', sf:'#ffb98a', gate:{type:'free'}},
+  synthbeats:     {nameKey:'theme_synthbeats',      star:'#19e3ff', gold:'#baf7ff', peril:'#ff2f8a', player:'#19e3ff', sun:'#ff2f8a', bg0:'#030308', bg1:'#0c0718', sf:'#7fe9ff', gate:{type:'coin', price:3200}},
+  urbansounds:    {nameKey:'theme_urbansounds',     star:'#ffb454', gold:'#ffd24a', peril:'#ff2fa0', player:'#3de8d0', sun:'#ff8a3d', bg0:'#0a0604', bg1:'#1a0f08', sf:'#ffb27a', gate:{type:'coin', price:4000}},
+  cosmicsoundwave:{nameKey:'theme_cosmicsoundwave', star:'#7fe8ff', gold:'#ffe9a8', peril:'#ff8a3d', player:'#2fe6c4', sun:'#6a8fff', bg0:'#03040f', bg1:'#0a0f2e', sf:'#8fb0ff', gate:{type:'coin', price:5600}},
 };
 let T = THEMES.neon;
 // #overlay'deki (ana menü/mağaza arkaplanı) plak-rengi radial-gradient'i

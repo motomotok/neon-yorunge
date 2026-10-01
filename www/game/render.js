@@ -69,6 +69,7 @@ function drawWorld(){
     }
   }
   if(GAME_STATES[state] && bossTelegraph) drawBossTelegraph(t, bossTelegraph);
+  else drawTonearmIdle();
 
   // Oyuncu küresi gerçek oyunda VE menü ailesindeki ekranlarda (yavaşça
   // dönerek, "canlı menü") çizilir — sadece parçacık/asteroit menüde yok.
@@ -480,32 +481,48 @@ function drawHeartShape(x,y,r,col){
   ctx.closePath(); ctx.fill();
   ctx.restore();
 }
-// Boss'un gelişini önceden hissettiren yaratık: tam güneşin üstünde,
-// oyuncu tehlikelerinin hiçbirinde kullanılmayan farklı bir renkle
-// (elektrik mavisi) sadece BÜYÜYEREK belirir — ekranda rastgele bir yöne
-// kaymıyor, hep merkezde/güneşte kalıyor ki "ortadan geliyor" net olsun.
-// Eşiğe yaklaştıkça hem döner hem daha hızlı nabız atar.
+// Pikap kolu: normal oynanışta plağın dışında, kalkık "dinlenme"
+// pozisyonunda sabit durur (drawTonearmIdle). Boss eşiğine yaklaşınca
+// (drawBossTelegraph) aynı kol BOSS_WARN_SECONDS boyunca plağa doğru iner;
+// tam indiği an (tel.t=1) engine.js zaten startBossWave()'i tetikliyor —
+// yani "iğne plağa vurunca boss dalgası patlıyor" hissi, eski "ortadan
+// büyüyen yıldız" yerine (kullanıcı talebi). Zamanlama/eşik mantığı hiç
+// değişmedi, sadece görsel sunum.
+const TONEARM_REST_ANGLE = -0.15, TONEARM_STRIKE_ANGLE = 2.35;
+function tonearmGeometry(swing){
+  const sunR = Math.min(W,H)*0.06, discR = sunR*2.3;
+  const pivotX = CX + discR*1.35, pivotY = CY - discR*0.85;
+  const armLen = discR*1.55;
+  const ang = TONEARM_REST_ANGLE + (TONEARM_STRIKE_ANGLE-TONEARM_REST_ANGLE)*swing;
+  return {discR, pivotX, pivotY, tipX: pivotX+Math.cos(ang)*armLen, tipY: pivotY+Math.sin(ang)*armLen};
+}
+function drawTonearmBody(g, headGlowAlpha, headGlowR){
+  if(headGlowR>0){
+    const grad=ctx.createRadialGradient(g.tipX,g.tipY,0,g.tipX,g.tipY,headGlowR);
+    grad.addColorStop(0, hexA('#5ad1ff',headGlowAlpha)); grad.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=grad; ctx.beginPath(); ctx.arc(g.tipX,g.tipY,headGlowR,0,7); ctx.fill();
+  }
+  ctx.strokeStyle='rgba(210,216,230,.85)'; ctx.lineWidth=Math.max(2,g.discR*0.045); ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(g.pivotX,g.pivotY); ctx.lineTo(g.tipX,g.tipY); ctx.stroke();
+  ctx.fillStyle='#2a2a33'; ctx.beginPath(); ctx.arc(g.pivotX,g.pivotY,g.discR*0.12,0,7); ctx.fill();
+  ctx.fillStyle='rgba(234,252,255,.9)'; ctx.beginPath(); ctx.arc(g.tipX,g.tipY,g.discR*0.08,0,7); ctx.fill();
+}
+function drawTonearmIdle(){
+  drawTonearmBody(tonearmGeometry(0), 0, 0);
+}
 function drawBossTelegraph(t, tel){
   const scale = 1+tel.stageIndex*0.25;
-  const growT = easeOut(tel.t);
   // bossTelegraphIntensity() (engine.js) ilk 3 saniyede yavaş, son 2
-  // saniyede hızla ivmelenen bir eğri döner — nabız hızı/genliği, parlama
-  // ve dönüş hızı hepsi bu tek eğriden besleniyor, "yavaş yavaş
-  // heyecanlanıp sona doğru patlamak üzereymiş gibi" hissi için.
+  // saniyede hızla ivmelenen bir eğri döner — kolun iniş hızı, parlama ve
+  // nabız hepsi bu tek eğriden besleniyor, "yavaş yavaş heyecanlanıp sona
+  // doğru vurmak üzereymiş gibi" hissi için.
   const intensity = bossTelegraphIntensity(tel.t);
+  const g = tonearmGeometry(intensity);
   const pulseSpeed = 5+intensity*24;
-  const pulseAmt = 0.1+intensity*0.42;
-  const pulse = 1+Math.sin(t*pulseSpeed)*pulseAmt;
-  const R = (PLAYER_R*0.5 + growT*PLAYER_R*2.2)*pulse*scale;
-  const glowR = R*(3.2+intensity*0.7);
-  const g=ctx.createRadialGradient(CX,CY,0,CX,CY,glowR);
-  g.addColorStop(0, hexA('#5ad1ff',0.72+intensity*0.23)); g.addColorStop(0.5, hexA('#5ad1ff',0.26+intensity*0.18)); g.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(CX,CY,glowR,0,7); ctx.fill();
-  ctx.save(); ctx.translate(CX,CY); ctx.rotate(t*(1.5+intensity*3.5));
-  drawStar(0,0,R*1.3,R*0.5,6,0,'#eafcff');
-  ctx.restore();
+  const pulse = 1+Math.sin(t*pulseSpeed)*(0.15+intensity*0.3);
+  drawTonearmBody(g, (0.6+intensity*0.3)*Math.min(1,scale), g.discR*(0.45+intensity*0.55)*pulse*scale);
   ctx.strokeStyle=hexA('#5ad1ff',0.45+Math.sin(t*pulseSpeed)*(0.18+intensity*0.22)); ctx.lineWidth=2+intensity*1.6; ctx.setLineDash([3,4]);
-  ctx.beginPath(); ctx.arc(CX,CY,R*1.9,0,7); ctx.stroke(); ctx.setLineDash([]);
+  ctx.beginPath(); ctx.arc(g.tipX,g.tipY,g.discR*0.2*pulse,0,7); ctx.stroke(); ctx.setLineDash([]);
 }
 function drawParticles(dt){
   for(const p of particles){
