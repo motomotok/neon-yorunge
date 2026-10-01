@@ -398,11 +398,13 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
   max-width:320px;line-height:1.3;text-shadow:0 0 30px rgba(120,180,255,.3);}
 
 #toast{position:fixed;top:calc(env(safe-area-inset-top) + 14px);left:50%;
-  transform:translate(-50%,-140%);background:rgba(10,14,30,.94);border:1px solid rgba(255,255,255,.15);
+  transform:translate(-50%,-20px);opacity:0;visibility:hidden;
+  background:rgba(10,14,30,.94);border:1px solid rgba(255,255,255,.15);
   padding:11px 20px;border-radius:999px;font-weight:700;font-size:13px;z-index:30;
-  transition:transform .35s cubic-bezier(.2,.9,.3,1.3);pointer-events:none;
+  transition:transform .35s cubic-bezier(.2,.9,.3,1.3),opacity .3s,visibility 0s linear .3s;pointer-events:none;
   box-shadow:0 8px 24px rgba(0,0,0,.4);max-width:90vw;text-align:center;}
-#toast.show{transform:translate(-50%,0);}
+#toast.show{transform:translate(-50%,0);opacity:1;visibility:visible;
+  transition:transform .35s cubic-bezier(.2,.9,.3,1.3),opacity .3s;}
 
 body.big-ui .btn{min-height:58px;font-size:1.12em;}
 body.big-ui .modeCard,body.big-ui .theme{padding:18px 10px;}
