@@ -144,6 +144,27 @@ const BOSS_STAGES = [
   {score:10000, count:9,  reward:200},
   {score:15000, count:11, reward:280},
 ];
+// 15000'den sonra dizi BİTMİYOR — her +5000 puanda bir dalga daha gelmeye
+// devam ediyor (count/reward kademeli artıyor, count bir tavanda duruyor).
+// Eskiden BOSS_STAGES.length'te tamamen kesiliyordu; iyi oynayan/kalıcı
+// yükseltmeleri olan bir oyuncu 15000'i geçtiğinde önünde hiçbir hedef
+// kalmıyordu (bkz. kullanıcı geri bildirimi — "3k'dan sonra amaçsız
+// hissettim"). bossStageFor() dizinin ÖTESİNDEKİ her index için de bir
+// tanım üretir, boss dalgaları asla bitmez.
+const BOSS_INFINITE_STEP = 5000;
+const BOSS_INFINITE_COUNT_STEP = 1;
+const BOSS_INFINITE_COUNT_CAP = 18;
+const BOSS_INFINITE_REWARD_STEP = 60;
+function bossStageFor(index){
+  if(index < BOSS_STAGES.length) return BOSS_STAGES[index];
+  const extra = index - BOSS_STAGES.length + 1;
+  const last = BOSS_STAGES[BOSS_STAGES.length-1];
+  return {
+    score: last.score + extra*BOSS_INFINITE_STEP,
+    count: Math.min(BOSS_INFINITE_COUNT_CAP, last.count + extra*BOSS_INFINITE_COUNT_STEP),
+    reward: last.reward + extra*BOSS_INFINITE_REWARD_STEP,
+  };
+}
 // Boss dalgası sırasında oyuncunun (mevcut hızından bağımsız) sabit açısal
 // hızı — dalganın toplam açısal uzunluğu (~1.3 başlangıç payı + 3.2 yayılım
 // + pay) bu hızla en az ~6.5 saniyede kat edilir.
@@ -552,8 +573,8 @@ function update(dt){
       queueToast(icon('coin')+' '+t('toast_boss_cleared',{n:finalReward}));
       beep(700,0.15,'sine',0.15); beep(1000,0.15,'triangle',0.12); beep(1300,0.18,'sine',0.1);
     }
-  } else if(!zen && bossNextIndex<BOSS_STAGES.length){
-    const stage = BOSS_STAGES[bossNextIndex], warnStart = stage.score-BOSS_WARN_SCORE_GAP;
+  } else if(!zen){
+    const stage = bossStageFor(bossNextIndex), warnStart = stage.score-BOSS_WARN_SCORE_GAP;
     if(bossTelegraph && bossTelegraph.stageIndex===bossNextIndex){
       const elapsedSec = (performance.now()-bossTelegraph.startTs)/1000;
       bossTelegraph.t = Math.min(1, elapsedSec/BOSS_WARN_SECONDS);
@@ -654,9 +675,26 @@ function bumpCombo(){
 // alır — her karede (60/sn) unconditional DOM yazımı yerine, sadece
 // gerçekten değişen elemanlar güncellenir (davranış aynı, gereksiz
 // reflow/style recalculation önlenir).
-const _hud = {score:null, combo:null, level:null, hp:null, hpText:null, isTime:null, timer:null, pw:null, flash:null, wallet:null};
+const _hud = {score:null, combo:null, level:null, hp:null, hpText:null, isTime:null, timer:null, pw:null, flash:null, wallet:null, goal:null};
 function updateHud(){
   if(_hud.score!==score){ document.getElementById('scoreHud').textContent=score.toFixed(2); _hud.score=score; }
+  // "Sıradaki hedef" ipucu: oyuncuya HER AN görünür, somut, yakın bir hedef
+  // göster — rekor kırmaya mı yoksa sıradaki boss dalgasına mı daha
+  // yakınsa onu seç. Boş string döndürürse (ikisi de uzaksa/boss aktifken)
+  // satır tamamen boş kalır, başka hiçbir metni kapatmaz (bkz. kullanıcı
+  // talebi — "başka yazıları kapatmasın"). Playwright testinde ölçülerek
+  // doğrulandı: birden fazla güç-takviyesi chip'i (#pw) aynı anda aktif
+  // olunca ikinci satıra taşıp goalHint'in TAM ÜSTÜNE biniyordu — bu
+  // yüzden herhangi bir takviye aktifken ipucu geçici olarak gizleniyor.
+  const anyPowerupActive = player.shieldHits>0 || player.slowT>0 || player.magnetT>0 || player.freezeT>0 || player.multT>0 || player.ghostT>0;
+  let goalText='';
+  if(mode!=='zen' && !bossActive && !anyPowerupActive){
+    const bossRemain = bossStageFor(bossNextIndex).score - score;
+    const recordRemain = stats.best - score;
+    if(recordRemain>0 && (bossRemain<=0 || recordRemain<bossRemain)) goalText = t('hud_goal_record',{n:Math.ceil(recordRemain)});
+    else if(bossRemain>0) goalText = t('hud_goal_boss',{n:Math.ceil(bossRemain)});
+  }
+  if(_hud.goal!==goalText){ document.getElementById('goalHint').textContent=goalText; _hud.goal=goalText; }
   const comboText='x'+combo;
   if(_hud.combo!==comboText){ document.getElementById('combo').textContent=comboText; _hud.combo=comboText; }
   if(_hud.level!==level){ document.getElementById('levelHud').textContent=level; _hud.level=level; }

@@ -260,6 +260,75 @@ document.addEventListener('click', e=>{
   beep(700,0.1,'sine',0.13); beep(1000,0.1,'triangle',0.12);
   syncLoginStreakDock();
 });
+// Nasıl Oynanır ekranındaki ikonlar artık boş renkli daireler değil,
+// render.js'teki drawItem()'ın çizdiği GERÇEK oyun-içi şekiller (üçgen/
+// kare/beşgen/altıgen/yıldız siluetleri) — ama TAMAMEN AYRI, kendi küçük
+// canvas'larına çiziliyor. Ana oyun render döngüsüne (ctx/render.js) hiç
+// dokunmuyor, bu yüzden gameplay'i bozma riski yok; sadece görsel dilin
+// birebir aynısını küçük ölçekte tekrarlıyor.
+const HOWTO_ICON_SHAPES = {
+  star:        {kind:'star2',   color:'#54e0ff'},
+  diamond:     {kind:'diamond', color:'#eafcff'},
+  particle:    {kind:'coin'},
+  heartItem:   {kind:'heart',   color:'#ff5d8f'},
+  hazard:      {kind:'poly', sides:3, rot:-Math.PI/2, color:'#ff4d6d'},
+  hazardBomb:  {kind:'poly', sides:4, rot:Math.PI/4,  color:'#ff4d6d', big:true},
+  hazardPull:  {kind:'poly', sides:5, rot:-Math.PI/2, color:'#a97bff'},
+  hazardTwin:  {kind:'poly', sides:6, rot:0,          color:'#ff8a3d'},
+  hazardPulse: {kind:'spike', pts:5, outer:1.3, inner:0.5,  color:'#ff3b52'},
+  hazardCreep: {kind:'spike', pts:4, outer:1.35, inner:0.32, color:'#ff3aa0'},
+};
+function drawHowtoIconShape(ctx2, type, size){
+  const cfgS = HOWTO_ICON_SHAPES[type]; if(!cfgS) return;
+  const cx=size/2, cy=size/2, R=size*0.3;
+  ctx2.clearRect(0,0,size,size);
+  if(cfgS.kind==='star2'){
+    ctx2.fillStyle=cfgS.color; ctx2.beginPath(); ctx2.arc(cx,cy,R,0,7); ctx2.fill();
+    ctx2.fillStyle='rgba(255,255,255,.9)'; ctx2.beginPath(); ctx2.arc(cx-R*0.25,cy-R*0.25,R*0.35,0,7); ctx2.fill();
+  } else if(cfgS.kind==='diamond'){
+    ctx2.save(); ctx2.translate(cx,cy); ctx2.rotate(Math.PI/4);
+    ctx2.fillStyle=cfgS.color; ctx2.fillRect(-R*0.75,-R*0.75,R*1.5,R*1.5);
+    ctx2.restore();
+  } else if(cfgS.kind==='coin'){
+    ctx2.fillStyle='#ffb454'; ctx2.beginPath(); ctx2.arc(cx,cy,R,0,7); ctx2.fill();
+    ctx2.fillStyle='#c47a1f'; ctx2.beginPath(); ctx2.arc(cx,cy,R*0.62,0,7); ctx2.fill();
+    ctx2.fillStyle='#ffe3a8'; ctx2.beginPath(); ctx2.arc(cx,cy,R*0.28,0,7); ctx2.fill();
+  } else if(cfgS.kind==='heart'){
+    const r=R*1.15;
+    ctx2.save(); ctx2.translate(cx,cy); ctx2.fillStyle=cfgS.color;
+    ctx2.beginPath();
+    ctx2.moveTo(0,r*0.32);
+    ctx2.bezierCurveTo(0,-r*0.28, -r*1.05,-r*0.28, -r*1.05,r*0.32);
+    ctx2.bezierCurveTo(-r*1.05,r*0.82, -r*0.35,r*1.05, 0,r*1.35);
+    ctx2.bezierCurveTo(r*0.35,r*1.05, r*1.05,r*0.82, r*1.05,r*0.32);
+    ctx2.bezierCurveTo(r*1.05,-r*0.28, 0,-r*0.28, 0,r*0.32);
+    ctx2.closePath(); ctx2.fill();
+    ctx2.restore();
+  } else if(cfgS.kind==='poly'){
+    const rr = (cfgS.big ? R*1.5 : R)*1.12;
+    ctx2.fillStyle=cfgS.color; ctx2.beginPath();
+    for(let i=0;i<cfgS.sides;i++){
+      const a=cfgS.rot+i*Math.PI*2/cfgS.sides;
+      const xx=cx+Math.cos(a)*rr, yy=cy+Math.sin(a)*rr;
+      i?ctx2.lineTo(xx,yy):ctx2.moveTo(xx,yy);
+    }
+    ctx2.closePath(); ctx2.fill();
+  } else if(cfgS.kind==='spike'){
+    const outer=R*cfgS.outer, inner=R*cfgS.inner, pts=cfgS.pts;
+    ctx2.fillStyle=cfgS.color; ctx2.beginPath();
+    for(let i=0;i<pts*2;i++){
+      const rr=i%2?inner:outer; const a=i*Math.PI/pts-Math.PI/2;
+      const xx=cx+Math.cos(a)*rr, yy=cy+Math.sin(a)*rr;
+      i?ctx2.lineTo(xx,yy):ctx2.moveTo(xx,yy);
+    }
+    ctx2.closePath(); ctx2.fill();
+  }
+}
+function renderHowtoIcons(){
+  document.querySelectorAll('.howtoIcon').forEach(cv=>{
+    drawHowtoIconShape(cv.getContext('2d'), cv.dataset.type, cv.width);
+  });
+}
 function syncLoginStreakDock(){
   const btn=document.getElementById('loginStreakDockBtn'); if(!btn) return;
   btn.classList.toggle('hasReward', !loginRewardClaimedToday());

@@ -48,7 +48,7 @@ function goMenu(){ state='menu'; setHud(false); showScreen('menu');
   refreshWallet();
   if(tutorialActive && typeof tutorialOnNav==='function') tutorialOnNav('menu');
 }
-function goHowto(){ state='howto'; setHud(false); showScreen('howto'); }
+function goHowto(){ state='howto'; setHud(false); showScreen('howto'); renderHowtoIcons(); }
 function goSettings(){ state='settings'; setHud(false); showScreen('settings'); syncSettings(); }
 function goStats(){ state='stats'; setHud(false); showScreen('stats'); syncStats(); }
 function goMode(){ state='mode'; setHud(false); showScreen('mode'); refreshDailyStatus(); renderBoostRow(); }
@@ -89,6 +89,38 @@ function resumeGame(){ if(state!=='pause') return; state='play'; showScreen(null
 let adGamesLeft = null;
 function rollAdInterval(){ return 2 + Math.floor(Math.random()*2); } // 2 ya da 3 oyun
 
+// Bitiş ekranında TEK, dinamik bir "bir sonraki hedef" satırı — en motive
+// edici olanı otomatik seçer: rekor çok yakınsa ("yakın ıskalama" hissi en
+// güçlü motivasyon), değilse sıradaki boss dalgasına kalan puanı, o da
+// uzaksa en ucuz hâlâ kilitli kozmetiğin kaç yıldız tozuyla açılacağını
+// gösterir. Hiçbiri anlamlıysa boş döner (satır min-height ile zaten yer
+// ayırdığı için boş olması başka hiçbir şeyi kaydırmaz/kapatmaz).
+function nextGoalLineText(runScore, newRecord){
+  if(mode==='zen') return '';
+  if(!newRecord){
+    const recordRemain = stats.best - runScore;
+    if(recordRemain>0 && recordRemain<=Math.max(50, runScore*0.15)) return t('over_goal_record',{n:Math.ceil(recordRemain)});
+  }
+  const bossRemain = bossStageFor(bossNextIndex).score - runScore;
+  if(bossRemain>0) return t('over_goal_boss',{n:Math.ceil(bossRemain)});
+  const cheapest = nearestCheapCosmetic();
+  if(cheapest){
+    const need = cheapest.item.gate.price - (stats.stardust||0);
+    if(need>0) return t('over_goal_cosmetic',{n:need, name:t(cheapest.item.nameKey)});
+  }
+  return '';
+}
+function nearestCheapCosmetic(){
+  let best=null;
+  for(const cat in DEAL_CATEGORIES){
+    DEAL_CATEGORIES[cat]().forEach(item=>{
+      if(item.gate.type==='coin' && !isUnlockedItem(cat,item)){
+        if(!best || item.gate.price<best.item.gate.price) best={cat, item};
+      }
+    });
+  }
+  return best;
+}
 function gameOver(reason){
   state='over';
   const runScore=score, elapsedSec=elapsed/60;
@@ -129,6 +161,7 @@ function gameOver(reason){
   const melodyText = melodyOctave>0 ? t('melody_octave',{n:melodyOctave}) : '';
   document.getElementById('overStats').textContent=t('over_stats_line',{n:stats.games, reason:reasonText, best:stats.best.toFixed(2), level, melody:melodyText});
   document.getElementById('recordBadge').innerHTML = newRecord ? `<span class="badge">${icon('trophy')} ${t('new_record_badge')}</span>` : '';
+  document.getElementById('nextGoalLine').textContent = nextGoalLineText(runScore, newRecord);
   if(mode==='zen'){
     document.getElementById('coinsEarned').innerHTML = `${icon('moon')} ${t('zen_no_stardust')}`;
   } else {

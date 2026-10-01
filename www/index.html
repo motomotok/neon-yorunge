@@ -22,7 +22,7 @@
 <div id="hud">
   <div class="hudTop">
     <div><div class="lbl" data-i18n="hud_score">Puan</div><div class="val" id="scoreHud">0</div>
-      <div id="hpBarWrap"><div id="hpBarFill"></div></div><div id="hpText"></div></div>
+      <div id="hpBarWrap"><div id="hpBarFill"></div></div><div id="hpText"></div><div id="goalHint" class="goalHint"></div></div>
     <div class="center">
       <div class="lbl" id="levelLbl" data-i18n="hud_level">Seviye</div><div class="val" id="levelHud">1</div>
       <div class="lbl" id="timerLbl" style="display:none" data-i18n="hud_time">Süre</div><div class="val" id="timerHud" style="display:none">60</div>
@@ -140,19 +140,19 @@
     </div>
     <div class="card">
       <b>✅ <span data-i18n="howto_collect_title">Topla</span></b>
-      <div class="row"><span class="k"><span class="dot" style="color:var(--star)"></span> <span data-i18n="legend_star">Yıldız</span></span><span class="v" data-i18n="howto_star_v">Kombo kadar puan</span></div>
-      <div class="row"><span class="k"><span class="dot" style="color:#eafcff"></span> <span data-i18n="legend_diamond">Elmas</span></span><span class="v" data-i18n="howto_diamond_v">20+ puan</span></div>
-      <div class="row"><span class="k"><span class="dot" style="color:var(--gold)"></span> <span data-i18n="howto_particle_row">Kozmik Parçacık</span></span><span class="v" data-i18n="howto_particle_v">Yıldız tozu kazandırır</span></div>
-      <div class="row"><span class="k"><span class="dot" style="color:#ff5d8f"></span> <span data-i18n="legend_heart">Can</span></span><span class="v" data-i18n="howto_heart_v">+1 can</span></div>
+      <div class="row"><span class="k"><canvas class="howtoIcon" width="30" height="30" data-type="star"></canvas> <span data-i18n="legend_star">Yıldız</span></span><span class="v" data-i18n="howto_star_v">Kombo kadar puan</span></div>
+      <div class="row"><span class="k"><canvas class="howtoIcon" width="30" height="30" data-type="diamond"></canvas> <span data-i18n="legend_diamond">Elmas</span></span><span class="v" data-i18n="howto_diamond_v">20+ puan</span></div>
+      <div class="row"><span class="k"><canvas class="howtoIcon" width="30" height="30" data-type="particle"></canvas> <span data-i18n="howto_particle_row">Kozmik Parçacık</span></span><span class="v" data-i18n="howto_particle_v">Yıldız tozu kazandırır</span></div>
+      <div class="row"><span class="k"><canvas class="howtoIcon" width="30" height="30" data-type="heartItem"></canvas> <span data-i18n="legend_heart">Can</span></span><span class="v" data-i18n="howto_heart_v">+1 can</span></div>
     </div>
     <div class="card">
       <b>⚠️ <span data-i18n="howto_avoid_title">Kaçın</span></b>
-      <div class="row"><span class="k"><span class="dot" style="color:var(--peril)"></span> <span data-i18n="legend_asteroid">Asteroit</span></span><span class="v">-1</span></div>
-      <div class="row"><span class="k"><span class="dot" style="color:var(--peril)"></span> <span data-i18n="hazard_bomb">Bomba</span></span><span class="v">-2</span></div>
-      <div class="row"><span class="k"><span class="dot" style="color:#a97bff"></span> <span data-i18n="hazard_pull">Çekim</span></span><span class="v">-3</span></div>
-      <div class="row"><span class="k"><span class="dot" style="color:#ff8a3d"></span> <span data-i18n="hazard_twin">İkiz</span></span><span class="v">-4</span></div>
-      <div class="row"><span class="k"><span class="dot" style="color:#ff3b52"></span> <span data-i18n="hazard_pulse">Nabız</span></span><span class="v">-6</span></div>
-      <div class="row"><span class="k"><span class="dot" style="color:#ff3aa0"></span> <span data-i18n="hazard_crawler">Sürüngen</span></span><span class="v">-10</span></div>
+      <div class="row"><span class="k"><canvas class="howtoIcon" width="30" height="30" data-type="hazard"></canvas> <span data-i18n="legend_asteroid">Asteroit</span></span><span class="v">-1</span></div>
+      <div class="row"><span class="k"><canvas class="howtoIcon" width="30" height="30" data-type="hazardBomb"></canvas> <span data-i18n="hazard_bomb">Bomba</span></span><span class="v">-2</span></div>
+      <div class="row"><span class="k"><canvas class="howtoIcon" width="30" height="30" data-type="hazardPull"></canvas> <span data-i18n="hazard_pull">Çekim</span></span><span class="v">-3</span></div>
+      <div class="row"><span class="k"><canvas class="howtoIcon" width="30" height="30" data-type="hazardTwin"></canvas> <span data-i18n="hazard_twin">İkiz</span></span><span class="v">-4</span></div>
+      <div class="row"><span class="k"><canvas class="howtoIcon" width="30" height="30" data-type="hazardPulse"></canvas> <span data-i18n="hazard_pulse">Nabız</span></span><span class="v">-6</span></div>
+      <div class="row"><span class="k"><canvas class="howtoIcon" width="30" height="30" data-type="hazardCreep"></canvas> <span data-i18n="hazard_crawler">Sürüngen</span></span><span class="v">-10</span></div>
     </div>
     <div class="card">
       <b>⚡ <span data-i18n="howto_powerups_title2">Güç-yükseltmeleri</span></b>
@@ -324,6 +324,7 @@
     <div class="score" id="finalScore">0</div>
     <div class="muted" id="overStats">En iyi: 0 · Seviye 1</div>
     <div class="walletBig" style="font-size:16px;padding:6px 16px;" id="coinsEarned"><i class="gicon" data-icon="coin"></i> +0</div>
+    <div class="sub" id="nextGoalLine" style="margin:6px 0 0;min-height:1em"></div>
     <div class="col">
       <button class="btn" id="retryBtn"><i class="gicon" data-icon="replay"></i> <span data-i18n="btn_retry">TEKRAR</span></button>
       <button class="btn alt" data-go="upgrades"><i class="gicon" data-icon="lightning"></i> <span data-i18n="menu_upgrades">YETENEKLER</span></button>
