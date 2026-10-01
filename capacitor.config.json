@@ -8,7 +8,7 @@
   },
   "ios": {
     "backgroundColor": "#05060f",
-    "contentInset": "always"
+    "contentInset": "never"
   },
   "plugins": {
     "AdMob": {
