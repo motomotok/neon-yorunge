@@ -20,6 +20,11 @@
   --glass-brd-soft:rgba(255,255,255,.06);
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+/* iOS/Android'in "büyük yazı" erişilebilirlik ayarı veya Safari'nin otomatik
+   metin şişirme (text autosizing) özelliği, kullanıcının sistem ayarına göre
+   buradaki px boyutlarını sessizce büyütüp UI'ı taşırabiliyordu — oyun HERKESTE
+   aynı boyutta görünmeli diye devre dışı bırakıyoruz. */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 html,body{height:100%;overflow:hidden;background:var(--bg0);}
 body{
   font-family:var(--font-ui),-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
@@ -165,12 +170,22 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
 .menuSideDock{position:absolute;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;z-index:2;}
 .menuSideDock.left{left:calc(env(safe-area-inset-left) + 10px);}
 .menuSideDock.right{right:calc(env(safe-area-inset-right) + 10px);}
-.menuDockBtn{display:flex;flex-direction:column;align-items:center;gap:3px;background:rgba(5,6,15,.62);
-  border:1px solid var(--glass-brd-soft);border-radius:16px;padding:10px 7px;width:58px;color:#eaf2ff;cursor:pointer;
+.menuDockBtn{display:flex;flex-direction:column;align-items:center;gap:4px;background:rgba(5,6,15,.62);
+  border:1px solid var(--glass-brd-soft);border-radius:18px;padding:12px 8px;width:66px;color:#eaf2ff;cursor:pointer;
   transition:transform .12s ease,background .15s ease;}
 .menuDockBtn:active{transform:scale(.92);background:rgba(84,224,255,.18);}
-.menuDockBtn .gicon{width:19px;height:19px;color:var(--star);}
-.menuDockBtn span{font-size:10px;font-weight:600;opacity:.85;white-space:nowrap;}
+.menuDockBtn .gicon{width:22px;height:22px;color:var(--star);}
+.menuDockBtn span{font-size:11px;font-weight:600;opacity:.85;white-space:nowrap;}
+
+/* Mağaza, kullanıcıların keşfedip tıklamasını istediğimiz en önemli dock
+   girişi — diğer sade dock butonlarından farklı olarak altın/mor degrade +
+   hafif parıltıyla görsel olarak öne çıkarılıyor, "buraya bak" diyor. */
+.menuDockBtn[data-go="shop"]{
+  background:linear-gradient(145deg, rgba(255,210,74,.22), rgba(169,123,255,.2));
+  border-color:rgba(255,210,74,.5);
+  box-shadow:0 0 18px -3px rgba(255,210,74,.45), inset 0 0 0 1px rgba(255,255,255,.06);
+}
+.menuDockBtn[data-go="shop"] .gicon{color:var(--gold);}
 
 .menuCenter{position:absolute;top:60%;left:50%;transform:translate(-50%,-50%);z-index:2;
   display:flex;flex-direction:column;align-items:center;gap:10px;}
