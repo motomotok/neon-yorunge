@@ -79,6 +79,15 @@ document.querySelectorAll('.toggleGrid .toggle').forEach(row=>{
   });
 });
 document.getElementById('resetProgressBtn').addEventListener('click', ()=>{ attemptPrestige(); });
+document.getElementById('settingsInfoBtn').addEventListener('click', e=>{ e.stopPropagation();
+  document.getElementById('settingsInfoOverlay').style.display='flex'; beep(500,0.05,'sine',0.08);
+});
+document.getElementById('settingsInfoCloseBtn').addEventListener('click', e=>{ e.stopPropagation();
+  document.getElementById('settingsInfoOverlay').style.display='none';
+});
+document.getElementById('settingsInfoOverlay').addEventListener('click', e=>{
+  if(e.target.id==='settingsInfoOverlay') document.getElementById('settingsInfoOverlay').style.display='none';
+});
 document.getElementById('ciCloseBtn').addEventListener('click', e=>{ e.stopPropagation(); closeCoreInfo(); });
 document.getElementById('coreInfoOverlay').addEventListener('click', e=>{
   if(e.target.id==='coreInfoOverlay') closeCoreInfo();
@@ -102,6 +111,11 @@ document.getElementById('playGamesBtn').addEventListener('click', e=>{ e.stopPro
   if(!window.PlayGames || !PlayGames.isNative()){ queueToast(t('toast_playgames_native_only')); return; }
   if(PlayGames.signedIn){ PlayGames.showLeaderboard(); return; }
   PlayGames.signIn().then(ok=>{ syncPlayGamesUI(); if(ok) queueToast(t('toast_playgames_connected')); else queueToast(t('toast_playgames_failed')); });
+});
+document.getElementById('globalLeaderboardBtn').addEventListener('click', e=>{ e.stopPropagation();
+  if(!window.PlayGames || !PlayGames.isNative()){ queueToast(t('toast_playgames_native_only')); return; }
+  if(PlayGames.signedIn){ PlayGames.showLeaderboard(); return; }
+  PlayGames.signIn().then(ok=>{ syncPlayGamesUI(); if(ok) PlayGames.showLeaderboard(); else queueToast(t('toast_playgames_failed')); });
 });
 document.getElementById('privacyBtn').addEventListener('click', e=>{ e.stopPropagation(); window.open('privacy.html','_blank'); });
 document.getElementById('licensesBtn').addEventListener('click', e=>{ e.stopPropagation(); window.open('licenses.html','_blank'); });

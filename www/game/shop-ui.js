@@ -59,7 +59,19 @@ function syncStats(){
   renderAchievements();
   renderLeaderboard();
   renderRivalLeague();
+  syncGlobalLeaderboardHint();
   renderStatsTab();
+}
+// Game Center/Play Games API'si (@openforge/capacitor-game-connect) bize
+// liderlik tablosunun ham verisini vermiyor, sadece Apple/Google'ın KENDİ
+// ilk-100 + senin sıran + arkadaşların'ı içeren native ekranını açan bir
+// metot (showLeaderboard) veriyor — kendi özel tasarımımızda bir liste
+// çizmek için bir backend/sunucu gerekir (bu projede yok). Bu yüzden en
+// doğru/gerçek çözüm: o native ekrana BURADAN tek dokunuşla gitmek.
+function syncGlobalLeaderboardHint(){
+  const hint=document.getElementById('globalLeaderboardHint'); if(!hint) return;
+  if(window.PlayGames && PlayGames.isNative()) hint.textContent = t('global_leaderboard_hint',{name:PlayGames.serviceName()});
+  else hint.textContent = t('toast_playgames_native_only');
 }
 function renderRivalLeague(){
   const el=document.getElementById('leagueList'); if(!el) return;

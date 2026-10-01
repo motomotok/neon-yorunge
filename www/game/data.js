@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '1.14.1';
+const GAME_VERSION = '1.14.2';
 
 const THEMES = {
   neon:      {nameKey:'theme_neon',      star:'#54e0ff', gold:'#ffd24a', peril:'#ff4d6d', player:'#a97bff', sun:'#8ad8ff', bg0:'#05060f', bg1:'#0b0f2a', sf:'#9fb8ff', gate:{type:'free'}},
@@ -390,10 +390,15 @@ window.addEventListener('pagehide',flushSaves);
 // "lives" alanı kaldırıldı: can artık zorluktan bağımsız, sadece Can
 // Kapasitesi yükseltmesinden geliyor (bkz. maxHpFor()). Zorluk hâlâ
 // tehlike sıklığı/hızı ve skor çarpanını belirlemeye devam ediyor.
+// Tehlike ihtimali (hazBase/hazRamp/hazCap) hepsinde ~%15-20 artırıldı —
+// kalıcı Çekirdek Ağacı/Kademe yükseltmeleri (can, hazardSoften, güç süresi
+// vb.) zamanla oyuncuyu doğal olarak güçlendirip oyunu kendiliğinden
+// kolaylaştırdığı için (bkz. kullanıcı talebi), taban zorluk da buna
+// karşılık bir tık yükseltildi — skor hâlâ kazanılıyor ama kolay gelmiyor.
 const DIFF = {
-  easy:{label:'Kolay', hazBase:0.05, hazRamp:0.00025, hazCap:0.14, speedRamp:0.00056, speedCap:2.0, scoreMult:0.8},
-  normal:{label:'Normal', hazBase:0.09, hazRamp:0.00045, hazCap:0.22, speedRamp:0.00088, speedCap:2.4, scoreMult:1.0},
-  hard:{label:'Zor', hazBase:0.14, hazRamp:0.0008, hazCap:0.34, speedRamp:0.00128, speedCap:2.9, scoreMult:1.35},
+  easy:{label:'Kolay', hazBase:0.06, hazRamp:0.0003, hazCap:0.16, speedRamp:0.00056, speedCap:2.0, scoreMult:0.8},
+  normal:{label:'Normal', hazBase:0.105, hazRamp:0.00054, hazCap:0.26, speedRamp:0.00088, speedCap:2.4, scoreMult:1.0},
+  hard:{label:'Zor', hazBase:0.165, hazRamp:0.00096, hazCap:0.40, speedRamp:0.00128, speedCap:2.9, scoreMult:1.35},
 };
 let diffCfg = DIFF.normal;
 

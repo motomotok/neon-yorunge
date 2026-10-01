@@ -132,42 +132,36 @@
       <h2 data-i18n="howto_title">Nasıl Oynanır</h2>
     </div>
     <div class="screenBody">
-    <div class="card" data-i18n-html="howto_card1_html">
-      <b>🎯 Amaç:</b> Merkezdeki yıldızın etrafında dönerken yıldızları topla, asteroitlerden kaç.<br><br>
-      <b>👆 Kontrol:</b> Ekran ikiye bölünür. <b>Sağ tarafa dokun</b> → dış halkaya geç. <b>Sol tarafa dokun</b> → iç halkaya geç. Halka geçerken çarpışmazsın, bu senin kaçış hamlen!
+    <div class="card" style="text-align:center">
+      <b data-i18n="howto_goal_title">Amaç</b>
+      <div class="sub" style="margin:4px 0 10px" data-i18n="howto_goal_text">Merkezdeki yıldızın etrafında dön, iç/dış halka arasında geçiş yaparak topla ve tehlikelerden kaç.</div>
+      <b data-i18n="howto_control_title">Kontrol</b>
+      <div class="sub" style="margin:4px 0 0" data-i18n="howto_control_text">Sağa dokun → dış halka. Sola dokun → iç halka. Halka değiştirirken bir anlığına çarpışmazsın — bu senin kaçış hamlen!</div>
     </div>
-    <div class="legend">
-      <div><span class="dot" style="color:var(--star)"></span><span data-i18n="legend_star">Yıldız</span></div>
-      <div><span class="dot" style="color:#eafcff"></span><span data-i18n="legend_diamond">Elmas</span></div>
-      <div><span class="dot" style="color:var(--peril)"></span><span data-i18n="legend_asteroid">Asteroit</span></div>
-      <div><span class="dot" style="color:#ff5d8f"></span><span data-i18n="legend_heart">Can</span></div>
+    <div class="card">
+      <b>✅ <span data-i18n="howto_collect_title">Topla</span></b>
+      <div class="row"><span class="k"><span class="dot" style="color:var(--star)"></span> <span data-i18n="legend_star">Yıldız</span></span><span class="v" data-i18n="howto_star_v">Kombo kadar puan</span></div>
+      <div class="row"><span class="k"><span class="dot" style="color:#eafcff"></span> <span data-i18n="legend_diamond">Elmas</span></span><span class="v" data-i18n="howto_diamond_v">20+ puan</span></div>
+      <div class="row"><span class="k"><span class="dot" style="color:var(--gold)"></span> <span data-i18n="howto_particle_row">Kozmik Parçacık</span></span><span class="v" data-i18n="howto_particle_v">Yıldız tozu kazandırır</span></div>
+      <div class="row"><span class="k"><span class="dot" style="color:#ff5d8f"></span> <span data-i18n="legend_heart">Can</span></span><span class="v" data-i18n="howto_heart_v">+1 can</span></div>
     </div>
-    <div class="card" data-i18n-html="howto_powerups_html">
-      <b>Güç-yükseltmeleri:</b><br>
-      🛡️ Kalkan — bir çarpışmayı emer &nbsp; ⏱️ Yavaşlatma — orbu yavaşlatır<br>
-      🧲 Mıknatıs — yıldızları çeker &nbsp; 💰 Çarpan — puanları 2 katına çıkarır
+    <div class="card">
+      <b>⚠️ <span data-i18n="howto_avoid_title">Kaçın</span></b>
+      <div class="row"><span class="k"><span class="dot" style="color:var(--peril)"></span> <span data-i18n="legend_asteroid">Asteroit</span></span><span class="v">-1</span></div>
+      <div class="row"><span class="k"><span class="dot" style="color:var(--peril)"></span> <span data-i18n="hazard_bomb">Bomba</span></span><span class="v">-2</span></div>
+      <div class="row"><span class="k"><span class="dot" style="color:#a97bff"></span> <span data-i18n="hazard_pull">Çekim</span></span><span class="v">-3</span></div>
+      <div class="row"><span class="k"><span class="dot" style="color:#ff8a3d"></span> <span data-i18n="hazard_twin">İkiz</span></span><span class="v">-4</span></div>
+      <div class="row"><span class="k"><span class="dot" style="color:#ff3b52"></span> <span data-i18n="hazard_pulse">Nabız</span></span><span class="v">-6</span></div>
+      <div class="row"><span class="k"><span class="dot" style="color:#ff3aa0"></span> <span data-i18n="hazard_crawler">Sürüngen</span></span><span class="v">-10</span></div>
     </div>
-    <div class="card" data-i18n-html="howto_hazards_html">
-      <b>Tehlikeler:</b><br>
-      <span class="dot" style="color:var(--peril)"></span> Asteroit / Sıçrayan — 1 hasar<br>
-      <span class="dot" style="color:var(--peril)"></span> Bomba — 2 hasar<br>
-      <span class="dot" style="color:#a97bff"></span> Çekim — 3 hasar<br>
-      <span class="dot" style="color:#ff8a3d"></span> İkiz — 4 hasar<br>
-      <span class="dot" style="color:#ff3b52"></span> Nabız — 6 hasar<br>
-      <span class="dot" style="color:#ff3aa0"></span> Sürüngen — 10 hasar (en tehlikelisi, sana doğru kayar)
-    </div>
-    <div class="card" data-i18n-html="howto_gains_html">
-      <b>Kazanımlar:</b><br>
-      🌟 Yıldız — kombo kadar puan &nbsp; 💎 Elmas — 20+ (seviye×4) puan<br>
-      🪙 Kozmik Parçacık — yıldız tozu kazandırır &nbsp; ❤️ Can — HP dolu değilken belirir, +1 can verir
+    <div class="card">
+      <b>⚡ <span data-i18n="howto_powerups_title2">Güç-yükseltmeleri</span></b>
+      <div class="row"><span class="k">🛡️ <span data-i18n="boost_shield_row">Kalkan</span></span><span class="v" data-i18n="boost_shield_v">1 çarpışmayı emer</span></div>
+      <div class="row"><span class="k">⏱️ <span data-i18n="boost_slow_row">Yavaşlatma</span></span><span class="v" data-i18n="boost_slow_v">Orbu yavaşlatır</span></div>
+      <div class="row"><span class="k">🧲 <span data-i18n="boost_magnet_row">Mıknatıs</span></span><span class="v" data-i18n="boost_magnet_v">Yıldızları çeker</span></div>
+      <div class="row"><span class="k">💰 <span data-i18n="boost_mult_row">Çarpan</span></span><span class="v" data-i18n="boost_mult_v">Puan ×2</span></div>
     </div>
     <div class="sub" data-i18n="howto_modes_hint">Mod Seç ekranından Klasik / Zaman Yarışı / Zen / Günlük modları ve zorluk seç.</div>
-    <div class="card" data-i18n-html="howto_stardust_html">
-      🪙 <b>Yıldız Tozu:</b> Oyun içinde beliren bakır-altın renkli jetonları topla. Ayrıca her oyun sonunda puanına göre bonus yıldız tozu kazanırsın. 🛒 <b>Kozmik Mağaza'</b>dan temalar, orb renkleri, iz efektleri, güneş görünümleri, halka stilleri ve tek kullanımlık başlangıç takviyeleri satın alabilirsin.
-    </div>
-    <div class="card" data-i18n-html="howto_boss_html">
-      👹 <b>Boss Dalgası:</b> 1000, 5000 ve 10.000 puana ulaşınca ekranın ortasından farklı renkte bir yaratık belirip büyümeye başlar; eşiğe ulaşınca patlar ve yerine bir dalga tehlike gelir. Hepsini atlatırsan bonus yıldız tozu kazanırsın!
-    </div>
     </div>
     <div class="screenFoot">
       <button class="btn alt small" data-go="menu"><i class="gicon" data-icon="back"></i> <span data-i18n="btn_back">Geri</span></button>
@@ -176,7 +170,10 @@
 
   <div class="screen fullpin" id="screen-settings">
     <div class="screenHead">
-      <h2 data-i18n="settings_title">Ayarlar</h2>
+      <div class="screenHeadRow">
+        <h2 data-i18n="settings_title">Ayarlar</h2>
+        <button class="iconBtn" id="settingsInfoBtn" aria-label="Bilgi"><i class="gicon" data-icon="info"></i></button>
+      </div>
     </div>
     <div class="screenBody">
       <div class="toggleGrid">
@@ -195,10 +192,6 @@
       <div class="themes" id="themeGrid"></div>
       <div class="sub" style="margin-top:4px" data-i18n="orb_label">Orb Rengi</div>
       <div id="skinGrid"></div>
-      <div class="row2">
-        <button class="btn alt small" id="legalBtn"><i class="gicon" data-icon="scale"></i> <span data-i18n="legal_btn">Gizlilik &amp; Yasal</span></button>
-        <button class="btn alt small" id="clearCacheBtn"><i class="gicon" data-icon="replay"></i> <span data-i18n="clearcache_btn">Önbelleği Temizle</span></button>
-      </div>
     </div>
     <div class="screenFoot">
       <button class="btn alt small" data-go="menu"><i class="gicon" data-icon="back"></i> <span data-i18n="btn_back">Geri</span></button>
@@ -224,7 +217,13 @@
       <div class="card" id="achCard"><b><span data-i18n="ach_header">Başarımlar</span> (<span id="achCount">0</span>/<span id="achTotal">10</span>)</b>
         <div class="achGrid" id="achGrid"></div>
       </div>
-      <div class="card" id="lbCard" style="display:none"><b><i class="gicon" data-icon="medal"></i> <span data-i18n="best5_label">En İyi 5</span></b><div id="lbList"></div></div>
+      <div class="card" id="lbCard" style="display:none">
+        <button class="btn" id="globalLeaderboardBtn" style="width:100%">
+          <i class="gicon" data-icon="medal"></i> <span data-i18n="global_leaderboard_btn">Dünya Sıralamasını Gör</span>
+        </button>
+        <div class="sub" id="globalLeaderboardHint" style="margin:8px 0 0;text-align:center"></div>
+        <div style="margin-top:14px"><b><i class="gicon" data-icon="medal"></i> <span data-i18n="best5_label">En İyi 5</span></b><div id="lbList"></div></div>
+      </div>
       <div class="card" id="leagueCard" style="display:none"><b><i class="gicon" data-icon="flag"></i> <span data-i18n="rivalleague_label">Rakipler Ligi</span></b><div id="leagueList"></div></div>
     </div>
     <div class="screenFoot">
@@ -342,6 +341,19 @@
     <button class="btn alt small" data-go="menu"><i class="gicon" data-icon="back"></i> <span data-i18n="btn_back">Geri</span></button>
   </div>
 
+  <div class="screen fullpin" id="screen-loginstreak">
+    <div class="screenHead">
+      <h2 data-i18n="login_streak_title">Giriş Serisi</h2>
+      <div class="sub" id="loginStreakDayText" style="margin:0"></div>
+    </div>
+    <div class="screenBody">
+      <div class="loginDayGrid" id="loginStreakGrid"></div>
+    </div>
+    <div class="screenFoot">
+      <button class="btn alt small" data-go="menu"><i class="gicon" data-icon="back"></i> <span data-i18n="btn_back">Geri</span></button>
+    </div>
+  </div>
+
 </div>
 
 <div id="purchaseConfirmOverlay" style="display:none;position:fixed;inset:0;z-index:35;align-items:center;justify-content:center;background:rgba(2,3,10,.75);padding:20px;">
@@ -357,6 +369,16 @@
   </div>
 </div>
 
+<div id="settingsInfoOverlay" style="display:none;position:fixed;inset:0;z-index:35;align-items:center;justify-content:center;background:rgba(2,3,10,.75);padding:20px;">
+  <div class="card" style="max-width:300px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center;">
+    <div style="font-size:30px;"><i class="gicon" data-icon="info"></i></div>
+    <div style="font-size:15px;font-weight:800;" data-i18n="settings_info_title">Diğer</div>
+    <button class="btn alt small" id="legalBtn" style="width:100%"><i class="gicon" data-icon="scale"></i> <span data-i18n="legal_btn">Gizlilik &amp; Yasal</span></button>
+    <button class="btn alt small" id="clearCacheBtn" style="width:100%"><i class="gicon" data-icon="replay"></i> <span data-i18n="clearcache_btn">Önbelleği Temizle</span></button>
+    <button class="btn small" id="settingsInfoCloseBtn" style="margin-top:4px"><i class="gicon" data-icon="cross"></i> <span data-i18n="close_btn">Kapat</span></button>
+  </div>
+</div>
+
 <div id="coreInfoOverlay" style="display:none;position:fixed;inset:0;z-index:35;align-items:center;justify-content:center;background:#04060f;padding:20px;">
   <div class="card coreInfoCard" style="max-width:280px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center;">
     <div id="ciIcon" style="font-size:34px;"></div>
@@ -368,19 +390,6 @@
       <button class="btn small" id="ciActionBtn" style="display:none"></button>
       <button class="btn alt small" id="ciCloseBtn"><i class="gicon" data-icon="cross"></i> <span data-i18n="close_btn">Kapat</span></button>
     </div>
-  </div>
-</div>
-
-<div class="screen fullpin" id="screen-loginstreak">
-  <div class="screenHead">
-    <h2 data-i18n="login_streak_title">Giriş Serisi</h2>
-    <div class="sub" id="loginStreakDayText" style="margin:0"></div>
-  </div>
-  <div class="screenBody">
-    <div class="loginDayGrid" id="loginStreakGrid"></div>
-  </div>
-  <div class="screenFoot">
-    <button class="btn alt small" data-go="menu"><i class="gicon" data-icon="back"></i> <span data-i18n="btn_back">Geri</span></button>
   </div>
 </div>
 
