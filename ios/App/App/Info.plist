@@ -52,6 +52,15 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 
+	<!-- Export Compliance: uygulama sadece standart işletim sistemi seviyesi
+	     HTTPS kullanıyor, kendi şifreleme algoritması yok — bu yüzden "muaf"ız.
+	     Bu anahtar olmadan Apple her TestFlight build'inde ayrı ayrı export
+	     compliance sorusunu manuel cevaplamayı zorunlu kılıyordu (bkz.
+	     "Build is missing export compliance" hatası); anahtar varken bu soru
+	     hiç sorulmuyor, otomatik "muaf" kabul ediliyor. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+
 	<!-- AdMob App ID — şu an Google'ın RESMİ TEST ID'si kullanılıyor (Android
 	     manifest'teki placeholder ile aynı desen). AdMob hesabında iOS için
 	     ayrı bir uygulama oluşturulunca bu değeri kendi App ID'nizle değiştirin
