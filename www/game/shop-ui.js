@@ -175,6 +175,54 @@ function renderDealBanner(){
   const deal=activeDeal();
   el.innerHTML = deal ? (icon('flame')+' '+t('deal_banner',{name:t(deal.item.nameKey), pct:Math.round(DEAL_DISCOUNT*100)})) : '';
 }
+// Ana menüdeki "Günün Olayı" şeridi — mağazayı hiç açmadan bugün ne
+// olduğunu gösterir (indirim / ×2 yıldız tozu / ×2 Sezon XP).
+function syncEventBanner(){
+  const chip=document.getElementById('menuEventChip'); if(!chip) return;
+  const iconEl=document.getElementById('menuEventIcon'), textEl=document.getElementById('menuEventText');
+  if(stats.eventType==='stardust2x'){
+    chip.style.display='flex'; chip.className='menuEventChip evStardust';
+    iconEl.innerHTML=icon('coin'); textEl.textContent=t('event_banner_stardust2x');
+  } else if(stats.eventType==='xp2x'){
+    chip.style.display='flex'; chip.className='menuEventChip evXp';
+    iconEl.innerHTML=icon('ticket'); textEl.textContent=t('event_banner_xp2x');
+  } else {
+    const deal=activeDeal();
+    if(deal){
+      chip.style.display='flex'; chip.className='menuEventChip evDeal';
+      iconEl.innerHTML=icon('flame');
+      textEl.textContent=t('event_banner_deal',{name:t(deal.item.nameKey), pct:Math.round(DEAL_DISCOUNT*100)});
+    } else { chip.style.display='none'; }
+  }
+}
+// 7 Günlük Giriş Serisi takvim penceresi — main.js boot sırasında
+// handleDailyReturn() yeni bir gün işlediğinde (null dönmediğinde) açılır.
+function openLoginStreakOverlay(result){
+  const ov=document.getElementById('loginStreakOverlay'); if(!ov) return;
+  const todayDay = result.day;
+  const strip=document.getElementById('loginStreakStrip'); strip.innerHTML='';
+  LOGIN_STREAK_REWARDS.forEach((r,i)=>{
+    const dayNum=i+1;
+    const state = dayNum<todayDay ? 'claimed' : dayNum===todayDay ? 'today' : 'locked';
+    let ic, label;
+    if(r.type==='stardust'){ ic=icon('coin'); label='+'+r.amount; }
+    else if(r.type==='boost'){ const b=BOOSTS.find(x=>x.id===r.id); ic=icon(b?b.icon:'shield'); label='×'+r.amount; }
+    else { ic = state==='locked' ? icon('lock') : icon('gem'); label=t('login_special_badge'); }
+    const card=document.createElement('div');
+    card.className='loginDayCard '+state;
+    card.innerHTML=`<div class="ldNum">${t('login_day_short',{n:dayNum})}</div><div class="ldIcon">${ic}</div><div class="ldLabel">${state==='locked'?'':label}</div>`;
+    strip.appendChild(card);
+  });
+  const r=result.reward; let msg;
+  if(r.type==='stardust') msg=t('login_toast_stardust',{amount:r.amount});
+  else if(r.type==='boost'){ const b=BOOSTS.find(x=>x.id===r.id); msg=t('login_toast_boost',{amount:r.amount, name:b?t(b.nameKey):''}); }
+  else msg=t('login_toast_skin');
+  document.getElementById('loginStreakMsg').textContent=msg;
+  document.getElementById('loginStreakDayText').textContent=t('login_day_of_seven',{n:todayDay});
+  ov.style.display='flex';
+  beep(700,0.1,'sine',0.13); beep(1000,0.1,'triangle',0.12);
+}
+function closeLoginStreakOverlay(){ const ov=document.getElementById('loginStreakOverlay'); if(ov) ov.style.display='none'; }
 
 let pendingPurchase = null;
 // price=null olursa fiyat satırı gizlenir ve varsayılan "Satın almak
@@ -207,6 +255,9 @@ function onShopCardClick(category, item){
       });
     } else if(item.gate.type==='seasonpass'){
       queueToast(t('locked_seasonpass_toast',{name:t(item.nameKey)}));
+      beep(200,0.1,'square',0.1);
+    } else if(item.gate.type==='streak'){
+      queueToast(t('locked_streak_toast',{name:t(item.nameKey)}));
       beep(200,0.1,'square',0.1);
     } else {
       const ach=ACHIEVEMENTS.find(a=>a.id===item.gate.id);
@@ -307,6 +358,8 @@ function renderShopGrid(category){
     } else if(!unlocked && item.gate.type==='seasonpass'){
       const sName = SEASONS.find(s=>s.id===item.gate.season);
       priceHtml=`<div class="price lockreq">${icon('ticket')} ${sName?t('season_reward_badge',{name:t(sName.nameKey)}):t('season_reward_generic')}</div>`;
+    } else if(!unlocked && item.gate.type==='streak'){
+      priceHtml=`<div class="price lockreq">${icon('calendar')} ${t('streak_reward_badge')}</div>`;
     } else if(equipped) priceHtml=`<div class="price ok">${icon('check')} ${t('equipped_badge')}</div>`;
     else priceHtml=`<div class="price ok">${t('owned_badge')}</div>`;
     card.innerHTML = swatchHtml(category,item)+`<div class="cn">${t(item.nameKey)}</div>`+priceHtml;

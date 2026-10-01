@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '1.13.9';
+const GAME_VERSION = '1.14.0';
 
 const THEMES = {
   neon:      {nameKey:'theme_neon',      star:'#54e0ff', gold:'#ffd24a', peril:'#ff4d6d', player:'#a97bff', sun:'#8ad8ff', bg0:'#05060f', bg1:'#0b0f2a', sf:'#9fb8ff', gate:{type:'free'}},
@@ -46,6 +46,12 @@ const SKINS = [
   {id:'shadow',    nameKey:'skin_shadow',    color:'#3a2f55', gate:{type:'coin', price:7200}},
   {id:'season1_orb', nameKey:'skin_season1orb', color:'#54e0ff', gate:{type:'seasonpass', season:1}, rainbow:true},
   {id:'season2_orb', nameKey:'skin_season2orb', color:'#ff8a3d', gate:{type:'seasonpass', season:2}, rainbow:true},
+  // 7 Günlük Giriş Serisi'nin tamamlanma ödülü — ne mağazadan ne sezon
+  // biletinden alınabilir, YALNIZCA haftayı hiç kaçırmadan tamamlayınca
+  // kazanılır (bkz. handleDailyReturn). Sıcak altın/beyaz parıltı diğer
+  // tüm orb'lardan farklı, "sadakat" hissi versin diye kasıtlı olarak
+  // gökkuşağı değil, tek renkli ama en parlak/en sıcak ton seçildi.
+  {id:'loyalty_orb', nameKey:'skin_loyaltyorb', color:'#fff3c4', gate:{type:'streak'}},
 ];
 function playerColor(){
   const sk=SKINS.find(s=>s.id===cfg.skin)||SKINS[0];
@@ -288,6 +294,7 @@ function isUnlockedItem(category, item){
   if(item.gate.type==='achievement') return stats.unlocked.includes(item.gate.id);
   if(item.gate.type==='coin') return stats.owned[category].includes(item.id);
   if(item.gate.type==='seasonpass') return stats.owned[category].includes(item.id);
+  if(item.gate.type==='streak') return stats.owned[category].includes(item.id);
   return false;
 }
 
@@ -296,23 +303,35 @@ const DEAL_CATEGORIES = {
   themes: ()=>Object.keys(THEMES).map(k=>Object.assign({id:k}, THEMES[k])),
   skins: ()=>SKINS, trails: ()=>TRAILS, suns: ()=>SUNS, rings: ()=>RINGSTYLES,
 };
-// Her gün tarih-seed'li RNG ile kozmetik kataloglardan bir öğe seçip
-// %30 indirim uygular ("Günün Fırsatı"). goShop() her açılışta çağırır,
-// stats.dealDate bugünse no-op olduğu için güvenle tekrar çağrılabilir.
-function ensureDailyDeal(){
+// Günün Olayı: her gün tarih-seed'li RNG ile 3 ihtimalden biri seçilir —
+// bir kozmetiğe %30 indirim ("Günün Fırsatı", eskiden tek seçenekti), ya da
+// TÜM GÜN geçerli bir ×2 yıldız tozu / ×2 Sezon XP çarpanı. Amaç: her gün
+// farklı bir sebep olsun, oyuncu "bugün ne var" diye geri gelsin. Ağırlık
+// %50 indirim / %25 yıldız tozu / %25 XP — indirim en sık ama diğer ikisi
+// de düzenli aralıklarla çıkıyor.
+const DAILY_EVENT_POOL = ['deal','deal','stardust2x','xp2x'];
+// goShop() + main.js boot sırasında çağrılır, stats.dealDate bugünse
+// no-op olduğu için güvenle tekrar tekrar çağrılabilir.
+function ensureDailyEvent(){
   const t = todayStr();
   if(stats.dealDate===t) return;
-  const candidates=[];
-  for(const cat in DEAL_CATEGORIES){
-    DEAL_CATEGORIES[cat]().forEach(item=>{
-      if(item.gate.type==='coin' && !isUnlockedItem(cat,item)) candidates.push({cat, id:item.id});
-    });
-  }
   stats.dealDate = t;
-  if(candidates.length){
-    const pick = candidates[Math.floor(mulberry32(dateSeed())()*candidates.length)];
-    stats.dealCategory = pick.cat; stats.dealId = pick.id;
-  } else { stats.dealCategory=''; stats.dealId=''; }
+  const rng = mulberry32(dateSeed());
+  let type = DAILY_EVENT_POOL[Math.floor(rng()*DAILY_EVENT_POOL.length)];
+  stats.dealCategory=''; stats.dealId='';
+  if(type==='deal'){
+    const candidates=[];
+    for(const cat in DEAL_CATEGORIES){
+      DEAL_CATEGORIES[cat]().forEach(item=>{
+        if(item.gate.type==='coin' && !isUnlockedItem(cat,item)) candidates.push({cat, id:item.id});
+      });
+    }
+    if(candidates.length){
+      const pick = candidates[Math.floor(rng()*candidates.length)];
+      stats.dealCategory = pick.cat; stats.dealId = pick.id;
+    } else { type='stardust2x'; } // alınabilecek kozmetik kalmadıysa yerine geç
+  }
+  stats.eventType = type;
   saveStats();
 }
 function activeDeal(){
@@ -324,6 +343,10 @@ function effectivePrice(category, item){
   if(category===stats.dealCategory && item.id===stats.dealId) return Math.round(item.gate.price*(1-DEAL_DISCOUNT));
   return item.gate.price;
 }
+// addStardust/addSeasonXp'nin başvurduğu günlük çarpanlar — ensureDailyEvent()
+// o gün için stats.eventType'ı belirledikten sonra geçerli olur.
+function stardustEventMult(){ return stats.eventType==='stardust2x' ? 2 : 1; }
+function seasonXpEventMult(){ return stats.eventType==='xp2x' ? 2 : 1; }
 
 let cfg = load('neonYorungeCfg', {sound:true, theme:'neon', skin:'default', trail:'classic', sun:'classic', ringStyle:'classic', bigButtons:false, leftHand:false, colorblind:false, lang:'tr'});
 let stats = load('neonYorungeStats', {
@@ -334,7 +357,7 @@ let stats = load('neonYorungeStats', {
   adRewardsDate:'', adRewardsToday:0, lastAdRewardAt:0,
   rivalName:'', rivalScore:0, premiumNoAds:false,
   lastSeenDate:'', loginStreak:0,
-  dealDate:'', dealCategory:'', dealId:'',
+  dealDate:'', dealCategory:'', dealId:'', eventType:'',
   rivalLeague:[],
   seasonKey:'', seasonXp:0, seasonPremium:false,
   seasonClaimedFree:[], seasonClaimedPremium:[],
@@ -446,16 +469,41 @@ function ensureRivalLeague(){
   saveStats();
 }
 
-// Giriş serisi ödülleri: gün 1..7, 8. günden itibaren döngü tekrarlanır.
-const LOGIN_STREAK_REWARDS = [20,30,40,60,80,100,150];
+// Giriş serisi ödülleri: 7 günlük döngü, ucuzdan pahalıya, çeşit çeşit
+// (yıldız tozu / tek-oyunluk takviye stoğu / kalıcı özel kozmetik) —
+// 7. gün haftayı hiç kaçırmadan tamamlayana YALNIZCA bu yoldan kazanılabilen
+// özel bir orb veriyor (bkz. SKINS'teki 'loyalty_orb'). 8. günden itibaren
+// döngü 1'den tekrar başlar (loginCycleDay() modulo alır) — haftayı
+// tamamlamış biri bir sonraki haftada tekrar 1. günden başlar, ama
+// loyalty_orb zaten kalıcı sahip olunduğu için bir daha kaybolmaz.
+const LOGIN_STREAK_REWARDS = [
+  {type:'stardust', amount:30},
+  {type:'stardust', amount:50},
+  {type:'boost', id:'shieldstart', amount:5},
+  {type:'stardust', amount:90},
+  {type:'stardust', amount:140},
+  {type:'boost', id:'shieldstart', amount:3},
+  {type:'skin', id:'loyalty_orb', stardust:300},
+];
+function loginCycleDay(){ return ((Math.max(1,stats.loginStreak||1)-1)%7)+1; }
+function grantLoginStreakReward(r){
+  if(r.type==='stardust') addStardust(r.amount);
+  else if(r.type==='boost') stats.boosts[r.id]=(stats.boosts[r.id]||0)+r.amount;
+  else if(r.type==='skin'){
+    if(!stats.owned.skins.includes(r.id)) stats.owned.skins.push(r.id);
+    addStardust(r.stardust);
+  }
+}
 
 // Uygulama her açıldığında bir kez çağrılır: (1) günlerdir açılmadıysa
 // "geri dönüş" bonusu verir, (2) art arda giriş serisini günceller ve
-// ödülünü verir. `stats.lastSeenDate` bugünse fonksiyon no-op'tur, bu
-// yüzden aynı gün içinde tekrar çağrılması güvenlidir.
+// o günün ödülünü verir. `stats.lastSeenDate` bugünse fonksiyon no-op'tur
+// (null döner), bu yüzden aynı gün içinde tekrar çağrılması güvenlidir.
+// Yeni bir gün işlendiyse {day, reward} döner — main.js bunu görsel 7 günlük
+// takvim penceresini (openLoginStreakOverlay) açmak için kullanır.
 function handleDailyReturn(){
   const td = todayStr();
-  if(stats.lastSeenDate === td) return;
+  if(stats.lastSeenDate === td) return null;
   const gap = stats.lastSeenDate ? daysBetweenStr(stats.lastSeenDate, td) : 0;
   if(gap>=3){
     const bonus = Math.min(300, gap*20);
@@ -463,12 +511,12 @@ function handleDailyReturn(){
     queueToast(t('toast_welcome_back',{gap, bonus}));
   }
   stats.loginStreak = (gap===1) ? (stats.loginStreak||0)+1 : 1;
-  const day = Math.min(stats.loginStreak, LOGIN_STREAK_REWARDS.length);
+  const day = loginCycleDay();
   const reward = LOGIN_STREAK_REWARDS[day-1];
-  addStardust(reward);
-  queueToast(t('toast_login_streak',{n:stats.loginStreak, reward}));
+  grantLoginStreakReward(reward);
   stats.lastSeenDate = td;
   saveStats();
+  return {day, reward};
 }
 
 const QUEST_POOL = [
@@ -509,9 +557,11 @@ function checkAchievements(c){
   if(newly.length){ saveStats(); newly.forEach(a=>queueToast(icon(a.icon)+' '+t('toast_achievement',{name:t(a.nameKey), reward:a.reward})+' '+icon('coin'))); }
 }
 function addStardust(n){
+  n = Math.round(n*stardustEventMult());
   stats.stardust += n; stats.lifetimeStardust = (stats.lifetimeStardust||0) + n;
   refreshWallet();
 }
+function addSeasonXp(n){ stats.seasonXp += Math.round(n*seasonXpEventMult()); }
 
 const REWARD_AD_COINS = 150, DAILY_AD_REWARD_CAP = 10;
 // AdMob'un ödüllü reklamlar için resmi olarak dayattığı sabit bir
@@ -573,9 +623,12 @@ function syncAdButtons(){
 // shopItemsFor); zaten sahip olanlarda ise kalıcı bir nadirlik/prestij
 // eşyası olarak kalır. Son tanımlı sezon takvimde süresi dolsa bile aktif
 // kalmaya devam eder — yeni bir sezon eklenene kadar "sonsuza kadar" sürer.
+// Mobil (Android/iOS) lansmanıyla birlikte sezon takvimi 1'den yeniden
+// başlatıldı — eski S1/S2 pencereleri gerçek kullanıcı trafiği olmadan
+// geçmişti. 'season1_orb'/'season1_trail'/'season1_ring' kozmetikleri aynen
+// kalıyor, sadece bu sezonun ÖDÜLÜ olarak yeniden devreye giriyor.
 const SEASONS = [
-  {id:1, nameKey:'season1_name', start:'2026-07-22', days:30},
-  {id:2, nameKey:'season2_name', start:'2026-08-21', days:30},
+  {id:1, nameKey:'season1_name', start:'2026-10-01', days:30},
 ];
 function seasonDayIndex(startStr, d){
   const start = new Date(startStr+'T00:00:00');

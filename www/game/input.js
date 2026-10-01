@@ -89,6 +89,10 @@ document.getElementById('pcNoBtn').addEventListener('click', e=>{ e.stopPropagat
 document.getElementById('purchaseConfirmOverlay').addEventListener('click', e=>{
   if(e.target.id==='purchaseConfirmOverlay') hidePurchaseConfirm();
 });
+document.getElementById('loginStreakCloseBtn').addEventListener('click', e=>{ e.stopPropagation(); closeLoginStreakOverlay(); });
+document.getElementById('loginStreakOverlay').addEventListener('click', e=>{
+  if(e.target.id==='loginStreakOverlay') closeLoginStreakOverlay();
+});
 document.getElementById('premiumBuyBtn').addEventListener('click', e=>{ e.stopPropagation();
   if(window.Premium && Premium.isNative()){ Premium.purchase(); }
   else { queueToast(t('toast_premium_native_only')); }

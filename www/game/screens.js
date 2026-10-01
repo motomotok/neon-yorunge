@@ -26,6 +26,7 @@ function showTutorialHint(){
 }
 
 function goMenu(){ state='menu'; setHud(false); showScreen('menu');
+  ensureDailyEvent(); syncEventBanner();
   document.getElementById('menuBest').textContent=t('menu_best',{n:stats.best.toFixed(2)});
   // Roguelike hissini güçlendiren iki kalıcı gösterge: "karakter seviyesi"
   // (6 yükseltme hattının toplam kademesi) ve deneme sayacı.
@@ -51,7 +52,7 @@ function goHowto(){ state='howto'; setHud(false); showScreen('howto'); }
 function goSettings(){ state='settings'; setHud(false); showScreen('settings'); syncSettings(); }
 function goStats(){ state='stats'; setHud(false); showScreen('stats'); syncStats(); }
 function goMode(){ state='mode'; setHud(false); showScreen('mode'); refreshDailyStatus(); renderBoostRow(); }
-function goShop(){ state='shop'; setHud(false); showScreen('shop'); ensureDailyDeal(); refreshWallet(); renderDealBanner(); renderShopTab(); syncAdButtons(); }
+function goShop(){ state='shop'; setHud(false); showScreen('shop'); ensureDailyEvent(); refreshWallet(); renderDealBanner(); renderShopTab(); syncAdButtons(); }
 function goBattlepass(){ state='battlepass'; setHud(false); showScreen('battlepass'); renderBattlepass(); }
 function goLanguage(){ state='language'; setHud(false); showScreen('language'); if(typeof syncLangDockButton==='function') syncLangDockButton(); }
 function goUpgrades(){ state='upgrades'; setHud(false); showScreen('upgrades'); refreshWallet(); renderUpgrades(); renderUpgradesTab();
@@ -111,7 +112,7 @@ function gameOver(reason){
   // Bölen 8'den 40'a çıkarıldı: eskiden 2 oyunda 5. kademeye varılabiliyordu
   // (aşırı hızlı), artık ~2 oyunda 2. kademeye, ~10-12 oyunda 5. kademeye
   // ulaşılacak şekilde (bkz. SEASON_TIERS'teki yorum).
-  stats.seasonXp += Math.max(1, Math.floor(runScore/40));
+  addSeasonXp(Math.max(1, Math.floor(runScore/40)));
   ensureRival();
   saveStats();
   if(mode!=='zen' && window.PlayGames && PlayGames.isNative() && PlayGames.signedIn) PlayGames.submitScore(runScore);

@@ -216,7 +216,11 @@ function drawTrail(t,pr,pc){
     ctx.globalAlpha=0.6; ctx.stroke(); ctx.globalAlpha=1;
     return;
   }
-  for(let i=1;i<=10;i++){
+  // İz uzunluğu 10->14 segmente, görünürlük çarpanları da yükseltildi —
+  // varsayılan (ücretsiz) "classic" iz dahil hepsi daha belirgin ve daha
+  // uzun takip etsin diye (bkz. kullanıcı talebi: mağazadaki diğer iz
+  // seçeneklerinin de bu gözle görülür etkiyle fark edilmesi isteniyor).
+  for(let i=1;i<=13;i++){
     const a=player.ang - i*0.05;
     const tx=CX+Math.cos(a)*pr, ty=CY+Math.sin(a)*pr;
     const baseSize=PLAYER_R*(1-i/14);
@@ -227,14 +231,14 @@ function drawTrail(t,pr,pc){
     } else if(style==='rainbow'){
       col=`hsl(${(t*60+i*22)%360},90%,65%)`;
     } else if(style==='pixel'){
-      ctx.globalAlpha=(1-i/10)*0.5; ctx.fillStyle=col;
+      ctx.globalAlpha=(1-i/14)*0.6; ctx.fillStyle=col;
       ctx.fillRect(tx-size/2,ty-size/2,size,size); continue;
     } else if(style==='quantum'){
       col = (i%2===0) ? pc : '#7fe8ff';
       size = baseSize*(1+Math.sin(t*6-i*0.8)*0.25);
     } else if(style==='phantom'){
       col='#eaf2ff'; size=baseSize*1.1;
-      ctx.globalAlpha=(1-i/10)*0.22;
+      ctx.globalAlpha=(1-i/14)*0.3;
       ctx.beginPath(); ctx.arc(tx,ty,size,0,7); ctx.fill(); continue;
     } else if(style==='season1_trail'){
       col = (i%2===0) ? '#54e0ff' : '#fff6c8';
@@ -243,7 +247,7 @@ function drawTrail(t,pr,pc){
       col = `hsl(${28+Math.sin(t*3-i*0.4)*10},95%,${Math.max(35,60-i*2)}%)`;
       size = baseSize*(1+Math.cos(t*4-i*0.5)*0.15);
     }
-    ctx.globalAlpha=(1-i/10)*0.4; ctx.fillStyle=col;
+    ctx.globalAlpha=(1-i/14)*0.55; ctx.fillStyle=col;
     ctx.beginPath(); ctx.arc(tx,ty,size,0,7); ctx.fill();
   }
   ctx.globalAlpha=1;
