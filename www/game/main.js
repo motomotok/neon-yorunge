@@ -13,11 +13,8 @@ const achTotalEl=document.getElementById('achTotal'); if(achTotalEl) achTotalEl.
 renderLangGrid();
 applyLanguage();
 resize(); initStars(); applyTheme(cfg.theme); applyAccessibility(); ensureTodayQuest(); ensureDailyEvent();
-const _dailyReturnResult = handleDailyReturn();
+handleDailyReturn();
 resetGame(); renderThemeGrid(); goMenu();
-// Yeni bir gün ilk kez işlendiyse (handleDailyReturn null dönmediyse) 7
-// Günlük Giriş Serisi takvimini menüye dönüşün hemen ardından göster.
-if(_dailyReturnResult) openLoginStreakOverlay(_dailyReturnResult);
 Ads.init();
 syncAdButtons();
 setInterval(syncAdButtons, 1000); // "Reklam İzle" butonlarındaki bekleme geri sayımını canlı tutar

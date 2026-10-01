@@ -80,6 +80,7 @@
       <button class="menuDockBtn" data-go="shop"><i class="gicon" data-icon="cart"></i><span data-i18n="nav_shop">Mağaza</span></button>
       <button class="menuDockBtn" data-go="mode"><i class="gicon" data-icon="gamepad"></i><span data-i18n="nav_mode">Modlar</span></button>
       <button class="menuDockBtn" data-go="battlepass"><i class="gicon" data-icon="ticket"></i><span data-i18n="nav_season">Sezon</span></button>
+      <button class="menuDockBtn" id="loginStreakDockBtn" data-go="loginstreak"><i class="gicon" data-icon="calendar"></i><span data-i18n="nav_loginstreak">Seri</span></button>
     </div>
     <div class="menuSideDock right">
       <button class="menuDockBtn" data-go="settings"><i class="gicon" data-icon="gear"></i><span data-i18n="nav_settings">Ayarlar</span></button>
@@ -370,14 +371,16 @@
   </div>
 </div>
 
-<div id="loginStreakOverlay" style="display:none;position:fixed;inset:0;z-index:36;align-items:center;justify-content:center;background:rgba(2,3,10,.85);padding:20px;">
-  <div class="card coreInfoCard" style="max-width:340px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center;">
-    <div style="font-size:30px;"><i class="gicon" data-icon="calendar"></i></div>
-    <div style="font-size:15px;font-weight:800;" data-i18n="login_streak_title">Giriş Serisi</div>
+<div class="screen fullpin" id="screen-loginstreak">
+  <div class="screenHead">
+    <h2 data-i18n="login_streak_title">Giriş Serisi</h2>
     <div class="sub" id="loginStreakDayText" style="margin:0"></div>
-    <div class="loginDayStrip" id="loginStreakStrip"></div>
-    <div class="sub" id="loginStreakMsg" style="margin:0;opacity:.9;font-weight:600"></div>
-    <button class="btn small" id="loginStreakCloseBtn" style="margin-top:4px"><i class="gicon" data-icon="check"></i> <span data-i18n="btn_nice">Harika</span></button>
+  </div>
+  <div class="screenBody">
+    <div class="loginDayGrid" id="loginStreakGrid"></div>
+  </div>
+  <div class="screenFoot">
+    <button class="btn alt small" data-go="menu"><i class="gicon" data-icon="back"></i> <span data-i18n="btn_back">Geri</span></button>
   </div>
 </div>
 

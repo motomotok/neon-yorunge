@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '1.14.0';
+const GAME_VERSION = '1.14.1';
 
 const THEMES = {
   neon:      {nameKey:'theme_neon',      star:'#54e0ff', gold:'#ffd24a', peril:'#ff4d6d', player:'#a97bff', sun:'#8ad8ff', bg0:'#05060f', bg1:'#0b0f2a', sf:'#9fb8ff', gate:{type:'free'}},
@@ -356,7 +356,7 @@ let stats = load('neonYorungeStats', {
   stardust:0, lifetimeStardust:0, owned:{themes:[], skins:[], trails:[], suns:[], rings:[]}, boosts:{},
   adRewardsDate:'', adRewardsToday:0, lastAdRewardAt:0,
   rivalName:'', rivalScore:0, premiumNoAds:false,
-  lastSeenDate:'', loginStreak:0,
+  lastSeenDate:'', loginStreak:0, lastClaimedRewardDate:'',
   dealDate:'', dealCategory:'', dealId:'', eventType:'',
   rivalLeague:[],
   seasonKey:'', seasonXp:0, seasonPremium:false,
@@ -469,41 +469,68 @@ function ensureRivalLeague(){
   saveStats();
 }
 
-// Giriş serisi ödülleri: 7 günlük döngü, ucuzdan pahalıya, çeşit çeşit
-// (yıldız tozu / tek-oyunluk takviye stoğu / kalıcı özel kozmetik) —
-// 7. gün haftayı hiç kaçırmadan tamamlayana YALNIZCA bu yoldan kazanılabilen
-// özel bir orb veriyor (bkz. SKINS'teki 'loyalty_orb'). 8. günden itibaren
-// döngü 1'den tekrar başlar (loginCycleDay() modulo alır) — haftayı
-// tamamlamış biri bir sonraki haftada tekrar 1. günden başlar, ama
-// loyalty_orb zaten kalıcı sahip olunduğu için bir daha kaybolmaz.
+// Giriş serisi ödülleri: 14 günlük döngü, ucuzdan pahalıya, bilinçli
+// şekilde ÇEŞİTLİ (yıldız tozu / 4 farklı tek-oyunluk takviye stoğu / ucuz
+// kozmetiklerden ücretsiz birer tane / kalıcı özel kozmetik) — ekonomiyi
+// bozmasın diye SADECE en ucuz kozmetikler hediye ediliyor, pahalı/nadir
+// olanlara (prism, shadow, blackhole, quasar vb.) hiç dokunulmuyor.
+// 7. gün bir "ara zirve" (büyükçe bir takviye), 14. gün YALNIZCA bu
+// yoldan kazanılabilen özel 'loyalty_orb' ile büyük final — 15. günden
+// itibaren döngü 1'den tekrar başlar (loginCycleDay() modulo alır).
 const LOGIN_STREAK_REWARDS = [
-  {type:'stardust', amount:30},
-  {type:'stardust', amount:50},
-  {type:'boost', id:'shieldstart', amount:5},
+  {type:'stardust', amount:40},
+  {type:'boost', id:'luckystart', amount:3},
+  {type:'stardust', amount:60},
+  {type:'boost', id:'slowstart', amount:3},
+  {type:'cosmetic', cat:'rings', id:'dotted'},
   {type:'stardust', amount:90},
-  {type:'stardust', amount:140},
-  {type:'boost', id:'shieldstart', amount:3},
-  {type:'skin', id:'loyalty_orb', stardust:300},
+  {type:'boost', id:'shieldstart', amount:5},
+  {type:'stardust', amount:120},
+  {type:'boost', id:'coinrush', amount:3},
+  {type:'cosmetic', cat:'trails', id:'sparkle'},
+  {type:'stardust', amount:160},
+  {type:'boost', id:'shieldstart', amount:4},
+  {type:'stardust', amount:220},
+  {type:'skin', id:'loyalty_orb', stardust:400},
 ];
-function loginCycleDay(){ return ((Math.max(1,stats.loginStreak||1)-1)%7)+1; }
+function loginCycleDay(){ return ((Math.max(1,stats.loginStreak||1)-1)%LOGIN_STREAK_REWARDS.length)+1; }
+// Bugünün ödülü zaten alınmış mı? Seri sayacı (loginStreak) her gün
+// otomatik ilerler (app açılınca) ama ÖDÜL artık otomatik verilmiyor —
+// kullanıcı ana menüdeki ışıklı butona basıp takvim ekranını açmalı ve
+// o günün kartına dokunmalı. O gün dokunmazsa ertesi gün o hediye kaçmış
+// olur (bilinçli bir "her gün gel" baskısı — kullanıcı talebi).
+function loginRewardClaimedToday(){ return stats.lastClaimedRewardDate===todayStr(); }
 function grantLoginStreakReward(r){
   if(r.type==='stardust') addStardust(r.amount);
   else if(r.type==='boost') stats.boosts[r.id]=(stats.boosts[r.id]||0)+r.amount;
-  else if(r.type==='skin'){
+  else if(r.type==='cosmetic'){
+    if(!stats.owned[r.cat].includes(r.id)) stats.owned[r.cat].push(r.id);
+  } else if(r.type==='skin'){
     if(!stats.owned.skins.includes(r.id)) stats.owned.skins.push(r.id);
     addStardust(r.stardust);
   }
 }
+// Takvim ekranındaki "bugün" kartına dokununca çağrılır. Zaten alınmışsa
+// false döner (kart tıklanamaz zaten ama çifte koruma). Aksi halde ödülü
+// uygulayıp {day, reward} döner — ekran bunu onay mesajı için kullanır.
+function claimLoginReward(){
+  if(loginRewardClaimedToday()) return false;
+  const day = loginCycleDay();
+  const reward = LOGIN_STREAK_REWARDS[day-1];
+  grantLoginStreakReward(reward);
+  stats.lastClaimedRewardDate = todayStr();
+  saveStats();
+  return {day, reward};
+}
 
 // Uygulama her açıldığında bir kez çağrılır: (1) günlerdir açılmadıysa
-// "geri dönüş" bonusu verir, (2) art arda giriş serisini günceller ve
-// o günün ödülünü verir. `stats.lastSeenDate` bugünse fonksiyon no-op'tur
-// (null döner), bu yüzden aynı gün içinde tekrar çağrılması güvenlidir.
-// Yeni bir gün işlendiyse {day, reward} döner — main.js bunu görsel 7 günlük
-// takvim penceresini (openLoginStreakOverlay) açmak için kullanır.
+// "geri dönüş" bonusu verir, (2) art arda giriş serisi sayacını günceller
+// (ödülü VERMEZ, sadece hangi günde olduğumuzu ilerletir — bkz. yukarıdaki
+// not). `stats.lastSeenDate` bugünse fonksiyon no-op'tur, bu yüzden aynı
+// gün içinde tekrar çağrılması güvenlidir.
 function handleDailyReturn(){
   const td = todayStr();
-  if(stats.lastSeenDate === td) return null;
+  if(stats.lastSeenDate === td) return;
   const gap = stats.lastSeenDate ? daysBetweenStr(stats.lastSeenDate, td) : 0;
   if(gap>=3){
     const bonus = Math.min(300, gap*20);
@@ -511,12 +538,8 @@ function handleDailyReturn(){
     queueToast(t('toast_welcome_back',{gap, bonus}));
   }
   stats.loginStreak = (gap===1) ? (stats.loginStreak||0)+1 : 1;
-  const day = loginCycleDay();
-  const reward = LOGIN_STREAK_REWARDS[day-1];
-  grantLoginStreakReward(reward);
   stats.lastSeenDate = td;
   saveStats();
-  return {day, reward};
 }
 
 const QUEST_POOL = [

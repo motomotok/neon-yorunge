@@ -195,34 +195,63 @@ function syncEventBanner(){
     } else { chip.style.display='none'; }
   }
 }
-// 7 Günlük Giriş Serisi takvim penceresi — main.js boot sırasında
-// handleDailyReturn() yeni bir gün işlediğinde (null dönmediğinde) açılır.
-function openLoginStreakOverlay(result){
-  const ov=document.getElementById('loginStreakOverlay'); if(!ov) return;
-  const todayDay = result.day;
-  const strip=document.getElementById('loginStreakStrip'); strip.innerHTML='';
+// 14 Günlük Giriş Serisi — ödül artık otomatik verilmiyor, kullanıcı ana
+// menüdeki ışıklı "Seri" butonuna basıp bu ekranı açmalı ve BUGÜNÜN
+// kartına dokunmalı (bkz. claimLoginReward). Diğer 13 kart, kilitli olsa
+// bile, "gün gün ne geliyor" görünsün diye gerçek ikon+etiketiyle önizleniyor
+// (kullanıcı talebi) — sadece kart soluk/tıklanamaz kalıyor, içerik gizlenmiyor.
+function loginRewardIconLabel(r){
+  if(r.type==='stardust') return {ic:icon('coin'), label:'+'+r.amount};
+  if(r.type==='boost'){ const b=BOOSTS.find(x=>x.id===r.id); return {ic:icon(b?b.icon:'shield'), label:'×'+r.amount}; }
+  if(r.type==='cosmetic') return {ic:icon('gift'), label:t('login_gift_badge')};
+  return {ic:icon('gem'), label:t('login_special_badge')}; // skin (final gün)
+}
+function loginRewardDesc(r){
+  if(r.type==='stardust') return t('login_toast_stardust',{amount:r.amount});
+  if(r.type==='boost'){ const b=BOOSTS.find(x=>x.id===r.id); return t('login_toast_boost',{amount:r.amount, name:b?t(b.nameKey):''}); }
+  if(r.type==='cosmetic') return t('login_toast_cosmetic',{name:t(cosmeticItemName(r.cat,r.id))});
+  return t('login_toast_skin');
+}
+function cosmeticItemName(cat, id){
+  const list = cat==='trails'?TRAILS : cat==='rings'?RINGSTYLES : cat==='suns'?SUNS : SKINS;
+  const item = list.find(i=>i.id===id);
+  return item ? item.nameKey : '';
+}
+function renderLoginStreakScreen(){
+  const grid=document.getElementById('loginStreakGrid'); if(!grid) return;
+  const todayDay = loginCycleDay(), claimedToday = loginRewardClaimedToday();
+  document.getElementById('loginStreakDayText').textContent = t('login_day_of_seven',{n:todayDay, total:LOGIN_STREAK_REWARDS.length});
+  grid.innerHTML='';
   LOGIN_STREAK_REWARDS.forEach((r,i)=>{
     const dayNum=i+1;
-    const state = dayNum<todayDay ? 'claimed' : dayNum===todayDay ? 'today' : 'locked';
-    let ic, label;
-    if(r.type==='stardust'){ ic=icon('coin'); label='+'+r.amount; }
-    else if(r.type==='boost'){ const b=BOOSTS.find(x=>x.id===r.id); ic=icon(b?b.icon:'shield'); label='×'+r.amount; }
-    else { ic = state==='locked' ? icon('lock') : icon('gem'); label=t('login_special_badge'); }
+    let state;
+    if(dayNum<todayDay || (dayNum===todayDay && claimedToday)) state='claimed';
+    else if(dayNum===todayDay) state='today-ready';
+    else state='locked';
+    const {ic, label} = loginRewardIconLabel(r);
     const card=document.createElement('div');
     card.className='loginDayCard '+state;
-    card.innerHTML=`<div class="ldNum">${t('login_day_short',{n:dayNum})}</div><div class="ldIcon">${ic}</div><div class="ldLabel">${state==='locked'?'':label}</div>`;
-    strip.appendChild(card);
+    card.dataset.day=dayNum;
+    card.innerHTML = (state==='today-ready' ? `<div class="ldBadge">${t('login_tap_badge')}</div>` : '')
+      + `<div class="ldNum">${t('login_day_short',{n:dayNum})}</div><div class="ldIcon">${state==='claimed'?icon('check'):ic}</div><div class="ldLabel">${label}</div>`;
+    grid.appendChild(card);
   });
-  const r=result.reward; let msg;
-  if(r.type==='stardust') msg=t('login_toast_stardust',{amount:r.amount});
-  else if(r.type==='boost'){ const b=BOOSTS.find(x=>x.id===r.id); msg=t('login_toast_boost',{amount:r.amount, name:b?t(b.nameKey):''}); }
-  else msg=t('login_toast_skin');
-  document.getElementById('loginStreakMsg').textContent=msg;
-  document.getElementById('loginStreakDayText').textContent=t('login_day_of_seven',{n:todayDay});
-  ov.style.display='flex';
-  beep(700,0.1,'sine',0.13); beep(1000,0.1,'triangle',0.12);
 }
-function closeLoginStreakOverlay(){ const ov=document.getElementById('loginStreakOverlay'); if(ov) ov.style.display='none'; }
+document.addEventListener('click', e=>{
+  const card = e.target.closest && e.target.closest('.loginDayCard.today-ready');
+  if(!card) return;
+  const result = claimLoginReward();
+  if(!result) return;
+  card.classList.remove('today-ready'); card.classList.add('claimed','justClaimed');
+  card.innerHTML = `<div class="ldNum">${t('login_day_short',{n:result.day})}</div><div class="ldIcon">${icon('check')}</div><div class="ldLabel"></div>`;
+  queueToast(icon('gift')+' '+loginRewardDesc(result.reward));
+  beep(700,0.1,'sine',0.13); beep(1000,0.1,'triangle',0.12);
+  syncLoginStreakDock();
+});
+function syncLoginStreakDock(){
+  const btn=document.getElementById('loginStreakDockBtn'); if(!btn) return;
+  btn.classList.toggle('hasReward', !loginRewardClaimedToday());
+}
 
 let pendingPurchase = null;
 // price=null olursa fiyat satırı gizlenir ve varsayılan "Satın almak

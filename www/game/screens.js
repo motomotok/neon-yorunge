@@ -26,7 +26,7 @@ function showTutorialHint(){
 }
 
 function goMenu(){ state='menu'; setHud(false); showScreen('menu');
-  ensureDailyEvent(); syncEventBanner();
+  ensureDailyEvent(); syncEventBanner(); syncLoginStreakDock();
   document.getElementById('menuBest').textContent=t('menu_best',{n:stats.best.toFixed(2)});
   // Roguelike hissini güçlendiren iki kalıcı gösterge: "karakter seviyesi"
   // (6 yükseltme hattının toplam kademesi) ve deneme sayacı.
@@ -54,6 +54,7 @@ function goStats(){ state='stats'; setHud(false); showScreen('stats'); syncStats
 function goMode(){ state='mode'; setHud(false); showScreen('mode'); refreshDailyStatus(); renderBoostRow(); }
 function goShop(){ state='shop'; setHud(false); showScreen('shop'); ensureDailyEvent(); refreshWallet(); renderDealBanner(); renderShopTab(); syncAdButtons(); }
 function goBattlepass(){ state='battlepass'; setHud(false); showScreen('battlepass'); renderBattlepass(); }
+function goLoginStreak(){ state='loginstreak'; setHud(false); showScreen('loginstreak'); renderLoginStreakScreen(); }
 function goLanguage(){ state='language'; setHud(false); showScreen('language'); if(typeof syncLangDockButton==='function') syncLangDockButton(); }
 function goUpgrades(){ state='upgrades'; setHud(false); showScreen('upgrades'); refreshWallet(); renderUpgrades(); renderUpgradesTab();
   if(tutorialActive && typeof tutorialOnNav==='function') tutorialOnNav('upgrades');

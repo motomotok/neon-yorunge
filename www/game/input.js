@@ -49,6 +49,7 @@ document.querySelectorAll('[data-go]').forEach(b=>{
     else if(g==='stats') goStats();
     else if(g==='shop') goShop();
     else if(g==='battlepass') goBattlepass();
+    else if(g==='loginstreak') goLoginStreak();
     else if(g==='upgrades') goUpgrades();
     else if(g==='language') goLanguage();
   });
@@ -88,10 +89,6 @@ document.getElementById('pcYesBtn').addEventListener('click', e=>{ e.stopPropaga
 document.getElementById('pcNoBtn').addEventListener('click', e=>{ e.stopPropagation(); hidePurchaseConfirm(); beep(300,0.06,'sine',0.08); });
 document.getElementById('purchaseConfirmOverlay').addEventListener('click', e=>{
   if(e.target.id==='purchaseConfirmOverlay') hidePurchaseConfirm();
-});
-document.getElementById('loginStreakCloseBtn').addEventListener('click', e=>{ e.stopPropagation(); closeLoginStreakOverlay(); });
-document.getElementById('loginStreakOverlay').addEventListener('click', e=>{
-  if(e.target.id==='loginStreakOverlay') closeLoginStreakOverlay();
 });
 document.getElementById('premiumBuyBtn').addEventListener('click', e=>{ e.stopPropagation();
   if(window.Premium && Premium.isNative()){ Premium.purchase(); }
