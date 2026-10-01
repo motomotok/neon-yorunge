@@ -26,7 +26,7 @@ function syncPlayGamesUI(){
   card.style.display='flex';
   if(row) row.classList.remove('single');
   if(PlayGames.signedIn){ txt.innerHTML=icon('check')+' '+t('playgames_connected'); btn.textContent=t('playgames_leaderboard_btn'); }
-  else { txt.innerHTML=icon('trophy')+' '+t('playgames_label'); btn.textContent=t('playgames_connect'); }
+  else { txt.innerHTML=icon('trophy')+' '+PlayGames.serviceName(); btn.textContent=t('playgames_connect'); }
 }
 function syncPremiumUI(price){
   const txt=document.getElementById('premiumStatusText');

@@ -27,6 +27,15 @@
   }
   function isNative() { return !!plugin(); }
 
+  // Aynı plugin Android'de Google Play Games'e, iOS'ta Apple Game Center'a
+  // bağlanıyor — ayarlardaki "Bağlan" girişinin hangi markayı göstereceğini
+  // (kullanıcı özellikle Apple hesabına bağlanma deneyiminin doğru görünmesini
+  // istedi) buradan belirliyoruz.
+  function serviceName() {
+    const p = window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform();
+    return p === 'ios' ? 'Game Center' : 'Play Games';
+  }
+
   function signIn() {
     const p = plugin();
     if (!p) return Promise.resolve(false);
@@ -55,6 +64,7 @@
     signIn,
     submitScore,
     showLeaderboard,
+    serviceName,
     get signedIn() { return signedIn; },
   };
 })();
