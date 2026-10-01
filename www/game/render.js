@@ -136,19 +136,34 @@ function drawSun(t){
     }
     ctx.fillStyle='#fff8ea'; ctx.beginPath(); ctx.arc(CX,CY,sunR*0.9,0,7); ctx.fill();
   } else {
-    const g=ctx.createRadialGradient(CX,CY,0,CX,CY,sunR*2.6);
+    // Varsayılan: dönen plak — oluklu halkalar + kayan parlama şeridi
+    // (dönüşü hissettirir) + tema renginde etiket + iğne deliği.
+    const discR=sunR*2.3;
+    ctx.fillStyle='#120a08'; ctx.beginPath(); ctx.arc(CX,CY,discR,0,7); ctx.fill();
+    for(let i=0;i<6;i++){
+      const rr=discR*(0.42+i*0.095);
+      ctx.strokeStyle = i%2===0 ? 'rgba(255,255,255,.07)' : 'rgba(255,255,255,.035)';
+      ctx.lineWidth=1.2; ctx.beginPath(); ctx.arc(CX,CY,rr,0,7); ctx.stroke();
+    }
+    ctx.save(); ctx.translate(CX,CY); ctx.rotate(t*0.8);
+    const hg=ctx.createLinearGradient(-discR,-discR,discR,discR);
+    hg.addColorStop(0,'rgba(255,255,255,0)'); hg.addColorStop(0.5,'rgba(255,255,255,.1)'); hg.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle=hg; ctx.beginPath(); ctx.arc(0,0,discR,0,7); ctx.fill();
+    ctx.restore();
+    const g=ctx.createRadialGradient(CX,CY,0,CX,CY,sunR*1.3);
     g.addColorStop(0,'rgba(255,255,255,.95)');
-    g.addColorStop(0.3, hexA(T.sun,.8));
+    g.addColorStop(0.4, hexA(T.sun,.9));
     g.addColorStop(1, hexA(T.sun,0));
-    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(CX,CY,sunR*2.6,0,7); ctx.fill();
-    ctx.fillStyle='#eaffff'; ctx.beginPath(); ctx.arc(CX,CY,sunR,0,7); ctx.fill();
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(CX,CY,sunR*1.3,0,7); ctx.fill();
+    ctx.fillStyle=T.sun; ctx.beginPath(); ctx.arc(CX,CY,sunR*0.82,0,7); ctx.fill();
   }
+  ctx.fillStyle='#0a0604'; ctx.beginPath(); ctx.arc(CX,CY,sunR*0.13,0,7); ctx.fill();
 }
 
 function drawRing(r){
   const style = cfg.ringStyle;
   if(style==='dotted'){
-    ctx.strokeStyle='rgba(150,175,255,0.3)'; ctx.lineWidth=2; ctx.setLineDash([2,8]);
+    ctx.strokeStyle='rgba(255,195,150,0.3)'; ctx.lineWidth=2; ctx.setLineDash([2,8]);
     ctx.beginPath(); ctx.arc(CX,CY,r,0,7); ctx.stroke(); ctx.setLineDash([]);
   } else if(style==='glow'){
     ctx.save(); ctx.shadowColor=hexA(T.star,.6); ctx.shadowBlur=10;
@@ -156,7 +171,7 @@ function drawRing(r){
     ctx.beginPath(); ctx.arc(CX,CY,r,0,7); ctx.stroke();
     ctx.restore();
   } else if(style==='double'){
-    ctx.strokeStyle='rgba(150,175,255,0.15)'; ctx.lineWidth=1.5;
+    ctx.strokeStyle='rgba(255,195,150,0.15)'; ctx.lineWidth=1.5;
     ctx.beginPath(); ctx.arc(CX,CY,r-3,0,7); ctx.stroke();
     ctx.beginPath(); ctx.arc(CX,CY,r+3,0,7); ctx.stroke();
   } else if(style==='pulse'){
@@ -165,9 +180,9 @@ function drawRing(r){
     ctx.strokeStyle=hexA(T.star,Math.max(0.06,a)); ctx.lineWidth=2+Math.sin(pt*3)*1;
     ctx.beginPath(); ctx.arc(CX,CY,r,0,7); ctx.stroke();
   } else if(style==='circuit'){
-    ctx.strokeStyle='rgba(150,175,255,0.18)'; ctx.lineWidth=2;
+    ctx.strokeStyle='rgba(255,195,150,0.18)'; ctx.lineWidth=2;
     ctx.beginPath(); ctx.arc(CX,CY,r,0,7); ctx.stroke();
-    ctx.fillStyle='rgba(190,210,255,0.4)';
+    ctx.fillStyle='rgba(255,210,190,0.4)';
     const n=18;
     for(let i=0;i<n;i++){
       const a=(i/n)*Math.PI*2;
@@ -195,8 +210,9 @@ function drawRing(r){
     ctx.setLineDash([]);
     ctx.restore();
   } else {
-    ctx.strokeStyle='rgba(150,175,255,0.15)'; ctx.lineWidth=2;
-    ctx.beginPath(); ctx.arc(CX,CY,r,0,7); ctx.stroke();
+    // Varsayılan: plak oluğu — ince kesikli çizgi, soluk sıcak ton.
+    ctx.strokeStyle='rgba(255,210,180,0.14)'; ctx.lineWidth=2; ctx.setLineDash([1,3]);
+    ctx.beginPath(); ctx.arc(CX,CY,r,0,7); ctx.stroke(); ctx.setLineDash([]);
   }
 }
 
@@ -264,7 +280,7 @@ function drawPlayer(t){
     const pg=ctx.createRadialGradient(px,py,0,px,py,PLAYER_R*2.2);
     pg.addColorStop(0,'#ffffff'); pg.addColorStop(0.4, hexA(pc,.85)); pg.addColorStop(1, hexA(pc,0));
     ctx.fillStyle=pg; ctx.beginPath(); ctx.arc(px,py,PLAYER_R*2.2,0,7); ctx.fill();
-    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(px,py,PLAYER_R,0,7); ctx.fill();
+    drawNoteShape(px,py,PLAYER_R,'#ffffff',true,0);
     ctx.globalAlpha=1;
   }
   if(player.shieldHits>0){
@@ -320,14 +336,14 @@ function drawItem(x,y,type,sc,t,it){
   const R=(PLAYER_R*0.95)*sc;
   const isTwinKind = type==='hazardTwin'||type==='hazardTwinDecoy';
   let col;
-  if(type==='hazardPull') col='#a97bff';
+  if(type==='hazardPull') col='#ffb454';
   else if(isTwinKind) col='#ff8a3d';
   else if(type==='hazardPulse') col = (it && it.pulseDanger===false) ? '#ffd9dc' : '#ff3b52';
-  else if(type==='hazardCreep') col='#ff3aa0';
+  else if(type==='hazardCreep') col='#d94a1f';
   else if(isHazardType(type)) col=T.peril;
   else if(type==='gold') col=T.gold;
   else if(type==='star') col=T.star;
-  else if(type==='diamond') col='#eafcff';
+  else if(type==='diamond') col='#fff4e0';
   else if(type==='coin') col='#ffb454';
   else if(type==='heart') col='#ff5d8f';
   else col='#ffffff';
@@ -381,7 +397,7 @@ function drawItem(x,y,type,sc,t,it){
       ctx.beginPath(); ctx.arc(x,y,Rh*1.6,0,7); ctx.stroke(); ctx.setLineDash([]);
     } else if(type==='hazardPull'){
       ctx.save(); ctx.translate(x,y); ctx.rotate(-t*2.2);
-      ctx.strokeStyle=hexA('#a97bff',.55); ctx.setLineDash([2,4]); ctx.lineWidth=1.5;
+      ctx.strokeStyle=hexA('#ffb454',.55); ctx.setLineDash([2,4]); ctx.lineWidth=1.5;
       ctx.beginPath(); ctx.arc(0,0,Rh*1.7,0,7); ctx.stroke(); ctx.setLineDash([]);
       ctx.restore();
     } else if(isTwinKind){
@@ -398,11 +414,10 @@ function drawItem(x,y,type,sc,t,it){
       ctx.setLineDash([]);
     }
   } else if(type==='gold'){
-    drawStar(x,y,R*1.2,R*0.55,5,t*1.2,col);
+    drawNoteShape(x,y,R*1.1,col,true,0);
     if(cfg.colorblind){ ctx.setLineDash([4,4]); ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(x,y,R*1.5,0,7); ctx.stroke(); ctx.setLineDash([]); }
   } else if(type==='star'){
-    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(x,y,R,0,7); ctx.fill();
-    ctx.fillStyle='rgba(255,255,255,.9)'; ctx.beginPath(); ctx.arc(x-R*0.25,y-R*0.25,R*0.35,0,7); ctx.fill();
+    drawNoteShape(x,y,R,col,false,0);
     if(cfg.colorblind){ ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(x,y,R*1.15,0,7); ctx.stroke(); }
   } else if(type==='diamond'){
     ctx.save(); ctx.translate(x,y); ctx.rotate(Math.PI/4);
@@ -410,10 +425,14 @@ function drawItem(x,y,type,sc,t,it){
     ctx.restore();
     ctx.fillStyle='rgba(255,255,255,.85)'; ctx.beginPath(); ctx.arc(x-R*0.2,y-R*0.2,R*0.25,0,7); ctx.fill();
   } else if(type==='coin'){
+    // Para birimi (Nota) jetonu — mini plak gibi: oluklu dış halka + renkli etiket.
     ctx.save(); ctx.translate(x,y); ctx.rotate(t*2);
-    ctx.fillStyle='#ffb454'; ctx.beginPath(); ctx.arc(0,0,R,0,7); ctx.fill();
-    ctx.fillStyle='#c47a1f'; ctx.beginPath(); ctx.arc(0,0,R*0.62,0,7); ctx.fill();
-    ctx.fillStyle='#ffe3a8'; ctx.beginPath(); ctx.arc(0,0,R*0.28,0,7); ctx.fill();
+    ctx.fillStyle='#2a1a10'; ctx.beginPath(); ctx.arc(0,0,R,0,7); ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.18)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.arc(0,0,R*0.8,0,7); ctx.stroke();
+    ctx.fillStyle='#ffb454'; ctx.beginPath(); ctx.arc(0,0,R*0.58,0,7); ctx.fill();
+    ctx.fillStyle='#c47a1f'; ctx.beginPath(); ctx.arc(0,0,R*0.3,0,7); ctx.fill();
+    ctx.fillStyle='#0a0604'; ctx.beginPath(); ctx.arc(0,0,R*0.1,0,7); ctx.fill();
     ctx.restore();
   } else if(type==='heart'){
     const pulse=1+Math.sin(t*5)*0.08;
@@ -430,6 +449,25 @@ function drawStar(x,y,outer,inner,pts,rot,col){
   for(let i=0;i<pts*2;i++){ const rr=i%2?inner:outer; const a=rot+i*Math.PI/pts-Math.PI/2;
     const xx=x+Math.cos(a)*rr, yy=y+Math.sin(a)*rr; i?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy); }
   ctx.closePath(); ctx.fill();
+}
+// Nota glifi: notabaşı (eğik elips) + sap + (opsiyonel) bayrak. Oyuncu,
+// toplanabilir "nota" (eski adıyla 'star' item tipi) ve boss ödülü ('gold')
+// BU TEK fonksiyonu paylaşır — sadece boyut/renk/bayrak değişir, böylece
+// "nota" görsel kimliği oyun genelinde tutarlı kalır.
+function drawNoteShape(x,y,r,col,withFlag,rot){
+  ctx.save(); ctx.translate(x,y); ctx.rotate(rot||0);
+  ctx.fillStyle=col;
+  ctx.beginPath(); ctx.ellipse(0,r*0.05,r*0.95,r*0.72,-0.32,0,7); ctx.fill();
+  ctx.strokeStyle=col; ctx.lineWidth=Math.max(1.4,r*0.26); ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(r*0.78,-r*0.15); ctx.lineTo(r*0.78,-r*2.0); ctx.stroke();
+  if(withFlag){
+    ctx.beginPath();
+    ctx.moveTo(r*0.78,-r*2.0);
+    ctx.quadraticCurveTo(r*2.1,-r*1.6, r*1.5,-r*0.55);
+    ctx.quadraticCurveTo(r*1.25,-r*1.25, r*0.78,-r*1.45);
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
 }
 function drawHeartShape(x,y,r,col){
   ctx.save(); ctx.translate(x,y); ctx.fillStyle=col;

@@ -1,4 +1,4 @@
-# Neon Yörünge — Android Uygulaması ve Reklam Kurulumu
+# Beat Orbit — Android Uygulaması ve Reklam Kurulumu
 
 Bu proje artık hem web/PWA (`www/` klasörü, GitHub Pages) hem de **Capacitor** ile
 paketlenmiş gerçek bir Android uygulaması olarak build edilebiliyor. Reklam
@@ -386,7 +386,7 @@ kapsamaz, sadece reklam izle/coin akışını simüle eder).
 - `THIRD_PARTY_LICENSES.md` + uygulama içi `www/licenses.html`: Capacitor ve
   AdMob eklentisinin MIT lisans metinlerini içerir (MIT, dağıtırken telif
   bildiriminin korunmasını şart koşar).
-- Yayından önce "Neon Yörünge" isminin başka bir Play Store uygulamasıyla
+- Yayından önce "Beat Orbit" isminin başka bir Play Store uygulamasıyla
   çakışmadığını manuel kontrol et (otomatik marka taraması yapılmadı).
 
 ## 6) Test cihazında çalıştırma

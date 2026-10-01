@@ -1,4 +1,4 @@
-// Neon Yörünge — reklam katmanı.
+// Beat Orbit — reklam katmanı.
 // Oyun kodu (index.html) sadece bu dosyadaki `Ads` objesini çağırır.
 // - Android uygulaması olarak (Capacitor) çalışıyorsa: native-ads-bundle.js
 //   üzerinden gerçek AdMob interstitial/rewarded akışı kullanılır.

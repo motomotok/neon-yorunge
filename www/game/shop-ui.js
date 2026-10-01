@@ -147,7 +147,7 @@ function refreshDailyStatus(){
 }
 
 function refreshWallet(){
-  const v = stats.stardust||0;
+  const v = stats.notes||0;
   ['walletHud','shopWallet','menuWallet','upgradesWallet'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.textContent=v;
   });
@@ -171,11 +171,11 @@ function setEquipped(category, id){
 function purchase(category, item){
   if(item.gate.type!=='coin') return false;
   const price = effectivePrice(category, item);
-  if(stats.stardust < price){
-    queueToast(t('insufficient_stardust',{n:price-stats.stardust}));
+  if(stats.notes < price){
+    queueToast(t('insufficient_stardust',{n:price-stats.notes}));
     beep(200,0.12,'square',0.1); return false;
   }
-  stats.stardust -= price;
+  stats.notes -= price;
   stats.owned[category].push(item.id);
   saveStats(); refreshWallet();
   queueToast(t('purchased_toast',{name:t(item.nameKey)}));
@@ -188,12 +188,12 @@ function renderDealBanner(){
   el.innerHTML = deal ? (icon('flame')+' '+t('deal_banner',{name:t(deal.item.nameKey), pct:Math.round(DEAL_DISCOUNT*100)})) : '';
 }
 // Ana menüdeki "Günün Olayı" şeridi — mağazayı hiç açmadan bugün ne
-// olduğunu gösterir (indirim / ×2 yıldız tozu / ×2 Sezon XP).
+// olduğunu gösterir (indirim / ×2 nota / ×2 Sezon XP).
 function syncEventBanner(){
   const chip=document.getElementById('menuEventChip'); if(!chip) return;
   const iconEl=document.getElementById('menuEventIcon'), textEl=document.getElementById('menuEventText');
-  if(stats.eventType==='stardust2x'){
-    chip.style.display='flex'; chip.className='menuEventChip evStardust';
+  if(stats.eventType==='notes2x'){
+    chip.style.display='flex'; chip.className='menuEventChip evNotes';
     iconEl.innerHTML=icon('coin'); textEl.textContent=t('event_banner_stardust2x');
   } else if(stats.eventType==='xp2x'){
     chip.style.display='flex'; chip.className='menuEventChip evXp';
@@ -213,13 +213,13 @@ function syncEventBanner(){
 // bile, "gün gün ne geliyor" görünsün diye gerçek ikon+etiketiyle önizleniyor
 // (kullanıcı talebi) — sadece kart soluk/tıklanamaz kalıyor, içerik gizlenmiyor.
 function loginRewardIconLabel(r){
-  if(r.type==='stardust') return {ic:icon('coin'), label:'+'+r.amount};
+  if(r.type==='notes') return {ic:icon('coin'), label:'+'+r.amount};
   if(r.type==='boost'){ const b=BOOSTS.find(x=>x.id===r.id); return {ic:icon(b?b.icon:'shield'), label:'×'+r.amount}; }
   if(r.type==='cosmetic') return {ic:icon('gift'), label:t('login_gift_badge')};
   return {ic:icon('gem'), label:t('login_special_badge')}; // skin (final gün)
 }
 function loginRewardDesc(r){
-  if(r.type==='stardust') return t('login_toast_stardust',{amount:r.amount});
+  if(r.type==='notes') return t('login_toast_stardust',{amount:r.amount});
   if(r.type==='boost'){ const b=BOOSTS.find(x=>x.id===r.id); return t('login_toast_boost',{amount:r.amount, name:b?t(b.nameKey):''}); }
   if(r.type==='cosmetic') return t('login_toast_cosmetic',{name:t(cosmeticItemName(r.cat,r.id))});
   return t('login_toast_skin');
@@ -267,32 +267,39 @@ document.addEventListener('click', e=>{
 // dokunmuyor, bu yüzden gameplay'i bozma riski yok; sadece görsel dilin
 // birebir aynısını küçük ölçekte tekrarlıyor.
 const HOWTO_ICON_SHAPES = {
-  star:        {kind:'star2',   color:'#54e0ff'},
-  diamond:     {kind:'diamond', color:'#eafcff'},
+  star:        {kind:'note',    color:'#ffcf7a'},
+  diamond:     {kind:'diamond', color:'#fff4e0'},
   particle:    {kind:'coin'},
   heartItem:   {kind:'heart',   color:'#ff5d8f'},
-  hazard:      {kind:'poly', sides:3, rot:-Math.PI/2, color:'#ff4d6d'},
-  hazardBomb:  {kind:'poly', sides:4, rot:Math.PI/4,  color:'#ff4d6d', big:true},
-  hazardPull:  {kind:'poly', sides:5, rot:-Math.PI/2, color:'#a97bff'},
+  hazard:      {kind:'poly', sides:3, rot:-Math.PI/2, color:'#ff5a3c'},
+  hazardBomb:  {kind:'poly', sides:4, rot:Math.PI/4,  color:'#ff5a3c', big:true},
+  hazardPull:  {kind:'poly', sides:5, rot:-Math.PI/2, color:'#ffb454'},
   hazardTwin:  {kind:'poly', sides:6, rot:0,          color:'#ff8a3d'},
   hazardPulse: {kind:'spike', pts:5, outer:1.3, inner:0.5,  color:'#ff3b52'},
-  hazardCreep: {kind:'spike', pts:4, outer:1.35, inner:0.32, color:'#ff3aa0'},
+  hazardCreep: {kind:'spike', pts:4, outer:1.35, inner:0.32, color:'#d94a1f'},
 };
 function drawHowtoIconShape(ctx2, type, size){
   const cfgS = HOWTO_ICON_SHAPES[type]; if(!cfgS) return;
   const cx=size/2, cy=size/2, R=size*0.3;
   ctx2.clearRect(0,0,size,size);
-  if(cfgS.kind==='star2'){
-    ctx2.fillStyle=cfgS.color; ctx2.beginPath(); ctx2.arc(cx,cy,R,0,7); ctx2.fill();
-    ctx2.fillStyle='rgba(255,255,255,.9)'; ctx2.beginPath(); ctx2.arc(cx-R*0.25,cy-R*0.25,R*0.35,0,7); ctx2.fill();
+  if(cfgS.kind==='note'){
+    ctx2.save(); ctx2.translate(cx,cy);
+    ctx2.fillStyle=cfgS.color;
+    ctx2.beginPath(); ctx2.ellipse(0,R*0.05,R*0.95,R*0.72,-0.32,0,7); ctx2.fill();
+    ctx2.strokeStyle=cfgS.color; ctx2.lineWidth=Math.max(1.4,R*0.26); ctx2.lineCap='round';
+    ctx2.beginPath(); ctx2.moveTo(R*0.78,-R*0.15); ctx2.lineTo(R*0.78,-R*2.0); ctx2.stroke();
+    ctx2.restore();
   } else if(cfgS.kind==='diamond'){
     ctx2.save(); ctx2.translate(cx,cy); ctx2.rotate(Math.PI/4);
     ctx2.fillStyle=cfgS.color; ctx2.fillRect(-R*0.75,-R*0.75,R*1.5,R*1.5);
     ctx2.restore();
   } else if(cfgS.kind==='coin'){
-    ctx2.fillStyle='#ffb454'; ctx2.beginPath(); ctx2.arc(cx,cy,R,0,7); ctx2.fill();
-    ctx2.fillStyle='#c47a1f'; ctx2.beginPath(); ctx2.arc(cx,cy,R*0.62,0,7); ctx2.fill();
-    ctx2.fillStyle='#ffe3a8'; ctx2.beginPath(); ctx2.arc(cx,cy,R*0.28,0,7); ctx2.fill();
+    ctx2.fillStyle='#2a1a10'; ctx2.beginPath(); ctx2.arc(cx,cy,R,0,7); ctx2.fill();
+    ctx2.strokeStyle='rgba(255,255,255,.18)'; ctx2.lineWidth=1;
+    ctx2.beginPath(); ctx2.arc(cx,cy,R*0.8,0,7); ctx2.stroke();
+    ctx2.fillStyle='#ffb454'; ctx2.beginPath(); ctx2.arc(cx,cy,R*0.58,0,7); ctx2.fill();
+    ctx2.fillStyle='#c47a1f'; ctx2.beginPath(); ctx2.arc(cx,cy,R*0.3,0,7); ctx2.fill();
+    ctx2.fillStyle='#0a0604'; ctx2.beginPath(); ctx2.arc(cx,cy,R*0.1,0,7); ctx2.fill();
   } else if(cfgS.kind==='heart'){
     const r=R*1.15;
     ctx2.save(); ctx2.translate(cx,cy); ctx2.fillStyle=cfgS.color;
@@ -484,9 +491,9 @@ function renderBoostsShop(){
     const card=document.createElement('div'); card.className='shopCard boostCard';
     card.innerHTML = `<div class="boostIcon">${icon(b.icon)}</div><div class="cn">${t(b.nameKey)}</div><div class="bdesc">${t(b.descKey)}</div><div class="price">${icon('coin')} ${b.price}</div><div class="ownedTag">${t('inventory_label',{n:owned})}</div>`;
     card.addEventListener('click', ()=>{
-      if(stats.stardust<b.price){ queueToast(t('insufficient_stardust_short')); beep(200,0.1,'square',0.1); return; }
+      if(stats.notes<b.price){ queueToast(t('insufficient_stardust_short')); beep(200,0.1,'square',0.1); return; }
       showPurchaseConfirm(b.icon, t(b.nameKey), b.price, ()=>{
-        stats.stardust-=b.price; stats.boosts[b.id]=(stats.boosts[b.id]||0)+1; saveStats(); refreshWallet();
+        stats.notes-=b.price; stats.boosts[b.id]=(stats.boosts[b.id]||0)+1; saveStats(); refreshWallet();
         queueToast(t('boost_bought_toast',{name:t(b.nameKey)})); beep(700,0.1,'sine',0.13); beep(1000,0.1,'triangle',0.12);
         renderBoostsShop();
       });
@@ -520,7 +527,7 @@ function renderBoostRow(){
 async function shareScore(){
   const text=t('share_text',{score});
   if(navigator.share){
-    try{ await navigator.share({title:'Neon Yörünge', text, url:location.href}); }catch(e){}
+    try{ await navigator.share({title:'Beat Orbit', text, url:location.href}); }catch(e){}
   } else if(navigator.clipboard){
     try{ await navigator.clipboard.writeText(text+' '+location.href); queueToast(t('toast_share_copied')); }catch(e){ queueToast(t('toast_share_copy_failed')); }
   } else queueToast(t('toast_share_unsupported'));

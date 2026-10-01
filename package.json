@@ -1,7 +1,7 @@
 {
-  "name": "neon-yorunge",
-  "version": "1.14.3",
-  "description": "Neon Yörünge - tarayıcı tabanlı refleks/arcade oyunu ve Android uygulaması",
+  "name": "beat-orbit",
+  "version": "2.0.0",
+  "description": "Beat Orbit - tarayıcı tabanlı refleks/arcade oyunu ve Android uygulaması",
   "private": true,
   "scripts": {
     "serve": "npx serve www -l 8080",

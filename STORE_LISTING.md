@@ -7,24 +7,24 @@ sınırlarıdır, altlarında kalındığından emin oldum.
 ## Uygulama adı (max 30 karakter)
 
 ```
-Neon Yörünge
+Beat Orbit
 ```
-(12 karakter)
+(10 karakter)
 
 ## Kısa açıklama (max 80 karakter)
 
 ```
-Halkalar arasında dans et, yıldızları topla, evreni geç! 🌌
+Halkalar arasında dans et, notaları topla, ritme ayak uydur! 🎵
 ```
-(60 karakter)
+(61 karakter)
 
 ## Tam açıklama (max 4000 karakter)
 
 ```
-🌌 NEON YÖRÜNGE — Yıldızların arasında dans et
+🎵 BEAT ORBIT — Plağın etrafında dans et
 
-Merkezdeki yıldızın etrafında dönen üç halka var ve sen bu halkalar
-arasında geçiş yaparak yıldızları topluyor, asteroitlerden kaçıyorsun.
+Merkezdeki dönen plağın etrafında üç halka var ve sen bu halkalar
+arasında geçiş yaparak notaları topluyor, parazitlerden kaçıyorsun.
 Basit tek dokunuşluk kontrol, sonsuz artan tempo, dakikalar içinde
 öğrenilir ama ustalaşması saatler alır.
 
@@ -33,30 +33,30 @@ Ekran ikiye bölünür: sağ tarafa dokun → dış halkaya geç, sol tarafa
 dokun → iç halkaya geç. Halkalar arasında geçerken çarpışmazsın —
 bu senin kaçış hamlen!
 
-⭐ NE TOPLANIR, NELERDEN KAÇILIR
-⭐ Yıldız, 🌟 altın yıldız, 💎 elmas → puan ve combo
-🪙 Yıldız tozu jetonu → mağaza parası
-☄️ Asteroit, gezici asteroit, bomba asteroit → can gider
+🎼 NE TOPLANIR, NELERDEN KAÇILIR
+🎵 Nota, 🎶 altın nota, 💎 elmas → puan ve combo
+🪙 Plak jetonu → mağaza parası
+📡 Parazit, gezici parazit, patlayan parazit → can gider
 
 🎯 4 OYUN MODU
-🌌 Klasik — canlarla sonsuz mod
+🎵 Klasik — canlarla sonsuz mod
 ⏱️ Zaman Yarışı — 60 saniyede en yüksek skor
-🧘 Zen — asteroit yok, sadece topla, istediğin an bitir
+🧘 Zen — tehlike yok, sadece topla, istediğin an bitir
 📅 Günlük — herkese aynı düzen, günde tek deneme, arkadaşlarınla
    skorunu karşılaştır
 
 ✨ ÖZELLİKLER
 🎁 6 güç-yükseltmesi: Kalkan, Yavaşlatma, Mıknatıs, Zaman Dondurma,
    Puan Çarpanı, Hayalet
-👾 3 asteroit türü, 💎 nadir elmas koleksiyonu
+👾 3 parazit türü, 💎 nadir elmas koleksiyonu
 🔥 Combo ve "STREAK" bonusları, seviye ilerlemesi
 🏆 10 başarım + günlük görev sistemi
 🏅 Yerel liderlik tablosu, skor paylaşma
 ♿ Erişilebilirlik: büyük butonlar, sol el modu, renk körü dostu simgeler
 
-🛒 KOZMİK MAĞAZA
-Oyun içinde topladığın yıldız tozuyla (veya kısa bir reklam izleyerek)
-temalar, orb renkleri, iz efektleri, güneş görünümleri, halka stilleri
+🛒 PLAK DÜKKANI
+Oyun içinde topladığın notayla (veya kısa bir reklam izleyerek)
+temalar, orb renkleri, iz efektleri, plak görünümleri, halka stilleri
 ve tek kullanımlık başlangıç takviyeleri satın alabilirsin. Bazı
 kozmetikler de başarım açarak ücretsiz kazanılabilir.
 
@@ -67,7 +67,7 @@ saklanır.
 Bu uygulama reklam içerir ve isteğe bağlı reklam izleyerek ekstra
 ödül kazanma seçeneği sunar.
 ```
-(~1750 karakter, 4000 sınırının altında)
+(~1800 karakter, 4000 sınırının altında)
 
 ## Kategori önerisi
 Oyun → Arcade (Games → Arcade)

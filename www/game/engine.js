@@ -32,7 +32,7 @@ let levelFlashT, session, timeLeft, newRecord, timeScale, timeScaleT, activeBoos
 // Boss dalgası: skor eşiklerinde (bkz. BOSS_STAGES) güneşten patlayarak
 // beliren, tek seferlik yoğun bir tehlike dalgası. bossWaveItems o dalganın
 // öğelerine referans tutar; hepsi (kaçırılarak ya da çarpılarak) hayattan
-// çıkınca "temizlendi" sayılır ve oyuncuya ekstra yıldız tozu verilir.
+// çıkınca "temizlendi" sayılır ve oyuncuya ekstra nota verilir.
 let bossNextIndex, bossActive, bossWaveItems, bossReward;
 // Boss'un gelişini önceden hisettiren "telegraph": eşikten BOSS_WARN_WINDOW
 // puan önce başlar, merkezden dışa doğru büyüyen farklı renkte bir yaratık
@@ -66,7 +66,7 @@ function resetGame(){
   maxHp = mode==='zen' ? 9999 : maxHpFor(); hp = maxHp;
   level=1; elapsed=0; spawnCooldown=0; shake=0; flash=0; freezeFlash=0; levelFlashT=0;
   session = {stars:0, golds:0, diamonds:0, magnets:0, hits:0, shieldSaved:false, streakMax:0,
-             coins:0, coinPickups:0, luckyCharges:0, stardustMult:1, revivedUsed:false};
+             coins:0, coinPickups:0, luckyCharges:0, noteMult:1, revivedUsed:false};
   timeLeft = mode==='time' ? 60 : null;
   newRecord=false; timeScale=1; timeScaleT=0;
   bossNextIndex=0; bossActive=false; bossWaveItems=[]; bossReward=0; bossTelegraph=null;
@@ -75,7 +75,7 @@ function resetGame(){
     if(activeBoost==='shieldstart') player.shieldHits=shieldHitsFor();
     else if(activeBoost==='slowstart') player.slowT=SLOW_DUR;
     else if(activeBoost==='luckystart') session.luckyCharges=3;
-    else if(activeBoost==='coinrush') session.stardustMult=1.5;
+    else if(activeBoost==='coinrush') session.noteMult=1.5;
     activeBoost=null;
   }
   // İlk 4 tohum öğe: açılar zaten eşit aralıklı, halkaları da dengeli
@@ -463,7 +463,7 @@ function update(dt){
           const nudge=Math.min(0.5, creepFwd*0.4);
           it.ang=normAng(it.ang-nudge);
           const cix=CX+Math.cos(it.ang)*radiusFor(it.ring), ciy=CY+Math.sin(it.ang)*radiusFor(it.ring);
-          burst(cix,ciy,'#ff3aa0',10,3);
+          burst(cix,ciy,'#d94a1f',10,3);
         }
       }
     }
@@ -520,7 +520,7 @@ function update(dt){
       const ix=CX+Math.cos(it.ang)*radiusFor(it.ring), iy=CY+Math.sin(it.ang)*radiusFor(it.ring);
       it.alive=false;
       if(it.type==='diamond'){ combo++; addScore((20+level*4)*mult); session.stars++; session.diamonds++; stats.diamonds++;
-        burst(ix,iy,'#eafcff',26,6); shake=8; beep(1200,0.1,'triangle',0.15); beep(1600,0.12,'sine',0.12); playMelodyNote(combo,0.12); bumpCombo(); checkStreak(ix,iy,mult); }
+        burst(ix,iy,'#fff4e0',26,6); shake=8; beep(1200,0.1,'triangle',0.15); beep(1600,0.12,'sine',0.12); playMelodyNote(combo,0.12); bumpCombo(); checkStreak(ix,iy,mult); }
       else if(it.type==='star'){ combo++;
         // Yıldızın tam merkezine ne kadar yakın toplandığına göre küçük bir
         // "hassasiyet" küsuratı eklenir (0-0.99) — skorun her zaman anlamlı
@@ -530,16 +530,16 @@ function update(dt){
         addScore(combo*mult + rnd()*0.99); session.stars++;
         burst(ix,iy,T.star,14,4); shake=3; playMelodyNote(combo,0.16); bumpCombo(); checkStreak(ix,iy,mult); }
       else if(it.type==='coin'){
-        // Parçacık Değeri yükseltmesi (kalıcı) tabana sabit ek yapar, Yıldız
-        // Tozu Bonusu yükseltmesi (kalıcı) SONRASINDA çarpan olarak
-        // uygulanır — session.stardustMult (tek oyunluk "Toz Rüzgarı"
+        // Parçacık Değeri yükseltmesi (kalıcı) tabana sabit ek yapar, Nota
+        // Bonusu yükseltmesi (kalıcı) SONRASINDA çarpan olarak
+        // uygulanır — session.noteMult (tek oyunluk "Toz Rüzgarı"
         // takviyesi) ve weekendMult() ile bağımsız kaynaklar olarak çarpılır.
         const base=(3+Math.floor(rnd()*4))+upgradeBonus('itemCoin');
-        const gained=Math.round(base*(1+upgradeBonus('coinPct'))*session.stardustMult*weekendMult());
+        const gained=Math.round(base*(1+upgradeBonus('coinPct'))*session.noteMult*weekendMult());
         // Zen modunda ("sonsuz mod") risk/tehlike olmadığı için sınırsız
         // güvenli kasmayı önlemek adına toplama görsel/sesle aynen
-        // kalıyor ama cüzdana (stats.stardust) hiç yansımıyor.
-        if(mode!=='zen') addStardust(gained);
+        // kalıyor ama cüzdana (stats.notes) hiç yansımıyor.
+        if(mode!=='zen') addNotes(gained);
         session.coins+=gained; session.coinPickups++;
         burst(ix,iy,'#ffb454',18,4.5); shake=4; beep(950,0.08,'triangle',0.13); beep(1400,0.06,'sine',0.1);
         if(it.tutorialTag && typeof tutorialOnItemResolved==='function') tutorialOnItemResolved(it.tutorialTag);
@@ -568,7 +568,7 @@ function update(dt){
     if(bossWaveItems.length===0){
       bossActive=false;
       const finalReward=Math.round(bossReward*(1+upgradeBonus('coinPct')));
-      addStardust(finalReward);
+      addNotes(finalReward);
       showFlash(t('flash_wave_cleared'),60);
       queueToast(icon('coin')+' '+t('toast_boss_cleared',{n:finalReward}));
       beep(700,0.15,'sine',0.15); beep(1000,0.15,'triangle',0.12); beep(1300,0.18,'sine',0.1);
@@ -726,7 +726,7 @@ function updateHud(){
   if(_hud.pw!==html){ document.getElementById('pw').innerHTML=html; _hud.pw=html; }
   const flashOpacity = levelFlashT>0 ? Math.min(1, levelFlashT/20) : 0;
   if(_hud.flash!==flashOpacity){ document.getElementById('levelFlash').style.opacity=flashOpacity; _hud.flash=flashOpacity; }
-  const wallet = stats.stardust||0;
+  const wallet = stats.notes||0;
   if(_hud.wallet!==wallet){ document.getElementById('walletHud').textContent=wallet; _hud.wallet=wallet; }
 }
 function chip(iconKey,frac){ return `<div class="pwchip">${icon(iconKey)}<div class="pwbar"><i style="width:${Math.max(0,frac)*100}%"></i></div></div>`; }

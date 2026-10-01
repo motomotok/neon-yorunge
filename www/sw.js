@@ -1,4 +1,4 @@
-const CACHE = 'neon-yorunge-v5';
+const CACHE = 'beat-orbit-v1';
 const ASSETS = [
   './',
   './index.html',

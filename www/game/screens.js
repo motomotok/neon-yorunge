@@ -92,7 +92,7 @@ function rollAdInterval(){ return 2 + Math.floor(Math.random()*2); } // 2 ya da 
 // Bitiş ekranında TEK, dinamik bir "bir sonraki hedef" satırı — en motive
 // edici olanı otomatik seçer: rekor çok yakınsa ("yakın ıskalama" hissi en
 // güçlü motivasyon), değilse sıradaki boss dalgasına kalan puanı, o da
-// uzaksa en ucuz hâlâ kilitli kozmetiğin kaç yıldız tozuyla açılacağını
+// uzaksa en ucuz hâlâ kilitli kozmetiğin kaç notayla açılacağını
 // gösterir. Hiçbiri anlamlıysa boş döner (satır min-height ile zaten yer
 // ayırdığı için boş olması başka hiçbir şeyi kaydırmaz/kapatmaz).
 function nextGoalLineText(runScore, newRecord){
@@ -105,7 +105,7 @@ function nextGoalLineText(runScore, newRecord){
   if(bossRemain>0) return t('over_goal_boss',{n:Math.ceil(bossRemain)});
   const cheapest = nearestCheapCosmetic();
   if(cheapest){
-    const need = cheapest.item.gate.price - (stats.stardust||0);
+    const need = cheapest.item.gate.price - (stats.notes||0);
     if(need>0) return t('over_goal_cosmetic',{n:need, name:t(cheapest.item.nameKey)});
   }
   return '';
@@ -140,7 +140,7 @@ function gameOver(reason){
   // Zen modunda ("sonsuz mod") ne parçacık toplama ne de bu bonus cüzdana
   // yansır — risk almadan sınırsız kasmayı önlemek için (bkz. engine.js'de
   // parçacık toplama).
-  if(mode!=='zen') addStardust(scoreBonus);
+  if(mode!=='zen') addNotes(scoreBonus);
   ensureSeason();
   // Bölen 8'den 40'a çıkarıldı: eskiden 2 oyunda 5. kademeye varılabiliyordu
   // (aşırı hızlı), artık ~2 oyunda 2. kademeye, ~10-12 oyunda 5. kademeye

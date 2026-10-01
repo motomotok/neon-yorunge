@@ -1,4 +1,4 @@
-# 🌌 Neon Yörünge
+# 🎵 Beat Orbit
 
 Tek dosyalık, tarayıcıda çalışan bir refleks/arcade oyunu. Kurulum yok, sunucu yok — iPad, telefon veya bilgisayarda aç, oyna. Artık PWA olarak ana ekrana da eklenebilir.
 

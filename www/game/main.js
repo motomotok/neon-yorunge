@@ -5,7 +5,7 @@ document.getElementById('versionTag').textContent = 'v'+GAME_VERSION;
 // İlk kurulumda (hiç kayıtlı ayar yoksa) cihaz dilini desteklenen 15 dilden
 // biriyle eşleştirmeyi dene — eşleşme yoksa (veya zaten bir kayıt varsa)
 // varsayılan 'tr' korunur, mevcut kullanıcıların dili sessizce değişmez.
-if(!localStorage.getItem('neonYorungeCfg')){
+if(!localStorage.getItem('beatOrbitCfg')){
   const devLang = (navigator.language||'').slice(0,2).toLowerCase();
   if(LANGUAGES.some(l=>l.code===devLang)){ cfg.lang=devLang; saveCfg(); }
 }

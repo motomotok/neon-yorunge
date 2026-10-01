@@ -100,10 +100,10 @@ function tutorialStepGameOver(){
   tutorialShow(t('tut_step_gameover'));
 }
 function tutorialStepBuyHp(){
-  addStardust(240); // Can Kapasitesi'nin 1. kademesi tam bu kadar — ilk yeteneğini açabilsin diye küçük bir hoşgeldin hediyesi.
+  addNotes(240); // Can Kapasitesi'nin 1. kademesi tam bu kadar — ilk yeteneğini açabilsin diye küçük bir hoşgeldin hediyesi.
   // Süpernova butonu artık GİZLENMİYOR, DEVRE DIŞI bırakılıyor — bir sonraki
   // adımda (coreIntro) aynı butonu görünür halde ışıklandırıp tanıtacağız;
-  // buradaki amaç sadece az önce verilen hediye stardust'ın yanlışlıkla
+  // buradaki amaç sadece az önce verilen hediye notanın yanlışlıkla
   // sıfırlanmasını önlemek (tutorialFinish() geri açıyor).
   tutorialDisableEl(document.getElementById('resetProgressBtn'));
   const cards=[...document.querySelectorAll('#upgradesGrid .shopCard')];

@@ -35,7 +35,7 @@ function playMelodyNote(comboVal, vol){
 
 let toastQueue=[], toastShowing=false;
 // Kuyruk en fazla 1 bekleyen mesaj tutuyor (gösterilenin dışında) — bir
-// butona art arda hızlıca basılırsa (örn. yetersiz çekirdek/yıldız tozu
+// butona art arda hızlıca basılırsa (örn. yetersiz çekirdek/nota
 // hatası) her tıklama kuyruğa eklenmesin diye. Böylece ekranda HER ZAMAN
 // en fazla "gösterilen + 1 bekleyen" olur, spam sonsuz bir yazı akışına
 // dönüşmez — süresi dolan mesaj normal şekilde kaybolmaya devam eder.

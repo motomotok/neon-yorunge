@@ -10,8 +10,9 @@
   src:url('fonts/rajdhani-700.woff2') format('woff2');}
 
 :root{
-  --star:#54e0ff; --gold:#ffd24a; --peril:#ff4d6d; --player:#a97bff;
-  --bg0:#05060f; --bg1:#0b0f2a;
+  --star:#ffcf7a; --gold:#ffe9b0; --peril:#ff5a3c; --player:#2fe6c4;
+  --bg0:#170a08; --bg1:#2b120d;
+  --bg0-rgb:23,10,8; --bg1-rgb:43,18,13;
   --accent-2:var(--player);
   --font-display:'Orbitron','Segoe UI',sans-serif;
   --font-ui:'Rajdhani','Segoe UI',sans-serif;
@@ -55,7 +56,7 @@ body{
     radial-gradient(1.2px 1.2px at 12% 90%, #fff, transparent 100%),
     radial-gradient(1px 1px at 68% 90%, #fff, transparent 100%),
     radial-gradient(1px 1px at 95% 85%, #fff, transparent 100%),
-    radial-gradient(120% 90% at 50% 28%, rgba(20,24,60,1), rgba(5,6,15,1));
+    radial-gradient(120% 90% at 50% 28%, rgba(var(--bg1-rgb),1), rgba(var(--bg0-rgb),1));
   transition:opacity .3s ease;
   overflow:hidden;}
 #overlay.hidden{opacity:0;pointer-events:none;visibility:hidden;transition:opacity .3s ease,visibility 0s linear .3s;
@@ -64,7 +65,7 @@ body{
 /* "Canlı menü": ana menüde arkadaki (kendi kendine dönen) yörünge net görünsün
    diye karartma çok hafif — diğer tüm ekranlar (mağaza/ayarlar/vb.) yoğun
    metin/kart içerdiği için normal opak halini koruyor. */
-#overlay.live{background:radial-gradient(120% 90% at 50% 28%, rgba(20,24,60,.12), rgba(5,6,15,.35));
+#overlay.live{background:radial-gradient(120% 90% at 50% 28%, rgba(var(--bg1-rgb),.12), rgba(var(--bg0-rgb),.35));
   backdrop-filter:none;-webkit-backdrop-filter:none;}
 #overlay::before,#overlay::after{content:'';position:absolute;border-radius:50%;
   pointer-events:none;opacity:.3;z-index:0;
@@ -181,7 +182,7 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
   animation:eventChipPulse 2.4s ease-in-out infinite;}
 .menuEventChip .ic{display:flex;font-size:14px;line-height:1;}
 .menuEventChip.evDeal{background:rgba(255,210,74,.14);border:1px solid rgba(255,210,74,.4);color:#ffe9a8;}
-.menuEventChip.evStardust{background:rgba(84,224,255,.14);border:1px solid rgba(84,224,255,.4);color:#bdf3ff;}
+.menuEventChip.evNotes{background:rgba(255,207,122,.14);border:1px solid rgba(255,207,122,.4);color:#ffe4b8;}
 .menuEventChip.evXp{background:rgba(169,123,255,.16);border:1px solid rgba(169,123,255,.45);color:#dcd0ff;}
 @keyframes eventChipPulse{
   0%,100%{box-shadow:0 0 6px -2px currentColor;}

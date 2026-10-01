@@ -1,15 +1,15 @@
 // Oyun verisi: temalar, kozmetikler, mağaza kilitleri, ayarlar/istatistik
 // kalıcılığı (localStorage), zorluk tabloları, seed'li RNG, günlük görevler,
-// başarımlar ve yıldız tozu (coin) ekonomisi.
+// başarımlar ve Nota (coin) ekonomisi.
 
 // Ana menüde küçük bir etiket olarak gösterilir (bkz. main.js) — bir
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '1.14.3';
+const GAME_VERSION = '2.0.0';
 
 const THEMES = {
-  neon:      {nameKey:'theme_neon',      star:'#54e0ff', gold:'#ffd24a', peril:'#ff4d6d', player:'#a97bff', sun:'#8ad8ff', bg0:'#05060f', bg1:'#0b0f2a', sf:'#9fb8ff', gate:{type:'free'}},
+  neon:      {nameKey:'theme_neon',      star:'#ffcf7a', gold:'#ffe9b0', peril:'#ff5a3c', player:'#2fe6c4', sun:'#f2c98a', bg0:'#170a08', bg1:'#2b120d', sf:'#ffb98a', gate:{type:'free'}},
   sunset:    {nameKey:'theme_sunset',    star:'#ff9e64', gold:'#ffd93d', peril:'#ff2e63', player:'#ff6bd6', sun:'#ffb37b', bg0:'#160a14', bg1:'#2a0f24', sf:'#ffd0b0', gate:{type:'free'}},
   matrix:    {nameKey:'theme_matrix',    star:'#39ff14', gold:'#c6ff3b', peril:'#ff0055', player:'#00ffc3', sun:'#7dffb0', bg0:'#020a05', bg1:'#03160b', sf:'#7dff9f', gate:{type:'free'}},
   ice:       {nameKey:'theme_ice',       star:'#7fdbff', gold:'#eaf9ff', peril:'#ff5e78', player:'#4fc3ff', sun:'#bdecff', bg0:'#05101a', bg1:'#0a2033', sf:'#bfe6ff', gate:{type:'free'}},
@@ -20,12 +20,22 @@ const THEMES = {
   celestial: {nameKey:'theme_celestial', star:'#7fffd4', gold:'#ffe9a8', peril:'#ff4d8a', player:'#2fe6c4', sun:'#bff7ea', bg0:'#01100e', bg1:'#03201b', sf:'#8ff5da', gate:{type:'coin', price:6000}},
 };
 let T = THEMES.neon;
+// #overlay'deki (ana menü/mağaza arkaplanı) plak-rengi radial-gradient'i
+// de tema değişince uyumlu kalsın diye hex'i "r,g,b" üçlüsüne çevirip ayrı
+// bir CSS değişkenine yazıyoruz — rgba(var(--bgN-rgb), alpha) deseni,
+// saydamlık gerektiren yerlerde doğrudan hex CSS değişkeniyle mümkün değil.
+function hexToRgbTriplet(hex){
+  const h=hex.replace('#','');
+  const n=parseInt(h.length===3?h.split('').map(c=>c+c).join(''):h,16);
+  return ((n>>16)&255)+','+((n>>8)&255)+','+(n&255);
+}
 function applyTheme(key){
   T = THEMES[key] || THEMES.neon; cfg.theme = key; saveCfg();
   const r = document.documentElement.style;
   r.setProperty('--star',T.star); r.setProperty('--gold',T.gold);
   r.setProperty('--peril',T.peril); r.setProperty('--player',T.player);
   r.setProperty('--bg0',T.bg0); r.setProperty('--bg1',T.bg1);
+  r.setProperty('--bg0-rgb',hexToRgbTriplet(T.bg0)); r.setProperty('--bg1-rgb',hexToRgbTriplet(T.bg1));
   document.body.style.background = T.bg0;
   document.querySelectorAll('.theme').forEach(el=>el.classList.toggle('sel', el.dataset.key===key));
 }
@@ -101,7 +111,7 @@ const BOOSTS = [
 // Kalıcı yükseltmeler (roguelike meta-progression): BOOSTS'un aksine
 // tek oyunluk değil, satın alındığı andan itibaren TÜM gelecek oyunlarda
 // geçerli. Ölünce (ya da ana menüden istediğin an) Yükseltmeler ekranından
-// aynı yıldız tozuyla satın alınır — böylece her yeni deneme bir öncekinden
+// aynı notayla satın alınır — böylece her yeni deneme bir öncekinden
 // biraz daha güçlü başlar.
 //
 // TEK bir formül, tüm hatlarda aynı: 8 kademe, maliyet GEOMETRİK dizi
@@ -111,7 +121,7 @@ const BOOSTS = [
 // hattı sadece 2 parametre tanımlar: C0 (1. kademe maliyeti) ve E0
 // (kademe başına etki). Geometrik dizi toplamı C0×(1.5^8-1)/0.5 ≈
 // C0×49.26 olduğundan, hedeflenen toplam maliyetten C0=hedef/49.26 ile
-// geri çözüldü — 6 hattın toplamı ~50.000 yıldız tozu olacak şekilde.
+// geri çözüldü — 6 hattın toplamı ~50.000 nota olacak şekilde.
 function buildTiers(C0, E0){
   const tiers=[];
   for(let i=1;i<=8;i++) tiers.push({cost:Math.round(C0*Math.pow(1.5,i-1)/10)*10, add:E0});
@@ -144,7 +154,7 @@ const META_UPGRADES = {
   },
 };
 function upgradeLevel(key){ return (stats.upgrades && stats.upgrades[key]) || 0; }
-// Kademe (stardust, sıfırlanabilir) + Çekirdek Ağacı (prestij, KALICI) aynı
+// Kademe (nota, sıfırlanabilir) + Çekirdek Ağacı (prestij, KALICI) aynı
 // anahtar setini paylaşır — böylece maxHpFor()/shieldHitsFor() ve
 // engine.js'teki her upgradeBonus() çağrısı otomatik olarak ikisinin
 // toplamını görür, ayrı bir entegrasyon noktası gerekmez.
@@ -156,8 +166,8 @@ function upgradeBonus(key){
 function nextUpgradeTier(key){ return META_UPGRADES[key].tiers[upgradeLevel(key)] || null; }
 function buyUpgrade(key){
   const tier=nextUpgradeTier(key);
-  if(!tier || (stats.stardust||0)<tier.cost) return false;
-  stats.stardust-=tier.cost;
+  if(!tier || (stats.notes||0)<tier.cost) return false;
+  stats.notes-=tier.cost;
   if(!stats.upgrades) stats.upgrades={hp:0,coinPct:0,itemCoin:0,boostDur:0,shieldPower:0,multPower:0};
   stats.upgrades[key]=upgradeLevel(key)+1;
   saveStats(); refreshWallet();
@@ -172,18 +182,18 @@ function shieldHitsFor(){ return 1+Math.floor(upgradeBonus('shieldPower')); }
 function totalPowerLevel(){
   return Object.keys(META_UPGRADES).reduce((s,k)=>s+upgradeLevel(k), 0);
 }
-// Sadece kalıcı yükseltme sistemini (kademeler + yıldız tozu bakiyesi)
+// Sadece kalıcı yükseltme sistemini (kademeler + nota bakiyesi)
 // sıfırlar — oyuncu baştan güçlenmek isterse. İstatistikler (en iyi skor,
-// başarımlar, liderlik, toplam biriktirilen yıldız tozu, sahip olunan
+// başarımlar, liderlik, toplam biriktirilen nota, sahip olunan
 // kozmetikler/takviyeler, sezon ilerlemesi vb.) BİLEREK dokunulmadan kalır.
 function resetProgression(){
   stats.upgrades = {hp:0, coinPct:0, itemCoin:0, boostDur:0, shieldPower:0, multPower:0};
-  stats.stardust = 0;
+  stats.notes = 0;
   saveStats(); refreshWallet();
 }
 
 // ---- Süpernova (prestij) ve Çekirdek Ağacı -----------------------------
-// Oyuncuları bir "sona" götüren eşik mekaniği: Kademe (stardust) ağacını
+// Oyuncuları bir "sona" götüren eşik mekaniği: Kademe (nota) ağacını
 // ve bakiyeni tamamen sıfırlayıp karşılığında kalıcı bir "Çekirdek"
 // kazanıyorsun. Çekirdekler, HİÇBİR sıfırlamada silinmeyen ayrı bir ağaçta
 // (CORE_TREE) harcanır — her düğüm bir üsttekini açtıktan sonra açılabilir,
@@ -305,11 +315,11 @@ const DEAL_CATEGORIES = {
 };
 // Günün Olayı: her gün tarih-seed'li RNG ile 3 ihtimalden biri seçilir —
 // bir kozmetiğe %30 indirim ("Günün Fırsatı", eskiden tek seçenekti), ya da
-// TÜM GÜN geçerli bir ×2 yıldız tozu / ×2 Sezon XP çarpanı. Amaç: her gün
+// TÜM GÜN geçerli bir ×2 nota / ×2 Sezon XP çarpanı. Amaç: her gün
 // farklı bir sebep olsun, oyuncu "bugün ne var" diye geri gelsin. Ağırlık
-// %50 indirim / %25 yıldız tozu / %25 XP — indirim en sık ama diğer ikisi
+// %50 indirim / %25 nota / %25 XP — indirim en sık ama diğer ikisi
 // de düzenli aralıklarla çıkıyor.
-const DAILY_EVENT_POOL = ['deal','deal','stardust2x','xp2x'];
+const DAILY_EVENT_POOL = ['deal','deal','notes2x','xp2x'];
 // goShop() + main.js boot sırasında çağrılır, stats.dealDate bugünse
 // no-op olduğu için güvenle tekrar tekrar çağrılabilir.
 function ensureDailyEvent(){
@@ -329,7 +339,7 @@ function ensureDailyEvent(){
     if(candidates.length){
       const pick = candidates[Math.floor(rng()*candidates.length)];
       stats.dealCategory = pick.cat; stats.dealId = pick.id;
-    } else { type='stardust2x'; } // alınabilecek kozmetik kalmadıysa yerine geç
+    } else { type='notes2x'; } // alınabilecek kozmetik kalmadıysa yerine geç
   }
   stats.eventType = type;
   saveStats();
@@ -343,17 +353,38 @@ function effectivePrice(category, item){
   if(category===stats.dealCategory && item.id===stats.dealId) return Math.round(item.gate.price*(1-DEAL_DISCOUNT));
   return item.gate.price;
 }
-// addStardust/addSeasonXp'nin başvurduğu günlük çarpanlar — ensureDailyEvent()
+// addNotes/addSeasonXp'nin başvurduğu günlük çarpanlar — ensureDailyEvent()
 // o gün için stats.eventType'ı belirledikten sonra geçerli olur.
-function stardustEventMult(){ return stats.eventType==='stardust2x' ? 2 : 1; }
+function noteEventMult(){ return stats.eventType==='notes2x' ? 2 : 1; }
 function seasonXpEventMult(){ return stats.eventType==='xp2x' ? 2 : 1; }
 
-let cfg = load('neonYorungeCfg', {sound:true, theme:'neon', skin:'default', trail:'classic', sun:'classic', ringStyle:'classic', bigButtons:false, leftHand:false, colorblind:false, lang:'tr'});
-let stats = load('neonYorungeStats', {
+// Eski "Neon Yörünge" adıyla kaydedilmiş localStorage verisini yeni
+// "Beat Orbit" anahtarlarına bir kerelik taşır — rebrand nedeniyle hiçbir
+// oyuncu ilerlemesini/bakiyesini kaybetmesin diye. Yeni anahtar zaten
+// varsa (ikinci açılıştan itibaren) no-op'tur.
+(function migrateLegacyStorage(){
+  try{
+    if(localStorage.getItem('beatOrbitCfg')==null && localStorage.getItem('neonYorungeCfg')!=null){
+      localStorage.setItem('beatOrbitCfg', localStorage.getItem('neonYorungeCfg'));
+    }
+    if(localStorage.getItem('beatOrbitStats')==null && localStorage.getItem('neonYorungeStats')!=null){
+      let raw = localStorage.getItem('neonYorungeStats');
+      try{
+        const obj = JSON.parse(raw);
+        if(obj && obj.stardust!==undefined && obj.notes===undefined) obj.notes = obj.stardust;
+        if(obj && obj.lifetimeStardust!==undefined && obj.lifetimeNotes===undefined) obj.lifetimeNotes = obj.lifetimeStardust;
+        raw = JSON.stringify(obj);
+      }catch(e){}
+      localStorage.setItem('beatOrbitStats', raw);
+    }
+  }catch(e){}
+})();
+let cfg = load('beatOrbitCfg', {sound:true, theme:'neon', skin:'default', trail:'classic', sun:'classic', ringStyle:'classic', bigButtons:false, leftHand:false, colorblind:false, lang:'tr'});
+let stats = load('beatOrbitStats', {
   best:0, stars:0, games:0, maxLevel:1, magnets:0, golds:0, diamonds:0,
   unlocked:[], leaderboard:[], dailyDate:'', dailyDone:false, dailyScore:0, dailyCount:0,
   questDate:'', questId:'', questDone:false,
-  stardust:0, lifetimeStardust:0, owned:{themes:[], skins:[], trails:[], suns:[], rings:[]}, boosts:{},
+  notes:0, lifetimeNotes:0, owned:{themes:[], skins:[], trails:[], suns:[], rings:[]}, boosts:{},
   adRewardsDate:'', adRewardsToday:0, lastAdRewardAt:0,
   rivalName:'', rivalScore:0, premiumNoAds:false,
   lastSeenDate:'', loginStreak:0, lastClaimedRewardDate:'',
@@ -374,8 +405,8 @@ let _dirtyCfg=false, _dirtyStats=false, _saveTimer=null;
 function flushSaves(){
   clearTimeout(_saveTimer); _saveTimer=null;
   try{
-    if(_dirtyCfg){ _dirtyCfg=false; localStorage.setItem('neonYorungeCfg', JSON.stringify(cfg)); }
-    if(_dirtyStats){ _dirtyStats=false; localStorage.setItem('neonYorungeStats', JSON.stringify(stats)); }
+    if(_dirtyCfg){ _dirtyCfg=false; localStorage.setItem('beatOrbitCfg', JSON.stringify(cfg)); }
+    if(_dirtyStats){ _dirtyStats=false; localStorage.setItem('beatOrbitStats', JSON.stringify(stats)); }
   }catch(e){}
 }
 function _queueSave(){ if(!_saveTimer) _saveTimer=setTimeout(flushSaves,300); }
@@ -475,7 +506,7 @@ function ensureRivalLeague(){
 }
 
 // Giriş serisi ödülleri: 14 günlük döngü, ucuzdan pahalıya, bilinçli
-// şekilde ÇEŞİTLİ (yıldız tozu / 4 farklı tek-oyunluk takviye stoğu / ucuz
+// şekilde ÇEŞİTLİ (nota / 4 farklı tek-oyunluk takviye stoğu / ucuz
 // kozmetiklerden ücretsiz birer tane / kalıcı özel kozmetik) — ekonomiyi
 // bozmasın diye SADECE en ucuz kozmetikler hediye ediliyor, pahalı/nadir
 // olanlara (prism, shadow, blackhole, quasar vb.) hiç dokunulmuyor.
@@ -483,20 +514,20 @@ function ensureRivalLeague(){
 // yoldan kazanılabilen özel 'loyalty_orb' ile büyük final — 15. günden
 // itibaren döngü 1'den tekrar başlar (loginCycleDay() modulo alır).
 const LOGIN_STREAK_REWARDS = [
-  {type:'stardust', amount:40},
+  {type:'notes', amount:40},
   {type:'boost', id:'luckystart', amount:3},
-  {type:'stardust', amount:60},
+  {type:'notes', amount:60},
   {type:'boost', id:'slowstart', amount:3},
   {type:'cosmetic', cat:'rings', id:'dotted'},
-  {type:'stardust', amount:90},
+  {type:'notes', amount:90},
   {type:'boost', id:'shieldstart', amount:5},
-  {type:'stardust', amount:120},
+  {type:'notes', amount:120},
   {type:'boost', id:'coinrush', amount:3},
   {type:'cosmetic', cat:'trails', id:'sparkle'},
-  {type:'stardust', amount:160},
+  {type:'notes', amount:160},
   {type:'boost', id:'shieldstart', amount:4},
-  {type:'stardust', amount:220},
-  {type:'skin', id:'loyalty_orb', stardust:400},
+  {type:'notes', amount:220},
+  {type:'skin', id:'loyalty_orb', notes:400},
 ];
 function loginCycleDay(){ return ((Math.max(1,stats.loginStreak||1)-1)%LOGIN_STREAK_REWARDS.length)+1; }
 // Bugünün ödülü zaten alınmış mı? Seri sayacı (loginStreak) her gün
@@ -506,13 +537,13 @@ function loginCycleDay(){ return ((Math.max(1,stats.loginStreak||1)-1)%LOGIN_STR
 // olur (bilinçli bir "her gün gel" baskısı — kullanıcı talebi).
 function loginRewardClaimedToday(){ return stats.lastClaimedRewardDate===todayStr(); }
 function grantLoginStreakReward(r){
-  if(r.type==='stardust') addStardust(r.amount);
+  if(r.type==='notes') addNotes(r.amount);
   else if(r.type==='boost') stats.boosts[r.id]=(stats.boosts[r.id]||0)+r.amount;
   else if(r.type==='cosmetic'){
     if(!stats.owned[r.cat].includes(r.id)) stats.owned[r.cat].push(r.id);
   } else if(r.type==='skin'){
     if(!stats.owned.skins.includes(r.id)) stats.owned.skins.push(r.id);
-    addStardust(r.stardust);
+    addNotes(r.notes);
   }
 }
 // Takvim ekranındaki "bugün" kartına dokununca çağrılır. Zaten alınmışsa
@@ -539,7 +570,7 @@ function handleDailyReturn(){
   const gap = stats.lastSeenDate ? daysBetweenStr(stats.lastSeenDate, td) : 0;
   if(gap>=3){
     const bonus = Math.min(300, gap*20);
-    addStardust(bonus);
+    addNotes(bonus);
     queueToast(t('toast_welcome_back',{gap, bonus}));
   }
   stats.loginStreak = (gap===1) ? (stats.loginStreak||0)+1 : 1;
@@ -573,20 +604,20 @@ const ACHIEVEMENTS = [
   {id:'zenmaster', icon:'moon', nameKey:'ach_zenmaster_name', descKey:'ach_zenmaster_desc', reward:100, check:(s,c)=>c.mode==='zen' && c.elapsedSec>=120},
   {id:'dailyexplorer', icon:'calendar', nameKey:'ach_dailyexplorer_name', descKey:'ach_dailyexplorer_desc', reward:100, check:(s)=>s.dailyCount>=1},
   {id:'legend', icon:'trophy', nameKey:'ach_legend_name', descKey:'ach_legend_desc', reward:300, check:(s)=>s.best>=500},
-  {id:'richling', icon:'coin', nameKey:'ach_richling_name', descKey:'ach_richling_desc', reward:150, check:(s)=>s.lifetimeStardust>=1000},
+  {id:'richling', icon:'coin', nameKey:'ach_richling_name', descKey:'ach_richling_desc', reward:150, check:(s)=>s.lifetimeNotes>=1000},
   {id:'collector', icon:'palette', nameKey:'ach_collector_name', descKey:'ach_collector_desc', reward:200, check:(s)=>Object.values(s.owned).reduce((n,arr)=>n+arr.length,0)>=5},
 ];
 function checkAchievements(c){
   const newly=[];
   for(const a of ACHIEVEMENTS){
     if(stats.unlocked.includes(a.id)) continue;
-    if(a.check(stats,c)){ stats.unlocked.push(a.id); addStardust(a.reward); newly.push(a); }
+    if(a.check(stats,c)){ stats.unlocked.push(a.id); addNotes(a.reward); newly.push(a); }
   }
   if(newly.length){ saveStats(); newly.forEach(a=>queueToast(icon(a.icon)+' '+t('toast_achievement',{name:t(a.nameKey), reward:a.reward})+' '+icon('coin'))); }
 }
-function addStardust(n){
-  n = Math.round(n*stardustEventMult());
-  stats.stardust += n; stats.lifetimeStardust = (stats.lifetimeStardust||0) + n;
+function addNotes(n){
+  n = Math.round(n*noteEventMult());
+  stats.notes += n; stats.lifetimeNotes = (stats.lifetimeNotes||0) + n;
   refreshWallet();
 }
 function addSeasonXp(n){ stats.seasonXp += Math.round(n*seasonXpEventMult()); }
@@ -616,7 +647,7 @@ function watchAdForCoins(){
   Ads.showRewarded(()=>{
     stats.adRewardsToday=(stats.adRewardsToday||0)+1;
     stats.lastAdRewardAt=Date.now();
-    addStardust(REWARD_AD_COINS); saveStats();
+    addNotes(REWARD_AD_COINS); saveStats();
     queueToast(t('toast_ad_watched',{n:REWARD_AD_COINS}));
     beep(700,0.1,'sine',0.13); beep(1000,0.1,'triangle',0.12);
     syncAdButtons();
@@ -645,7 +676,7 @@ function syncAdButtons(){
 // "bugünden itibaren 1 ay" gibi kesin bir aralık tanımlanabilir. Her sezonun
 // kendine özel, YALNIZCA o sezonun Sezon Bileti ilerlemesinden açılan bir
 // çember + iz + orb seti vardır (bkz. RINGSTYLES/TRAILS/SKINS'teki
-// 'seasonN_*' girdileri) — mağazadan asla yıldız tozuyla satın alınamazlar.
+// 'seasonN_*' girdileri) — mağazadan asla notayla satın alınamazlar.
 // Sezon bitince ödülü almamış olanlar için o kozmetikler kalıcı olarak
 // erişilemez hâle gelir (mağaza listesinden bile kalkar, bkz. shop-ui.js
 // shopItemsFor); zaten sahip olanlarda ise kalıcı bir nadirlik/prestij
@@ -710,11 +741,11 @@ function claimSeasonTier(index, track){
   if(stats.seasonXp < tier.xp) return false;
   if(track==='free'){
     if(stats.seasonClaimedFree.includes(index)) return false;
-    addStardust(tier.free); stats.seasonClaimedFree.push(index);
+    addNotes(tier.free); stats.seasonClaimedFree.push(index);
   } else {
     if(!stats.seasonPremium) return false;
     if(stats.seasonClaimedPremium.includes(index)) return false;
-    addStardust(tier.premium); stats.seasonClaimedPremium.push(index);
+    addNotes(tier.premium); stats.seasonClaimedPremium.push(index);
     if(tier.cosmeticSlot){
       const cosmetic = seasonCosmeticFor(tier.cosmeticSlot);
       if(cosmetic && !stats.owned[tier.cosmeticSlot].includes(cosmetic.id)) stats.owned[tier.cosmeticSlot].push(cosmetic.id);

@@ -1,13 +1,13 @@
 {
   "appId": "com.motomotok.neonyorunge",
-  "appName": "Neon Yörünge",
+  "appName": "Beat Orbit",
   "webDir": "www",
-  "backgroundColor": "#05060f",
+  "backgroundColor": "#170a08",
   "android": {
-    "backgroundColor": "#05060f"
+    "backgroundColor": "#170a08"
   },
   "ios": {
-    "backgroundColor": "#05060f",
+    "backgroundColor": "#170a08",
     "contentInset": "never"
   },
   "plugins": {

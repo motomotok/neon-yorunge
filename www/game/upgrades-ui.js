@@ -13,7 +13,7 @@ function renderUpgrades(){
     const track=META_UPGRADES[key], lvl=upgradeLevel(key), tier=nextUpgradeTier(key);
     const justBought = key===upgradeJustBoughtKey;
     const card=document.createElement('div'); card.className='shopCard boostCard'+(justBought?' justBought':''); card.dataset.key=key;
-    // upgradeBonus() Kademe (stardust) + Çekirdek Ağacı (kalıcı) toplamını
+    // upgradeBonus() Kademe (nota) + Çekirdek Ağacı (kalıcı) toplamını
     // birlikte döner — o yüzden Kademe hâlâ 0/8 olsa bile Çekirdek'ten
     // gelen kalıcı bonus varsa "henüz alınmadı" yerine gerçek değeri göster.
     const totalBonus = upgradeBonus(key);
@@ -31,7 +31,7 @@ function renderUpgrades(){
       +(justBought?`<span class="cardCheckBadge">${icon('check')}</span>`:'');
     if(tier){
       card.addEventListener('click', ()=>{
-        if((stats.stardust||0)<tier.cost){ queueToast(t('insufficient_stardust_short')); beep(200,0.1,'square',0.1); return; }
+        if((stats.notes||0)<tier.cost){ queueToast(t('insufficient_stardust_short')); beep(200,0.1,'square',0.1); return; }
         if(buyUpgrade(key)){
           // Kademe kartları onaysız tek tıkla satın alınıyor — hızlı art arda
           // tıklanınca (bkz. kullanıcı geri bildirimi) toast kuyruğu bitmek
