@@ -405,7 +405,15 @@ export class World {
   }
 
   // Nota alınınca pena'nın bulunduğu oluk bir an parlar.
-  flashRing(i){ if(i>=0 && i<3) this.ringFlash[i] = 1; }
+  flashRing(i){
+    if(i>=0 && i<3) this.ringFlash[i] = 1;
+    if(this.themeScene && this.themeScene.onNote) this.themeScene.onNote(i);
+  }
+  // Kamera değişince tema süsleri ekrandaki boş alanlara yeniden yerleşir.
+  setView(view){
+    this.view = view;
+    if(this.themeScene && this.themeScene.layout) this.themeScene.layout(view);
+  }
 
   // Manifest'teki dünya slotlarını asenkron uygular; yüklenene kadar
   // prosedürel sürüm görünür kalır.
@@ -472,6 +480,7 @@ export class World {
     if(this.themeScene) disposeThemeScene(this.themeScene);
     const sc = this.themeScene = buildThemeScene(key, this);
     this.root.add(sc.group);
+    if(this.view && sc.layout) sc.layout(this.view);
     this.themeBackground = sc.background || null;
     this.vinylMat.color.set(sc.vinyl || '#ffffff');
     this.armMetal.color.set(sc.armMetal || '#cfd5e0');

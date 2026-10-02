@@ -24,6 +24,17 @@ let renderer, scene, camera, composer, bloomPass, renderPass, world, entities;
 let W=1, H=1, base=1, qualityPref='auto', qualityLive='medium', failed=false, onFail=null;
 let camCfg = {tilt:68, fov:38, zoom:1};
 let bgDef = null;
+// Ekran konumu (NDC, -1..1) -> yer düzlemi (base birimi). Tema süsleri
+// (themes.js) plağın dışındaki boş alanları bununla bulur; her en-boy
+// oranında doğru yere oturur.
+const _rd = new THREE.Vector3();
+const view = {aspect:1, tilt:0, ground(nx, ny, y){
+  if(!camera) return null;
+  _rd.set(nx, ny, 0.5).unproject(camera).sub(camera.position).normalize();
+  const o = camera.position, k = ((y||0)*base - o.y)/_rd.y;
+  if(!(k > 0)) return null;
+  return {x:(o.x + _rd.x*k)/base, z:(o.z + _rd.z*k)/base};
+}};
 const fps = {acc:0, frames:0, lowFor:0, highFor:0, downgraded:false, value:60};
 
 function supported(){
@@ -119,6 +130,9 @@ function resize(w, h, b){
   camera.lookAt(camera.userData.target);
   camera.near = Math.max(1, dist*0.02); camera.far = base*40;
   camera.updateProjectionMatrix();
+  camera.updateMatrixWorld();
+  view.aspect = camera.aspect; view.tilt = tilt;
+  world.setView(view);
   world.resize(base);
   const pr = renderer.getPixelRatio();
   entities.setPointScale((H*pr)/(2*Math.tan(vf)));
