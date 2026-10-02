@@ -22,7 +22,7 @@ const ORDER = ['low','medium','high'];
 
 let renderer, scene, camera, composer, bloomPass, renderPass, world, entities;
 let W=1, H=1, base=1, qualityPref='auto', qualityLive='medium', failed=false, onFail=null;
-let camCfg = {tilt:58, fov:38, zoom:1};
+let camCfg = {tilt:68, fov:38, zoom:1};
 let bgDef = null;
 const fps = {acc:0, frames:0, lowFor:0, highFor:0, downgraded:false, value:60};
 
@@ -68,7 +68,8 @@ function buildComposer(q){
   const rt = new THREE.WebGLRenderTarget(1, 1, {type:THREE.HalfFloatType, samples:q.msaa});
   composer = new EffectComposer(renderer, rt);
   composer.addPass(renderPass);
-  bloomPass = new UnrealBloomPass(new THREE.Vector2(1,1), 0.85, 0.55, 0.72);
+  // Sade bloom: yalnızca gerçekten parlak şeyler (öğeler, iğne ucu, elektrik) parlar.
+  bloomPass = new UnrealBloomPass(new THREE.Vector2(1,1), 0.45, 0.4, 0.85);
   composer.addPass(bloomPass);
   composer.addPass(new OutputPass());
 }
@@ -171,7 +172,7 @@ function render(f){
   const zoomIn = 1 - (f.bossIntensity||0)*0.06;
   camera.position.set(bp.x + (Math.random()-0.5)*sh*1.2, bp.y*zoomIn + (Math.random()-0.5)*sh*0.6, bp.z*zoomIn);
   camera.lookAt(tg);
-  if(bloomPass) bloomPass.strength = 0.85 + (f.flash||0)*0.8 + (f.bossIntensity||0)*0.4 + (world.elec||0)*0.7;
+  if(bloomPass) bloomPass.strength = (world.bloomBase ?? 0.45) + (f.flash||0)*0.5 + (f.bossIntensity||0)*0.3 + (world.elec||0)*0.6;
 
   if(composer) composer.render(); else renderer.render(scene, camera);
 }

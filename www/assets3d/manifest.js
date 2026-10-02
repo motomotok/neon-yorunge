@@ -16,7 +16,7 @@
 window.ASSETS3D = {
   // Kamera: tilt = plağa bakış açısı (derece, 90 = tam tepeden),
   // fov = görüş açısı, zoom > 1 yakınlaştırır.
-  camera: { tilt: 58, fov: 38, zoom: 1 },
+  camera: { tilt: 68, fov: 38, zoom: 1 },
   exposure: 1.05,
 
   // Ekranın tamamını kaplayan arka plan görseli (yoksa tema rengi + yıldızlar).

@@ -44,16 +44,26 @@ function glowRim(color, r, w, opacity){
 }
 
 // ---------------- Retro Beats ----------------
+// Sıcak, kenarları kararan koyu arka plan (Retro Beats konsepti).
+function vignetteTexture(inner, outer){
+  const S = 512, c = canvas(S), g = c.getContext('2d');
+  const gr = g.createRadialGradient(S*0.55, S*0.35, 0, S/2, S/2, S*0.75);
+  gr.addColorStop(0, inner); gr.addColorStop(1, outer);
+  g.fillStyle = gr; g.fillRect(0,0,S,S);
+  return tex(c);
+}
 function buildRetro(){
   const group = new THREE.Group();
   // Plak kenarında bakır-turuncu parlayan çember (konseptteki sıcak kenar ışığı).
-  const rim = glowRim('#ff8a3d', DISC_R*1.012, 0.006, 0.9);
-  const rimHalo = glowRim('#ff6a2a', DISC_R*1.012, 0.03, 0.18);
+  const rim = glowRim('#ff8a3d', DISC_R*1.008, 0.0035, 0.55);
+  const rimHalo = glowRim('#ff6a2a', DISC_R*1.008, 0.018, 0.1);
   group.add(rim, rimHalo);
   return {
-    group, label:'assets3d/themes/neon/label.jpg',
-    vinyl:'#ffffff', armMetal:'#c9a063', stars:0.35, nebula:0.12,
-    update(dt, t){ rimHalo.material.opacity = 0.15 + Math.sin(t*2)*0.05; },
+    group, label:'assets3d/themes/neon/label.jpg', background:vignetteTexture('#2b1610', '#070302'),
+    vinyl:'#d9d3cf', armMetal:'#b8925a', stars:0, nebula:0, dust:0, sheen:0.1, bloom:0.4,
+    // Halkalar parlak çizgi değil, plağa kazınmış soluk oluk gibi.
+    ringColor:'#d9b48a', ringCoreScale:0.55,
+    update(dt, t){ rimHalo.material.opacity = 0.08 + Math.sin(t*2)*0.03; },
   };
 }
 
@@ -67,7 +77,7 @@ function buildSynth(world){
     const a = i/N*Math.PI*2, col = i%2 ? '#19e3ff' : '#ff2f8a';
     const len = DISC_R*0.99 - 0.14, g = new THREE.PlaneGeometry(len, 0.0035);
     g.rotateX(-Math.PI/2); g.translate(0.14 + len/2, TOP_Y+0.0015, 0);
-    const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({color:col, transparent:true, opacity:0.55, depthWrite:false, blending:ADD}));
+    const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({color:col, transparent:true, opacity:0.3, depthWrite:false, blending:ADD}));
     m.rotation.y = a; spin.add(m);
   }
   world.recordSpin.add(spin);
@@ -86,7 +96,7 @@ function buildSynth(world){
   // Plağın çevresinde müziğe göre zıplayan ekolayzer çubukları.
   const BARS = 180;
   const barGeo = new THREE.PlaneGeometry(1, 1); barGeo.rotateX(-Math.PI/2); barGeo.translate(0.5, 0, 0);
-  const bars = new THREE.InstancedMesh(barGeo, new THREE.MeshBasicMaterial({transparent:true, opacity:0.85, depthWrite:false, blending:ADD}), BARS);
+  const bars = new THREE.InstancedMesh(barGeo, new THREE.MeshBasicMaterial({transparent:true, opacity:0.6, depthWrite:false, blending:ADD}), BARS);
   const cPink = new THREE.Color('#ff2f8a'), cCyan = new THREE.Color('#19e3ff'), tmpC = new THREE.Color();
   for(let i=0;i<BARS;i++){
     const u = i/BARS, k = 0.5 - 0.5*Math.cos(u*Math.PI*2);
@@ -98,7 +108,7 @@ function buildSynth(world){
   const seeds = Array.from({length:BARS}, ()=>Math.random()*10);
   return {
     group, label:'assets3d/themes/synthbeats/label.jpg',
-    vinyl:'#d8d8e8', armMetal:'#d6dbe6', stars:0.25, nebula:0.2,
+    vinyl:'#d8d8e8', armMetal:'#c9ced8', stars:0.15, nebula:0.1, dust:0, bloom:0.5, ringCoreScale:0.75,
     update(dt, t, f){
       const beat = Math.pow(Math.max(0, Math.sin(t*Math.PI*2*1.6)), 6);   // ~96 BPM vuruş
       const energy = 0.6 + (f.inGame && f.player ? Math.min(1, (f.player.speed-1.5)*0.4) : 0);
@@ -111,7 +121,7 @@ function buildSynth(world){
         M.compose(P, Q, S); bars.setMatrixAt(i, M);
       }
       bars.instanceMatrix.needsUpdate = true;
-      rimHalo.material.opacity = 0.2 + beat*0.25;
+      rimHalo.material.opacity = 0.12 + beat*0.15;
       rimTex.offset.x = (t*0.05)%1;
     },
     dispose(){
@@ -156,7 +166,7 @@ function cityTexture(){
   const cols = ['255,47,160','255,140,60','60,220,255','170,90,255'];
   for(let i=0;i<70;i++){
     const r = 12+Math.random()*60, bx = Math.random()*W, byy = Math.random()*H*0.9;
-    const gr = g.createRadialGradient(bx,byy,0,bx,byy,r), col = cols[i%cols.length], a = 0.15+Math.random()*0.35;
+    const gr = g.createRadialGradient(bx,byy,0,bx,byy,r), col = cols[i%cols.length], a = 0.07+Math.random()*0.16;
     gr.addColorStop(0,`rgba(${col},${a})`); gr.addColorStop(1,`rgba(${col},0)`);
     g.fillStyle = gr; g.beginPath(); g.arc(bx,byy,r,0,Math.PI*2); g.fill();
   }
@@ -177,7 +187,7 @@ function buildUrban(world){
   }
   return {
     group, label:'assets3d/themes/urbansounds/label.jpg', background:cityTexture(),
-    vinyl:'#ffffff', armMetal:'#cfd6e2', stars:0, nebula:0.0,
+    vinyl:'#d9d3cf', armMetal:'#c9ced8', stars:0, nebula:0.0, dust:0, bloom:0.4,
     // Halka çekirdek çizgilerini sönükleştir — zincir onların yerini alır.
     ringCoreScale:0.25,
     update(){},
@@ -227,7 +237,7 @@ function buildCosmic(world){
   const group = new THREE.Group();
   const gTex = galaxyTexture();
   const gg = new THREE.CircleGeometry(DISC_R*0.98, 96); gg.rotateX(-Math.PI/2);
-  const galaxy = new THREE.Mesh(gg, new THREE.MeshBasicMaterial({map:gTex, transparent:true, opacity:0.75, depthWrite:false, blending:ADD}));
+  const galaxy = new THREE.Mesh(gg, new THREE.MeshBasicMaterial({map:gTex, transparent:true, opacity:0.45, depthWrite:false, blending:ADD}));
   galaxy.position.y = TOP_Y + 0.0007;
   group.add(galaxy);
   // Plağın dışında yüzen gezegenler (oyun öğeleriyle karışmasın diye halkaların dışında).
@@ -242,7 +252,7 @@ function buildCosmic(world){
   group.add(rim);
   return {
     group, label:'assets3d/themes/cosmicsoundwave/label.jpg', background:spaceTexture(),
-    vinyl:'#9fb4ff', armMetal:'#d6dbe6', stars:1, nebula:0.35,
+    vinyl:'#9fb4ff', armMetal:'#c9ced8', stars:0.7, nebula:0.15, dust:0, bloom:0.5, ringCoreScale:0.7,
     update(dt, t){
       galaxy.rotation.y -= 0.0012*dt;
       for(const p of planets){

@@ -309,7 +309,7 @@ export class Entities {
     p.shield.scale.setScalar(4.0);
     p.magnet = flatPlane(ringSpriteTexture('#ff7ae0', true), 0.6, true); p.magnet.scale.setScalar(6.4);
     p.magnet.position.y = 0.06;
-    p.light = new THREE.PointLight(0xffffff, 3.2, 100, 0);
+    p.light = new THREE.PointLight(0xffffff, 1.8, 100, 0);   // 3.2'ten düşürüldü: pirinç kolu yeşile boyuyordu
     p.root.add(p.shadow, p.glow, p.sprite, p.shield, p.magnet, p.light);
     this.group.add(p.root);
     this.penaTex = new Map();
