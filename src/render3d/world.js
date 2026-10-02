@@ -21,7 +21,7 @@ export const TOP_Y = DISC_H;      // plak üst yüzeyi (base birimde)
 // sürümdeki drawBossTelegraph() ile aynı "iğne plağa vurunca boss patlar".
 const ARM_PIVOT = new THREE.Vector3(0.36, 0, -0.42);
 const ARM_LEN = 0.5;
-const ARM_REST_YAW = -0.2;   // dinlenmede kafa plağın sağ tarafının üstünde (konseptteki gibi)
+const ARM_REST_YAW = 0.5;    // dinlenmede kol tamamen plağın dışında (sağda) bekler; yalnızca boss'ta içeri girer
 const ARM_STRIKE_YAW = Math.atan2(-ARM_PIVOT.x, -ARM_PIVOT.z) + 0.06;
 const ARM_H = 0.05;
 // İğne ucunun kol eksenine göre yanal kayması (kırılmalı tüp, bkz. _buildTonearm).
@@ -509,17 +509,20 @@ export class World {
     this.ringStyle = null;   // halka renkleri yeni temaya göre bir sonraki setRingStyle'da yeniden uygulansın
   }
 
+  // Halkalar: oynanışta yalnızca plağa kazınmış silik bir oluk çizgisi
+  // (renkli ışık yok). Pena o halkada nota topladığında halka tema renginde
+  // bir an yanıp söner — her toplama küçük bir "kazanım" ışığı.
   setRingStyle(style){
     if(this.ringStyle === style) return;
     this.ringStyle = style;
-    const col = style==='season1_ring' ? '#54e0ff' : style==='season2_ring' ? '#ff8a3d' : this.ringColor || '#ffcf7a';
-    const op = {glow:0.85, dotted:0.3, circuit:0.38, double:0.32, classic:0.45}[style] ?? 0.5;
+    const sc = this.themeScene || {};
+    const base = new THREE.Color(sc.ringBaseColor || '#d8d2c8');
+    const flashCol = new THREE.Color(sc.ringFlash || this.ringColor || '#ffcf7a');
     for(const r of this.rings){
-      r.core.material.color.set(col); r.core.material.opacity = op;
-      r.baseCol = new THREE.Color(col); r.baseOp = op;
-      r.halo.material.color.set(col); r.halo.material.opacity = style==='glow' ? 0.22 : 0.1;
-      r.twin.material.color.set(style==='season1_ring' ? '#ffd24a' : col);
-      r.twin.visible = style==='double' || style==='season1_ring';
+      r.baseCol = base; r.flashCol = flashCol; r.baseOp = sc.ringBase ?? 0.12;
+      r.core.material.color.copy(base); r.core.material.opacity = r.baseOp;
+      r.halo.material.color.copy(flashCol); r.halo.material.opacity = 0;
+      r.twin.visible = false;
     }
   }
 
@@ -542,21 +545,18 @@ export class World {
 
     this._updateElectric(dt, t, f);
     if(this.themeScene && this.themeScene.update) this.themeScene.update(dt, t, f);
-    const rcs = (this.themeScene && this.themeScene.ringCoreScale) ?? 1;
 
     // Oluk parlamaları: nota (ringFlash) ve boss elektriği (elec).
-    const white = this._white || (this._white = new THREE.Color('#ffffff'));
-    const pulseOp = this.ringStyle==='pulse' ? Math.max(0.08, 0.25 + Math.sin(t*3)*0.2) : null;
     const ef = this.elec > 0 ? this.elec*(0.6 + Math.random()*0.4) : 0;
     for(let i=0;i<3;i++){
       const r = this.rings[i];
       if(!r.baseCol) continue;
-      this.ringFlash[i] = Math.max(0, this.ringFlash[i] - dt*0.07);
-      const fl = this.ringFlash[i];
-      r.core.material.color.copy(r.baseCol).lerp(white, fl*0.2).lerp(this._elecCol, ef);
-      r.core.material.opacity = Math.min(1, (pulseOp ?? r.baseOp)*rcs + fl*0.15 + ef*0.6);
-      r.halo.material.color.copy(r.core.material.color);
-      r.halo.material.opacity = ((this.ringStyle==='glow' ? 0.22 : 0.1) + fl*0.06)*rcs + ef*0.35;
+      this.ringFlash[i] = Math.max(0, this.ringFlash[i] - dt*0.045);   // ~0.4 sn
+      const fl = this.ringFlash[i]*this.ringFlash[i];                  // hızlı yanar, yumuşak söner
+      r.core.material.color.copy(r.baseCol).lerp(r.flashCol, Math.min(1, fl*1.5)).lerp(this._elecCol, ef);
+      r.core.material.opacity = Math.min(1, r.baseOp + fl*0.75 + ef*0.6);
+      r.halo.material.color.copy(r.flashCol).lerp(this._elecCol, ef);
+      r.halo.material.opacity = fl*0.3 + ef*0.35;
     }
 
     for(const m of this.mixers) if(m) m.update(dt/60);

@@ -119,7 +119,10 @@ function resize(w, h, b){
   camera.fov = camCfg.fov;
   // Kadrajı plağı (ve pikap kolunu) her en-boy oranında sığdıracak şekilde
   // ayarla: dikeyde eğim sayesinde daha az yer gerekiyor.
-  const fitR = base*0.5/(camCfg.zoom||1);
+  // Dikey ekranda (telefon) plak sağdan soldan boşluk bırakmasın diye biraz
+  // yakınlaştır — öğeler de büyür.
+  const zoom = (camCfg.zoom||1) * (camera.aspect < 0.9 ? (camCfg.portraitZoom||1.1) : 1);
+  const fitR = base*0.5/zoom;
   const vf = THREE.MathUtils.degToRad(camCfg.fov)/2;
   const hf = Math.atan(Math.tan(vf)*camera.aspect);
   const dist = Math.max(fitR/Math.tan(hf), fitR*0.85/Math.tan(vf)) + fitR*0.35;
