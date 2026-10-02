@@ -444,7 +444,7 @@ function shopItemsFor(cat){
 }
 function swatchHtml(category, item){
   if(category==='themes'){
-    return `<div class="swatch" style="justify-content:center">${['star','gold','peril','player'].map(k=>`<span style="background:${item[k]}"></span>`).join('')}</div>`;
+    return `<div class="themeLabelPreview"><img src="${themeLabelSrc(item.id)}" alt=""></div><div class="swatch" style="justify-content:center">${['star','gold','peril','player'].map(k=>`<span style="background:${item[k]}"></span>`).join('')}</div>`;
   }
   if(category==='skins'){
     return `<div class="skinPreview penaPreview"><img src="${item.img}" alt=""></div>`;
@@ -567,7 +567,7 @@ function renderThemeGrid(){
         ? `<div class="price" style="font-size:10.5px;color:#ffd28a;margin-top:2px">${icon('flame')} <s style="opacity:.6">${th.gate.price}</s> ${icon('coin')} ${effectivePrice('themes',item)}</div>`
         : `<div class="price" style="font-size:10.5px;color:#ffd28a;margin-top:2px">${icon('coin')} ${th.gate.price}</div>`)
       : '';
-    d.innerHTML=`<div class="swatch"><span style="background:${th.star}"></span><span style="background:${th.gold}"></span><span style="background:${th.peril}"></span><span style="background:${th.player}"></span></div><div class="tn">${t(th.nameKey)}</div>${priceTag}`;
+    d.innerHTML=`<div class="themeLabelPreview"><img src="${themeLabelSrc(key)}" alt=""></div><div class="swatch"><span style="background:${th.star}"></span><span style="background:${th.gold}"></span><span style="background:${th.peril}"></span><span style="background:${th.player}"></span></div><div class="tn">${t(th.nameKey)}</div>${priceTag}`;
     d.addEventListener('click', ()=>onShopCardClick('themes', item));
     grid.appendChild(d);
   });

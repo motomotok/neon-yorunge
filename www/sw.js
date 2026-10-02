@@ -1,4 +1,4 @@
-const CACHE = 'beat-orbit-v3';
+const CACHE = 'beat-orbit-v4';
 const ASSETS = [
   './',
   './index.html',
@@ -12,6 +12,10 @@ const ASSETS = [
   './pena-shop.js',
   './render3d-bundle.js',
   './assets3d/manifest.js',
+  './assets3d/themes/neon/label.jpg',
+  './assets3d/themes/synthbeats/label.jpg',
+  './assets3d/themes/urbansounds/label.jpg',
+  './assets3d/themes/cosmicsoundwave/label.jpg',
   './privacy.html',
   './licenses.html',
   './fonts/orbitron.woff2',

@@ -87,13 +87,16 @@ function setQuality(pref){
   if(renderer) applyQuality(pref==='auto' ? 'medium' : pref);
 }
 
-function fitBackground(){
-  // Ekran sabit arka plan görselini "cover" kırpar (en-boy oranını korur).
-  if(!bgDef || !bgDef.texture.image) return;
-  const img = bgDef.texture.image, ia = img.width/img.height, sa = W/H;
-  const tex = bgDef.texture;
+// Ekran sabit arka plan görselini "cover" kırpar (en-boy oranını korur).
+function fitCover(tex){
+  if(!tex || !tex.image) return;
+  const img = tex.image, ia = img.width/img.height, sa = W/H;
   if(ia > sa){ tex.repeat.set(sa/ia, 1); tex.offset.set((1-sa/ia)/2, 0); }
   else { tex.repeat.set(1, ia/sa); tex.offset.set(0, (1-ia/sa)/2); }
+}
+function fitBackground(){
+  if(bgDef) fitCover(bgDef.texture);
+  else if(world && world.themeBackground) fitCover(world.themeBackground);
 }
 
 function resize(w, h, b){
@@ -147,7 +150,15 @@ function render(f){
   trackFps(dtMs);
   const t = now*0.001, dt = f.dt || 1;
   if(f.W !== W || f.H !== H) resize(f.W, f.H, f.base);
-  if(!bgDef) scene.background.set(f.theme.bg0);
+  if(!bgDef){
+    // Tema arka planı (ör. Urban'da neon şehir, Cosmic'te uzay) yoksa düz tema rengi.
+    const tb = world.themeBackground;
+    if(tb){ if(scene.background !== tb){ scene.background = tb; fitCover(tb); } }
+    else {
+      if(!(scene.background && scene.background.isColor)) scene.background = new THREE.Color();
+      scene.background.set(f.theme.bg0);
+    }
+  }
   world.setTheme(f.themeKey, f.theme);
   world.setRingStyle(f.ringStyle);
   world.update(dt, t, f);

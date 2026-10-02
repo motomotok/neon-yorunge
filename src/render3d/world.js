@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { glowTexture, vinylTexture, vinylRoughnessTexture, sheenTexture, labelTexture, dotTexture, shade } from './textures.js';
 import { resolveSlot, instantiateModel } from './assets.js';
 import { RibbonBatch, jagged } from './ribbon.js';
+import { buildThemeScene, disposeThemeScene } from './themes.js';
 
 // engine.js: RINGS=[base*0.19, base*0.285, base*0.38]
 export const RING_K = [0.19, 0.285, 0.38];
@@ -183,6 +184,7 @@ export class World {
     this.arm = new THREE.Group();
     this.arm.position.copy(ARM_PIVOT);
     const metal = new THREE.MeshStandardMaterial({color:0xcfd5e0, metalness:1, roughness:0.22});
+    this.armMetal = metal;   // tema rengi (ör. Retro'da pirinç) setTheme'de ayarlanır
     const dark = new THREE.MeshStandardMaterial({color:0x22232a, metalness:0.6, roughness:0.45});
     const base = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.046, 0.03, 40), dark);
     base.position.y = 0.015;
@@ -399,13 +401,42 @@ export class World {
     this.dustMat.size = 0.006*base;
   }
 
+  // Etiket dokusu: tema görseli (art) daha büyük ve daha az parlatılmış
+  // çizilir ki renkleri korunsun; prosedürel etiket eski görünümünde kalır.
+  _setLabel(t, art){
+    // Tema görseli ışıktan etkilenmeyen (unlit) malzemeyle çizilir: ortadaki
+    // nokta ışık ve bloom görselin renklerini yakıp soldurmasın.
+    if(!this.labelArtMat) this.labelArtMat = new THREE.MeshBasicMaterial({color:0xd9d9d9});
+    const old = art ? this.labelArtMat.map : this.labelMat.map;
+    if(art){ this.labelArtMat.map = t; this.labelArtMat.needsUpdate = true; this.label.material = this.labelArtMat; }
+    else {
+      this.labelMat.map = t; this.labelMat.emissiveMap = t; this.labelMat.emissiveIntensity = 0.35;
+      this.labelMat.needsUpdate = true; this.label.material = this.labelMat;
+    }
+    this.label.scale.setScalar(art ? 1.28 : 1);
+    this.labelGlow.material.opacity = art ? 0.1 : 0.55;
+    if(old && old !== t && old.userData.generated && art) old.dispose();
+  }
+
   setTheme(key, T){
     if(this.themeKey === key) return;
     this.themeKey = key;
+    // Tema sahnesi (bkz. themes.js): etiket görseli, plak/kol rengi, arka
+    // plan ve temaya özel efektler. Önceki tema tamamen temizlenir.
+    if(this.themeScene) disposeThemeScene(this.themeScene);
+    const sc = this.themeScene = buildThemeScene(key, this);
+    this.root.add(sc.group);
+    this.themeBackground = sc.background || null;
+    this.vinylMat.color.set(sc.vinyl || '#ffffff');
+    this.armMetal.color.set(sc.armMetal || '#cfd5e0');
+    this.starMat.opacity = sc.stars ?? 1; this.stars.visible = (sc.stars ?? 1) > 0;
+    this.nebula.forEach(s=>{ s.material.opacity = sc.nebula ?? 0.22; s.visible = (sc.nebula ?? 0.22) > 0; });
     if(!this.customLabel){
-      if(this.labelMat.map) this.labelMat.map.dispose();
-      const tex = labelTexture(T.sun);
-      this.labelMat.map = tex; this.labelMat.emissiveMap = tex; this.labelMat.needsUpdate = true;
+      // Görsel yüklenene kadar (ya da yüklenemezse) prosedürel etiket.
+      if(this.labelMat.map && this.labelMat.map.userData.generated) this.labelMat.map.dispose();
+      const gen = labelTexture(T.sun); gen.userData.generated = true;
+      this._setLabel(gen, false);
+      sc.labelPromise.then(t=>{ if(t && this.themeScene===sc && !this.customLabel) this._setLabel(t, true); });
     }
     this.labelGlow.material.color.set(T.sun);
     this.centerLight.color.set(T.sun);
@@ -416,6 +447,7 @@ export class World {
     const nebCols = [T.bg1, T.peril, T.player];
     this.nebula.forEach((s,i)=>s.material.color.set(shade(nebCols[i%nebCols.length], 0.1)));
     this.ringColor = T.star;
+    this.ringStyle = null;   // halka renkleri yeni temaya göre bir sonraki setRingStyle'da yeniden uygulansın
   }
 
   setRingStyle(style){
@@ -450,6 +482,8 @@ export class World {
     this.dust.geometry.attributes.position.needsUpdate = true;
 
     this._updateElectric(dt, t, f);
+    if(this.themeScene && this.themeScene.update) this.themeScene.update(dt, t, f);
+    const rcs = (this.themeScene && this.themeScene.ringCoreScale) ?? 1;
 
     // Oluk parlamaları: nota (ringFlash) ve boss elektriği (elec).
     const white = this._white || (this._white = new THREE.Color('#ffffff'));
@@ -461,9 +495,9 @@ export class World {
       this.ringFlash[i] = Math.max(0, this.ringFlash[i] - dt*0.07);
       const fl = this.ringFlash[i];
       r.core.material.color.copy(r.baseCol).lerp(white, fl*0.2).lerp(this._elecCol, ef);
-      r.core.material.opacity = Math.min(1, (pulseOp ?? r.baseOp) + fl*0.15 + ef*0.6);
+      r.core.material.opacity = Math.min(1, (pulseOp ?? r.baseOp)*rcs + fl*0.15 + ef*0.6);
       r.halo.material.color.copy(r.core.material.color);
-      r.halo.material.opacity = (this.ringStyle==='glow' ? 0.22 : 0.1) + fl*0.06 + ef*0.35;
+      r.halo.material.opacity = ((this.ringStyle==='glow' ? 0.22 : 0.1) + fl*0.06)*rcs + ef*0.35;
     }
 
     for(const m of this.mixers) if(m) m.update(dt/60);

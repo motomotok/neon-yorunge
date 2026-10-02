@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.5.0';
+const GAME_VERSION = '2.6.0';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -19,6 +19,11 @@ const THEMES = {
   cosmicsoundwave:{nameKey:'theme_cosmicsoundwave', star:'#7fe8ff', gold:'#ffe9a8', peril:'#ff8a3d', player:'#2fe6c4', sun:'#6a8fff', bg0:'#03040f', bg1:'#0a0f2e', sf:'#8fb0ff', gate:{type:'coin', price:5600}},
 };
 let T = THEMES.neon;
+// Her temanın plak etiketi (konsept görsellerinden kesildi). 3D modda
+// themes.js, klasik modda render.js drawSun(), mağazada tema kartı kullanır.
+function themeLabelSrc(key){ return 'assets3d/themes/'+(THEMES[key] ? key : 'neon')+'/label.jpg'; }
+const THEME_LABEL_IMG = {};
+Object.keys(THEMES).forEach(k=>{ const im=new Image(); im.src=themeLabelSrc(k); THEME_LABEL_IMG[k]=im; });
 // #overlay'deki (ana menü/mağaza arkaplanı) plak-rengi radial-gradient'i
 // de tema değişince uyumlu kalsın diye hex'i "r,g,b" üçlüsüne çevirip ayrı
 // bir CSS değişkenine yazıyoruz — rgba(var(--bgN-rgb), alpha) deseni,

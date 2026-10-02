@@ -265,6 +265,13 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
 .theme.sel{border-color:var(--star);box-shadow:0 0 18px rgba(84,224,255,.35),0 0 0 1px rgba(84,224,255,.15) inset;}
 .theme.locked{opacity:.55;}
 .swatch{display:flex;gap:4px;}
+/* Tema kartında küçük dönen plak: temanın etiketi + siyah oluklu kenar. */
+.themeLabelPreview{width:54px;height:54px;border-radius:50%;margin:0 auto 6px;padding:7px;box-sizing:border-box;
+  background:repeating-radial-gradient(circle,#141010 0 2px,#1d1717 2px 3px);box-shadow:0 0 0 1px rgba(255,255,255,.12),0 4px 10px rgba(0,0,0,.45);
+  animation:themeSpin 9s linear infinite;}
+.themeLabelPreview img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;}
+@keyframes themeSpin{to{transform:rotate(360deg);}}
+@media (prefers-reduced-motion:reduce){.themeLabelPreview{animation:none;}}
 .swatch span{width:12px;height:12px;border-radius:50%;box-shadow:0 0 6px currentColor;}
 .theme .tn{font-size:11px;font-weight:700;line-height:1.2;letter-spacing:.2px;}
 
