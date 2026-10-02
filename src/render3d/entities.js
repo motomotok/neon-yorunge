@@ -317,12 +317,20 @@ export class Entities {
       s.material.opacity = tw; s.scale.setScalar(0.35 + tw*0.55); s.material.rotation = t*2 + s.userData.phase;
     }
     // Boss dalgasının öğeleri: altlarında dönen kesikli altın halka.
+    // Cızırtının kendisiyle aynı yükseklikte, kameraya dönük; yarıçapı
+    // cızırtının görsel boyutunun (~1.75 birim, yeşilde 1.5 katı) dışında
+    // kalır — cızırtı halkanın içinde kalır, taşmaz.
     if(it.boss){
-      if(!v.bossRing){ v.bossRing = flatPlane(bossRingTexture(), 0.8, true); v.root.add(v.bossRing); }
+      if(!v.bossRing){
+        v.bossRing = new THREE.Sprite(new THREE.SpriteMaterial({map:bossRingTexture(), transparent:true, opacity:0.8,
+          depthWrite:false, depthTest:false, blending:THREE.AdditiveBlending}));
+        v.root.add(v.bossRing);
+      }
+      const k = it.type==='hazardBomb' ? 1.5 : it.type==='hazardPulse' ? 1.4 : 1;
       v.bossRing.visible = true;
-      v.bossRing.position.y = 0.05;
-      v.bossRing.scale.setScalar(4.2);
-      v.bossRing.rotation.y = t*1.5;
+      v.bossRing.position.y = HOVER;
+      v.bossRing.scale.setScalar(2*1.75*k*1.22/(54/64));
+      v.bossRing.material.rotation = t*1.5;
       v.bossRing.material.opacity = 0.55+Math.sin(t*6)*0.25;
     } else if(v.bossRing) v.bossRing.visible = false;
   }
