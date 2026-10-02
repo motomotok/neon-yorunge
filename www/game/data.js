@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.8.0';
+const GAME_VERSION = '2.9.0';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -98,7 +98,7 @@ for(let i=1;i<=16;i++){ const im=new Image(); im.src='img/monsters/monster'+i+'.
 ['red','blue','green','yellow','purple','orange','pink'].forEach(c=>{ const im=new Image(); im.src='img/monsters/glitch_'+c+'.png'; MONSTER_IMG['glitch_'+c]=im; });
 // Toplanabilir öğe görselleri (kullanıcının verdiği): nota ve nota jetonu.
 const ITEM_IMG = {};
-['note','coin'].forEach(k=>{ const im=new Image(); im.src='img/items/'+k+'.png'; ITEM_IMG[k]=im; });
+['note','coin','clef'].forEach(k=>{ const im=new Image(); im.src='img/items/'+k+'.png'; ITEM_IMG[k]=im; });
 function imgReady(im){ return !!(im && im.complete && im.naturalWidth>0); }
 function playerColor(){
   const sk=SKINS.find(s=>s.id===cfg.skin)||SKINS[0];
@@ -435,7 +435,10 @@ function seasonXpEventMult(){ return stats.eventType==='xp2x' ? 2 : 1; }
 // Güneş ve halka stilleri mağazadan kaldırıldı (uzay döneminden kalmaydı;
 // plağın ortasını ve halkaların görünümünü artık tema belirliyor). Eski
 // kayıtlarda seçili kalan stil sıfırlanır — bkz. aşağıdaki cfg yüklemesi.
-let cfg = load('beatOrbitCfg', {sound:true, theme:'neon', skin:'teal', trail:'classic', sun:'classic', ringStyle:'classic', bigButtons:false, leftHand:false, colorblind:false, lang:'tr', gfx:'classic', gfxQuality:'auto'});
+let cfg = load('beatOrbitCfg', {sound:true, theme:'neon', skin:'teal', trail:'classic', sun:'classic', ringStyle:'classic', bigButtons:false, leftHand:false, colorblind:false, lang:'tr', gfx:'3d', gfxQuality:'auto'});
+// Oyunun asıl hâli 3D: herkes (eski kayıtlar dahil) bir kez 3D'ye geçirilir.
+// Sonrasında Ayarlar > 3D Grafik'ten 2D'ye dönen oyuncunun seçimi korunur.
+if(!cfg.gfx3dDefaultV1){ cfg.gfx='3d'; cfg.gfx3dDefaultV1=true; }
 cfg.sun='classic'; cfg.ringStyle='classic';
 let stats = load('beatOrbitStats', {
   best:0, stars:0, games:0, maxLevel:1, magnets:0, golds:0, diamonds:0,

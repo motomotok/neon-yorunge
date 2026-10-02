@@ -271,10 +271,11 @@ document.addEventListener('click', e=>{
 // birebir aynısını küçük ölçekte tekrarlıyor.
 const HOWTO_ICON_SHAPES = {
   star:        {kind:'itemImg', key:'note'},
-  diamond:     {kind:'diamond', color:'#fff4e0'},
+  diamond:     {kind:'itemImg', key:'clef'},
   particle:    {kind:'itemImg', key:'coin'},
   heartItem:   {kind:'heart',   color:'#ff5d8f'},
   hazard:      {kind:'img', monster:'glitch_red'},
+  hazardJump:  {kind:'img', monster:'glitch_blue'},
   hazardBomb:  {kind:'img', monster:'glitch_green'},
   hazardPull:  {kind:'img', monster:'glitch_yellow'},
   hazardTwin:  {kind:'img', monster:'glitch_purple'},
