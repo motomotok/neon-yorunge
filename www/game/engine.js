@@ -72,7 +72,7 @@ function resetGame(){
              coins:0, coinPickups:0, luckyCharges:0, noteMult:1, revivedUsed:false};
   timeLeft = mode==='time' ? 60 : null;
   newRecord=false; timeScale=1; timeScaleT=0;
-  bossNextIndex=0; bossActive=false; bossWaveItems=[]; bossReward=0; bossTelegraph=null; bossColsLeft=0;
+  bossNextIndex=0; bossActive=false; bossWaveItems=[]; bossReward=0; bossTelegraph=null; bossQueue=[]; bossNextCol=0; bossEnd=0;
   lastHeartScore=-HEART_SCORE_GAP;
   if(activeBoost){
     if(activeBoost==='shieldstart') player.shieldHits=shieldHitsFor();
@@ -142,13 +142,15 @@ function pickHazardKind(){
 // bir kez tetiklenir (bkz. bossNextIndex, resetGame() ile sıfırlanır).
 // gap = ardışık cızırtı sütunları arasındaki açı (küçüldükçe sıklaşır),
 // laps = savaşın kaç tur boyunca KESİNTİSİZ süreceği.
+// sw = halka değiştirme penceresi (orta halkada, radyan) — küçüldükçe daha
+// keskin refleks ister; laps = labirentin kaç tur süreceği.
 const BOSS_STAGES = [
-  {score:450,   gap:1.05, laps:2,   reward:25},
-  {score:1600,  gap:0.95, laps:2.5, reward:45},
-  {score:3000,  gap:0.85, laps:3,   reward:65},
-  {score:5000,  gap:0.75, laps:3,   reward:100},
-  {score:10000, gap:0.65, laps:3,   reward:200},
-  {score:15000, gap:0.58, laps:3,   reward:280},
+  {score:450,   sw:0.70, laps:2,   reward:30},
+  {score:1600,  sw:0.60, laps:2.5, reward:55},
+  {score:3000,  sw:0.54, laps:3,   reward:80},
+  {score:5000,  sw:0.50, laps:3,   reward:120},
+  {score:10000, sw:0.46, laps:3,   reward:220},
+  {score:15000, sw:0.43, laps:3,   reward:300},
 ];
 // 15000'den sonra dizi BİTMİYOR — her +5000 puanda bir dalga daha gelmeye
 // devam ediyor (count/reward kademeli artıyor, count bir tavanda duruyor).
@@ -165,7 +167,7 @@ function bossStageFor(index){
   const last = BOSS_STAGES[BOSS_STAGES.length-1];
   return {
     score: last.score + extra*BOSS_INFINITE_STEP,
-    gap: Math.max(0.5, last.gap - extra*0.02),
+    sw: Math.max(0.40, last.sw - extra*0.01),
     reward: last.reward + extra*BOSS_INFINITE_REWARD_STEP,
     laps: 3,
   };
@@ -201,40 +203,86 @@ function startBossWave(stageDef){
   beep(90,0.5,'sawtooth',0.2); beep(140,0.5,'square',0.16); beep(60,0.6,'sine',0.18);
   showFlash('⚠ '+t('flash_boss_wave'),90); vibrate([30,40,30,40,60]);
   bossStage = stageDef; bossStageIdx = bossNextIndex;
-  bossTravel = 0; bossNextCol = 1.3; bossColsLeft = Math.round((stageDef.laps||2)*Math.PI*2/stageDef.gap);
-  bossBaseAng = player.ang; bossFree = player.targetRing; bossColTotal = bossColsLeft;
+  // Sahneyi temizle: boss öncesinden kalan cızırtılar labirentin açık
+  // yolunu kapatıp haksızlık yapmasın.
+  for(const it of items) if(it.alive && !it.boss) it.expiring = true;
+  bossTravel = 0; bossNextCol = 1.0; bossEnd = 1.0 + (stageDef.laps||2)*Math.PI*2;
+  bossBaseAng = player.ang; bossFree = player.targetRing; bossQueue = []; bossSegs = 0;
   spawnBossColumns();
 }
 
-// Boss bir "savaş meydanı": pena 2-3 tur boyunca ARA VERMEDEN gelen cızırtı
-// sütunlarının arasından geçer (tur arası boşluk yok — savaş bitti hissi
-// vermesin). Her sütun 1 ya da 2 halkayı kapatır, ama her zaman en az bir
-// halka açıktır ve açık halka bir sonrakine yetişilebilir yakınlıktadır
-// (adil ama sürekli halka değiştirmeye zorlar). Savaş ilerledikçe ve ileri
-// boss'larda 2 halkayı kapatan sütunlar artar. Boss'ta nota çıkmaz.
-// Sütunlar penanın ~5.3 rad önüne kadar peyderpey yerleştirilir.
-let bossStage=null, bossStageIdx=0, bossTravel=0, bossNextCol=0, bossColsLeft=0, bossColTotal=1, bossBaseAng=0, bossFree=0;
+// Boss = REFLEKS LABİRENTİ. Plak etrafında 2-3 tur boyunca ara vermeden
+// gelen, sıkı dizilmiş cızırtı duvarlarından oluşan koridorlar:
+//  * koridor: aynı halka açık kalırken diğer iki halkada art arda duvar,
+//  * zikzak: her sütunda açık halka yer değiştirir (art arda hızlı geçiş),
+//  * nefes: tek halkayı kapatan sütun (yalnızca ilk boss'larda, seyrek).
+// Sütunlar penanın yalnızca ~1.9 rad (~1.5 sn) önünde belirir — labirent önceden
+// ezberlenemez, okuyup anında tepki vermek gerekir. Her geçiş penceresi
+// halka yarıçapına göre ölçeklenir (iç halkada açı olarak daha geniş), en az
+// bir halka hep açıktır ve açık halkaya bu pencerede yetişilebilir.
+// Savaş ilerledikçe ve ileri boss'larda pencere daralır, koridorlar uzar.
+let bossStage=null, bossStageIdx=0, bossTravel=0, bossNextCol=0, bossEnd=0, bossBaseAng=0, bossFree=0, bossQueue=[], bossSegs=0;
+const BOSS_LOOKAHEAD = 1.9, BOSS_WALL_STEP = 0.3;
+function bossSwitchGap(from, to){
+  const def = bossStage, prog = Math.min(1, bossNextCol/bossEnd);
+  const sw = Math.max(0.38, def.sw - prog*0.06);
+  const rmin = Math.min(radiusFor(from), radiusFor(to)) / radiusFor(1);   // iç halkada açı olarak daha geniş
+  return (sw + (Math.abs(to-from)>1 ? 0.3 : 0)) / rmin;
+}
+function bossPlanSegment(){
+  const idx = bossStageIdx, f = bossFree; bossSegs++;
+  const r = rnd();
+  const breather = idx<=1 && bossSegs%5===0;
+  if(breather){
+    const cand=[0,1,2].filter(x=>x!==f);
+    bossNextCol += 0.7;
+    bossQueue.push({pos:bossNextCol, blocked:[cand[Math.floor(rnd()*cand.length)]]});
+    return;
+  }
+  const adj = [0,1,2].filter(x=>Math.abs(x-f)===1);
+  if(r < 0.6){
+    // Koridor: yeni açık halkaya geç, sonra iki duvar arasında ilerle.
+    let nf = adj[Math.floor(rnd()*adj.length)];
+    if(idx>=1 && f!==1 && rnd()<0.25) nf = 2-f;                      // iki halka atlama
+    bossNextCol += bossSwitchGap(f, nf);
+    const L = 2 + Math.floor(rnd()*(2 + Math.min(3, idx)));
+    for(let i=0;i<L;i++){
+      if(i>0) bossNextCol += BOSS_WALL_STEP;
+      bossQueue.push({pos:bossNextCol, blocked:[0,1,2].filter(x=>x!==nf)});
+    }
+    bossFree = nf;
+  } else {
+    // Zikzak: her sütunda açık halka değişir.
+    const n = 2 + Math.floor(rnd()*(2 + Math.min(2, idx)));
+    let cur = f;
+    for(let i=0;i<n;i++){
+      const a2 = [0,1,2].filter(x=>Math.abs(x-cur)===1);
+      const nf = a2[Math.floor(rnd()*a2.length)];
+      bossNextCol += bossSwitchGap(cur, nf);
+      bossQueue.push({pos:bossNextCol, blocked:[0,1,2].filter(x=>x!==nf)});
+      cur = nf;
+    }
+    bossFree = cur;
+  }
+}
 function spawnBossColumns(){
-  const def = bossStage, idx = bossStageIdx, gap = def.gap;
-  while(bossColsLeft>0 && bossNextCol - bossTravel < 5.3){
-    const progress = 1 - bossColsLeft/bossColTotal;
-    const p2 = Math.min(0.8, 0.22 + idx*0.1 + progress*0.18);   // 2 halka kapatan sütun olasılığı
-    const ang = normAng(bossBaseAng + bossNextCol);
-    const maxStep = gap >= 0.8 ? 2 : 1;
-    const opts = [0,1,2].filter(r=>Math.abs(r-bossFree)<=maxStep);
-    const prevFree = bossFree;
-    bossFree = opts[Math.floor(rnd()*opts.length)];
-    if(bossFree===prevFree && rnd()<0.5 && opts.length>1){ const o=opts.filter(r=>r!==prevFree); bossFree=o[Math.floor(rnd()*o.length)]; }
-    const cand = [0,1,2].filter(r=>r!==bossFree);
-    const blocked = rnd() < p2 ? cand : [cand.includes(prevFree) && rnd()<0.65 ? prevFree : cand[Math.floor(rnd()*cand.length)]];
-    for(const ring of blocked){
+  while(true){
+    if(!bossQueue.length){
+      if(bossNextCol >= bossEnd) return;
+      bossPlanSegment();
+    }
+    const col = bossQueue[0];
+    if(col.pos - bossTravel > BOSS_LOOKAHEAD) return;
+    bossQueue.shift();
+    const ang = normAng(bossBaseAng + col.pos);
+    for(const ring of col.blocked){
       let type = pickHazardKind();
-      if(type==='hazardJump' || type==='hazardCreep') type = rnd()<0.5 ? 'hazard' : 'hazardBomb';   // halka/açı değiştirenler sütunu bozmasın
+      // Halka/açı değiştirenler ve "nabız atanlar" labirent duvarını bozmasın.
+      if(type==='hazardJump' || type==='hazardCreep' || type==='hazardPulse' || type==='hazardTwin') type = rnd()<0.85 ? 'hazard' : 'hazardBomb';
       const it = {ang, ring, type, alive:true, pop:0, expiring:false, prevFwd:null, jumpT:0,
-        pulsePhase: type==='hazardPulse' ? rnd()*Math.PI*2 : 0, pulseDanger:false, creepT:0, creeped:false, boss:true};
+        pulsePhase:0, pulseDanger:false, creepT:0, creeped:false, boss:true};
       items.push(it); bossWaveItems.push(it);
     }
-    bossNextCol += gap; bossColsLeft--;
   }
 }
 
@@ -597,7 +645,7 @@ function update(dt){
 
   if(bossActive){
     bossWaveItems = bossWaveItems.filter(it=>it.alive);
-    if(bossWaveItems.length===0 && bossColsLeft<=0){
+    if(bossWaveItems.length===0 && !bossQueue.length && bossNextCol>=bossEnd){
       bossActive=false;
       const finalReward=Math.round(bossReward*(1+upgradeBonus('coinPct')));
       addNotes(finalReward);
