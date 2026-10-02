@@ -313,7 +313,7 @@ function drawRingFlash2D(){
   for(let i=0;i<3;i++){
     const f=_scr.ringFlash[i]; if(f<=0.01) continue;
     ctx.save(); ctx.globalCompositeOperation='lighter';
-    ctx.strokeStyle=hexA(T.star,f*0.3); ctx.lineWidth=1.5+f*1.5;
+    ctx.strokeStyle=hexA(T.star,f*0.18); ctx.lineWidth=1.5+f;
     ctx.beginPath(); ctx.arc(CX,CY,RINGS[i],0,7); ctx.stroke();
     ctx.restore();
   }

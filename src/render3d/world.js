@@ -588,10 +588,10 @@ export class World {
       if(!r.baseCol) continue;
       this.ringFlash[i] = Math.max(0, this.ringFlash[i] - dt*0.045);   // ~0.4 sn
       const fl = this.ringFlash[i]*this.ringFlash[i];                  // hızlı yanar, yumuşak söner
-      r.core.material.color.copy(r.baseCol).lerp(r.flashCol, Math.min(1, fl*1.5)).lerp(this._elecCol, ef);
-      r.core.material.opacity = Math.min(1, r.baseOp + fl*0.75 + ef*0.6);
+      r.core.material.color.copy(r.baseCol).lerp(r.flashCol, Math.min(1, fl*1.1)).lerp(this._elecCol, ef);
+      r.core.material.opacity = Math.min(1, r.baseOp + fl*0.38 + ef*0.6);
       r.halo.material.color.copy(r.flashCol).lerp(this._elecCol, ef);
-      r.halo.material.opacity = fl*0.3 + ef*0.35;
+      r.halo.material.opacity = fl*0.1 + ef*0.35;
     }
 
     for(const m of this.mixers) if(m) m.update(dt/60);
