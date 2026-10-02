@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.7.0';
+const GAME_VERSION = '2.7.1';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -356,7 +356,7 @@ function isUnlockedItem(category, item){
 const DEAL_DISCOUNT = 0.3;
 const DEAL_CATEGORIES = {
   themes: ()=>Object.keys(THEMES).map(k=>Object.assign({id:k}, THEMES[k])),
-  skins: ()=>SKINS, trails: ()=>TRAILS, suns: ()=>SUNS, rings: ()=>RINGSTYLES,
+  skins: ()=>SKINS, trails: ()=>TRAILS,
 };
 // Günün Olayı: her gün tarih-seed'li RNG ile 3 ihtimalden biri seçilir —
 // bir kozmetiğe %30 indirim ("Günün Fırsatı", eskiden tek seçenekti), ya da
@@ -424,7 +424,11 @@ function seasonXpEventMult(){ return stats.eventType==='xp2x' ? 2 : 1; }
     }
   }catch(e){}
 })();
+// Güneş ve halka stilleri mağazadan kaldırıldı (uzay döneminden kalmaydı;
+// plağın ortasını ve halkaların görünümünü artık tema belirliyor). Eski
+// kayıtlarda seçili kalan stil sıfırlanır — bkz. aşağıdaki cfg yüklemesi.
 let cfg = load('beatOrbitCfg', {sound:true, theme:'neon', skin:'teal', trail:'classic', sun:'classic', ringStyle:'classic', bigButtons:false, leftHand:false, colorblind:false, lang:'tr', gfx:'classic', gfxQuality:'auto'});
+cfg.sun='classic'; cfg.ringStyle='classic';
 let stats = load('beatOrbitStats', {
   best:0, stars:0, games:0, maxLevel:1, magnets:0, golds:0, diamonds:0,
   unlocked:[], leaderboard:[], dailyDate:'', dailyDone:false, dailyScore:0, dailyCount:0,
@@ -563,7 +567,7 @@ const LOGIN_STREAK_REWARDS = [
   {type:'boost', id:'luckystart', amount:3},
   {type:'notes', amount:60},
   {type:'boost', id:'slowstart', amount:3},
-  {type:'cosmetic', cat:'rings', id:'dotted'},
+  {type:'cosmetic', cat:'trails', id:'ribbon'},
   {type:'notes', amount:90},
   {type:'boost', id:'shieldstart', amount:5},
   {type:'notes', amount:120},
@@ -764,7 +768,7 @@ const SEASON_TIERS = [
   {xp:1100, free:700,  premium:1000},
   {xp:1600, free:900,  premium:1000},
   {xp:2200, free:1100, premium:1000},
-  {xp:2900, free:1300, premium:1000, cosmeticSlot:'rings'},
+  {xp:2900, free:1300, premium:1000},
   {xp:3700, free:1600, premium:1000, cosmeticSlot:'trails'},
   {xp:4600, free:2000, premium:1000, cosmeticSlot:'skins'},
 ];
