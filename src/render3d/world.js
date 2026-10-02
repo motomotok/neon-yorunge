@@ -4,7 +4,7 @@
 // tek bir scale ile piksel ölçeğine getirilir — böylece engine.js'in piksel
 // koordinatları (RINGS, PLAYER_R) birebir aynı kalır.
 import * as THREE from 'three';
-import { glowTexture, vinylTexture, vinylRoughnessTexture, sheenTexture, labelTexture, dotTexture, shade } from './textures.js';
+import { glowTexture, shadowTexture, vinylTexture, vinylRoughnessTexture, sheenTexture, labelTexture, dotTexture, shade } from './textures.js';
 import { resolveSlot, instantiateModel } from './assets.js';
 import { RibbonBatch, jagged } from './ribbon.js';
 import { buildThemeScene, disposeThemeScene } from './themes.js';
@@ -19,14 +19,19 @@ export const TOP_Y = DISC_H;      // plak üst yüzeyi (base birimde)
 // Pikap kolu geometrisi (base birimde). Dinlenmede plağın sağ-üst dışında
 // durur, boss uyarısında (bossIntensity 0->1) etikete doğru iner — 2D
 // sürümdeki drawBossTelegraph() ile aynı "iğne plağa vurunca boss patlar".
-const ARM_PIVOT = new THREE.Vector3(0.41, 0, -0.45);
+const ARM_PIVOT = new THREE.Vector3(0.36, 0, -0.42);
 const ARM_LEN = 0.5;
-const ARM_REST_YAW = 0.1;
+const ARM_REST_YAW = -0.2;   // dinlenmede kafa plağın sağ tarafının üstünde (konseptteki gibi)
 const ARM_STRIKE_YAW = Math.atan2(-ARM_PIVOT.x, -ARM_PIVOT.z) + 0.06;
 const ARM_H = 0.05;
+// İğne ucunun kol eksenine göre yanal kayması (kırılmalı tüp, bkz. _buildTonearm).
+const ARM_TIP_X = -0.04;
 // İğne ucunun plak yüzeyine tam değdiği eğim.
-const ARM_STRIKE_TILT = Math.asin((ARM_H - 0.012 - DISC_H)/ARM_LEN);
+const ARM_STRIKE_TILT = Math.asin(Math.max(0, ARM_H - 0.038 - DISC_H)/ARM_LEN); // 0.038: iğne ucunun kol eksenine göre derinliği
 const ELECTRIC = '#7fe8ff';
+
+// Kırılmalı tüpün yanal kayması: kolun ilk ~%55'i düz, sonra uca kadar ARM_TIP_X'e iner.
+function _armKinkX(along){ const k = Math.max(0, Math.min(1, (along-0.55)/0.35)); return ARM_TIP_X*k*k*(3-2*k); }
 
 export class World {
   constructor(scene, manifest){
@@ -50,7 +55,7 @@ export class World {
   }
 
   _buildLights(){
-    this.hemi = new THREE.HemisphereLight(0xffffff, 0x000000, 0.9);
+    this.hemi = new THREE.HemisphereLight(0xffffff, 0x000000, 0.55);
     this.key = new THREE.DirectionalLight(0xffffff, 1.6);
     this.key.position.set(-0.5, 1.2, 0.6);
     this.rim = new THREE.DirectionalLight(0xffffff, 0.7);
@@ -118,6 +123,7 @@ export class World {
       dots.add(d);
     }
     this.strobe = dots;
+    dots.visible = false;   // konseptlerde yok — sade görünüm için kapalı (tema isterse açar)
     this.recordSpin.add(dots);
   }
 
@@ -133,7 +139,7 @@ export class World {
     // Sabit parıltı (dönmez) — klasik vinil yansıması.
     const sg = new THREE.CircleGeometry(DISC_R*0.995, 128);
     sg.rotateX(-Math.PI/2);
-    this.sheen = new THREE.Mesh(sg, new THREE.MeshBasicMaterial({map:sheenTexture(), transparent:true, opacity:0.22,
+    this.sheen = new THREE.Mesh(sg, new THREE.MeshBasicMaterial({map:sheenTexture(), transparent:true, opacity:0.12,
       depthWrite:false, blending:THREE.AdditiveBlending}));
     this.sheen.position.y = TOP_Y + 0.0006;
     this.root.add(this.sheen);
@@ -180,38 +186,74 @@ export class World {
     return g;
   }
 
+  // Pikap kolu — Retro Beats konseptindeki gibi: koyu yuvarlak taban, kolla
+  // dönen pirinç pivot kutusu, ortasında kırılma olan pirinç tüp, arkada
+  // karşı ağırlık, büyük dikdörtgen kafa ve kırmızı-turuncu parlayan iğne
+  // ucu; plağa düşen yumuşak gölge. Malzeme rengi temaya göre (armMetal).
   _buildTonearm(){
     this.arm = new THREE.Group();
     this.arm.position.copy(ARM_PIVOT);
-    const metal = new THREE.MeshStandardMaterial({color:0xcfd5e0, metalness:1, roughness:0.22});
+    const metal = new THREE.MeshStandardMaterial({color:0xb8925a, metalness:0.85, roughness:0.32});
     this.armMetal = metal;   // tema rengi (ör. Retro'da pirinç) setTheme'de ayarlanır
-    const dark = new THREE.MeshStandardMaterial({color:0x22232a, metalness:0.6, roughness:0.45});
-    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.046, 0.03, 40), dark);
-    base.position.y = 0.015;
-    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, ARM_H, 20), metal);
+    const dark = new THREE.MeshStandardMaterial({color:0x1c1512, metalness:0.4, roughness:0.6});
+    const darker = new THREE.MeshStandardMaterial({color:0x2a211c, metalness:0.7, roughness:0.4});
+    const plinth = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.09, 0.012, 48), dark);
+    plinth.position.y = 0.006;
+    const plinthRing = new THREE.Mesh(new THREE.TorusGeometry(0.072, 0.0025, 8, 64), darker);
+    plinthRing.rotation.x = Math.PI/2; plinthRing.position.y = 0.0125;
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.016, ARM_H, 20), darker);
     post.position.y = ARM_H/2;
-    this.arm.add(base, post);
+    this.arm.add(plinth, plinthRing, post);
 
     this.armSwing = new THREE.Group();      // yaw (Y ekseni)
     this.armTilt = new THREE.Group();       // iniş (X ekseni)
     this.armSwing.position.y = ARM_H;
     this.armSwing.add(this.armTilt);
     this.arm.add(this.armSwing);
-    const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.0055, 0.0055, ARM_LEN, 16), metal);
-    tube.rotation.x = Math.PI/2; tube.position.z = ARM_LEN/2;
-    const weight = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.04, 24), dark);
-    weight.rotation.x = Math.PI/2; weight.position.z = -0.05;
-    const head = new THREE.Mesh(new THREE.BoxGeometry(0.026, 0.012, 0.05), dark);
-    head.position.set(0, -0.006, ARM_LEN);
-    this.armTilt.add(tube, weight, head);
-    this.armProcedural = [base, post, tube, weight, head];
+    // Pivot kutusu (gimbal) kolla birlikte döner.
+    const housing = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.05, 0.065), metal);
+    housing.position.set(0, 0.004, 0);
+    // Kırılmalı tüp: düz iner, kafaya yakın içe doğru kırılır.
+    const path = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0, 0, 0.01), new THREE.Vector3(0, 0, 0.26), new THREE.Vector3(-0.012, 0, 0.33),
+      new THREE.Vector3(-0.03, 0, 0.39), new THREE.Vector3(ARM_TIP_X, -0.004, 0.44),
+    ]);
+    const tube = new THREE.Mesh(new THREE.TubeGeometry(path, 48, 0.015, 16, false), metal);
+    const weight = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.06, 28), darker);
+    weight.rotation.x = Math.PI/2; weight.position.z = -0.06;
+    const weightCap = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.008, 28), metal);
+    weightCap.rotation.x = Math.PI/2; weightCap.position.z = -0.088;
+    // Kafa (headshell + kartuş) ve parmak tutamağı.
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.056, 0.024, 0.09), metal);
+    head.position.set(ARM_TIP_X, -0.01, ARM_LEN-0.035);
+    const cart = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.014, 0.05), darker);
+    cart.position.set(ARM_TIP_X, -0.026, ARM_LEN-0.025);
+    const lift = new THREE.Mesh(new THREE.CylinderGeometry(0.0025, 0.0025, 0.03, 8), metal);
+    lift.rotation.z = Math.PI/2; lift.position.set(ARM_TIP_X-0.032, -0.004, ARM_LEN-0.045);
+    this.stylusMat = new THREE.MeshStandardMaterial({color:0xff5a1f, emissive:0xff4a10, emissiveIntensity:0.9, roughness:0.4});
+    const stylus = new THREE.Mesh(new THREE.ConeGeometry(0.006, 0.016, 12), this.stylusMat);
+    stylus.rotation.x = Math.PI; stylus.position.set(ARM_TIP_X, -0.03, ARM_LEN-0.004);
+    this.armSwing.add(housing);
+    this.armTilt.add(tube, weight, weightCap, head, cart, lift, stylus);
+    // Plağa düşen yumuşak gölge (ışık sol üstten → gölge sağ alta kayık).
+    const sg = new THREE.PlaneGeometry(1, 1); sg.rotateX(-Math.PI/2);
+    this.armShadow = new THREE.Mesh(sg, new THREE.MeshBasicMaterial({map:shadowTexture(), transparent:true, opacity:0.5, depthWrite:false}));
+    this.armShadow.scale.set(0.09, 1, 0.58);
+    this.armShadow.position.set(0.012, -ARM_H + TOP_Y + 0.0015, 0.25);
+    this.armSwing.add(this.armShadow);
+    this.armProcedural = [plinth, plinthRing, post, housing, tube, weight, weightCap, head, cart, lift, stylus];
 
     this.armGlow = new THREE.Sprite(new THREE.SpriteMaterial({map:glowTexture(), color:0x5ad1ff, transparent:true,
       opacity:0, depthWrite:false, depthTest:false, blending:THREE.AdditiveBlending}));
-    this.armGlow.position.set(0, -0.012, ARM_LEN);
+    this.armGlow.position.set(ARM_TIP_X, -0.024, ARM_LEN);
     this.armTilt.add(this.armGlow);
+    // İğne ucunun sürekli, hafif turuncu parıltısı (görseldeki gibi).
+    this.stylusGlow = new THREE.Sprite(new THREE.SpriteMaterial({map:glowTexture(), color:0xff6a2a, transparent:true,
+      opacity:0.55, depthWrite:false, depthTest:false, blending:THREE.AdditiveBlending}));
+    this.stylusGlow.position.set(ARM_TIP_X, -0.03, ARM_LEN-0.004); this.stylusGlow.scale.setScalar(0.03);
+    this.armTilt.add(this.stylusGlow);
     this.armLight = new THREE.PointLight(0x5ad1ff, 0, 0.35, 0);
-    this.armLight.position.set(0, -0.02, ARM_LEN);
+    this.armLight.position.set(ARM_TIP_X, -0.02, ARM_LEN);
     this.armTilt.add(this.armLight);
     this.root.add(this.arm);
   }
@@ -246,8 +288,12 @@ export class World {
   // Kol üzerindeki bir noktanın (along: 0 = sabit uç, 1 = iğne ucu) kök
   // koordinatı.
   _armPoint(out, along){
-    const y = this.armYaw, x = this.armTiltX, L = ARM_LEN*along;
-    out.set(ARM_PIVOT.x + Math.sin(y)*Math.cos(x)*L, ARM_H - Math.sin(x)*L - 0.012*along, ARM_PIVOT.z + Math.cos(y)*Math.cos(x)*L);
+    // Kol yerel koordinatı: z boyunca uzunluk, uca yakın kırılma yanal
+    // (x) kayma, iğneye doğru aşağı (y) iniş → önce eğim (X), sonra yaw (Y).
+    const yaw = this.armYaw, tl = this.armTiltX;
+    const ox = _armKinkX(along), oy = -0.038*along*along, oz = ARM_LEN*along;
+    const y1 = oy*Math.cos(tl) - oz*Math.sin(tl), z1 = oy*Math.sin(tl) + oz*Math.cos(tl);
+    out.set(ARM_PIVOT.x + ox*Math.cos(yaw) + z1*Math.sin(yaw), ARM_H + y1, ARM_PIVOT.z - ox*Math.sin(yaw) + z1*Math.cos(yaw));
     return out;
   }
 
@@ -333,12 +379,12 @@ export class World {
     this.baseGlow.material.opacity = (ph && tr < 1) ? g*(0.9 - tr*0.6)*flick : 0;
     this.baseGlow.scale.setScalar(0.05 + 0.09*g);
     this.chargeOrb.material.opacity = charging ? flick : 0;
-    this.chargeOrb.position.set(0, 0.004, ARM_LEN*tr);
+    this.chargeOrb.position.set(_armKinkX(tr), 0.004, ARM_LEN*tr);
     this.chargeOrb.scale.setScalar((0.045 + 0.03*g + 0.035*tr + 0.08*dis)*flick);
     this.chargeBar.visible = tr > 0 && dis < 1;
     this.chargeBar.scale.set(1, 1, Math.max(0.001, ARM_LEN*tr));
     this.chargeBar.material.opacity = 0.55*flick;
-    this.armLight.position.set(0, -0.01, ARM_LEN*tr);
+    this.armLight.position.set(_armKinkX(tr), -0.01, ARM_LEN*tr);
     this.armLight.intensity = ph ? (g*2.5 + tr*3 + dis*7)*flick : this.afterT*8;
     this.armGlow.material.opacity = dis*flick;
     this.armGlow.scale.setScalar(0.08 + dis*0.2);
@@ -414,7 +460,7 @@ export class World {
       this.labelMat.needsUpdate = true; this.label.material = this.labelMat;
     }
     this.label.scale.setScalar(art ? 1.28 : 1);
-    this.labelGlow.material.opacity = art ? 0.1 : 0.55;
+    this.labelGlow.material.opacity = art ? 0 : 0.35;
     if(old && old !== t && old.userData.generated && art) old.dispose();
   }
 
@@ -431,6 +477,10 @@ export class World {
     this.armMetal.color.set(sc.armMetal || '#cfd5e0');
     this.starMat.opacity = sc.stars ?? 1; this.stars.visible = (sc.stars ?? 1) > 0;
     this.nebula.forEach(s=>{ s.material.opacity = sc.nebula ?? 0.22; s.visible = (sc.nebula ?? 0.22) > 0; });
+    this.dustMat.opacity = sc.dust ?? 0.3; this.dust.visible = (sc.dust ?? 0.3) > 0;
+    this.sheen.material.opacity = sc.sheen ?? 0.12;
+    this.strobe.visible = !!sc.strobe;
+    this.bloomBase = sc.bloom ?? 0.45;
     if(!this.customLabel){
       // Görsel yüklenene kadar (ya da yüklenemezse) prosedürel etiket.
       if(this.labelMat.map && this.labelMat.map.userData.generated) this.labelMat.map.dispose();
@@ -446,7 +496,7 @@ export class World {
     this.dustMat.color.set(T.star);
     const nebCols = [T.bg1, T.peril, T.player];
     this.nebula.forEach((s,i)=>s.material.color.set(shade(nebCols[i%nebCols.length], 0.1)));
-    this.ringColor = T.star;
+    this.ringColor = (this.themeScene && this.themeScene.ringColor) || T.star;
     this.ringStyle = null;   // halka renkleri yeni temaya göre bir sonraki setRingStyle'da yeniden uygulansın
   }
 
@@ -472,7 +522,7 @@ export class World {
     this.stars.rotation.y += 0.0004*dt;
     const beat = 1 + Math.sin(t*2)*0.05;
     this.labelGlow.scale.setScalar(LABEL_R*4*beat);
-    this.centerLight.intensity = 2.0 + Math.sin(t*2)*0.4;
+    this.centerLight.intensity = 0.6 + Math.sin(t*2)*0.1;   // eskiden 2.0: tüm plağı turuncuya boyuyordu
     // Toz zerreleri: yavaş yörünge + nefes alan yükseklik.
     const p = this.dust.geometry.attributes.position.array, s = this.dustSeed;
     for(let i=0;i<s.length/3;i++){

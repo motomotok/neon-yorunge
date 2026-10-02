@@ -647,16 +647,59 @@ function tonearmGeometry(swing){
   const ang = TONEARM_REST_ANGLE + (TONEARM_STRIKE_ANGLE-TONEARM_REST_ANGLE)*swing;
   return {discR, pivotX, pivotY, tipX: pivotX+Math.cos(ang)*armLen, tipY: pivotY+Math.sin(ang)*armLen};
 }
+// Pikap kolu (klasik mod) — Retro Beats konseptindeki gibi: koyu yuvarlak
+// taban, pirinç pivot kutusu, arkada karşı ağırlık, ortasında kırılma olan
+// pirinç tüp, dikdörtgen kafa ve kırmızı-turuncu iğne ucu; altında gölge.
+// 3D karşılığı: src/render3d/world.js _buildTonearm.
+const TONEARM_BRASS='#b8925a', TONEARM_BRASS_HI='#f2d9a6', TONEARM_DARK='#1c1512';
 function drawTonearmBody(g, headGlowAlpha, headGlowR){
+  const dx=g.tipX-g.pivotX, dy=g.tipY-g.pivotY, L=Math.hypot(dx,dy)||1;
+  const ux=dx/L, uy=dy/L, nx=-uy, ny=ux;
+  const w=Math.max(3, g.discR*0.075);
+  // Kırılma noktaları: kolun ilk %55'i düz, sonra yana kırılıp uca iner.
+  const p1x=g.pivotX+ux*L*0.55, p1y=g.pivotY+uy*L*0.55;
+  const p2x=g.pivotX+ux*L*0.78+nx*L*0.06, p2y=g.pivotY+uy*L*0.78+ny*L*0.06;
+  const hx=g.tipX-p2x, hy=g.tipY-p2y, hl=Math.hypot(hx,hy)||1, hux=hx/hl, huy=hy/hl;
+  const armPath=(ox,oy)=>{ ctx.beginPath(); ctx.moveTo(g.pivotX+ox,g.pivotY+oy); ctx.lineTo(p1x+ox,p1y+oy);
+    ctx.quadraticCurveTo(p1x+ux*L*0.12+ox, p1y+uy*L*0.12+oy, p2x+ox, p2y+oy); ctx.lineTo(g.tipX-hux*w*2+ox, g.tipY-huy*w*2+oy); };
+  ctx.save(); ctx.lineCap='round'; ctx.lineJoin='round';
+  // Gölge (ışık sol üstten).
+  ctx.strokeStyle='rgba(0,0,0,.35)'; ctx.lineWidth=w*1.5; armPath(w*0.9, w*1.3); ctx.stroke();
+  // Taban
+  ctx.fillStyle=TONEARM_DARK; ctx.beginPath(); ctx.arc(g.pivotX,g.pivotY,g.discR*0.3,0,7); ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,.08)'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(g.pivotX,g.pivotY,g.discR*0.24,0,7); ctx.stroke();
+  // Karşı ağırlık
+  ctx.strokeStyle='#2a211c'; ctx.lineWidth=w*2.6; ctx.lineCap='butt';
+  ctx.beginPath(); ctx.moveTo(g.pivotX,g.pivotY); ctx.lineTo(g.pivotX-ux*L*0.2, g.pivotY-uy*L*0.2); ctx.stroke();
+  ctx.strokeStyle=TONEARM_BRASS; ctx.lineWidth=w*2.6;
+  ctx.beginPath(); ctx.moveTo(g.pivotX-ux*L*0.19, g.pivotY-uy*L*0.19); ctx.lineTo(g.pivotX-ux*L*0.22, g.pivotY-uy*L*0.22); ctx.stroke();
+  ctx.lineCap='round';
+  // Tüp: pirinç + ince parlak çizgi
+  ctx.strokeStyle=TONEARM_BRASS; ctx.lineWidth=w; armPath(0,0); ctx.stroke();
+  ctx.strokeStyle=hexA(TONEARM_BRASS_HI,0.55); ctx.lineWidth=Math.max(1,w*0.35); armPath(-nx*w*0.2,-ny*w*0.2); ctx.stroke();
+  // Pivot kutusu (kol yönüne dönük kare)
+  ctx.save(); ctx.translate(g.pivotX,g.pivotY); ctx.rotate(Math.atan2(uy,ux));
+  const hb=w*1.7; ctx.fillStyle=TONEARM_BRASS; ctx.fillRect(-hb,-hb,hb*2,hb*2);
+  ctx.fillStyle='rgba(255,255,255,.18)'; ctx.fillRect(-hb,-hb,hb*2,hb*0.5);
+  ctx.restore();
+  // Kafa + kartuş (son kol parçasının yönünde)
+  ctx.save(); ctx.translate(g.tipX-hux*w*1.6, g.tipY-huy*w*1.6); ctx.rotate(Math.atan2(huy,hux));
+  ctx.fillStyle=TONEARM_BRASS; ctx.fillRect(-w*2.4,-w*1.6,w*4.4,w*3.2);
+  ctx.fillStyle='#2a211c'; ctx.fillRect(-w*1.2,-w*1.0,w*2.6,w*2.0);
+  ctx.fillStyle='rgba(255,255,255,.2)'; ctx.fillRect(-w*2.4,-w*1.6,w*4.4,w*0.6);
+  ctx.restore();
+  // İğne ucu: kırmızı-turuncu, hafif parlayan
+  const sr=Math.max(1.5,w*0.55);
+  const sg=ctx.createRadialGradient(g.tipX,g.tipY,0,g.tipX,g.tipY,sr*3.2);
+  sg.addColorStop(0,'rgba(255,120,60,.85)'); sg.addColorStop(1,'rgba(255,90,30,0)');
+  ctx.fillStyle=sg; ctx.beginPath(); ctx.arc(g.tipX,g.tipY,sr*3.2,0,7); ctx.fill();
+  ctx.fillStyle='#ff5a1f'; ctx.beginPath(); ctx.arc(g.tipX,g.tipY,sr,0,7); ctx.fill();
+  ctx.restore();
   if(headGlowR>0){
     const grad=ctx.createRadialGradient(g.tipX,g.tipY,0,g.tipX,g.tipY,headGlowR);
     grad.addColorStop(0, hexA('#5ad1ff',headGlowAlpha)); grad.addColorStop(1,'rgba(0,0,0,0)');
     ctx.fillStyle=grad; ctx.beginPath(); ctx.arc(g.tipX,g.tipY,headGlowR,0,7); ctx.fill();
   }
-  ctx.strokeStyle='rgba(210,216,230,.85)'; ctx.lineWidth=Math.max(2,g.discR*0.045); ctx.lineCap='round';
-  ctx.beginPath(); ctx.moveTo(g.pivotX,g.pivotY); ctx.lineTo(g.tipX,g.tipY); ctx.stroke();
-  ctx.fillStyle='#2a2a33'; ctx.beginPath(); ctx.arc(g.pivotX,g.pivotY,g.discR*0.12,0,7); ctx.fill();
-  ctx.fillStyle='rgba(234,252,255,.9)'; ctx.beginPath(); ctx.arc(g.tipX,g.tipY,g.discR*0.08,0,7); ctx.fill();
 }
 function drawTonearmIdle(){
   drawTonearmBody(tonearmGeometry(0), 0, 0);

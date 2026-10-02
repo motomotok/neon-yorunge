@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.6.0';
+const GAME_VERSION = '2.7.0';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -336,7 +336,14 @@ function performPrestige(){
   return gain;
 }
 
+// TEST MODU: true iken mağazadaki tüm kozmetikler (tema, pena — premium
+// dahil —, iz, güneş, halka, sezon/seri ödülleri) ücretsiz ve açık.
+// İleride: premium içerik gerçek parayla alınan bir "elmas" para birimiyle
+// (LoL'deki RP gibi), diğerleri notayla satılacak — o zaman false yapılır.
+// Yetenekler/Çekirdek Ağacı (ilerleme mekaniği) bundan etkilenmez.
+const TEST_FREE_UNLOCK = true;
 function isUnlockedItem(category, item){
+  if(TEST_FREE_UNLOCK) return true;
   if(item.gate.type==='free') return true;
   if(item.gate.type==='achievement') return stats.unlocked.includes(item.gate.id);
   if(item.gate.type==='coin') return stats.owned[category].includes(item.id);
