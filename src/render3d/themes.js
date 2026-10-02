@@ -55,7 +55,7 @@ function glowRim(color, r, w, opacity){
 // kullanılır.
 function slots(view){
   if(view.aspect < 0.9) return {bl:[-0.5,-0.74], br:[0.52,-0.78], ul:[-0.6,0.52], ur:[0.6,0.52], bc:[0,-0.86], sky:0.58};
-  return {bl:[-0.8,-0.5], br:[0.84,-0.22], ul:[-0.8,0.42], ur:[0.82,0.38], bc:[0,-0.9], sky:0.55};
+  return {bl:[-0.8,-0.5], br:[0.86,-0.45], ul:[-0.8,0.42], ur:[0.82,0.38], bc:[0,-0.9], sky:0.55};
 }
 // Nesneyi ekran konumuna (nx,ny) karşılık gelen yere koyar ve kameraya
 // döndürür. Plağa ya da kola fazla yakınsa gizler (kare ekranlarda yer yok).
@@ -196,7 +196,7 @@ function buildRetro(){
     group, label:'assets3d/themes/neon/label.jpg', background:vignetteTexture('#2b1610', '#070302'),
     vinyl:'#d9d3cf', armMetal:'#b8925a', stars:0, nebula:0, dust:0, sheen:0.1, bloom:0.4,
     // Halkalar parlak çizgi değil, plağa kazınmış soluk oluk gibi.
-    ringColor:'#d9b48a', ringCoreScale:0.55,
+    ringColor:'#d9b48a', ringBaseColor:'#d9b48a', ringBase:0.13, ringFlash:'#ffc27a',
     layout(view){
       const sl = slots(view);
       air.position.set(0, -0.12, 0); air.rotation.set(-Math.PI/2, 0, 0);   // yatay: tamamen plağın altında
@@ -311,7 +311,7 @@ function buildSynth(world){
   let pulseStart = -10;
   return {
     group, label:'assets3d/themes/synthbeats/label.jpg',
-    vinyl:'#d8d8e8', armMetal:'#c9ced8', stars:0.1, nebula:0.05, dust:0, bloom:0.3, ringCoreScale:0.36, ringColor:'#5fc3d3',
+    vinyl:'#d8d8e8', armMetal:'#c9ced8', stars:0.1, nebula:0.05, dust:0, bloom:0.3, ringColor:'#5fc3d3', ringBaseColor:'#c9cbe0', ringBase:0.11, ringFlash:'#5fe8ff',
     update(dt, t, f){
       const beat = Math.pow(Math.max(0, Math.sin(t*Math.PI*2*1.6)), 6);   // ~96 BPM vuruş
       const energy = 0.6 + (f.inGame && f.player ? Math.min(1, (f.player.speed-1.5)*0.4) : 0);
@@ -351,18 +351,6 @@ function buildSynth(world){
 }
 
 // ---------------- Urban Sounds ----------------
-// Altın zincir halkası dokusu: yatay (üstten görülen) ve dikey (yandan
-// görülen) baklalar art arda.
-function chainTexture(){
-  const c = canvas(128, 32), g = c.getContext('2d');
-  const gold = g.createLinearGradient(0,0,0,32);
-  gold.addColorStop(0,'#fff0b0'); gold.addColorStop(0.45,'#d9a43a'); gold.addColorStop(1,'#7a5214');
-  g.lineWidth = 6; g.strokeStyle = gold;
-  g.beginPath(); g.ellipse(32,16,26,11,0,0,Math.PI*2); g.stroke();
-  g.fillStyle = gold; g.fillRect(70,11,52,10);
-  g.fillStyle = 'rgba(255,255,255,.55)'; g.fillRect(74,12,44,2);
-  return tex(c, true);
-}
 // Bulanık neon şehir gecesi (Safari'de canvas filter olmadığı için
 // bulanıklık radyal gradyanlarla taklit edilir).
 function cityTexture(){
@@ -417,14 +405,11 @@ function neonCassetteTexture(frame){
 }
 function buildUrban(world){
   const group = new THREE.Group();
-  const ct = chainTexture();
-  const chains = [];
-  for(const k of RING_K){
-    const circ = 2*Math.PI*k, links = Math.round(circ/0.05);
-    const m = new THREE.Mesh(ringStrip(k, 0.018, 360, links, TOP_Y+0.0016),
-      new THREE.MeshBasicMaterial({map:ct, transparent:true, alphaTest:0.05, depthWrite:false, side:THREE.DoubleSide}));
-    chains.push(m); group.add(m);
-  }
+  // Sade siyah plak + mor-pembe neon kenar (eski altın zincirler kafa
+  // karıştırıyordu). Halkalar silik çizgi, notada sarı yanar.
+  const rim = glowRim('#d04bff', DISC_R*1.01, 0.004, 0.6);
+  const rimHalo = glowRim('#ff3fae', DISC_R*1.01, 0.022, 0.14);
+  group.add(rim, rimHalo);
 
   // --- Neon kaset tabelası: sakin vızıltı; arada bir bozuk tüp gibi titreyip
   // söner, makara kolları iki kare arasında ritimle gidip gelir.
@@ -451,9 +436,8 @@ function buildUrban(world){
 
   return {
     group, label:'assets3d/themes/urbansounds/label.jpg', background:cityTexture(),
-    vinyl:'#d9d3cf', armMetal:'#c9ced8', stars:0, nebula:0.0, dust:0, bloom:0.3,
-    // Halka çekirdek çizgilerini sönükleştir — zincir onların yerini alır.
-    ringCoreScale:0.25,
+    vinyl:'#77727c', armMetal:'#c9ced8', stars:0, nebula:0.0, dust:0, bloom:0.3,
+    ringColor:'#ffd45a', ringBaseColor:'#d6c8e6', ringBase:0.11, ringFlash:'#ffd45a',
     layout(view){
       V = view; const sl = slots(view);
       placeAt(signG, view, sl.ul[0], sl.ul[1], 0.03, 0.1);
@@ -461,6 +445,7 @@ function buildUrban(world){
       placeAt(sky, view, 0, sl.sky, -0.1, -1); sky.visible = true;
     },
     update(dt, t){
+      rimHalo.material.opacity = 0.12 + Math.sin(t*1.7)*0.03;
       // Neon: hafif vızıltı + ara sıra bozuk tüp titremesi.
       sign.material.map = (Math.floor(t*1.6) % 2) ? neonB : neonA;
       let on = 1;
@@ -645,7 +630,7 @@ function buildCosmic(world){
 
   return {
     group, label:'assets3d/themes/cosmicsoundwave/label.jpg', background:spaceTexture(),
-    vinyl:'#9fb4ff', armMetal:'#c9ced8', stars:0.5, nebula:0.08, dust:0, bloom:0.3, ringCoreScale:0.36, ringColor:'#6fa6d6',
+    vinyl:'#9fb4ff', armMetal:'#c9ced8', stars:0.5, nebula:0.08, dust:0, bloom:0.3, ringColor:'#6fa6d6', ringBaseColor:'#c8ccd8', ringBase:0.1, ringFlash:'#9fd6ff',
     layout(view){
       V = view; const sl = slots(view);
       placeAt(saturn, view, sl.bl[0], sl.bl[1], 0.05, 0.1);
