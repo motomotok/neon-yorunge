@@ -83,6 +83,8 @@ function renderFrame3D(dt){
   f.state=state; f.inGame=!!GAME_STATES[state]; f.inMenu=!!MENU_STATES[state];
   f.player=player; f.items=items; f.particles=particles; f.shake=shake; f.flash=flash;
   f.bossIntensity=(GAME_STATES[state] && bossTelegraph) ? bossTelegraphIntensity(bossTelegraph.t) : 0;
+  f.bossPh=(GAME_STATES[state] && bossTelegraph) ? bossTelegraphPhases(bossTelegraph.t) : null;
+  f.notes=session ? session.stars : 0;
   f.theme=T; f.themeKey=cfg.theme; f.ringStyle=cfg.ringStyle; f.trail=cfg.trail; f.skin=cfg.skin;
   f.skinImg=penaImg(); f.playerColor=playerColor(); f.colorblind=cfg.colorblind; f.easeOut=easeOut;
   try{ Render3D.render(f); }

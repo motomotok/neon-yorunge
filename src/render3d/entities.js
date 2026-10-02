@@ -10,6 +10,7 @@ import * as THREE from 'three';
 import { resolveSlot, instantiateModel, updateSheetFrame } from './assets.js';
 import { glowTexture, shadowTexture, dotTexture, bossRingTexture } from './textures.js';
 import { TOP_Y } from './world.js';
+import { RibbonBatch } from './ribbon.js';
 
 export const ITEM_TYPES = ['star','gold','diamond','coin','heart','shield','slow','magnet','freeze','mult','ghost',
   'hazard','hazardJump','hazardBomb','hazardPull','hazardTwin','hazardTwinDecoy','hazardPulse','hazardCreep'];
@@ -97,7 +98,18 @@ export class Entities {
     this.frame = 0;
     this._resolveManifest();
     this._buildPlayer();
-    this.trail = new PointCloud(40, dotTexture());
+    this.trail = new PointCloud(140, dotTexture());       // pena temas kıvılcımları
+    this.scratch = {batch:new RibbonBatch(300), pts:[], sparks:[], sparkAcc:0, flare:0};
+    this.group.add(this.scratch.batch.mesh);
+    this.ripples = [];
+    for(let i=0;i<5;i++){
+      const g = new THREE.RingGeometry(0.86, 1, 64); g.rotateX(-Math.PI/2);
+      const mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({transparent:true, opacity:0, depthWrite:false,
+        blending:THREE.AdditiveBlending}));
+      mesh.visible = false; this.group.add(mesh);
+      this.ripples.push({mesh, life:0, x:0, z:0});
+    }
+    this.lastNotes = 0;
     this.particles = new PointCloud(900, dotTexture());
     this.group.add(this.trail.obj, this.particles.obj);
   }
@@ -321,7 +333,10 @@ export class Entities {
     const pr = pl.curRadius, R = f.PLAYER_R;
     p.root.position.set(Math.cos(pl.ang)*pr, TOP_Y*f.base + 0.5, Math.sin(pl.ang)*pr);
     p.root.scale.setScalar(R);
-    const bob = Math.sin(t*3)*0.15, h = HOVER + 0.15 + bob;
+    // Pena plağı kazıyor: ucu yüzeye değecek kadar alçakta, süzülme yerine
+    // kazıma titreşimi (oyunda hızlı ve ince, menüde sakin).
+    const jit = f.inGame ? Math.sin(t*47)*0.035 + Math.sin(t*31)*0.025 : Math.sin(t*3)*0.05;
+    const h = 1.12 + jit;
 
     // Görsel kaynağı: manifest (skin'e özel > varsayılan) yoksa mevcut pena PNG'si.
     const def = (this.playerSkinDefs && this.playerSkinDefs[f.skin]) || this.playerDefault || null;
@@ -344,45 +359,133 @@ export class Entities {
       p.sprite.scale.setScalar(2.7*((def && def.opts.size)||1));
       // Halka değiştirirken hareket yönüne hafif yatış.
       const lean = Math.max(-1, Math.min(1, (radiusTarget(f)-pr)/(R*4)));
-      p.mat.rotation = -lean*0.35;
+      p.mat.rotation = -lean*0.35 + (f.inGame ? Math.sin(t*39)*0.04 : 0);
     }
     const blink = pl.invulT>0 && (Math.floor(pl.invulT/4)%2===0);
     const alpha = blink ? 0 : (pl.ghostT>0 ? 0.5+Math.sin(t*10)*0.15 : 1);
     p.mat.opacity = alpha;
     if(p.model) p.model.visible = p.model.visible && !blink;
-    p.glow.position.y = h; p.glow.material.color.copy(linColor(f.playerColor)); p.glow.material.opacity = 0.75*alpha;
-    p.light.color.copy(linColor(f.playerColor)); p.light.position.y = h*1.6; p.light.distance = R*16;
+    p.glow.position.y = 0.35; p.glow.scale.setScalar(3.6); p.glow.material.color.copy(linColor(f.playerColor)); p.glow.material.opacity = 0.4*alpha;
+    p.light.color.copy(linColor(f.playerColor)); p.light.position.y = h*0.9; p.light.distance = R*14;
     p.shield.visible = pl.shieldHits>0;
     if(p.shield.visible){ p.shield.position.y = h; p.shield.material.opacity = 0.8+Math.sin(t*8)*0.2; }
     p.magnet.visible = pl.magnetT>0;
     if(p.magnet.visible){ p.magnet.rotation.y = t*1.6; p.magnet.material.opacity = 0.45+Math.sin(t*6)*0.2; }
   }
 
-  // ---------------- İz ----------------
-  _updateTrail(f, t){
-    const tr = this.trail; tr.begin();
-    const pl = f.player;
-    if((f.inGame || f.inMenu) && pl){
-      const pr = pl.curRadius, R = f.PLAYER_R, y = TOP_Y*f.base + 0.5 + R*(HOVER+0.1);
-      const style = f.trail, pc = linColor(f.playerColor);
-      const tmp = this._tmpCol || (this._tmpCol = new THREE.Color());
-      const long = style==='comet' || style==='ribbon';
-      const n = long ? 26 : 14, step = long ? 0.022 : 0.05;
-      for(let i=1;i<=n;i++){
-        const a = pl.ang - i*step, k = 1 - i/(n+1);
-        let rad = pr, col = pc, size = R*2*k, alpha = k*0.6;
-        if(style==='ribbon') rad = pr + Math.sin(t*4 - i*0.25)*R*0.4;
-        else if(style==='sparkle'){ if(i%2===0) continue; col = linColor('#ffffff'); size *= 0.6+((i*37)%10)/10; }
-        else if(style==='rainbow'){ col = tmp.setHSL(((t*60+i*22)%360)/360, 0.9, 0.65); }
-        else if(style==='quantum'){ col = i%2===0 ? pc : linColor('#7fe8ff'); size *= 1+Math.sin(t*6-i*0.8)*0.25; }
-        else if(style==='phantom'){ col = linColor('#eaf2ff'); size *= 1.1; alpha *= 0.55; }
-        else if(style==='season1_trail'){ col = linColor(i%2===0 ? '#54e0ff' : '#fff6c8'); size *= 1+Math.sin(t*5-i*0.6)*0.2; }
-        else if(style==='season2_trail'){ col = tmp.setHSL((28+Math.sin(t*3-i*0.4)*10)/360, 0.95, Math.max(35,60-i*2)/100); }
-        if(long) size *= 1.3;
-        tr.push(Math.cos(a)*rad, y, Math.sin(a)*rad, size, col, alpha);
+  // ---------------- Pena çiziği ----------------
+  // Kuyruk yerine pena plağı kazıyormuş gibi bir çizik bırakır. Noktalar
+  // PLAĞIN kendi koordinatlarında saklanır, bu yüzden çizik plakla
+  // birlikte dönüp penadan uzaklaşarak söner: "pena plağı çiziyor" hissi.
+  // Renkler mağazadaki İz Efekti seçimini (cfg.trail) izler.
+  _scratchColor(style, i, age, t, pc){
+    const tmp = this._tmpCol || (this._tmpCol = new THREE.Color());
+    switch(style){
+      case 'rainbow': return tmp.setHSL(((t*60 + i*9)%360)/360, 0.9, 0.62);
+      case 'sparkle': return linColor(i%3===0 ? '#ffffff' : '#fff2c4');
+      case 'quantum': return (i>>2)%2===0 ? pc : linColor('#7fe8ff');
+      case 'phantom': return linColor('#eaf2ff');
+      case 'season1_trail': return linColor((i>>2)%2===0 ? '#54e0ff' : '#fff6c8');
+      case 'season2_trail': return tmp.setHSL((28+Math.sin(t*3-i*0.2)*10)/360, 0.95, 0.55);
+      case 'pixel': return pc;
+      default: return pc;
+    }
+  }
+
+  _updateScratch(f, t, dt){
+    const sc = this.scratch, pl = f.player, R = f.PLAYER_R;
+    const now = t, LIFE = 3.0;
+    const ra = f.recordAngle || 0, c = Math.cos(ra), s = Math.sin(ra);
+    const active = (f.inGame || f.inMenu) && pl;
+    const y = TOP_Y*f.base + 0.9;
+    const pc = linColor(f.playerColor);
+    if(active){
+      const pr = pl.curRadius, wx = Math.cos(pl.ang)*pr, wz = Math.sin(pl.ang)*pr;
+      // dünya -> plak koordinatı (Y ekseni etrafında -ra döndür)
+      const lx = wx*c - wz*s, lz = wx*s + wz*c;
+      const last = sc.pts[sc.pts.length-1];
+      const d = last ? Math.hypot(lx-last.x, lz-last.z) : Infinity;
+      if(d > R*6) sc.pts.push({x:lx, z:lz, born:now, brk:true});       // ışınlanma (yeni oyun vb.)
+      else if(d > R*0.22) sc.pts.push({x:lx, z:lz, born:now, brk:false});
+      if(sc.pts.length > 290) sc.pts.splice(0, sc.pts.length-290);
+      // Temas kıvılcımları: pena hızlandıkça (kombo) daha çok kıvılcım.
+      const rate = (f.inGame ? 0.35 + Math.min(1.2, (pl.speed-1.5)*0.6) : 0.12) * (f.trail==='sparkle' ? 2.2 : 1);
+      sc.sparkAcc += rate*dt;
+      while(sc.sparkAcc >= 1){
+        sc.sparkAcc -= 1;
+        if(sc.sparks.length >= 120) break;
+        const a = Math.random()*Math.PI*2, sp = (0.6+Math.random()*1.6)*R*0.06;
+        sc.sparks.push({x:wx, y:y, z:wz, vx:Math.cos(a)*sp, vy:(0.5+Math.random())*R*0.07, vz:Math.sin(a)*sp, life:1,
+          hot:Math.random()<0.6});
       }
     }
-    tr.end();
+    while(sc.pts.length && now - sc.pts[0].born > LIFE*1.5) sc.pts.shift();
+    sc.flare = Math.max(0, sc.flare - dt*0.035);
+
+    const B = sc.batch; B.begin(); B.strip();
+    const style = f.trail, n = sc.pts.length, white = linColor('#ffffff');
+    const life = style==='comet' ? LIFE*1.5 : LIFE;
+    const wMul = style==='comet' ? 1.35 : style==='phantom' ? 1.2 : 1;
+    for(let i=0;i<n;i++){
+      const p = sc.pts[i];
+      const age = now - p.born, k = Math.max(0, 1 - age/life);
+      // Piksel stili: kesik kesik çizik (2 nokta çiz, 2 nokta boşluk).
+      if(p.brk || (style==='pixel' && i%4===0)){ B.endStrip(); B.strip(); }
+      if(style==='pixel' && i%4===3) continue;
+      const hot = Math.max(0, 1 - age/0.3);
+      const col = this._scratchColor(style, n-i, age, t, pc);
+      const mix = Math.min(1, hot*0.75 + sc.flare*0.35);
+      const r = col.r + (white.r-col.r)*mix, g = col.g + (white.g-col.g)*mix, b = col.b + (white.b-col.b)*mix;
+      const w = R*(0.42 + hot*0.45 + sc.flare*0.35*k)*wMul;
+      const a = Math.min(1, Math.pow(k,1.4)*(style==='phantom' ? 0.5 : 0.95)*(1+sc.flare*0.8));
+      // world = plak koordinatı ra kadar döndürülmüş
+      let wx = p.x*c + p.z*s, wz = -p.x*s + p.z*c;
+      if(style==='ribbon'){                       // kurdele: dalgalı çizik
+        const rl = Math.hypot(wx,wz) || 1, off = Math.sin(i*0.45 - t*3)*R*0.45;
+        wx += wx/rl*off; wz += wz/rl*off;
+      }
+      B.p(wx, y, wz, w, r, g, b, a);
+    }
+    // son nokta -> penanın tam temas noktası (çizik hep pena ucunda başlasın)
+    if(active && n){
+      const pr = pl.curRadius;
+      B.p(Math.cos(pl.ang)*pr, y, Math.sin(pl.ang)*pr, R*0.7, 1, 1, 1, 1);
+    }
+    B.endStrip(); B.end();
+
+    // kıvılcımlar
+    const T = this.trail; T.begin();
+    for(const k of sc.sparks){
+      k.x += k.vx*dt; k.y += k.vy*dt; k.z += k.vz*dt; k.vy -= R*0.006*dt; k.vx *= 0.96; k.vz *= 0.96;
+      k.life -= 0.045*dt;
+      if(k.y < y){ k.y = y; k.vy *= -0.3; }
+      if(k.life > 0) T.push(k.x, k.y, k.z, R*0.32*k.life, k.hot ? white : pc, k.life);
+    }
+    sc.sparks = sc.sparks.filter(k=>k.life>0);
+    T.end();
+  }
+
+  // Nota toplandı: çizik parlar, penadan plağa ses dalgası halkası yayılır
+  // ve pena'nın bulunduğu oluk bir an yanar — "notalar şarkıyı çalıyor".
+  _noteHit(f){
+    const pl = f.player, pr = pl.curRadius;
+    this.scratch.flare = 1;
+    const rp = this.ripples.find(r=>r.life<=0) || this.ripples[0];
+    rp.life = 1; rp.x = Math.cos(pl.ang)*pr; rp.z = Math.sin(pl.ang)*pr;
+    rp.mesh.material.color.copy(linColor(f.playerColor));
+    if(this.onNote) this.onNote(pl.targetRing);
+  }
+  _updateRipples(f, dt){
+    const R = f.PLAYER_R, y = TOP_Y*f.base + 0.7;
+    for(const r of this.ripples){
+      if(r.life <= 0){ r.mesh.visible = false; continue; }
+      r.life -= dt*0.028;
+      const u = 1 - Math.max(0, r.life);
+      r.mesh.visible = r.life > 0;
+      r.mesh.position.set(r.x, y, r.z);
+      r.mesh.scale.setScalar(R*(1.2 + u*9));
+      r.mesh.material.opacity = Math.max(0, r.life)*0.75;
+    }
   }
 
   // ---------------- Parçacıklar ----------------
@@ -404,7 +507,11 @@ export class Entities {
     const styleKey = (f.themeKey||'') + '|' + (f.colorblind?1:0);
     this._updateItems(f, t, dt, styleKey);
     this._updatePlayer(f, t, dt);
-    this._updateTrail(f, t);
+    const notes = f.notes||0;
+    if(f.inGame && notes > this.lastNotes) this._noteHit(f);
+    this.lastNotes = notes;
+    this._updateScratch(f, t, dt);
+    this._updateRipples(f, dt);
     this._updateParticles(f);
   }
 }

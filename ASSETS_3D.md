@@ -112,5 +112,9 @@ www/game/gfx.js  mod geçişi, tembel yükleme, frame anlık görüntüsü, klas
   GitHub Pages derleme yapmadan doğrudan `www/`'yi yayınlar). `npm run cap:sync` her şeyi derler.
 - Klasik çizimin öğe görselleri 3D'de doku olarak yeniden kullanılır (`gfx.js` → `paintItem3D`).
   Bu yüzden asset verilmeyen tipler de 3D sahnede doğru görünür.
+- Pena izi her iki modda da "plağı kazıyan çizik" olarak çizilir (3D: `entities.js` `_updateScratch`,
+  klasik: `render.js` `drawScratch2D`). Mağazadaki İz Efektleri çiziğin rengini/şeklini belirler.
+- Boss uyarısı her iki modda aynı zaman çizelgesini kullanır (`render.js` `bossTelegraphPhases`):
+  iğne iner → kolun sabit ucunda yük toplanır → yük uca akar → uçtan plağa şimşekler yayılır.
 - Henüz 3D karşılığı olmayan klasik seçenekler: `cfg.sun` güneş skinleri (3D'de hep plak etiketi)
   ve kayan yıldızlar. Halka stilleri ile iz stilleri 3D'de de çalışıyor.

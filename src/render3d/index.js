@@ -54,6 +54,7 @@ function init(opts){
 
   world = new World(scene, manifest);
   entities = new Entities(scene, manifest, opts.hooks || {});
+  entities.onNote = ring=>world.flashRing(ring);
   resolveSlot((manifest.background||{}).image).then(d=>{ if(d && d.texture){ bgDef = d; scene.background = d.texture; fitBackground(); } });
 
   renderPass = new RenderPass(scene, camera);
@@ -150,6 +151,7 @@ function render(f){
   world.setTheme(f.themeKey, f.theme);
   world.setRingStyle(f.ringStyle);
   world.update(dt, t, f);
+  f.recordAngle = world.recordSpin.rotation.y;
   entities.update(dt, t, f);
 
   // Ekran sarsıntısı -> kamera titremesi; boss uyarısında hafif yakınlaşma.
@@ -158,7 +160,7 @@ function render(f){
   const zoomIn = 1 - (f.bossIntensity||0)*0.06;
   camera.position.set(bp.x + (Math.random()-0.5)*sh*1.2, bp.y*zoomIn + (Math.random()-0.5)*sh*0.6, bp.z*zoomIn);
   camera.lookAt(tg);
-  if(bloomPass) bloomPass.strength = 0.85 + (f.flash||0)*0.8 + (f.bossIntensity||0)*0.5;
+  if(bloomPass) bloomPass.strength = 0.85 + (f.flash||0)*0.8 + (f.bossIntensity||0)*0.4 + (world.elec||0)*0.7;
 
   if(composer) composer.render(); else renderer.render(scene, camera);
 }
@@ -171,7 +173,8 @@ function fail(reason){
 }
 
 function info(){
-  return {quality:qualityLive, preference:qualityPref, fps:Math.round(fps.value), failed, missingAssets:loadErrors.slice()};
+  return {quality:qualityLive, preference:qualityPref, fps:Math.round(fps.value), failed, missingAssets:loadErrors.slice(),
+    scratchPoints: entities ? entities.scratch.pts.length : 0};
 }
 
 window.Render3D = { supported, init, resize, render, setQuality, info, fail };
