@@ -472,10 +472,15 @@ function update(dt){
     }
 
     const fwd=normAng(it.ang-player.ang);
-    if(it.prevFwd!=null && (fwd-it.prevFwd)>Math.PI) it.expiring=true;
+    // Oyuncu öğenin yanından geçince öğe söner. Nadir değerli öğeler (jeton,
+    // sol anahtarı) hemen gitmez: bir tur daha plakta kalır, ikinci geçişte söner.
+    if(it.prevFwd!=null && (fwd-it.prevFwd)>Math.PI){
+      it.passes=(it.passes||0)+1;
+      if(it.passes >= ((it.type==='coin'||it.type==='diamond') ? 2 : 1)) it.expiring=true;
+    }
     it.prevFwd=fwd;
 
-    if(it.expiring){ it.pop-=dt*0.08; if(it.pop<=0){ it.alive=false; continue; } }
+    if(it.expiring){ it.pop-=dt*0.028; if(it.pop<=0){ it.alive=false; continue; } }   // ~0.6 sn'de söner (eskiden 0.2 sn)
 
     const da=Math.abs(angDiff(player.ang,it.ang));
     const hitWindow = it.type==='hazardBomb' ? 0.20 : 0.13;
@@ -565,7 +570,7 @@ function update(dt){
   let _iw=0;
   for(let _ir=0;_ir<items.length;_ir++){ if(items[_ir].alive) items[_iw++]=items[_ir]; }
   items.length=_iw;
-  if(items.length>30) items.splice(0, items.length-30);
+  if(items.length>40) items.splice(0, items.length-40);   // jeton/sol anahtarı bir tur daha kaldığı için 30'dan artırıldı
 
   if(bossActive){
     bossWaveItems = bossWaveItems.filter(it=>it.alive);

@@ -18,6 +18,19 @@ const HAZARDS = new Set(['hazard','hazardJump','hazardBomb','hazardPull','hazard
 // Manifest görsellerinin varsayılan göreli boyutu (2D sürümdeki oranlar).
 const TYPE_SIZE = {hazardBomb:1.5, diamond:1.0, coin:0.9, heart:1.1};
 const HOVER = 1.55;
+// Klasik moddakiyle (render.js CLEF_SPARKS) aynı yıldız konumları — R cinsinden x, y ve faz.
+const CLEF_SPARKS = [[1.25,-1.15,0],[-1.3,-0.5,1.6],[1.35,0.75,3.1],[-0.9,1.25,4.5],[0.2,-1.6,5.6]];
+let _spark = null;
+function sparkTexture(){
+  if(_spark) return _spark;
+  const c=document.createElement('canvas'); c.width=c.height=64; const g=c.getContext('2d');
+  const gr=g.createRadialGradient(32,32,0,32,32,20); gr.addColorStop(0,'rgba(200,255,250,.6)'); gr.addColorStop(1,'rgba(120,230,255,0)');
+  g.fillStyle=gr; g.beginPath(); g.arc(32,32,20,0,7); g.fill();
+  g.fillStyle='#fff'; g.beginPath();
+  for(let i=0;i<8;i++){ const a=i*Math.PI/4, r=(i%2?3.5:22); i?g.lineTo(32+Math.cos(a)*r,32+Math.sin(a)*r):g.moveTo(32+Math.cos(a)*r,32+Math.sin(a)*r); }
+  g.closePath(); g.fill();
+  _spark=new THREE.CanvasTexture(c); _spark.colorSpace=THREE.SRGBColorSpace; return _spark;
+}
 const SCRATCH_LEN_R = 22;       // çiziğin en fazla uzunluğu (PLAYER_R cinsinden)            // öğelerin plaktan yüksekliği (R biriminde)
 const FALLBACK_PX = 160;       // klasik çizimden üretilen dokunun çözünürlüğü
 
@@ -185,6 +198,15 @@ export class Entities {
       v.body.scale.setScalar(v.baseScale);
       root.add(v.body);
     }
+    // Sol anahtarı: çevresinde sabit noktalarda belirip sönen küçük yıldızlar.
+    if(type==='diamond'){
+      v.sparks = CLEF_SPARKS.map(sp=>{
+        const s = new THREE.Sprite(new THREE.SpriteMaterial({map:sparkTexture(), transparent:true, opacity:0,
+          depthWrite:false, depthTest:false, blending:THREE.AdditiveBlending}));
+        s.position.set(sp[0], HOVER - sp[1], 0.01); s.userData.phase = sp[2];
+        root.add(s); return s;
+      });
+    }
     // Manifest görselleri kendi parlamalarını taşımayabilir — tip renginde
     // yumuşak bir hâle ekle (bloom'u da besler). Klasik doku zaten hâleli.
     if(def && def.opts.glow !== false){
@@ -252,7 +274,7 @@ export class Entities {
   _animateItem(v, it, t, dt, f, styleKey){
     const type = it.type, def = v.def, hazard = HAZARDS.has(type);
     // Notalar Subway Surfers coin'leri gibi belirgin salınır; diğerleri hafif.
-    const bob = (type==='star'||type==='gold') ? Math.sin(t*3.2 + it.ang*3)*0.32 : Math.sin(t*2.4 + it.ang*3)*0.14;
+    const bob = (type==='star'||type==='gold') ? Math.sin(t*3.2 + it.ang*3)*0.32 : type==='diamond' ? 0 : Math.sin(t*2.4 + it.ang*3)*0.14;
     let scale = 1, opacity = 1, spin = 0, flipX = 1;
     if(hazard){
       spin = type==='hazardJump' ? 0 : t*(type==='hazardCreep'?1.1:type==='hazardPulse'?1.0:0.6);
@@ -264,13 +286,11 @@ export class Entities {
       // Cızırtı: bozuk sinyal gibi hafif parlaklık titremesi.
       opacity *= 0.82 + Math.random()*0.18;
     } else if(type==='coin'){
-      flipX = Math.cos(t*3 + it.ang*2);              // jeton gibi dönen 3D çevirme
-      if(Math.abs(flipX)<0.12) flipX = 0.12*Math.sign(flipX||1);
+      // Jeton gibi yavaş dönen çevirme; hiçbir an ince bir çizgiye inmez.
+      flipX = 0.35 + 0.65*Math.abs(Math.cos(t*1.6 + it.ang*2));
     } else if(type==='diamond'){
-      // Kristal sol anahtarı: tam dönüş yerine hafif salınım + nefes alan boyut
-      // (tam dönünce ince bir çizgiye dönüşüyordu).
-      flipX = 0.82 + 0.18*Math.cos(t*2.2 + it.ang*2);
-      scale = 1.08 + Math.sin(t*3 + it.ang)*0.06;
+      // Kristal sol anahtarı tamamen sabit; canlılığı çevresindeki yıldızlar verir.
+      flipX = 1; scale = 1.08;
     } else if(type==='heart'){
       scale = 1+Math.sin(t*5)*0.08;
     }
@@ -292,6 +312,10 @@ export class Entities {
       v.glow.material.opacity = 0.5*opacity;
     }
     v.shadow.material.opacity = 0.5;
+    if(v.sparks) for(const s of v.sparks){
+      const tw = Math.max(0, Math.sin(t*2.2 + s.userData.phase));
+      s.material.opacity = tw; s.scale.setScalar(0.35 + tw*0.55); s.material.rotation = t*2 + s.userData.phase;
+    }
     // Boss dalgasının öğeleri: altlarında dönen kesikli altın halka.
     if(it.boss){
       if(!v.bossRing){ v.bossRing = flatPlane(bossRingTexture(), 0.8, true); v.root.add(v.bossRing); }

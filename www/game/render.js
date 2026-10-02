@@ -457,10 +457,8 @@ function drawItem(x,y,type,sc,t,it){
   else if(type==='coin') col='#ffb454';
   else if(type==='heart') col='#ff5d8f';
   else col='#ffffff';
-  const glowAlpha = type==='hazardTwinDecoy' ? 0.3+Math.sin(t*9)*0.15 : 0.6;
-  const g=ctx.createRadialGradient(x,y,0,x,y,R*2.4);
-  g.addColorStop(0, hexA(col,glowAlpha)); g.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,R*2.4,0,7); ctx.fill();
+  // Not: öğelerin arkasındaki renkli ışık halesi bilerek yok — görseller
+  // (nota, jeton, sol anahtarı, cızırtılar) kendi parlaklıklarını taşıyor.
 
   if(isHazardType(type) || type==='hazardTwinDecoy'){
     let Rh = type==='hazardBomb' ? R*1.5 : R;
@@ -517,11 +515,13 @@ function drawItem(x,y,type,sc,t,it){
     // yüklenene kadar vektör sol anahtarı.
     if(imgReady(ITEM_IMG.clef)){ const s=R*1.7; ctx.drawImage(ITEM_IMG.clef, x-s, y-s, s*2, s*2); }
     else { ctx.save(); ctx.shadowColor='#ffd98a'; ctx.shadowBlur=R*0.9; drawTrebleClef(ctx, x, y, R*2.9, col); ctx.restore(); }
-    // Etrafında dönen, sırayla parlayan 4 ışıltı — nadir/değerli olduğu belli olsun.
-    for(let k=0;k<4;k++){
-      const ang=t*1.2 + k*Math.PI/2, rr=R*1.75, tw=Math.max(0, Math.sin(t*5 + k*1.7));
+    // İkon sabit; çevresinde sabit noktalarda küçük yıldızlar sırayla yavaşça
+    // belirip söner — nadir/değerli olduğu belli olsun.
+    // (it yoksa — 3D doku üretimi — yıldızları 3D kendisi canlandırır.)
+    if(it) for(let k=0;k<CLEF_SPARKS.length;k++){
+      const sp=CLEF_SPARKS[k], tw=Math.max(0, Math.sin(t*2.2 + sp[2]));
       if(tw<0.05) continue;
-      const sx=x+Math.cos(ang)*rr, sy=y+Math.sin(ang)*rr*0.9, sz=R*(0.22+tw*0.3);
+      const sx=x+sp[0]*R, sy=y+sp[1]*R, sz=R*(0.16+tw*0.26);
       ctx.save(); ctx.translate(sx,sy); ctx.rotate(t*2+k);
       const sg=ctx.createRadialGradient(0,0,0,0,0,sz*1.6); sg.addColorStop(0,`rgba(200,255,250,${0.5*tw})`); sg.addColorStop(1,'rgba(120,230,255,0)');
       ctx.fillStyle=sg; ctx.beginPath(); ctx.arc(0,0,sz*1.6,0,7); ctx.fill();
@@ -533,7 +533,7 @@ function drawItem(x,y,type,sc,t,it){
     // Para birimi (Nota) jetonu — altın jeton görseli, madeni para gibi kendi
     // ekseninde döner (yatay ölçek cos ile daralıp genişler).
     if(imgReady(ITEM_IMG.coin)){
-      const flip = it ? Math.cos(t*3 + it.ang*2) : 1, fx = Math.max(0.08, Math.abs(flip)), s=R*1.15;
+      const flip = it ? Math.cos(t*1.6 + it.ang*2) : 1, fx = 0.35 + 0.65*Math.abs(flip), s=R*1.15;
       ctx.save(); ctx.translate(x,y); ctx.scale(fx,1);
       ctx.drawImage(ITEM_IMG.coin, -s, -s, s*2, s*2);
       if(flip<0){ ctx.fillStyle='rgba(120,60,10,.35)'; ctx.beginPath(); ctx.arc(0,0,s*0.98,0,7); ctx.fill(); } // arka yüz biraz koyu
@@ -628,6 +628,8 @@ function drawNoteShape(x,y,r,col,withFlag,rot){
 // Sol anahtarı (𝄞) — font yerine vektör: bazı Android/iOS fontlarında
 // müzik sembolleri hiç çizilmiyor. g: hangi canvas bağlamı (oyun ya da
 // Nasıl Oynanır ikonu), h: toplam yükseklik (piksel).
+// Sol anahtarı çevresindeki yıldızların konumu (R cinsinden) ve faz farkı.
+const CLEF_SPARKS = [[1.25,-1.15,0],[-1.3,-0.5,1.6],[1.35,0.75,3.1],[-0.9,1.25,4.5],[0.2,-1.6,5.6]];
 function drawTrebleClef(g,x,y,h,col){
   const s=h/2.5;
   g.save(); g.translate(x,y); g.scale(s,s);
