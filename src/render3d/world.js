@@ -458,12 +458,12 @@ export class World {
     for(let i=0;i<3;i++){
       const r = this.rings[i];
       if(!r.baseCol) continue;
-      this.ringFlash[i] = Math.max(0, this.ringFlash[i] - dt*0.045);
+      this.ringFlash[i] = Math.max(0, this.ringFlash[i] - dt*0.07);
       const fl = this.ringFlash[i];
-      r.core.material.color.copy(r.baseCol).lerp(white, fl*0.5).lerp(this._elecCol, ef);
-      r.core.material.opacity = Math.min(1, (pulseOp ?? r.baseOp) + fl*0.35 + ef*0.6);
+      r.core.material.color.copy(r.baseCol).lerp(white, fl*0.2).lerp(this._elecCol, ef);
+      r.core.material.opacity = Math.min(1, (pulseOp ?? r.baseOp) + fl*0.15 + ef*0.6);
       r.halo.material.color.copy(r.core.material.color);
-      r.halo.material.opacity = (this.ringStyle==='glow' ? 0.22 : 0.1) + fl*0.15 + ef*0.35;
+      r.halo.material.opacity = (this.ringStyle==='glow' ? 0.22 : 0.1) + fl*0.06 + ef*0.35;
     }
 
     for(const m of this.mixers) if(m) m.update(dt/60);

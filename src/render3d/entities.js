@@ -104,7 +104,7 @@ export class Entities {
     this.group.add(this.scratch.batch.mesh);
     this.ripples = [];
     for(let i=0;i<5;i++){
-      const g = new THREE.RingGeometry(0.86, 1, 64); g.rotateX(-Math.PI/2);
+      const g = new THREE.RingGeometry(0.9, 1, 64); g.rotateX(-Math.PI/2);
       const mesh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({transparent:true, opacity:0, depthWrite:false,
         blending:THREE.AdditiveBlending}));
       mesh.visible = false; this.group.add(mesh);
@@ -498,12 +498,13 @@ export class Entities {
     const R = f.PLAYER_R, y = TOP_Y*f.base + 0.7;
     for(const r of this.ripples){
       if(r.life <= 0){ r.mesh.visible = false; continue; }
-      r.life -= dt*0.028;
+      r.life -= dt*0.06;
       const u = 1 - Math.max(0, r.life);
       r.mesh.visible = r.life > 0;
       r.mesh.position.set(r.x, y, r.z);
-      r.mesh.scale.setScalar(R*(1.2 + u*9));
-      r.mesh.material.opacity = Math.max(0, r.life)*0.75;
+      // Küçük ve kısa: toplandığı belli olsun ama oyunu kaplamasın.
+      r.mesh.scale.setScalar(R*(1.1 + u*2.4));
+      r.mesh.material.opacity = Math.max(0, r.life)*0.5;
     }
   }
 
