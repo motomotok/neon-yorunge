@@ -72,7 +72,7 @@ function resetGame(){
              coins:0, coinPickups:0, luckyCharges:0, noteMult:1, revivedUsed:false};
   timeLeft = mode==='time' ? 60 : null;
   newRecord=false; timeScale=1; timeScaleT=0;
-  bossNextIndex=0; bossActive=false; bossWaveItems=[]; bossReward=0; bossTelegraph=null; bossLapsLeft=0; bossLapIndex=0;
+  bossNextIndex=0; bossActive=false; bossWaveItems=[]; bossReward=0; bossTelegraph=null; bossColsLeft=0;
   lastHeartScore=-HEART_SCORE_GAP;
   if(activeBoost){
     if(activeBoost==='shieldstart') player.shieldHits=shieldHitsFor();
@@ -140,15 +140,15 @@ function pickHazardKind(){
 // belirir, aynı anda `count` kadar tehlike fırlatır. Zen modda hiç
 // tetiklenmez (o modda zaten hiç tehlike yok). Her eşik bir oyunda yalnızca
 // bir kez tetiklenir (bkz. bossNextIndex, resetGame() ile sıfırlanır).
-// count = boss'un her turundaki cızırtı "sütunu" sayısı, laps = kaç tur
-// süreceği (pena plak etrafında 2-3 tur savaşır).
+// gap = ardışık cızırtı sütunları arasındaki açı (küçüldükçe sıklaşır),
+// laps = savaşın kaç tur boyunca KESİNTİSİZ süreceği.
 const BOSS_STAGES = [
-  {score:450,   count:5,  laps:2, reward:25},
-  {score:1000,  count:6,  laps:2, reward:40},
-  {score:3000,  count:7,  laps:3, reward:65},
-  {score:5000,  count:8,  laps:3, reward:100},
-  {score:10000, count:9,  laps:3, reward:200},
-  {score:15000, count:10, laps:3, reward:280},
+  {score:450,   gap:1.05, laps:2,   reward:25},
+  {score:1600,  gap:0.95, laps:2.5, reward:45},
+  {score:3000,  gap:0.85, laps:3,   reward:65},
+  {score:5000,  gap:0.75, laps:3,   reward:100},
+  {score:10000, gap:0.65, laps:3,   reward:200},
+  {score:15000, gap:0.58, laps:3,   reward:280},
 ];
 // 15000'den sonra dizi BİTMİYOR — her +5000 puanda bir dalga daha gelmeye
 // devam ediyor (count/reward kademeli artıyor, count bir tavanda duruyor).
@@ -158,8 +158,6 @@ const BOSS_STAGES = [
 // hissettim"). bossStageFor() dizinin ÖTESİNDEKİ her index için de bir
 // tanım üretir, boss dalgaları asla bitmez.
 const BOSS_INFINITE_STEP = 5000;
-const BOSS_INFINITE_COUNT_STEP = 1;
-const BOSS_INFINITE_COUNT_CAP = 11;
 const BOSS_INFINITE_REWARD_STEP = 60;
 function bossStageFor(index){
   if(index < BOSS_STAGES.length) return BOSS_STAGES[index];
@@ -167,13 +165,13 @@ function bossStageFor(index){
   const last = BOSS_STAGES[BOSS_STAGES.length-1];
   return {
     score: last.score + extra*BOSS_INFINITE_STEP,
-    count: Math.min(BOSS_INFINITE_COUNT_CAP, last.count + extra*BOSS_INFINITE_COUNT_STEP),
+    gap: Math.max(0.5, last.gap - extra*0.02),
     reward: last.reward + extra*BOSS_INFINITE_REWARD_STEP,
     laps: 3,
   };
 }
 // Boss dalgası sırasında oyuncunun (mevcut hızından bağımsız) sabit açısal
-// hızı — bir tur ~5 sn; boss 2-3 tur sürer (bkz. spawnBossLap).
+// hızı — bir tur ~5 sn; boss 2-3 tur sürer (bkz. spawnBossColumns).
 const BOSS_SLOW_RATE = 0.0204;   // eskiden 0.012 — boss'ta çok yavaşlanıyordu (x1.7)
 // Telegraph, eşikten BOSS_WARN_SCORE_GAP puan önce başlar ve SKORDAN
 // BAĞIMSIZ, gerçek zamanlı BOSS_WARN_SECONDS saniye sonra (performance.now()
@@ -199,41 +197,36 @@ function startBossWave(stageDef){
   bossActive=true; bossReward=stageDef.reward; bossWaveItems=[];
   shake=Math.max(shake,20); flash=1;
   burst(CX,CY,'#5ad1ff',34,7); burst(CX,CY,'#ffffff',22,6);
-  burst(CX,CY,'#ffd24a',40,7); burst(CX,CY,'#ff6b3d',30,6); burst(CX,CY,'#ffffff',20,5);
+  burst(CX,CY,'#ffd24a',40,7); burst(CX,CY,'#ff6b3d',30,6); burst(CX,CY,'#ffffff',12,3.5);
   beep(90,0.5,'sawtooth',0.2); beep(140,0.5,'square',0.16); beep(60,0.6,'sine',0.18);
   showFlash('⚠ '+t('flash_boss_wave'),90); vibrate([30,40,30,40,60]);
-  bossStage = stageDef; bossStageIdx = bossNextIndex; bossLapsLeft = stageDef.laps || 2; bossLapIndex = 0;
-  spawnBossLap();
+  bossStage = stageDef; bossStageIdx = bossNextIndex;
+  bossTravel = 0; bossNextCol = 1.3; bossColsLeft = Math.round((stageDef.laps||2)*Math.PI*2/stageDef.gap);
+  bossBaseAng = player.ang; bossFree = player.targetRing; bossColTotal = bossColsLeft;
+  spawnBossColumns();
 }
 
-// Boss bir "savaş meydanı": her turda plağın neredeyse tamamına yayılmış
-// cızırtı sütunları. Her sütun 1 ya da 2 halkayı kapatır, ama her zaman
-// en az bir halka açıktır ve açık halka bir sonrakine ulaşılabilir
-// yakınlıktadır (adil ama sürekli halka değiştirmeye zorlar). İleri
-// boss'larda 2 halkayı kapatan sütunlar artar. Açık halkalarda ara sıra
-// nota çıkar (risk/ödül). Bir turun cızırtıları geçilince sonraki tur gelir.
-let bossStage=null, bossStageIdx=0, bossLapsLeft=0, bossLapIndex=0;
-function spawnBossLap(){
-  const def = bossStage, idx = bossStageIdx;
-  bossLapsLeft--; bossLapIndex++;
-  const n = def.count, span = 5.0, gap = span/(n-1);
-  const startAng = normAng(player.ang + (bossLapIndex===1 ? 1.3 : 0.9));
-  const p2 = Math.min(0.75, 0.2 + idx*0.1 + (bossLapIndex-1)*0.08);   // 2 halka kapatan sütun olasılığı
-  let free = player.targetRing;
-  for(let c=0;c<n;c++){
-    const ang = normAng(startAng + c*gap);
-    // Yeni açık halka: önceki açık halkadan en fazla 1 (geniş aralıkta 2) uzak.
+// Boss bir "savaş meydanı": pena 2-3 tur boyunca ARA VERMEDEN gelen cızırtı
+// sütunlarının arasından geçer (tur arası boşluk yok — savaş bitti hissi
+// vermesin). Her sütun 1 ya da 2 halkayı kapatır, ama her zaman en az bir
+// halka açıktır ve açık halka bir sonrakine yetişilebilir yakınlıktadır
+// (adil ama sürekli halka değiştirmeye zorlar). Savaş ilerledikçe ve ileri
+// boss'larda 2 halkayı kapatan sütunlar artar. Boss'ta nota çıkmaz.
+// Sütunlar penanın ~5.3 rad önüne kadar peyderpey yerleştirilir.
+let bossStage=null, bossStageIdx=0, bossTravel=0, bossNextCol=0, bossColsLeft=0, bossColTotal=1, bossBaseAng=0, bossFree=0;
+function spawnBossColumns(){
+  const def = bossStage, idx = bossStageIdx, gap = def.gap;
+  while(bossColsLeft>0 && bossNextCol - bossTravel < 5.3){
+    const progress = 1 - bossColsLeft/bossColTotal;
+    const p2 = Math.min(0.8, 0.22 + idx*0.1 + progress*0.18);   // 2 halka kapatan sütun olasılığı
+    const ang = normAng(bossBaseAng + bossNextCol);
     const maxStep = gap >= 0.8 ? 2 : 1;
-    const opts = [0,1,2].filter(r=>Math.abs(r-free)<=maxStep);
-    const prevFree = free;
-    free = opts[Math.floor(rnd()*opts.length)];
-    if(c===0 && free===prevFree && opts.length>1) free = opts.find(r=>r!==prevFree);   // ilk sütun hemen hareket ettirsin
-    let blocked;
-    if(rnd() < p2) blocked = [0,1,2].filter(r=>r!==free);
-    else {
-      const cand = [0,1,2].filter(r=>r!==free);
-      blocked = [cand.includes(prevFree) && rnd()<0.6 ? prevFree : cand[Math.floor(rnd()*cand.length)]];
-    }
+    const opts = [0,1,2].filter(r=>Math.abs(r-bossFree)<=maxStep);
+    const prevFree = bossFree;
+    bossFree = opts[Math.floor(rnd()*opts.length)];
+    if(bossFree===prevFree && rnd()<0.5 && opts.length>1){ const o=opts.filter(r=>r!==prevFree); bossFree=o[Math.floor(rnd()*o.length)]; }
+    const cand = [0,1,2].filter(r=>r!==bossFree);
+    const blocked = rnd() < p2 ? cand : [cand.includes(prevFree) && rnd()<0.65 ? prevFree : cand[Math.floor(rnd()*cand.length)]];
     for(const ring of blocked){
       let type = pickHazardKind();
       if(type==='hazardJump' || type==='hazardCreep') type = rnd()<0.5 ? 'hazard' : 'hazardBomb';   // halka/açı değiştirenler sütunu bozmasın
@@ -241,9 +234,7 @@ function spawnBossLap(){
         pulsePhase: type==='hazardPulse' ? rnd()*Math.PI*2 : 0, pulseDanger:false, creepT:0, creeped:false, boss:true};
       items.push(it); bossWaveItems.push(it);
     }
-    if(blocked.length===1 && rnd()<0.45){
-      items.push({ang, ring:free, type:'star', alive:true, pop:0, expiring:false, prevFwd:null});
-    }
+    bossNextCol += gap; bossColsLeft--;
   }
 }
 
@@ -452,6 +443,7 @@ function update(dt){
   // BOSS_SLOW_RATE, startBossWave()).
   const angStep = bossActive ? BOSS_SLOW_RATE : player.speed*speedMul*pullMul*0.018;
   player.ang = normAng(player.ang + angStep*dt*timeScale);
+  if(bossActive){ bossTravel += angStep*dt*timeScale; spawnBossColumns(); }
 
   const tR=radiusFor(player.targetRing);
   player.curRadius += (tR-player.curRadius)*Math.min(1,0.22*dt);
@@ -605,8 +597,7 @@ function update(dt){
 
   if(bossActive){
     bossWaveItems = bossWaveItems.filter(it=>it.alive);
-    if(bossWaveItems.length===0 && bossLapsLeft>0) spawnBossLap();
-    if(bossWaveItems.length===0){
+    if(bossWaveItems.length===0 && bossColsLeft<=0){
       bossActive=false;
       const finalReward=Math.round(bossReward*(1+upgradeBonus('coinPct')));
       addNotes(finalReward);
@@ -702,11 +693,11 @@ function activatePower(type,x,y){
   // Takviye Süresi yükseltmesi (kalıcı) tüm zamanlı güçlendirmelerin
   // süresini çarpar — kalkanın süresi yok, etkilenmiyor.
   const durMul = 1+upgradeBonus('boostDur');
-  if(type==='shield'){ player.shieldHits=shieldHitsFor(); burst(x,y,'#5efc82',20,5); beep(700,0.12,'sine',0.13); beep(1050,0.12,'triangle',0.1); }
-  else if(type==='slow'){ player.slowT=SLOW_DUR*durMul; burst(x,y,'#7aa2ff',20,5); beep(400,0.2,'sine',0.13); }
-  else if(type==='magnet'){ player.magnetT=MAGNET_DUR*durMul; session.magnets++; stats.magnets++; burst(x,y,'#ff7ae0',20,5); beep(600,0.14,'triangle',0.13); beep(900,0.14,'sine',0.1); }
-  else if(type==='freeze'){ player.freezeT=FREEZE_DUR*durMul; freezeFlash=1; burst(x,y,'#7fe8ff',20,5); beep(500,0.18,'sine',0.13); }
-  else if(type==='mult'){ player.multT=MULT_DUR*durMul; burst(x,y,'#ffd24a',20,5); beep(750,0.14,'triangle',0.13); }
+  if(type==='shield'){ player.shieldHits=shieldHitsFor(); burst(x,y,'#5efc82',12,3.5); beep(700,0.12,'sine',0.13); beep(1050,0.12,'triangle',0.1); }
+  else if(type==='slow'){ player.slowT=SLOW_DUR*durMul; burst(x,y,'#7aa2ff',12,3.5); beep(400,0.2,'sine',0.13); }
+  else if(type==='magnet'){ player.magnetT=MAGNET_DUR*durMul; session.magnets++; stats.magnets++; burst(x,y,'#ff7ae0',12,3.5); beep(600,0.14,'triangle',0.13); beep(900,0.14,'sine',0.1); }
+  else if(type==='freeze'){ player.freezeT=FREEZE_DUR*durMul; freezeFlash=0.5; burst(x,y,'#e4f6ff',10,3); beep(500,0.18,'sine',0.13); }
+  else if(type==='mult'){ player.multT=MULT_DUR*durMul; burst(x,y,'#ffd24a',12,3.5); beep(750,0.14,'triangle',0.13); }
   else if(type==='ghost'){ player.ghostT=GHOST_DUR*durMul; burst(x,y,'#ffffff',20,5); beep(450,0.16,'sine',0.13); }
   addScore(10*(diffCfg.scoreMult||1)); shake=6; vibrate(15);
 }

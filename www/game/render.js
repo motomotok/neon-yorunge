@@ -93,7 +93,7 @@ function drawWorld(){
 // iki çizim modunun ortak katmanı.
 function drawScreenOverlays(){
   if(flash>0 && GAME_STATES[state]){ ctx.fillStyle=hexA(T.peril, flash*0.4); ctx.fillRect(0,0,W,H); }
-  if(freezeFlash>0 && GAME_STATES[state]){ ctx.fillStyle=hexA('#7fe8ff', freezeFlash*0.22); ctx.fillRect(0,0,W,H); }
+  if(freezeFlash>0 && GAME_STATES[state]){ ctx.fillStyle=hexA('#dff3ff', freezeFlash*0.16); ctx.fillRect(0,0,W,H); }
 }
 
 function drawSun(t){
@@ -482,11 +482,11 @@ function drawItem(x,y,type,sc,t,it){
     ctx.globalAlpha=1;
     if(type==='hazardJump'){
       ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.setLineDash([3,5]); ctx.lineWidth=1.5;
-      ctx.beginPath(); ctx.arc(x,y,Rh*1.6,0,7); ctx.stroke(); ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(x,y,Rh*2.05,0,7); ctx.stroke(); ctx.setLineDash([]);
     } else if(type==='hazardPull'){
       ctx.save(); ctx.translate(x,y); ctx.rotate(-t*2.2);
       ctx.strokeStyle=hexA('#ffb454',.55); ctx.setLineDash([2,4]); ctx.lineWidth=1.5;
-      ctx.beginPath(); ctx.arc(0,0,Rh*1.7,0,7); ctx.stroke(); ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(0,0,Rh*2.1,0,7); ctx.stroke(); ctx.setLineDash([]);
       ctx.restore();
     }
     if(it && it.boss){
@@ -494,7 +494,9 @@ function drawItem(x,y,type,sc,t,it){
       // altın bir halkayla işaretler — tip ne olursa olsun tanınabilir kalır.
       ctx.strokeStyle=hexA('#ffd24a', 0.55+Math.sin(t*6)*0.25); ctx.lineWidth=2;
       ctx.setLineDash([4,3]);
-      ctx.beginPath(); ctx.arc(x,y,Rh*1.9,0,7); ctx.stroke();
+      // Halka cızırtının görsel boyutunun (≈1.75·Rh) dışında kalır, içine taşmaz.
+      const rb = (type==='hazardPulse' ? R*1.4 : Rh)*2.15;
+      ctx.beginPath(); ctx.arc(x,y,rb,0,7); ctx.stroke();
       ctx.setLineDash([]);
     }
   } else if(type==='gold'){
