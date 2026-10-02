@@ -50,7 +50,7 @@ window.ASSETS3D = {
   items: {
     star: null,          // nota (temel puan)
     gold: null,          // altın nota
-    diamond: null,       // elmas
+    diamond: null,       // sol anahtarı (nadir, değerli öğe; kodda 'diamond')
     coin: null,          // para (nota jetonu)
     heart: null,         // can
     shield: null,        // güç: kalkan
