@@ -104,5 +104,6 @@ function paintItem3D(type, cnv){
   if(isHazardType(type) || type==='hazardTwinDecoy') return imgReady(MONSTER_IMG[HAZARD_IMG_KEY[type]]);
   if(type==='star') return imgReady(ITEM_IMG.note);
   if(type==='coin') return imgReady(ITEM_IMG.coin);
+  if(type==='diamond') return imgReady(ITEM_IMG.clef);
   return true;
 }

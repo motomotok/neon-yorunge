@@ -263,9 +263,14 @@ export class Entities {
       if(type==='hazardTwinDecoy') opacity = 0.4+Math.sin(t*9)*0.25;
       // Cızırtı: bozuk sinyal gibi hafif parlaklık titremesi.
       opacity *= 0.82 + Math.random()*0.18;
-    } else if(type==='coin' || type==='diamond'){
+    } else if(type==='coin'){
       flipX = Math.cos(t*3 + it.ang*2);              // jeton gibi dönen 3D çevirme
       if(Math.abs(flipX)<0.12) flipX = 0.12*Math.sign(flipX||1);
+    } else if(type==='diamond'){
+      // Kristal sol anahtarı: tam dönüş yerine hafif salınım + nefes alan boyut
+      // (tam dönünce ince bir çizgiye dönüşüyordu).
+      flipX = 0.82 + 0.18*Math.cos(t*2.2 + it.ang*2);
+      scale = 1.08 + Math.sin(t*3 + it.ang)*0.06;
     } else if(type==='heart'){
       scale = 1+Math.sin(t*5)*0.08;
     }

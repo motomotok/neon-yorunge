@@ -453,7 +453,7 @@ function drawItem(x,y,type,sc,t,it){
   else if(HAZARD_COLOR[type]) col=HAZARD_COLOR[type];
   else if(type==='gold') col=T.gold;
   else if(type==='star') col=T.star;
-  else if(type==='diamond') col='#fff4e0';
+  else if(type==='diamond') col='#7fe8ff';
   else if(type==='coin') col='#ffb454';
   else if(type==='heart') col='#ff5d8f';
   else col='#ffffff';
@@ -513,15 +513,22 @@ function drawItem(x,y,type,sc,t,it){
     // Nadir değerli öğe (kodda 'diamond'): sol anahtarı. Asset gelene kadar
     // vektörle çizilir (bkz. drawTrebleClef); 3D mod da bu çizimi doku
     // olarak kullanır (manifest items.diamond ile değiştirilebilir).
-    ctx.save(); ctx.shadowColor='#ffd98a'; ctx.shadowBlur=R*0.9;
-    drawTrebleClef(ctx, x, y, R*2.9, col);
-    ctx.restore();
-    // Dönen küçük ışıltı — "beyaz ışık" hissi.
-    const tw=0.6+Math.sin(t*6)*0.4, sx=x+R*0.75, sy=y-R*0.95;
-    ctx.save(); ctx.translate(sx,sy); ctx.rotate(t*1.5); ctx.fillStyle=`rgba(255,255,255,${0.5+tw*0.5})`;
-    ctx.beginPath();
-    for(let i=0;i<8;i++){ const a=i*Math.PI/4, rr=(i%2?0.12:0.42)*R*tw; i?ctx.lineTo(Math.cos(a)*rr,Math.sin(a)*rr):ctx.moveTo(Math.cos(a)*rr,Math.sin(a)*rr); }
-    ctx.closePath(); ctx.fill(); ctx.restore();
+    // Kullanıcının kristal + gümüş sol anahtarı görseli (img/items/clef.png);
+    // yüklenene kadar vektör sol anahtarı.
+    if(imgReady(ITEM_IMG.clef)){ const s=R*1.7; ctx.drawImage(ITEM_IMG.clef, x-s, y-s, s*2, s*2); }
+    else { ctx.save(); ctx.shadowColor='#ffd98a'; ctx.shadowBlur=R*0.9; drawTrebleClef(ctx, x, y, R*2.9, col); ctx.restore(); }
+    // Etrafında dönen, sırayla parlayan 4 ışıltı — nadir/değerli olduğu belli olsun.
+    for(let k=0;k<4;k++){
+      const ang=t*1.2 + k*Math.PI/2, rr=R*1.75, tw=Math.max(0, Math.sin(t*5 + k*1.7));
+      if(tw<0.05) continue;
+      const sx=x+Math.cos(ang)*rr, sy=y+Math.sin(ang)*rr*0.9, sz=R*(0.22+tw*0.3);
+      ctx.save(); ctx.translate(sx,sy); ctx.rotate(t*2+k);
+      const sg=ctx.createRadialGradient(0,0,0,0,0,sz*1.6); sg.addColorStop(0,`rgba(200,255,250,${0.5*tw})`); sg.addColorStop(1,'rgba(120,230,255,0)');
+      ctx.fillStyle=sg; ctx.beginPath(); ctx.arc(0,0,sz*1.6,0,7); ctx.fill();
+      ctx.fillStyle=`rgba(255,255,255,${0.6+0.4*tw})`; ctx.beginPath();
+      for(let i=0;i<8;i++){ const a=i*Math.PI/4, r2=(i%2?0.18:1)*sz; i?ctx.lineTo(Math.cos(a)*r2,Math.sin(a)*r2):ctx.moveTo(Math.cos(a)*r2,Math.sin(a)*r2); }
+      ctx.closePath(); ctx.fill(); ctx.restore();
+    }
   } else if(type==='coin'){
     // Para birimi (Nota) jetonu — altın jeton görseli, madeni para gibi kendi
     // ekseninde döner (yatay ölçek cos ile daralıp genişler).
