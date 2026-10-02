@@ -449,11 +449,8 @@ function drawItem(x,y,type,sc,t,it){
   const R=(PLAYER_R*0.95)*sc;
   const isTwinKind = type==='hazardTwin'||type==='hazardTwinDecoy';
   let col;
-  if(type==='hazardPull') col='#ffb454';
-  else if(isTwinKind) col='#ff8a3d';
-  else if(type==='hazardPulse') col = (it && it.pulseDanger===false) ? '#ffd9dc' : '#ff3b52';
-  else if(type==='hazardCreep') col='#d94a1f';
-  else if(isHazardType(type)) col=T.peril;
+  if(type==='hazardPulse' && it && it.pulseDanger===false) col='#ffd9b0';
+  else if(HAZARD_COLOR[type]) col=HAZARD_COLOR[type];
   else if(type==='gold') col=T.gold;
   else if(type==='star') col=T.star;
   else if(type==='diamond') col='#fff4e0';
@@ -493,10 +490,6 @@ function drawItem(x,y,type,sc,t,it){
       ctx.strokeStyle=hexA('#ffb454',.55); ctx.setLineDash([2,4]); ctx.lineWidth=1.5;
       ctx.beginPath(); ctx.arc(0,0,Rh*1.7,0,7); ctx.stroke(); ctx.setLineDash([]);
       ctx.restore();
-    } else if(isTwinKind){
-      ctx.fillStyle='rgba(255,255,255,.7)';
-      ctx.beginPath(); ctx.arc(x-Rh*0.55,y-Rh*0.75,Rh*0.22,0,7); ctx.fill();
-      ctx.beginPath(); ctx.arc(x+Rh*0.55,y-Rh*0.75,Rh*0.22,0,7); ctx.fill();
     }
     if(it && it.boss){
       // Boss dalgasının öğelerini diğer tehlike şekillerinin üstüne titreşen
@@ -510,7 +503,11 @@ function drawItem(x,y,type,sc,t,it){
     drawNoteShape(x,y,R*1.1,col,true,0);
     if(cfg.colorblind){ ctx.setLineDash([4,4]); ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(x,y,R*1.5,0,7); ctx.stroke(); ctx.setLineDash([]); }
   } else if(type==='star'){
-    drawNoteShape(x,y,R,col,false,0);
+    // Nota görseli; Subway Surfers coin'leri gibi hafif aşağı-yukarı salınır
+    // (it yoksa — 3D doku üretimi — salınım 3D tarafında yapılır).
+    const bob = it ? Math.sin(t*3.2 + it.ang*3)*R*0.3 : 0;
+    if(imgReady(ITEM_IMG.note)){ const s=R*1.45; ctx.drawImage(ITEM_IMG.note, x-s, y-s+bob, s*2, s*2); }
+    else drawNoteShape(x,y+bob,R,col,false,0);
     if(cfg.colorblind){ ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(x,y,R*1.15,0,7); ctx.stroke(); }
   } else if(type==='diamond'){
     // Nadir değerli öğe (kodda 'diamond'): sol anahtarı. Asset gelene kadar
@@ -526,7 +523,15 @@ function drawItem(x,y,type,sc,t,it){
     for(let i=0;i<8;i++){ const a=i*Math.PI/4, rr=(i%2?0.12:0.42)*R*tw; i?ctx.lineTo(Math.cos(a)*rr,Math.sin(a)*rr):ctx.moveTo(Math.cos(a)*rr,Math.sin(a)*rr); }
     ctx.closePath(); ctx.fill(); ctx.restore();
   } else if(type==='coin'){
-    // Para birimi (Nota) jetonu — mini plak gibi: oluklu dış halka + renkli etiket.
+    // Para birimi (Nota) jetonu — altın jeton görseli, madeni para gibi kendi
+    // ekseninde döner (yatay ölçek cos ile daralıp genişler).
+    if(imgReady(ITEM_IMG.coin)){
+      const flip = it ? Math.cos(t*3 + it.ang*2) : 1, fx = Math.max(0.08, Math.abs(flip)), s=R*1.15;
+      ctx.save(); ctx.translate(x,y); ctx.scale(fx,1);
+      ctx.drawImage(ITEM_IMG.coin, -s, -s, s*2, s*2);
+      if(flip<0){ ctx.fillStyle='rgba(120,60,10,.35)'; ctx.beginPath(); ctx.arc(0,0,s*0.98,0,7); ctx.fill(); } // arka yüz biraz koyu
+      ctx.restore();
+    } else {
     ctx.save(); ctx.translate(x,y); ctx.rotate(t*2);
     ctx.fillStyle='#2a1a10'; ctx.beginPath(); ctx.arc(0,0,R,0,7); ctx.fill();
     ctx.strokeStyle='rgba(255,255,255,.18)'; ctx.lineWidth=1;
@@ -535,6 +540,7 @@ function drawItem(x,y,type,sc,t,it){
     ctx.fillStyle='#c47a1f'; ctx.beginPath(); ctx.arc(0,0,R*0.3,0,7); ctx.fill();
     ctx.fillStyle='#0a0604'; ctx.beginPath(); ctx.arc(0,0,R*0.1,0,7); ctx.fill();
     ctx.restore();
+    }
   } else if(type==='heart'){
     const pulse=1+Math.sin(t*5)*0.08;
     drawHeartShape(x,y,R*1.15*pulse,col);
@@ -559,16 +565,28 @@ function drawItem(x,y,type,sc,t,it){
 // Ekolayzer (ritme göre büyüyüp küçülen çubuklar — hazardPulse'ın boyut
 // nabzıyla birebir), P2P Virüsü (notalarını yemeye çalışan saldırgan böcek —
 // en tehlikeli/en geç açılan hazardCreep ile örtüşüyor).
+// Yaratıklar artık "cızırtı" (plağa değip şarkıyı bozan parazit) görseli;
+// tip renkle ayrılır — kırmızı en zayıf/temel, pembe en tehlikeli. İkiz ve
+// sahte kopyası bilerek aynı renkte (hangisi gerçek? mekaniği).
 const HAZARD_IMG_KEY = {
-  hazard:'monster3', hazardJump:'monster2', hazardBomb:'monster6',
-  hazardPull:'monster1', hazardTwin:'monster16', hazardTwinDecoy:'monster16',
-  hazardPulse:'monster11', hazardCreep:'monster13',
+  hazard:'glitch_red', hazardJump:'glitch_blue', hazardBomb:'glitch_green',
+  hazardPull:'glitch_yellow', hazardTwin:'glitch_purple', hazardTwinDecoy:'glitch_purple',
+  hazardPulse:'glitch_orange', hazardCreep:'glitch_pink',
+};
+const HAZARD_COLOR = {
+  hazard:'#ff3b3b', hazardJump:'#3b8bff', hazardBomb:'#3bea6a', hazardPull:'#ffd23b',
+  hazardTwin:'#b04bff', hazardTwinDecoy:'#b04bff', hazardPulse:'#ff8a1f', hazardCreep:'#ff4fd8',
 };
 function drawHazardImage(x,y,size,col,type,rot){
   const img = MONSTER_IMG[HAZARD_IMG_KEY[type]];
   if(img && img.complete && img.naturalWidth>0){
-    ctx.save(); ctx.translate(x,y); if(rot) ctx.rotate(rot);
-    ctx.drawImage(img, -size, -size, size*2, size*2);
+    // Cızırtı: ~12 kez/sn değişen küçük sarsıntı + parlaklık titremesi —
+    // bozuk sinyal hissi. (t=0 ile çağrılan 3D doku üretiminde sabit kalır.)
+    const k=Math.floor(performance.now()/80), rj=mulberry32(k*131+Math.round(x*7+y*13));
+    const jx=(rj()-0.5)*size*0.08, jy=(rj()-0.5)*size*0.08, s=size*1.35;
+    ctx.save(); ctx.translate(x+jx,y+jy); if(rot) ctx.rotate(rot);
+    ctx.globalAlpha*=0.82+rj()*0.18;
+    ctx.drawImage(img, -s, -s, s*2, s*2);
     ctx.restore();
   } else {
     // Görsel henüz yüklenmediyse (ilk birkaç kare) eski basit daireye düş.

@@ -101,9 +101,8 @@ function paintItem3D(type, cnv){
   const prev=ctx; ctx=g;
   try{ drawItem(S/2, S/2, type, R/(PLAYER_R*0.95), 0, null); }
   finally{ ctx=prev; }
-  if(isHazardType(type) || type==='hazardTwinDecoy'){
-    const im=MONSTER_IMG[HAZARD_IMG_KEY[type]];
-    return !!(im && im.complete && im.naturalWidth>0);
-  }
+  if(isHazardType(type) || type==='hazardTwinDecoy') return imgReady(MONSTER_IMG[HAZARD_IMG_KEY[type]]);
+  if(type==='star') return imgReady(ITEM_IMG.note);
+  if(type==='coin') return imgReady(ITEM_IMG.coin);
   return true;
 }
