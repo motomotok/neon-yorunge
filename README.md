@@ -98,5 +98,6 @@ Kurulum, build ve AdMob/Play Console hesap adımları için bkz. [MOBILE_APP.md]
 - `mulberry32` seeded RNG ile günlük mod herkese aynı düzeni sunar
 - Basit bir durum makinesiyle ekran yönetimi
 - Service Worker (`sw.js`) + Web App Manifest ile PWA desteği
+- İsteğe bağlı **3D (2.5D) grafik modu**: Three.js/WebGL, ışık, bloom ve asset manifest'i. Bkz. [ASSETS_3D.md](ASSETS_3D.md)
 
 Claude ile birlikte, deneme amaçlı yapıldı. 🚀

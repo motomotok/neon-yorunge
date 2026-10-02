@@ -33,7 +33,7 @@ body{
   transition:background .5s ease;
   font-size:16px;
 }
-#game{display:block;width:100vw;height:100vh;position:fixed;inset:0;}
+#game,#game3d{display:block;width:100vw;height:100vh;position:fixed;inset:0;}
 
 /* Menü DIŞINDAKİ tüm ekranlarda (Yetenekler/Mağaza/Ayarlar/İstatistik/vb.)
    arka planın TAMAMEN opak olması gerekiyor — eskiden merkezde sadece %50
@@ -298,6 +298,9 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
 .toggleGrid .sw{width:32px;height:18px;align-self:flex-end;}
 .toggleGrid .sw::after{width:14px;height:14px;top:2px;left:2px;}
 .toggleGrid .sw.on::after{left:16px;}
+.toggleGrid .toggle.disabled{opacity:.45;pointer-events:none;}
+.gfxQBtn{align-self:flex-end;font:inherit;font-weight:700;font-size:11px;color:var(--star);background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:2px 10px;cursor:pointer;}
 
 .acctRow{display:grid;grid-template-columns:1fr;gap:8px;width:100%;}
 .acctRow.single{grid-template-columns:1fr;}

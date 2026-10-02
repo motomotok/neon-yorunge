@@ -2,7 +2,9 @@
 // tespiti, güç-yükseltmeleri, can/revive akışı ve HUD güncellemesi.
 // (Çizim mantığı render.js'de, ekran/durum geçişleri screens.js'de.)
 const cv = document.getElementById('game');
-const ctx = cv.getContext('2d');
+// let: gfx.js (3D mod) klasik öğe çizimlerini doku olarak üretmek için
+// drawItem()'ı geçici olarak başka bir canvas'a yönlendirir (bkz. paintItem3D).
+let ctx = cv.getContext('2d');
 let W,H,CX,CY,DPR, RINGS=[], PLAYER_R;
 const NUM_RINGS = 3, MIN_GAP = 0.55;
 

@@ -33,12 +33,23 @@ let last=0;
 function loop(ts){
   const dt=Math.min(40, ts-last)/16.6667 || 1; last=ts;
   ctx.clearRect(0,0,W,H);
-  updateShootingStars(dt);
-  drawBg(dt);
-  if(state==='play') update(dt);
-  else if(MENU_STATES[state]) updateIdleOrb(dt);
-  drawWorld();
-  drawParticles(dt);
+  // 3D modda (bkz. gfx.js) dünya WebGL canvas'ına (#game3d) çizilir; bu 2D
+  // canvas onun üstünde saydam kalır ve sadece tam ekran flaşları taşır.
+  // Oyun mantığı (update) iki modda da birebir aynı.
+  if(gfx3dActive()){
+    if(state==='play') update(dt);
+    else if(MENU_STATES[state]) updateIdleOrb(dt);
+    updateParticles(dt);
+    renderFrame3D(dt);
+    drawScreenOverlays();
+  } else {
+    updateShootingStars(dt);
+    drawBg(dt);
+    if(state==='play') update(dt);
+    else if(MENU_STATES[state]) updateIdleOrb(dt);
+    drawWorld();
+    drawParticles(dt);
+  }
   requestAnimationFrame(loop);
 }
 
@@ -75,7 +86,11 @@ function drawWorld(){
   // dönerek, "canlı menü") çizilir — sadece parçacık/asteroit menüde yok.
   if(GAME_STATES[state] || MENU_STATES[state]) drawPlayer(t);
   ctx.restore();
-
+  drawScreenOverlays();
+}
+// Çarpışma (kırmızı) ve zaman dondurma (buz mavisi) tam ekran flaşları —
+// iki çizim modunun ortak katmanı.
+function drawScreenOverlays(){
   if(flash>0 && GAME_STATES[state]){ ctx.fillStyle=hexA(T.peril, flash*0.4); ctx.fillRect(0,0,W,H); }
   if(freezeFlash>0 && GAME_STATES[state]){ ctx.fillStyle=hexA('#7fe8ff', freezeFlash*0.22); ctx.fillRect(0,0,W,H); }
 }
@@ -543,17 +558,23 @@ function drawBossTelegraph(t, tel){
   ctx.strokeStyle=hexA('#5ad1ff',0.45+Math.sin(t*pulseSpeed)*(0.18+intensity*0.22)); ctx.lineWidth=2+intensity*1.6; ctx.setLineDash([3,4]);
   ctx.beginPath(); ctx.arc(g.tipX,g.tipY,g.discR*0.2*pulse,0,7); ctx.stroke(); ctx.setLineDash([]);
 }
-function drawParticles(dt){
+// Parçacık fiziği çizimden ayrı: 3D modda sadece bu çalışır, çizimi
+// Render3D yapar.
+function updateParticles(dt){
   for(const p of particles){
     p.x+=p.vx*dt; p.y+=p.vy*dt; p.vx*=0.94; p.vy*=0.94; p.life-=0.03*dt;
-    if(p.life<=0) continue;
+  }
+  let _pw=0;
+  for(let _pr=0;_pr<particles.length;_pr++){ if(particles[_pr].life>0) particles[_pw++]=particles[_pr]; }
+  particles.length=_pw;
+}
+function drawParticles(dt){
+  updateParticles(dt);
+  for(const p of particles){
     ctx.globalAlpha=Math.max(0,p.life); ctx.fillStyle=p.color;
     ctx.beginPath(); ctx.arc(p.x,p.y,p.r*p.life,0,7); ctx.fill();
   }
   ctx.globalAlpha=1;
-  let _pw=0;
-  for(let _pr=0;_pr<particles.length;_pr++){ if(particles[_pr].life>0) particles[_pw++]=particles[_pr]; }
-  particles.length=_pw;
 }
 function hexA(hex,a){
   const h=hex.replace('#',''); const n=parseInt(h.length===3? h.split('').map(c=>c+c).join(''):h,16);

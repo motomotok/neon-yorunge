@@ -15,6 +15,7 @@ applyLanguage();
 resize(); initStars(); applyTheme(cfg.theme); applyAccessibility(); ensureTodayQuest(); ensureDailyEvent();
 handleDailyReturn();
 resetGame(); renderThemeGrid(); goMenu();
+syncGfxMode(); // cfg.gfx==='3d' ise 3D paketi burada tembel yüklenir (bkz. gfx.js)
 Ads.init();
 syncAdButtons();
 setInterval(syncAdButtons, 1000); // "Reklam İzle" butonlarındaki bekleme geri sayımını canlı tutar

@@ -6,6 +6,7 @@ function syncSettings(){
   document.getElementById('bigSw').classList.toggle('on', cfg.bigButtons);
   document.getElementById('handSw').classList.toggle('on', cfg.leftHand);
   document.getElementById('cbSw').classList.toggle('on', cfg.colorblind);
+  syncGfxSettings();
   renderThemeGrid();
   document.querySelectorAll('.theme').forEach(el=>el.classList.toggle('sel', el.dataset.key===cfg.theme));
   renderSkins();
