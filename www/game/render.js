@@ -292,8 +292,8 @@ function updateScratch2D(px,py){
   }
   _scr.lastNotes = session ? session.stars : 0;
   _scr.flare=Math.max(0,_scr.flare-0.035*dt);
-  for(let i=0;i<3;i++) _scr.ringFlash[i]=Math.max(0,_scr.ringFlash[i]-0.045*dt);
-  for(const r of _scr.ripples) r.life-=0.03*dt;
+  for(let i=0;i<3;i++) _scr.ringFlash[i]=Math.max(0,_scr.ringFlash[i]-0.07*dt);
+  for(const r of _scr.ripples) r.life-=0.06*dt;
   _scr.ripples=_scr.ripples.filter(r=>r.life>0);
   for(const k of _scr.sparks){ k.x+=k.vx*dt; k.y+=k.vy*dt; k.vx*=0.93; k.vy*=0.93; k.life-=0.05*dt; }
   _scr.sparks=_scr.sparks.filter(k=>k.life>0);
@@ -303,7 +303,7 @@ function drawRingFlash2D(){
   for(let i=0;i<3;i++){
     const f=_scr.ringFlash[i]; if(f<=0.01) continue;
     ctx.save(); ctx.globalCompositeOperation='lighter';
-    ctx.strokeStyle=hexA(T.star,f*0.55); ctx.lineWidth=2+f*3;
+    ctx.strokeStyle=hexA(T.star,f*0.3); ctx.lineWidth=1.5+f*1.5;
     ctx.beginPath(); ctx.arc(CX,CY,RINGS[i],0,7); ctx.stroke();
     ctx.restore();
   }
@@ -343,8 +343,9 @@ function drawScratch2D(t,px,py,pc){
   }
   for(const r of _scr.ripples){
     const u=1-r.life;
-    ctx.strokeStyle=hexA(r.col,r.life*0.7); ctx.lineWidth=2+r.life*2;
-    ctx.beginPath(); ctx.arc(r.x,r.y,PLAYER_R*(1.2+u*8),0,7); ctx.stroke();
+    // Küçük ve kısa: toplandığı belli olsun ama oyunu kaplamasın.
+    ctx.strokeStyle=hexA(r.col,r.life*0.5); ctx.lineWidth=1+r.life*1.5;
+    ctx.beginPath(); ctx.arc(r.x,r.y,PLAYER_R*(1.1+u*2.4),0,7); ctx.stroke();
   }
   ctx.restore();
 }
