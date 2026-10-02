@@ -503,10 +503,18 @@ function drawItem(x,y,type,sc,t,it){
     drawNoteShape(x,y,R,col,false,0);
     if(cfg.colorblind){ ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(x,y,R*1.15,0,7); ctx.stroke(); }
   } else if(type==='diamond'){
-    ctx.save(); ctx.translate(x,y); ctx.rotate(Math.PI/4);
-    ctx.fillStyle=col; ctx.fillRect(-R*0.75,-R*0.75,R*1.5,R*1.5);
+    // Nadir değerli öğe (kodda 'diamond'): sol anahtarı. Asset gelene kadar
+    // vektörle çizilir (bkz. drawTrebleClef); 3D mod da bu çizimi doku
+    // olarak kullanır (manifest items.diamond ile değiştirilebilir).
+    ctx.save(); ctx.shadowColor='#ffd98a'; ctx.shadowBlur=R*0.9;
+    drawTrebleClef(ctx, x, y, R*2.9, col);
     ctx.restore();
-    ctx.fillStyle='rgba(255,255,255,.85)'; ctx.beginPath(); ctx.arc(x-R*0.2,y-R*0.2,R*0.25,0,7); ctx.fill();
+    // Dönen küçük ışıltı — "beyaz ışık" hissi.
+    const tw=0.6+Math.sin(t*6)*0.4, sx=x+R*0.75, sy=y-R*0.95;
+    ctx.save(); ctx.translate(sx,sy); ctx.rotate(t*1.5); ctx.fillStyle=`rgba(255,255,255,${0.5+tw*0.5})`;
+    ctx.beginPath();
+    for(let i=0;i<8;i++){ const a=i*Math.PI/4, rr=(i%2?0.12:0.42)*R*tw; i?ctx.lineTo(Math.cos(a)*rr,Math.sin(a)*rr):ctx.moveTo(Math.cos(a)*rr,Math.sin(a)*rr); }
+    ctx.closePath(); ctx.fill(); ctx.restore();
   } else if(type==='coin'){
     // Para birimi (Nota) jetonu — mini plak gibi: oluklu dış halka + renkli etiket.
     ctx.save(); ctx.translate(x,y); ctx.rotate(t*2);
@@ -581,6 +589,27 @@ function drawNoteShape(x,y,r,col,withFlag,rot){
     ctx.closePath(); ctx.fill();
   }
   ctx.restore();
+}
+// Sol anahtarı (𝄞) — font yerine vektör: bazı Android/iOS fontlarında
+// müzik sembolleri hiç çizilmiyor. g: hangi canvas bağlamı (oyun ya da
+// Nasıl Oynanır ikonu), h: toplam yükseklik (piksel).
+function drawTrebleClef(g,x,y,h,col){
+  const s=h/2.5;
+  g.save(); g.translate(x,y); g.scale(s,s);
+  g.strokeStyle=col; g.fillStyle=col; g.lineCap='round'; g.lineJoin='round';
+  g.lineWidth=Math.max(0.15, 1.6/s); // küçük boyutta da en az ~1.6px kalınlık
+  g.beginPath();
+  g.moveTo(-0.28,0.98);
+  g.bezierCurveTo(-0.28,1.22, 0.14,1.22, 0.12,0.86);
+  g.lineTo(-0.02,-0.62);
+  g.bezierCurveTo(-0.06,-1.05, 0.28,-1.32, 0.32,-0.98);
+  g.bezierCurveTo(0.36,-0.68, -0.40,-0.42, -0.42,0.12);
+  g.bezierCurveTo(-0.44,0.58, 0.16,0.74, 0.38,0.42);
+  g.bezierCurveTo(0.56,0.14, 0.30,-0.14, 0.04,-0.08);
+  g.bezierCurveTo(-0.18,-0.02, -0.20,0.30, 0.02,0.36);
+  g.stroke();
+  g.beginPath(); g.arc(-0.24,0.98,0.13,0,7); g.fill();
+  g.restore();
 }
 function drawHeartShape(x,y,r,col){
   ctx.save(); ctx.translate(x,y); ctx.fillStyle=col;

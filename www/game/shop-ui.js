@@ -293,9 +293,8 @@ function drawHowtoIconShape(ctx2, type, size){
     ctx2.beginPath(); ctx2.moveTo(R*0.78,-R*0.15); ctx2.lineTo(R*0.78,-R*2.0); ctx2.stroke();
     ctx2.restore();
   } else if(cfgS.kind==='diamond'){
-    ctx2.save(); ctx2.translate(cx,cy); ctx2.rotate(Math.PI/4);
-    ctx2.fillStyle=cfgS.color; ctx2.fillRect(-R*0.75,-R*0.75,R*1.5,R*1.5);
-    ctx2.restore();
+    // Oyun içiyle aynı sol anahtarı (render.js drawTrebleClef).
+    drawTrebleClef(ctx2, cx, cy, size*0.86, cfgS.color);
   } else if(cfgS.kind==='coin'){
     ctx2.fillStyle='#2a1a10'; ctx2.beginPath(); ctx2.arc(cx,cy,R,0,7); ctx2.fill();
     ctx2.strokeStyle='rgba(255,255,255,.18)'; ctx2.lineWidth=1;
