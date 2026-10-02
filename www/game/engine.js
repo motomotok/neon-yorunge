@@ -24,7 +24,8 @@ function resize(){
 }
 
 let state='menu';
-const GAME_STATES = {play:1, pause:1, over:1, revive:1};
+// story: oyun bir anlatıcı mesajı için donmuş (bkz. narrator.js) — dünya çizilir, update çalışmaz.
+const GAME_STATES = {play:1, pause:1, over:1, revive:1, story:1};
 // Menü ailesindeki tüm ekranlar: gerçek oyun burada değil ama oyuncu küresi
 // hâlâ yörüngede yavaşça dönüyor olmalı — "canlı menü" hissi için.
 const MENU_STATES = {menu:1, mode:1, shop:1, settings:1, stats:1, battlepass:1, upgrades:1, howto:1, language:1};
@@ -530,7 +531,8 @@ function update(dt){
         // tüm kazanımlar (altın/elmas/parçacık/takviye) tam sayı kalıyor ama
         // toplam zaten bu küsuratı taşımaya devam ediyor.
         addScore(combo*mult + rnd()*0.99); session.stars++;
-        burst(ix,iy,T.star,14,4); shake=3; playMelodyNote(combo,0.16); bumpCombo(); checkStreak(ix,iy,mult); }
+        burst(ix,iy,T.star,14,4); shake=3; playMelodyNote(combo,0.16); bumpCombo(); checkStreak(ix,iy,mult);
+        if(it.tutorialTag && typeof tutorialOnItemResolved==='function') tutorialOnItemResolved(it.tutorialTag); }
       else if(it.type==='coin'){
         // Parçacık Değeri yükseltmesi (kalıcı) tabana sabit ek yapar, Nota
         // Bonusu yükseltmesi (kalıcı) SONRASINDA çarpan olarak
@@ -573,6 +575,9 @@ function update(dt){
       addNotes(finalReward);
       showFlash(t('flash_wave_cleared'),60);
       queueToast(icon('coin')+' '+t('toast_boss_cleared',{n:finalReward}));
+      // İlk boss temizlendi: DJ Vinil ileriye dönük bir meydan okuma yazar
+      // (bkz. narrator.js). Kutlama efektleri önce görünsün diye kısa gecikme.
+      if(!stats.firstBossStory && typeof narratorFirstBossStory==='function') setTimeout(narratorFirstBossStory, 1100);
       beep(700,0.15,'sine',0.15); beep(1000,0.15,'triangle',0.12); beep(1300,0.18,'sine',0.1);
     }
   } else if(!zen){
@@ -605,6 +610,7 @@ function update(dt){
   // hissettiriyordu. Artık geri sayım bitince yumuşakça 1'e yaklaşıyor.
   if(timeScaleT>0) timeScaleT-=1;
   else if(timeScale<1) timeScale=Math.min(1, timeScale+0.05*dt);
+  if(tutorialActive && typeof tutorialTick==='function') tutorialTick();
   updateHud();
 }
 

@@ -64,7 +64,6 @@ document.getElementById('resumeBtn').addEventListener('click', e=>{ e.stopPropag
 document.getElementById('zenFinishBtn').addEventListener('click', e=>{ e.stopPropagation(); gameOver('zen'); });
 document.getElementById('pauseBtn').addEventListener('click', e=>{ e.stopPropagation(); pauseGame(); });
 document.getElementById('tutorialSkipBtn').addEventListener('click', e=>{ e.stopPropagation(); if(typeof tutorialSkip==='function') tutorialSkip(); });
-document.getElementById('tutorialOutroBtn').addEventListener('click', e=>{ e.stopPropagation(); if(typeof tutorialStartRealGame==='function') tutorialStartRealGame(); });
 document.getElementById('soundSw').addEventListener('click', ()=>{ cfg.sound=!cfg.sound; saveCfg(); syncSettings(); if(cfg.sound) beep(700,0.08,'sine',0.12); });
 document.getElementById('gfxSw').addEventListener('click', ()=>{ setGfxMode(cfg.gfx!=='3d'); beep(600,0.06,'sine',0.1); });
 document.getElementById('gfxQBtn').addEventListener('click', e=>{ e.stopPropagation(); cycleGfxQuality(); beep(550,0.05,'sine',0.08); });

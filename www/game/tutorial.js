@@ -1,26 +1,35 @@
-// İlk oyun tutorial'ı: 10-20 saniyelik, adım adım ZORUNLU etkileşimli
-// rehber. Sadece stats.tutorialDone===false iken (yani hayatta ilk kez
-// BAŞLA'ya basıldığında) tetiklenir — bkz. input.js'teki "quickstart" dalı.
-// Diğer dosyalardaki (engine.js/screens.js/upgrades-ui.js) ince hook'lar bu
-// dosyadaki fonksiyonları `typeof X==='function'` koruması ile çağırır,
-// böylece bu dosya olmasa/yüklenmese bile oyun normal çalışmaya devam eder.
+// İlk oyun tutorial'ı: DJ Vinil'in (bkz. narrator.js) anlattığı, ~1 dakikalık
+// oynanabilir rehber. Sadece stats.tutorialDone===false iken (yani hayatta
+// ilk kez BAŞLA'ya basıldığında) tetiklenir — bkz. input.js "quickstart".
+//
+// Akış: tanışma → sola dokun → sağa dokun → nota → başka halkadaki nota →
+// art arda 2 nota (kombo 5 = MELODİ anı) → kalp → yaratığa çarp →
+// kalple toparlan → yaratıktan kaç → mıknatısla notaları çek → sahneye çık.
+// Boss savaşı bilerek YOK: ilk boss oyuncuya sürpriz (sonrasında
+// narratorFirstBossStory mesajı gelir).
+//
+// Kurallar: her adımda önce metin daktiloyla yazılır; öğe ancak metin
+// bitince sahneye girer ve dokunma ancak o zaman açılır — oyuncu okumadan
+// ilerleyemez. Kaçırılan öğe (yanından geçilen nota vb.) tekrar gelir.
+// Diğer dosyalardaki hook'lar bu dosyadaki fonksiyonları
+// `typeof X==='function'` korumasıyla çağırır.
 let tutorialActive = false;
 let tutorialStep = null;
+let _tutTapOK = false;            // bu adımda dokunmaya izin var mı
+let _tutPending = {};             // etiket -> {type, ring, resolved}
+let _tutDodgeHit = false;
 
 function startTutorial(){
   tutorialActive = true;
   mode='classic'; diffKey='normal'; diffCfg=DIFF.normal;
   resetGame();
-  items.length = 0; // resetGame()'in otomatik 4 tohum öğesini temizle — senaryo tamamen elle kontrol edilecek
-  // resetGame() oyuncuyu ring 0'da (en iç halka) başlatır — ilk istenen
-  // hareket SOL (daha da içe) olduğu için orta halkada (ring 1) başlatıyoruz,
-  // böylece hem SOL (1→0) hem SAĞ (0→1) geçerli birer hamle oluyor.
+  items.length = 0; // resetGame()'in otomatik tohum öğelerini temizle — senaryo tamamen elle kontrol edilecek
+  // Orta halkada başla: hem SOL (1→0) hem SAĞ (0→1) geçerli birer hamle olsun.
   player.targetRing = 1; player.curRadius = radiusFor(1);
+  // Can biraz eksik başlar: ilk kalp gerçekten bir şey doldursun.
+  hp = Math.max(1, maxHp-1);
   state='play'; setHud(true); showScreen(null);
-  // Duraklat butonu üzerinden Ayarlar/Duraklat ekranına, oradan da "ANA
-  // MENÜ"ye kaçılıp tutorial'ın script dışına çıkması mümkündü (kendi
-  // kendine iyileşiyordu ama temiz değildi) — oynanış adımları boyunca
-  // duraklat butonu tamamen kaldırılıyor, tutorialFinish() geri getiriyor.
+  // Oynanış boyunca duraklat butonu gizli (menüye kaçıp senaryo dışına çıkılmasın).
   tutorialHideEl(document.getElementById('pauseBtn'));
   tutorialGoStep('intro');
 }
@@ -28,151 +37,156 @@ function startTutorial(){
 function tutorialGoStep(step){
   tutorialClearSpotlight();
   tutorialHideTapHint();
+  _tutTapOK = false;
+  _tutPending = {};
   tutorialStep = step;
-  if(step==='intro') tutorialStepIntro();
-  else if(step==='awaitLeft') tutorialStepAwaitLeft();
-  else if(step==='awaitRight') tutorialStepAwaitRight();
-  else if(step==='coin') tutorialStepCoin();
-  else if(step==='magnet') tutorialStepMagnet();
-  else if(step==='heart') tutorialStepHeart();
-  else if(step==='hazard1') tutorialStepHazard1();
-  else if(step==='hazard2') tutorialStepHazard2();
-  else if(step==='gameover') tutorialStepGameOver();
-  else if(step==='buyHp') tutorialStepBuyHp();
-  else if(step==='coreIntro') tutorialStepCoreIntro();
-  else if(step==='backToMenu') tutorialStepBackToMenu();
-  else if(step==='outro') tutorialStepOutro();
+  const S = TUTORIAL_STEPS[step];
+  if(S) S();
 }
 
-function tutorialStepIntro(){
-  tutorialShow(t('tut_step_intro'), {cta:t('tut_cta_understood'), onCta:()=>tutorialGoStep('awaitLeft')});
-}
-function tutorialStepAwaitLeft(){
-  tutorialShow(t('tut_step_awaitleft'));
-  tutorialShowTapHint('left');
-}
-function tutorialStepAwaitRight(){
-  tutorialShow(t('tut_step_awaitright'));
-  tutorialShowTapHint('right');
-}
-// Öğeler oyuncunun O ANKİ açısının TAM KARŞISINA (180°) yerleştiriliyor —
-// oyuncu orb'un yörüngede süzülüp öğeye ulaşmasını rahatça izlesin diye
-// (eskiden ~30° idi, çok hızlı/ani oluyordu — bkz. kullanıcı geri bildirimi).
+// Oyuncunun önüne (yarım tur ileriye) etiketli bir öğe koyar.
 const TUTORIAL_ITEM_DIST = Math.PI;
-function tutorialSpawnItem(type, tag){
-  items.push({ang: normAng(player.ang+TUTORIAL_ITEM_DIST), ring: player.targetRing, type, alive:true, pop:0,
+function tutorialSpawnItem(type, tag, ring, angOffset){
+  const r = ring==null ? player.targetRing : ring;
+  items.push({ang: normAng(player.ang+(angOffset==null ? TUTORIAL_ITEM_DIST : angOffset)), ring:r, type, alive:true, pop:0,
     expiring:false, prevFwd:null, jumpT:0, pulsePhase:0, pulseDanger:false, creepT:0, creeped:false,
     tutorialTag:tag});
+  _tutPending[tag] = {type, ring:r, resolved:false};
 }
-function tutorialStepCoin(){
-  tutorialShow(t('tut_step_coin'));
-  tutorialSpawnItem('coin','coin');
-}
-// Parçacığın ardından mıknatıs ve kalp de topluyoruz — eskiden sadece TEK bir
-// toplanabilir öğretiliyordu, ama oyunda güç takviyeleri ve can toplama da
-// en az parçacık kadar temel bir mekanik (bkz. kullanıcı geri bildirimi).
-function tutorialStepMagnet(){
-  tutorialShow(t('tut_step_magnet'));
-  tutorialSpawnItem('magnet','magnet');
-}
-function tutorialStepHeart(){
-  tutorialShow(t('tut_step_heart'));
-  tutorialSpawnItem('heart','heart');
-}
-// Eskiden hp=1 ile TEK bir tehlikeye değince direkt ölünüyordu — oyuncu
-// "çarpınca can azalır ama hemen ölmezsin" hissini hiç yaşamıyordu. Artık
-// hp=2 ile başlıyor: ilk tehlike bir kez çarpıp hayatta kalıyor (hasar/HP
-// bar'ı görüyor), ikinci tehlike ise gerçek oyundaki gibi oyunu bitiriyor.
-function tutorialStepHazard1(){
-  tutorialShow(t('tut_step_hazard'));
-  hp = 2;
-  tutorialSpawnItem('hazard','hazard1');
-}
-function tutorialStepHazard2(){
-  tutorialShow(t('tut_step_hazard2'));
-  tutorialSpawnItem('hazard','hazard2');
-}
-function tutorialStepGameOver(){
-  tutorialHideEl(document.getElementById('retryBtn'));
-  tutorialHideEl(document.getElementById('watchAdCoinsBtn'));
-  tutorialHideEl(document.querySelector('#screen-over .row2'));
-  tutorialSpotlight(document.querySelector('#screen-over [data-go="upgrades"]'));
-  tutorialShow(t('tut_step_gameover'));
-}
-function tutorialStepBuyHp(){
-  addNotes(240); // Can Kapasitesi'nin 1. kademesi tam bu kadar — ilk yeteneğini açabilsin diye küçük bir hoşgeldin hediyesi.
-  // Süpernova butonu artık GİZLENMİYOR, DEVRE DIŞI bırakılıyor — bir sonraki
-  // adımda (coreIntro) aynı butonu görünür halde ışıklandırıp tanıtacağız;
-  // buradaki amaç sadece az önce verilen hediye notanın yanlışlıkla
-  // sıfırlanmasını önlemek (tutorialFinish() geri açıyor).
-  tutorialDisableEl(document.getElementById('resetProgressBtn'));
-  const cards=[...document.querySelectorAll('#upgradesGrid .shopCard')];
-  const hpCard=cards.find(c=>c.dataset.key==='hp');
-  cards.forEach(c=>{ if(c!==hpCard) tutorialDim(c); });
-  tutorialSpotlight(hpCard);
-  tutorialShow(t('tut_step_buyhp'));
-}
-// Kalıcı yeteneği satın aldıktan hemen sonra, Çekirdek Ağacı'nı (Süpernova
-// prestij sistemi) tanıtan kısa bir bilgi adımı — eskiden hiç
-// öğretilmiyordu. Gerçekten sıfırlama YAPTIRMIYORUZ (yeni oyuncunun daha
-// yeni aldığı yeteneği anlamsız yere silmesin diye buton devre dışı
-// kalıyor), sadece sekmeyi/butonu ışıklandırıp ne işe yaradığını anlatıyor.
-function tutorialStepCoreIntro(){
-  upgradesTab='core'; renderUpgradesTab();
-  tutorialSpotlight(document.querySelector('#upgradesTabs [data-uptab="core"]'));
-  tutorialSpotlight(document.getElementById('resetProgressBtn'));
-  tutorialShow(t('tut_step_coreintro'), {cta:t('tut_cta_understood'), onCta:()=>tutorialGoStep('backToMenu')});
-}
-function tutorialStepBackToMenu(){
-  upgradesTab='tier'; renderUpgradesTab();
-  tutorialSpotlight(document.querySelector('#screen-upgrades [data-go="menu"]'));
-  tutorialShow(t('tut_step_backtomenu'));
-}
-function tutorialStepOutro(){
-  tutorialHide();
-  const el=document.getElementById('tutorialOutro'); if(el) el.classList.add('show');
-}
+function _tutAllResolved(){ return Object.values(_tutPending).every(p=>p.resolved); }
+function _tutSay(key, opts){ narratorSay(t(key), opts); }
+function _tutSayThen(key, fn){ narratorSay(t(key), {onDone:fn}); }
+
+const TUTORIAL_STEPS = {
+  intro(){
+    narratorSay(t('tut2_intro'), {cta:t('tut_cta_understood'), onCta:()=>tutorialGoStep('left')});
+  },
+  left(){
+    _tutSayThen('tut2_left', ()=>{ _tutTapOK=true; tutorialShowTapHint('left'); });
+  },
+  right(){
+    _tutSayThen('tut2_right', ()=>{ _tutTapOK=true; tutorialShowTapHint('right'); });
+  },
+  note1(){
+    _tutSayThen('tut2_note1', ()=>tutorialSpawnItem('star','note1'));
+  },
+  // Nota başka bir halkada: oyuncu oraya geçmek için dokunmalı.
+  note2(){
+    const ring = player.targetRing<2 ? player.targetRing+1 : player.targetRing-1;
+    _tutSayThen('tut2_note2', ()=>{
+      _tutTapOK = true;
+      tutorialShowTapHint(ring>player.targetRing ? 'right' : 'left');
+      tutorialSpawnItem('star','note2',ring);
+    });
+  },
+  // Art arda iki nota: kombo 3→5, 5'te MELODİ anı (fx.js MELODY_SCALE=5 nota).
+  combo(){
+    combo = 3;
+    tutorialSpotlight(document.getElementById('combo'));
+    _tutSayThen('tut2_combo', ()=>{
+      tutorialSpawnItem('star','combo1');
+      tutorialSpawnItem('star','combo2',null,TUTORIAL_ITEM_DIST+0.45);
+    });
+  },
+  melody(){
+    tutorialSpotlight(document.getElementById('combo'));
+    narratorSay(t('tut2_melody'), {cta:t('tut_cta_understood'), onCta:()=>tutorialGoStep('heart1')});
+  },
+  heart1(){
+    tutorialSpotlight(document.getElementById('hpBarWrap'));
+    _tutSayThen('tut2_heart1', ()=>tutorialSpawnItem('heart','heart1'));
+  },
+  // Kaçış yok: dokunma kapalı, yaratık oyuncunun halkasında. Çarpma
+  // hissini (can düşer, kombo sıfırlanır) bilerek yaşatıyoruz.
+  hazard(){
+    _tutSayThen('tut2_hazard', ()=>tutorialSpawnItem('hazard','hazard'));
+  },
+  heart2(){
+    tutorialSpotlight(document.getElementById('hpBarWrap'));
+    _tutSayThen('tut2_heart2', ()=>tutorialSpawnItem('heart','heart2'));
+  },
+  dodge(){
+    _tutDodgeHit = false;
+    _tutSayThen('tut2_dodge', ()=>{
+      _tutTapOK = true;
+      tutorialShowTapHint(player.targetRing<2 ? 'right' : 'left');
+      tutorialSpawnItem('hazard','dodge');
+    });
+  },
+  magnet(){
+    const lead = t(_tutDodgeHit ? 'tut2_dodge_hit' : 'tut2_dodge_ok');
+    narratorSay(lead+' '+t('tut2_magnet'), {onDone:()=>tutorialSpawnItem('magnet','magnet')});
+  },
+  // Mıknatıs aktif: diğer halkalardaki notalar halka değiştirmeden toplanır.
+  magnetGo(){
+    const others = [0,1,2].filter(r=>r!==player.targetRing);
+    tutorialSpawnItem('star','mag1',others[0],1.0);
+    tutorialSpawnItem('star','mag2',others[1],1.4);
+    tutorialSpawnItem('star','mag3',others[0],1.8);
+    _tutSay('tut2_magnet_go');
+  },
+  end(){
+    narratorSay(t('tut2_end'), {cta:t('tut2_cta_go'), onCta:()=>tutorialStartRealGame()});
+  },
+};
 
 // --- Diğer dosyalardan çağrılan hook'lar ---
 function tutorialOnTap(goOut){
-  if(tutorialStep==='awaitLeft' && !goOut) tutorialGoStep('awaitRight');
-  else if(tutorialStep==='awaitRight' && goOut) tutorialGoStep('coin');
+  if(tutorialStep==='left' && !goOut) tutorialGoStep('right');
+  else if(tutorialStep==='right' && goOut) tutorialGoStep('note1');
 }
 function tutorialTapAllowed(){
-  return tutorialStep==='awaitLeft' || tutorialStep==='awaitRight';
+  return _tutTapOK && !narratorIsTyping();
 }
 function tutorialOnItemResolved(tag){
-  // 'hazard2' etiketi için asıl adım geçişi tutorialOnGameOver()'da —
-  // hitHazard() zaten hp<=0 olduğunda gameOver()'ı senkron tetikliyor.
-  if(tag==='coin' && tutorialStep==='coin') tutorialGoStep('magnet');
-  else if(tag==='magnet' && tutorialStep==='magnet') tutorialGoStep('heart');
-  else if(tag==='heart' && tutorialStep==='heart') tutorialGoStep('hazard1');
-  else if(tag==='hazard1' && tutorialStep==='hazard1') tutorialGoStep('hazard2');
+  const p = _tutPending[tag]; if(!p || p.resolved) return;
+  p.resolved = true;
+  if(tag==='note1') tutorialGoStep('note2');
+  else if(tag==='note2') tutorialGoStep('combo');
+  else if(tag==='combo1' || tag==='combo2'){
+    // Kutu bir an çekilir: "MELODİ" yazısı ve yavaş çekim anı net görünsün.
+    if(_tutAllResolved()){ narratorHide(); setTimeout(()=>{ if(tutorialStep==='combo') tutorialGoStep('melody'); }, 1500); }
+  }
+  else if(tag==='heart1') tutorialGoStep('hazard');
+  else if(tag==='hazard') setTimeout(()=>{ if(tutorialStep==='hazard') tutorialGoStep('heart2'); }, 800);
+  else if(tag==='heart2') tutorialGoStep('dodge');
+  else if(tag==='dodge'){ _tutDodgeHit = true; setTimeout(()=>{ if(tutorialStep==='dodge') tutorialGoStep('magnet'); }, 800); }
+  else if(tag==='magnet') tutorialGoStep('magnetGo');
+  else if(tag.startsWith('mag') && _tutAllResolved()) setTimeout(()=>{ if(tutorialStep==='magnetGo') tutorialGoStep('end'); }, 600);
+}
+// Her karede (engine.js update) çağrılır: yanından geçilip kaybolan
+// etiketli öğeleri yakalar. Notalar/kalpler tekrar gelir; kaçış adımında
+// yaratığın kaybolması başarılı kaçış demektir.
+function tutorialTick(){
+  for(const tag in _tutPending){
+    const p = _tutPending[tag];
+    if(p.resolved) continue;
+    if(items.some(it=>it.alive && it.tutorialTag===tag)) continue;
+    if(tag==='dodge'){ p.resolved = true; setTimeout(()=>{ if(tutorialStep==='dodge') tutorialGoStep('magnet'); }, 300); }
+    else if(tag.startsWith('mag') && tutorialStep==='magnetGo'){ p.resolved = true; if(_tutAllResolved()) setTimeout(()=>{ if(tutorialStep==='magnetGo') tutorialGoStep('end'); }, 600); }
+    else tutorialSpawnItem(p.type, tag, p.ring);
+  }
 }
 function tutorialOnGameOver(){
-  tutorialGoStep('gameover');
+  // Senaryoda can hiç sıfırlanmaz; olur da biterse tutorial'ı kapatıp
+  // normal oyun-sonu ekranına bırak.
+  tutorialFinish();
 }
-function tutorialExpectedNav(){
-  if(tutorialStep==='gameover') return 'upgrades';
-  if(tutorialStep==='backToMenu') return 'menu';
-  return null;
-}
-function tutorialOnNav(target){
-  if(target==='upgrades' && tutorialStep==='gameover') tutorialGoStep('buyHp');
-  else if(target==='menu' && tutorialStep==='backToMenu') tutorialGoStep('outro');
-}
-function tutorialOnUpgradeBought(key){
-  if(tutorialStep==='buyHp' && key==='hp') tutorialGoStep('coreIntro');
-}
-function tutorialNudge(){
-  beep(200,0.08,'square',0.1);
-}
+function tutorialExpectedNav(){ return null; }
+function tutorialOnNav(){}
+function tutorialOnUpgradeBought(){}
+function tutorialNudge(){ beep(200,0.08,'square',0.1); }
 
 function tutorialFinish(){
-  tutorialActive=false; tutorialStep=null;
-  tutorialClearSpotlight(); tutorialRestoreHidden(); tutorialRestoreDisabled(); tutorialHide(); tutorialHideTapHint();
-  const el=document.getElementById('tutorialOutro'); if(el) el.classList.remove('show');
-  stats.tutorialDone=true; saveStats();
+  tutorialActive=false; tutorialStep=null; _tutTapOK=false; _tutPending={};
+  tutorialClearSpotlight(); tutorialRestoreHidden(); narratorHide(); tutorialHideTapHint();
+  if(!stats.tutorialDone){
+    stats.tutorialDone=true;
+    // Hoş geldin hediyesi: ilk kalıcı yetenek (Can Kapasitesi 1. kademe) tam bu kadar.
+    addNotes(240);
+    queueToast(icon('coin')+' '+t('tut2_gift_toast',{n:240}));
+  }
+  saveStats();
 }
 function tutorialSkip(){
   tutorialFinish();
@@ -184,18 +198,6 @@ function tutorialStartRealGame(){
 }
 
 // --- UI yardımcıları ---
-function tutorialShow(msg, opts){
-  opts=opts||{};
-  const box=document.getElementById('tutorialBox'); if(!box) return;
-  document.getElementById('tutorialBoxMsg').textContent = msg;
-  const cta=document.getElementById('tutorialBoxCta');
-  if(opts.cta){ cta.textContent=opts.cta; cta.style.display='inline-block'; cta.onclick=opts.onCta; }
-  else { cta.style.display='none'; cta.onclick=null; }
-  box.classList.add('show');
-}
-function tutorialHide(){
-  const box=document.getElementById('tutorialBox'); if(box) box.classList.remove('show');
-}
 function tutorialShowTapHint(side){
   const el=document.getElementById('tutorialHint'); if(!el) return;
   el.classList.add('show');
@@ -215,11 +217,6 @@ function tutorialSpotlight(el){
   el.classList.add('tutorialTarget');
   tutorialSpotlightEls.push(el);
 }
-function tutorialDim(el){
-  if(!el) return;
-  el.classList.add('tutorialDim');
-  tutorialSpotlightEls.push(el);
-}
 function tutorialClearSpotlight(){
   tutorialSpotlightEls.forEach(el=>{ el.classList.remove('tutorialTarget'); el.classList.remove('tutorialDim'); });
   tutorialSpotlightEls=[];
@@ -234,19 +231,4 @@ function tutorialHideEl(el){
 function tutorialRestoreHidden(){
   tutorialHiddenEls.forEach(el=>{ el.style.display = el.dataset.tutorialPrevDisplay || ''; delete el.dataset.tutorialPrevDisplay; });
   tutorialHiddenEls=[];
-}
-// Çekirdek Ağacı tanıtımında (coreIntro) Süpernova butonu GÖRÜNÜR ve
-// ışıklandırılmış kalmalı (anlatım onu işaret ediyor) ama tıklanamaz —
-// yeni oyuncu daha yeni aldığı Can Kapasitesi'ni yanlışlıkla sıfırlamasın.
-// tutorialHideEl'den farklı olarak elemanı gizlemez, sadece devre dışı
-// bırakır.
-let tutorialDisabledEls=[];
-function tutorialDisableEl(el){
-  if(!el) return;
-  el.disabled = true;
-  tutorialDisabledEls.push(el);
-}
-function tutorialRestoreDisabled(){
-  tutorialDisabledEls.forEach(el=>{ el.disabled=false; });
-  tutorialDisabledEls=[];
 }
