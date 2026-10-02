@@ -121,7 +121,7 @@ function resize(w, h, b){
   // ayarla: dikeyde eğim sayesinde daha az yer gerekiyor.
   // Dikey ekranda (telefon) plak sağdan soldan boşluk bırakmasın diye biraz
   // yakınlaştır — öğeler de büyür.
-  const zoom = (camCfg.zoom||1) * (camera.aspect < 0.9 ? (camCfg.portraitZoom||1.1) : 1);
+  const zoom = (camCfg.zoom||1) * (camera.aspect < 0.9 ? (camCfg.portraitZoom||1.15) : 1);
   const fitR = base*0.5/zoom;
   const vf = THREE.MathUtils.degToRad(camCfg.fov)/2;
   const hf = Math.atan(Math.tan(vf)*camera.aspect);
@@ -134,9 +134,10 @@ function resize(w, h, b){
   camera.near = Math.max(1, dist*0.02); camera.far = base*40;
   camera.updateProjectionMatrix();
   camera.updateMatrixWorld();
-  view.aspect = camera.aspect; view.tilt = tilt;
-  world.setView(view);
+  view.aspect = camera.aspect; view.tilt = tilt; view.camPos = camera.userData.basePos;
+  view.camUp = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
   world.resize(base);
+  world.setView(view);
   const pr = renderer.getPixelRatio();
   entities.setPointScale((H*pr)/(2*Math.tan(vf)));
   if(composer){

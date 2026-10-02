@@ -19,15 +19,21 @@ export const TOP_Y = DISC_H;      // plak üst yüzeyi (base birimde)
 // Pikap kolu geometrisi (base birimde). Dinlenmede plağın sağ-üst dışında
 // durur, boss uyarısında (bossIntensity 0->1) etikete doğru iner — 2D
 // sürümdeki drawBossTelegraph() ile aynı "iğne plağa vurunca boss patlar".
-const ARM_PIVOT = new THREE.Vector3(0.36, 0, -0.42);
+// Kolun yerleşimi ekran oranına göre (bkz. _layoutArm):
+//  * yatay ekran: pivot plağın sağ üstünde, kol plağın sağ dışında bekler;
+//  * dikey ekran (telefon): pivot plağın üstünde, kol yarı boyunda yatay
+//    bekler — yanlarda yer kaplamaz; boss uyarısında aşağı inerken
+//    teleskop gibi tam boyuna uzar.
+const ARM_LAYOUTS = {
+  land: {pivot:[0.36, -0.42], rest:0.5, sRest:1, sFull:1},
+  port: {pivot:[0.3, -0.6], rest:-Math.PI/2, sRest:null, sFull:null},   // null: plağa uzaklıktan hesaplanır
+};
 const ARM_LEN = 0.5;
-const ARM_REST_YAW = 0.5;    // dinlenmede kol tamamen plağın dışında (sağda) bekler; yalnızca boss'ta içeri girer
-const ARM_STRIKE_YAW = Math.atan2(-ARM_PIVOT.x, -ARM_PIVOT.z) + 0.06;
 const ARM_H = 0.05;
 // İğne ucunun kol eksenine göre yanal kayması (kırılmalı tüp, bkz. _buildTonearm).
 const ARM_TIP_X = -0.04;
 // İğne ucunun plak yüzeyine tam değdiği eğim.
-const ARM_STRIKE_TILT = Math.asin(Math.max(0, ARM_H - 0.038 - DISC_H)/ARM_LEN); // 0.038: iğne ucunun kol eksenine göre derinliği
+const armStrikeTilt = len=>Math.asin(Math.max(0, ARM_H - 0.038 - DISC_H)/len); // 0.038: iğne ucunun kol eksenine göre derinliği
 const ELECTRIC = '#7fe8ff';
 
 // Kırılmalı tüpün yanal kayması: kolun ilk ~%55'i düz, sonra uca kadar ARM_TIP_X'e iner.
@@ -192,7 +198,6 @@ export class World {
   // ucu; plağa düşen yumuşak gölge. Malzeme rengi temaya göre (armMetal).
   _buildTonearm(){
     this.arm = new THREE.Group();
-    this.arm.position.copy(ARM_PIVOT);
     const metal = new THREE.MeshStandardMaterial({color:0xb8925a, metalness:0.85, roughness:0.32});
     this.armMetal = metal;   // tema rengi (ör. Retro'da pirinç) setTheme'de ayarlanır
     const dark = new THREE.MeshStandardMaterial({color:0x1c1512, metalness:0.4, roughness:0.6});
@@ -224,6 +229,8 @@ export class World {
     const weightCap = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.008, 28), metal);
     weightCap.rotation.x = Math.PI/2; weightCap.position.z = -0.088;
     // Kafa (headshell + kartuş) ve parmak tutamağı.
+    // Kafa grubu: teleskopik uzamada tüp ölçeklenir, kafa uca kaydırılır.
+    this.armHead = new THREE.Group();
     const head = new THREE.Mesh(new THREE.BoxGeometry(0.056, 0.024, 0.09), metal);
     head.position.set(ARM_TIP_X, -0.01, ARM_LEN-0.035);
     const cart = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.014, 0.05), darker);
@@ -234,7 +241,9 @@ export class World {
     const stylus = new THREE.Mesh(new THREE.ConeGeometry(0.006, 0.016, 12), this.stylusMat);
     stylus.rotation.x = Math.PI; stylus.position.set(ARM_TIP_X, -0.03, ARM_LEN-0.004);
     this.armSwing.add(housing);
-    this.armTilt.add(tube, weight, weightCap, head, cart, lift, stylus);
+    this.armTube = tube;
+    this.armHead.add(head, cart, lift, stylus);
+    this.armTilt.add(tube, weight, weightCap, this.armHead);
     // Plağa düşen yumuşak gölge (ışık sol üstten → gölge sağ alta kayık).
     const sg = new THREE.PlaneGeometry(1, 1); sg.rotateX(-Math.PI/2);
     this.armShadow = new THREE.Mesh(sg, new THREE.MeshBasicMaterial({map:shadowTexture(), transparent:true, opacity:0.5, depthWrite:false}));
@@ -246,16 +255,39 @@ export class World {
     this.armGlow = new THREE.Sprite(new THREE.SpriteMaterial({map:glowTexture(), color:0x5ad1ff, transparent:true,
       opacity:0, depthWrite:false, depthTest:false, blending:THREE.AdditiveBlending}));
     this.armGlow.position.set(ARM_TIP_X, -0.024, ARM_LEN);
-    this.armTilt.add(this.armGlow);
+    this.armHead.add(this.armGlow);
     // İğne ucunun sürekli, hafif turuncu parıltısı (görseldeki gibi).
     this.stylusGlow = new THREE.Sprite(new THREE.SpriteMaterial({map:glowTexture(), color:0xff6a2a, transparent:true,
       opacity:0.55, depthWrite:false, depthTest:false, blending:THREE.AdditiveBlending}));
     this.stylusGlow.position.set(ARM_TIP_X, -0.03, ARM_LEN-0.004); this.stylusGlow.scale.setScalar(0.03);
-    this.armTilt.add(this.stylusGlow);
+    this.armHead.add(this.stylusGlow);
     this.armLight = new THREE.PointLight(0x5ad1ff, 0, 0.35, 0);
     this.armLight.position.set(ARM_TIP_X, -0.02, ARM_LEN);
     this.armTilt.add(this.armLight);
     this.root.add(this.arm);
+    this._layoutArm('land');
+  }
+
+  // Kol yerleşimini uygular (pivot, dinlenme açısı, boy oranları).
+  _layoutArm(kind){
+    if(this.armLayoutKind === kind) return;
+    this.armLayoutKind = kind;
+    const L = ARM_LAYOUTS[kind];
+    this.armPivot = new THREE.Vector3(L.pivot[0], 0, L.pivot[1]);
+    this.arm.position.copy(this.armPivot);
+    const d = Math.hypot(L.pivot[0], L.pivot[1]);
+    this.armSFull = L.sFull ?? (d - 0.07)/ARM_LEN;       // iğne etiketin hemen dışına değsin
+    this.armSRest = L.sRest ?? this.armSFull*0.5;
+    this.armRestYaw = L.rest;
+    this.armStrikeYaw = Math.atan2(-L.pivot[0], -L.pivot[1]) + 0.06;
+    this.armStrikeTilt = armStrikeTilt(ARM_LEN*this.armSFull);
+    this.armYaw = this.armRestYaw; this.armTiltX = -0.04; this._setArmScale(this.armSRest);
+  }
+  _setArmScale(sc){
+    this.armS = sc;
+    this.armTube.scale.z = sc;
+    this.armHead.position.z = ARM_LEN*(sc-1);
+    this.armShadow.scale.z = 0.58*sc; this.armShadow.position.z = 0.25*sc;
   }
 
   // Boss uyarısının elektrik efekti: kolun sabit ucunda toplanan yük,
@@ -279,7 +311,6 @@ export class World {
       opacity:0, depthWrite:false, depthTest:false, blending:add}));
     this.baseGlow.position.y = ARM_H;
     this.arm.add(this.baseGlow);
-    this.armYaw = ARM_REST_YAW; this.armTiltX = -0.04;
     this._jag = new Float32Array(3*24);
     this._boltShapes = []; this._boltTs = -1;
     this._elecCol = new THREE.Color(ELECTRIC);
@@ -291,9 +322,10 @@ export class World {
     // Kol yerel koordinatı: z boyunca uzunluk, uca yakın kırılma yanal
     // (x) kayma, iğneye doğru aşağı (y) iniş → önce eğim (X), sonra yaw (Y).
     const yaw = this.armYaw, tl = this.armTiltX;
-    const ox = _armKinkX(along), oy = -0.038*along*along, oz = ARM_LEN*along;
+    const ox = _armKinkX(along), oy = -0.038*along*along, oz = ARM_LEN*this.armS*along;
     const y1 = oy*Math.cos(tl) - oz*Math.sin(tl), z1 = oy*Math.sin(tl) + oz*Math.cos(tl);
-    out.set(ARM_PIVOT.x + ox*Math.cos(yaw) + z1*Math.sin(yaw), ARM_H + y1, ARM_PIVOT.z - ox*Math.sin(yaw) + z1*Math.cos(yaw));
+    const P = this.armPivot;
+    out.set(P.x + ox*Math.cos(yaw) + z1*Math.sin(yaw), ARM_H + y1, P.z - ox*Math.sin(yaw) + z1*Math.cos(yaw));
     return out;
   }
 
@@ -360,12 +392,14 @@ export class World {
     // Kol pozu: uyarı sırasında doğrudan zaman çizelgesini izler, bitince
     // dinlenme pozisyonuna yumuşakça geri döner.
     if(ph){
-      this.armYaw = ARM_REST_YAW + (ARM_STRIKE_YAW-ARM_REST_YAW)*ph.swing;
-      this.armTiltX = -0.04 + (ARM_STRIKE_TILT+0.04)*ph.swing;
+      this.armYaw = this.armRestYaw + (this.armStrikeYaw-this.armRestYaw)*ph.swing;
+      this.armTiltX = -0.04 + (this.armStrikeTilt+0.04)*ph.swing;
+      this._setArmScale(this.armSRest + (this.armSFull-this.armSRest)*ph.swing);   // inerken uzar
       if(ph.discharge > 0.85) this._discharging = true;
     } else {
       const k = Math.min(1, 0.035*dt);
-      this.armYaw += (ARM_REST_YAW-this.armYaw)*k;
+      this.armYaw += (this.armRestYaw-this.armYaw)*k;
+      if(Math.abs(this.armS-this.armSRest) > 1e-4) this._setArmScale(this.armS + (this.armSRest-this.armS)*k);
       this.armTiltX += (-0.04-this.armTiltX)*k;
       if(this._discharging){ this._discharging = false; this.afterT = 1; }
     }
@@ -379,12 +413,12 @@ export class World {
     this.baseGlow.material.opacity = (ph && tr < 1) ? g*(0.9 - tr*0.6)*flick : 0;
     this.baseGlow.scale.setScalar(0.05 + 0.09*g);
     this.chargeOrb.material.opacity = charging ? flick : 0;
-    this.chargeOrb.position.set(_armKinkX(tr), 0.004, ARM_LEN*tr);
+    this.chargeOrb.position.set(_armKinkX(tr), 0.004, ARM_LEN*this.armS*tr);
     this.chargeOrb.scale.setScalar((0.045 + 0.03*g + 0.035*tr + 0.08*dis)*flick);
     this.chargeBar.visible = tr > 0 && dis < 1;
-    this.chargeBar.scale.set(1, 1, Math.max(0.001, ARM_LEN*tr));
+    this.chargeBar.scale.set(1, 1, Math.max(0.001, ARM_LEN*this.armS*tr));
     this.chargeBar.material.opacity = 0.55*flick;
-    this.armLight.position.set(_armKinkX(tr), -0.01, ARM_LEN*tr);
+    this.armLight.position.set(_armKinkX(tr), -0.01, ARM_LEN*this.armS*tr);
     this.armLight.intensity = ph ? (g*2.5 + tr*3 + dis*7)*flick : this.afterT*8;
     this.armGlow.material.opacity = dis*flick;
     this.armGlow.scale.setScalar(0.08 + dis*0.2);
@@ -412,6 +446,7 @@ export class World {
   // Kamera değişince tema süsleri ekrandaki boş alanlara yeniden yerleşir.
   setView(view){
     this.view = view;
+    this._layoutArm(view.aspect < 0.9 ? 'port' : 'land');
     if(this.themeScene && this.themeScene.layout) this.themeScene.layout(view);
   }
 

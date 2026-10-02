@@ -65,7 +65,8 @@ function placeAt(o, view, nx, ny, y, clear){
   const nearArm = p && Math.hypot(p.x-0.36, p.z+0.42) < 0.1 + (clear||0.06);
   o.visible = !!p && Math.hypot(p.x, p.z) > r && !nearArm;
   if(p) o.position.set(p.x, y, p.z);
-  o.rotation.set(-view.tilt, 0, 0);
+  // Tam kameraya dön (ekranın altındaki nesneye kamera neredeyse tepeden bakar).
+  if(view.camPos){ o.up.copy(view.camUp); o.lookAt(view.camPos); } else o.rotation.set(-view.tilt, 0, 0);
   return o.visible;
 }
 function basicMat(o){ return new THREE.MeshBasicMaterial(Object.assign({transparent:true, depthWrite:false, side:THREE.DoubleSide}, o)); }
@@ -557,20 +558,37 @@ function planetTexture(bands, spot){
   g.fillStyle = p; g.fillRect(0,0,W,H);
   return tex(c, true);
 }
-// Satürn halkası: RingGeometry'nin düzlemsel UV'si için kare doku üzerine
-// eş merkezli bantlar (Cassini boşluğu dahil).
-function saturnRingTexture(rIn, rOut){
-  const S = 512, c = canvas(S), g = c.getContext('2d'), C = S/2;
-  for(let px = rIn*C; px <= C; px += 1){
-    const u = (px/C - rIn)/(rOut - rIn);
-    let a = 0.25 + 0.45*Math.sin(u*31)*Math.sin(u*7.3) * 0.5 + 0.35;
-    if(u > 0.62 && u < 0.68) a *= 0.12;            // Cassini boşluğu
-    if(u < 0.12) a *= u/0.12;
-    if(u > 0.92) a *= (1-u)/0.08;
-    const l = 200 + Math.round(40*Math.sin(u*13));
-    g.strokeStyle = `rgba(${l},${l-22},${l-60},${Math.max(0, Math.min(1, a))})`;
-    g.lineWidth = 1.2; g.beginPath(); g.arc(C, C, px, 0, Math.PI*2); g.stroke();
-  }
+// Çizim tarzı Satürn: düz renkli bantlar, yumuşak gölge hilali, ince
+// kontur; halkanın arka yarısı gezegenin arkasında, ön yarısı önünde.
+function cartoonSaturnTexture(){
+  const W = 512, H = Math.round(512*0.62), c = canvas(W, H), g = c.getContext('2d');
+  const cx = W/2, cy = H/2, R = H*0.3, tilt = -0.32;
+  const ring = (front)=>{
+    g.save(); g.translate(cx, cy); g.rotate(tilt);
+    g.beginPath();
+    if(front) g.ellipse(0, 0, R*2.05, R*0.52, 0, 0, Math.PI); else g.ellipse(0, 0, R*2.05, R*0.52, 0, Math.PI, Math.PI*2);
+    g.lineWidth = R*0.34; g.strokeStyle = '#e9cf95'; g.stroke();
+    g.lineWidth = R*0.07; g.strokeStyle = 'rgba(120,80,40,.55)'; g.stroke();           // Cassini boşluğu
+    g.beginPath();
+    if(front) g.ellipse(0, 0, R*1.62, R*0.4, 0, 0, Math.PI); else g.ellipse(0, 0, R*1.62, R*0.4, 0, Math.PI, Math.PI*2);
+    g.lineWidth = R*0.12; g.strokeStyle = '#c99e5c'; g.stroke();
+    g.restore();
+  };
+  ring(false);
+  // Gezegen
+  g.save(); g.beginPath(); g.arc(cx, cy, R, 0, Math.PI*2); g.clip();
+  g.fillStyle = '#f0d49a'; g.fillRect(cx-R, cy-R, R*2, R*2);
+  g.translate(cx, cy); g.rotate(tilt);
+  const bands = [[-0.62,0.16,'#e2b874'],[-0.28,0.12,'#f6e2b4'],[0.02,0.2,'#d9a560'],[0.36,0.1,'#f3dca8'],[0.6,0.16,'#c98f4e']];
+  for(const [y, h, col] of bands){ g.fillStyle = col; g.fillRect(-R*1.2, y*R, R*2.4, h*R); }
+  g.rotate(-tilt); g.translate(-cx, -cy);
+  // Gölge hilali (ışık sol üstten)
+  g.fillStyle = 'rgba(40,20,50,.38)'; g.beginPath(); g.arc(cx + R*0.42, cy + R*0.36, R*1.05, 0, Math.PI*2); g.fill();
+  // Parlak nokta
+  g.fillStyle = 'rgba(255,255,255,.35)'; g.beginPath(); g.ellipse(cx - R*0.42, cy - R*0.45, R*0.2, R*0.11, -0.6, 0, Math.PI*2); g.fill();
+  g.restore();
+  g.lineWidth = 3; g.strokeStyle = 'rgba(90,60,40,.7)'; g.beginPath(); g.arc(cx, cy, R, 0, Math.PI*2); g.stroke();
+  ring(true);
   return tex(c);
 }
 function buildCosmic(world){
@@ -583,19 +601,12 @@ function buildCosmic(world){
   const rim = glowRim('#5ad1ff', DISC_R*1.012, 0.0035, 0.45);
   group.add(rim);
 
-  // --- Satürn: bantlı gezegen + eğik halka. Halkanın arka yarısı gezegenin
-  // arkasında kalır (gerçek derinlik), gezegen kendi ekseninde yavaşça döner.
+  // --- Satürn: gerçekçi küre yerine sade, çizim (illüstrasyon) tarzı küçük
+  // bir Satürn. Hafifçe sallanıp süzülür.
   const saturn = new THREE.Group(); group.add(saturn);
-  const sTilt = new THREE.Group(); sTilt.rotation.z = -0.38; saturn.add(sTilt);
-  const SR = 0.036;
-  const sBody = new THREE.Mesh(new THREE.SphereGeometry(SR, 40, 24),
-    new THREE.MeshStandardMaterial({map:planetTexture(['#e9d3a3','#d8b98a','#c9a56e','#efdcb4','#b98f5c','#e2c79a'], 'rgba(255,240,220,.5)'), roughness:0.85, metalness:0, emissive:'#3a2a18', emissiveIntensity:0.25}));
-  sTilt.add(sBody);
-  const RIN = 1.35, ROUT = 2.35;
-  const ringMat = basicMat({map:saturnRingTexture(RIN/ROUT, 1), color:'#e8dcc4', opacity:0.85});
-  const sRing = new THREE.Mesh(new THREE.RingGeometry(SR*RIN, SR*ROUT, 96, 1), ringMat);
-  sRing.rotation.x = -1.22;        // halkayı neredeyse yandan gör
-  sTilt.add(sRing);
+  const SW = 0.085;
+  const satMesh = new THREE.Mesh(new THREE.PlaneGeometry(SW, SW*0.62), basicMat({map:cartoonSaturnTexture(), opacity:0.95}));
+  saturn.add(satMesh);
 
   // --- Buz devi + etrafında dönen küçük ay (ay gezegenin arkasına geçip
   // kaybolur, önüne çıkınca görünür).
@@ -638,8 +649,8 @@ function buildCosmic(world){
     },
     update(dt, t){
       galaxy.rotation.y -= 0.0012*dt;
-      sBody.rotation.y += 0.0016*dt;
-      saturn.children[0].position.y = Math.sin(t*0.5)*0.004;
+      satMesh.position.y = Math.sin(t*0.5)*0.003;
+      satMesh.rotation.z = Math.sin(t*0.23)*0.06;
       iBody.rotation.y += 0.0025*dt;
       ice.children[0].position.y = Math.sin(t*0.6+2)*0.003;
       moonPivot.rotation.y += 0.006*dt;
