@@ -170,7 +170,7 @@ function gameOver(reason){
   }
   setHud(false); showScreen('over'); syncAdButtons();
   beep(200,0.3,'sine',0.12);
-  if(!stats.premiumNoAds){
+  if(!stats.premiumNoAds && !tutorialActive){
     if(adGamesLeft===null) adGamesLeft=rollAdInterval();
     adGamesLeft--;
     if(adGamesLeft<=0){
