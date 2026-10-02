@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.7.1';
+const GAME_VERSION = '2.8.0';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -92,6 +92,14 @@ const PENA_IMG = {};
 SKINS.forEach(sk=>{ if(sk.img){ const im=new Image(); im.src=sk.img; PENA_IMG[sk.id]=im; } });
 const MONSTER_IMG = {};
 for(let i=1;i<=16;i++){ const im=new Image(); im.src='img/monsters/monster'+i+'.png'; MONSTER_IMG['monster'+i]=im; }
+// "Cızırtı" yaratıkları: kullanıcının pembe şimşek + kırık ses dalgası
+// görselinden üretilen 7 renk (img/monsters/glitch_*.png). Her tehlike tipi
+// bir renk taşır (bkz. render.js HAZARD_IMG_KEY / HAZARD_COLOR).
+['red','blue','green','yellow','purple','orange','pink'].forEach(c=>{ const im=new Image(); im.src='img/monsters/glitch_'+c+'.png'; MONSTER_IMG['glitch_'+c]=im; });
+// Toplanabilir öğe görselleri (kullanıcının verdiği): nota ve nota jetonu.
+const ITEM_IMG = {};
+['note','coin'].forEach(k=>{ const im=new Image(); im.src='img/items/'+k+'.png'; ITEM_IMG[k]=im; });
+function imgReady(im){ return !!(im && im.complete && im.naturalWidth>0); }
 function playerColor(){
   const sk=SKINS.find(s=>s.id===cfg.skin)||SKINS[0];
   if(!isUnlockedItem('skins', sk)) return SKINS[0].color;

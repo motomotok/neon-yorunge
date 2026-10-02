@@ -251,7 +251,8 @@ export class Entities {
 
   _animateItem(v, it, t, dt, f, styleKey){
     const type = it.type, def = v.def, hazard = HAZARDS.has(type);
-    const bob = Math.sin(t*2.4 + it.ang*3)*0.14;
+    // Notalar Subway Surfers coin'leri gibi belirgin salınır; diğerleri hafif.
+    const bob = (type==='star'||type==='gold') ? Math.sin(t*3.2 + it.ang*3)*0.32 : Math.sin(t*2.4 + it.ang*3)*0.14;
     let scale = 1, opacity = 1, spin = 0, flipX = 1;
     if(hazard){
       spin = type==='hazardJump' ? 0 : t*(type==='hazardCreep'?1.1:type==='hazardPulse'?1.0:0.6);
@@ -260,6 +261,8 @@ export class Entities {
         if(!it.pulseDanger) opacity = 0.55;
       }
       if(type==='hazardTwinDecoy') opacity = 0.4+Math.sin(t*9)*0.25;
+      // Cızırtı: bozuk sinyal gibi hafif parlaklık titremesi.
+      opacity *= 0.82 + Math.random()*0.18;
     } else if(type==='coin' || type==='diamond'){
       flipX = Math.cos(t*3 + it.ang*2);              // jeton gibi dönen 3D çevirme
       if(Math.abs(flipX)<0.12) flipX = 0.12*Math.sign(flipX||1);

@@ -270,16 +270,16 @@ document.addEventListener('click', e=>{
 // dokunmuyor, bu yüzden gameplay'i bozma riski yok; sadece görsel dilin
 // birebir aynısını küçük ölçekte tekrarlıyor.
 const HOWTO_ICON_SHAPES = {
-  star:        {kind:'note',    color:'#ffcf7a'},
+  star:        {kind:'itemImg', key:'note'},
   diamond:     {kind:'diamond', color:'#fff4e0'},
-  particle:    {kind:'coin'},
+  particle:    {kind:'itemImg', key:'coin'},
   heartItem:   {kind:'heart',   color:'#ff5d8f'},
-  hazard:      {kind:'img', monster:'monster3'},
-  hazardBomb:  {kind:'img', monster:'monster6'},
-  hazardPull:  {kind:'img', monster:'monster1'},
-  hazardTwin:  {kind:'img', monster:'monster16'},
-  hazardPulse: {kind:'img', monster:'monster11'},
-  hazardCreep: {kind:'img', monster:'monster13'},
+  hazard:      {kind:'img', monster:'glitch_red'},
+  hazardBomb:  {kind:'img', monster:'glitch_green'},
+  hazardPull:  {kind:'img', monster:'glitch_yellow'},
+  hazardTwin:  {kind:'img', monster:'glitch_purple'},
+  hazardPulse: {kind:'img', monster:'glitch_orange'},
+  hazardCreep: {kind:'img', monster:'glitch_pink'},
 };
 function drawHowtoIconShape(ctx2, type, size){
   const cfgS = HOWTO_ICON_SHAPES[type]; if(!cfgS) return;
@@ -333,7 +333,10 @@ function drawHowtoIconShape(ctx2, type, size){
     ctx2.closePath(); ctx2.fill();
   } else if(cfgS.kind==='img'){
     const img = MONSTER_IMG[cfgS.monster];
-    if(img && img.complete && img.naturalWidth>0) ctx2.drawImage(img, cx-R*1.3, cy-R*1.3, R*2.6, R*2.6);
+    if(img && img.complete && img.naturalWidth>0) ctx2.drawImage(img, cx-R*1.6, cy-R*1.6, R*3.2, R*3.2);
+  } else if(cfgS.kind==='itemImg'){
+    const img = ITEM_IMG[cfgS.key];
+    if(imgReady(img)) ctx2.drawImage(img, cx-R*1.5, cy-R*1.5, R*3, R*3);
   }
 }
 function renderHowtoIcons(){
