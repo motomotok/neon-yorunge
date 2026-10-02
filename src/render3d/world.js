@@ -26,7 +26,7 @@ export const TOP_Y = DISC_H;      // plak üst yüzeyi (base birimde)
 //    teleskop gibi tam boyuna uzar.
 const ARM_LAYOUTS = {
   land: {pivot:[0.36, -0.42], rest:0.5, sRest:1, sFull:1},
-  port: {pivot:[0.3, -0.6], rest:-Math.PI/2, sRest:null, sFull:null},   // null: plağa uzaklıktan hesaplanır
+  port: {pivot:[0.3, -0.55], rest:-Math.PI/2, sRest:null, sFull:null},   // null: plağa uzaklıktan hesaplanır
 };
 const ARM_LEN = 0.5;
 const ARM_H = 0.05;
@@ -277,7 +277,7 @@ export class World {
     this.arm.position.copy(this.armPivot);
     const d = Math.hypot(L.pivot[0], L.pivot[1]);
     this.armSFull = L.sFull ?? (d - 0.07)/ARM_LEN;       // iğne etiketin hemen dışına değsin
-    this.armSRest = L.sRest ?? this.armSFull*0.5;
+    this.armSRest = L.sRest ?? this.armSFull*0.625;
     this.armRestYaw = L.rest;
     this.armStrikeYaw = Math.atan2(-L.pivot[0], -L.pivot[1]) + 0.06;
     this.armStrikeTilt = armStrikeTilt(ARM_LEN*this.armSFull);

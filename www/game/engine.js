@@ -72,7 +72,7 @@ function resetGame(){
              coins:0, coinPickups:0, luckyCharges:0, noteMult:1, revivedUsed:false};
   timeLeft = mode==='time' ? 60 : null;
   newRecord=false; timeScale=1; timeScaleT=0;
-  bossNextIndex=0; bossActive=false; bossWaveItems=[]; bossReward=0; bossTelegraph=null;
+  bossNextIndex=0; bossActive=false; bossWaveItems=[]; bossReward=0; bossTelegraph=null; bossLapsLeft=0; bossLapIndex=0;
   lastHeartScore=-HEART_SCORE_GAP;
   if(activeBoost){
     if(activeBoost==='shieldstart') player.shieldHits=shieldHitsFor();
@@ -140,12 +140,15 @@ function pickHazardKind(){
 // belirir, aynı anda `count` kadar tehlike fırlatır. Zen modda hiç
 // tetiklenmez (o modda zaten hiç tehlike yok). Her eşik bir oyunda yalnızca
 // bir kez tetiklenir (bkz. bossNextIndex, resetGame() ile sıfırlanır).
+// count = boss'un her turundaki cızırtı "sütunu" sayısı, laps = kaç tur
+// süreceği (pena plak etrafında 2-3 tur savaşır).
 const BOSS_STAGES = [
-  {score:1000,  count:5,  reward:40},
-  {score:3000,  count:6,  reward:65},
-  {score:5000,  count:7,  reward:100},
-  {score:10000, count:9,  reward:200},
-  {score:15000, count:11, reward:280},
+  {score:450,   count:5,  laps:2, reward:25},
+  {score:1000,  count:6,  laps:2, reward:40},
+  {score:3000,  count:7,  laps:3, reward:65},
+  {score:5000,  count:8,  laps:3, reward:100},
+  {score:10000, count:9,  laps:3, reward:200},
+  {score:15000, count:10, laps:3, reward:280},
 ];
 // 15000'den sonra dizi BİTMİYOR — her +5000 puanda bir dalga daha gelmeye
 // devam ediyor (count/reward kademeli artıyor, count bir tavanda duruyor).
@@ -156,7 +159,7 @@ const BOSS_STAGES = [
 // tanım üretir, boss dalgaları asla bitmez.
 const BOSS_INFINITE_STEP = 5000;
 const BOSS_INFINITE_COUNT_STEP = 1;
-const BOSS_INFINITE_COUNT_CAP = 18;
+const BOSS_INFINITE_COUNT_CAP = 11;
 const BOSS_INFINITE_REWARD_STEP = 60;
 function bossStageFor(index){
   if(index < BOSS_STAGES.length) return BOSS_STAGES[index];
@@ -166,12 +169,12 @@ function bossStageFor(index){
     score: last.score + extra*BOSS_INFINITE_STEP,
     count: Math.min(BOSS_INFINITE_COUNT_CAP, last.count + extra*BOSS_INFINITE_COUNT_STEP),
     reward: last.reward + extra*BOSS_INFINITE_REWARD_STEP,
+    laps: 3,
   };
 }
 // Boss dalgası sırasında oyuncunun (mevcut hızından bağımsız) sabit açısal
-// hızı — dalganın toplam açısal uzunluğu (~1.3 başlangıç payı + 3.2 yayılım
-// + pay) bu hızla en az ~6.5 saniyede kat edilir.
-const BOSS_SLOW_RATE = 0.012;
+// hızı — bir tur ~5 sn; boss 2-3 tur sürer (bkz. spawnBossLap).
+const BOSS_SLOW_RATE = 0.0204;   // eskiden 0.012 — boss'ta çok yavaşlanıyordu (x1.7)
 // Telegraph, eşikten BOSS_WARN_SCORE_GAP puan önce başlar ve SKORDAN
 // BAĞIMSIZ, gerçek zamanlı BOSS_WARN_SECONDS saniye sonra (performance.now()
 // ile ölçülür) boss'u tetikler — oyuncu o aralıkta hiç puan kazanamasa bile
@@ -199,24 +202,48 @@ function startBossWave(stageDef){
   burst(CX,CY,'#ffd24a',40,7); burst(CX,CY,'#ff6b3d',30,6); burst(CX,CY,'#ffffff',20,5);
   beep(90,0.5,'sawtooth',0.2); beep(140,0.5,'square',0.16); beep(60,0.6,'sine',0.18);
   showFlash('⚠ '+t('flash_boss_wave'),90); vibrate([30,40,30,40,60]);
-  const startAng = normAng(player.ang + 1.3), spread = 3.2;
-  // Halkaları mümkün olduğunca eşit dağıt — sıra karışık ama sayım eşit
-  // (örn. 5 öğe -> {0,1,2} üzerinden 2/2/1 gibi). Eskiden her öğe bağımsız
-  // rastgele halka seçiyordu; bu da şans eseri hepsinin aynı (genelde en
-  // iç) halkaya düşüp dalgayı "tek halkada dolanıp geçilen" sıkıcı bir
-  // koridora çevirebiliyordu — asıl şikayet tam buydu.
-  const ringPlan=[];
-  for(let i=0;i<stageDef.count;i++) ringPlan.push(i%NUM_RINGS);
-  for(let i=ringPlan.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [ringPlan[i],ringPlan[j]]=[ringPlan[j],ringPlan[i]]; }
-  for(let i=0;i<stageDef.count;i++){
-    const ang = normAng(startAng + (stageDef.count>1 ? (i/(stageDef.count-1))*spread : 0));
-    const ring = ringPlan[i];
-    const type = pickHazardKind();
-    const it = {ang, ring, type, alive:true, pop:0, expiring:false, prevFwd:null,
-      jumpT: type==='hazardJump' ? 70+rnd()*60 : 0,
-      pulsePhase: type==='hazardPulse' ? rnd()*Math.PI*2 : 0, pulseDanger:false,
-      creepT: type==='hazardCreep' ? 50+rnd()*40 : 0, creeped:false, boss:true};
-    items.push(it); bossWaveItems.push(it);
+  bossStage = stageDef; bossStageIdx = bossNextIndex; bossLapsLeft = stageDef.laps || 2; bossLapIndex = 0;
+  spawnBossLap();
+}
+
+// Boss bir "savaş meydanı": her turda plağın neredeyse tamamına yayılmış
+// cızırtı sütunları. Her sütun 1 ya da 2 halkayı kapatır, ama her zaman
+// en az bir halka açıktır ve açık halka bir sonrakine ulaşılabilir
+// yakınlıktadır (adil ama sürekli halka değiştirmeye zorlar). İleri
+// boss'larda 2 halkayı kapatan sütunlar artar. Açık halkalarda ara sıra
+// nota çıkar (risk/ödül). Bir turun cızırtıları geçilince sonraki tur gelir.
+let bossStage=null, bossStageIdx=0, bossLapsLeft=0, bossLapIndex=0;
+function spawnBossLap(){
+  const def = bossStage, idx = bossStageIdx;
+  bossLapsLeft--; bossLapIndex++;
+  const n = def.count, span = 5.0, gap = span/(n-1);
+  const startAng = normAng(player.ang + (bossLapIndex===1 ? 1.3 : 0.9));
+  const p2 = Math.min(0.75, 0.2 + idx*0.1 + (bossLapIndex-1)*0.08);   // 2 halka kapatan sütun olasılığı
+  let free = player.targetRing;
+  for(let c=0;c<n;c++){
+    const ang = normAng(startAng + c*gap);
+    // Yeni açık halka: önceki açık halkadan en fazla 1 (geniş aralıkta 2) uzak.
+    const maxStep = gap >= 0.8 ? 2 : 1;
+    const opts = [0,1,2].filter(r=>Math.abs(r-free)<=maxStep);
+    const prevFree = free;
+    free = opts[Math.floor(rnd()*opts.length)];
+    if(c===0 && free===prevFree && opts.length>1) free = opts.find(r=>r!==prevFree);   // ilk sütun hemen hareket ettirsin
+    let blocked;
+    if(rnd() < p2) blocked = [0,1,2].filter(r=>r!==free);
+    else {
+      const cand = [0,1,2].filter(r=>r!==free);
+      blocked = [cand.includes(prevFree) && rnd()<0.6 ? prevFree : cand[Math.floor(rnd()*cand.length)]];
+    }
+    for(const ring of blocked){
+      let type = pickHazardKind();
+      if(type==='hazardJump' || type==='hazardCreep') type = rnd()<0.5 ? 'hazard' : 'hazardBomb';   // halka/açı değiştirenler sütunu bozmasın
+      const it = {ang, ring, type, alive:true, pop:0, expiring:false, prevFwd:null, jumpT:0,
+        pulsePhase: type==='hazardPulse' ? rnd()*Math.PI*2 : 0, pulseDanger:false, creepT:0, creeped:false, boss:true};
+      items.push(it); bossWaveItems.push(it);
+    }
+    if(blocked.length===1 && rnd()<0.45){
+      items.push({ang, ring:free, type:'star', alive:true, pop:0, expiring:false, prevFwd:null});
+    }
   }
 }
 
@@ -488,10 +515,14 @@ function update(dt){
 
     // Tehlikeler: eskisi gibi açı+halka+"yerleşmiş mi" kontrolüyle — bu
     // tiplerin zorluğuna/adilliğine dokunmuyoruz.
+    // Çarpışma da toplama gibi pena'nın O ANKİ gerçek piksel konumuyla
+    // ölçülür: halka geçişi sırasında cızırtının tam üstünden geçen pena
+    // artık çarpar (eskiden "yerleşmemiş" pena hiç çarpmıyordu).
     if(isDangerKind){
-      if(it.expiring || da>=hitWindow || !settled) continue;
-      const sameRing = it.ring===curRing;
+      if(it.expiring || da>0.6) continue;
       const ix=CX+Math.cos(it.ang)*radiusFor(it.ring), iy=CY+Math.sin(it.ang)*radiusFor(it.ring);
+      const ppx=CX+Math.cos(player.ang)*player.curRadius, ppy=CY+Math.sin(player.ang)*player.curRadius;
+      const sameRing = Math.hypot(ppx-ix, ppy-iy) < PLAYER_R*(it.type==='hazardBomb' ? 2.6 : 2.0);
       if(isHazardType(it.type)){
         if(!sameRing) continue;
         if(it.type==='hazardPulse' && !it.pulseDanger) continue;
@@ -570,10 +601,11 @@ function update(dt){
   let _iw=0;
   for(let _ir=0;_ir<items.length;_ir++){ if(items[_ir].alive) items[_iw++]=items[_ir]; }
   items.length=_iw;
-  if(items.length>40) items.splice(0, items.length-40);   // jeton/sol anahtarı bir tur daha kaldığı için 30'dan artırıldı
+  if(items.length>60) items.splice(0, items.length-60);   // jeton/sol anahtarı bir tur daha kaldığı için 30'dan artırıldı
 
   if(bossActive){
     bossWaveItems = bossWaveItems.filter(it=>it.alive);
+    if(bossWaveItems.length===0 && bossLapsLeft>0) spawnBossLap();
     if(bossWaveItems.length===0){
       bossActive=false;
       const finalReward=Math.round(bossReward*(1+upgradeBonus('coinPct')));
