@@ -241,6 +241,11 @@ function drawRing(r){
 // 3D modun karşılığı: src/render3d/entities.js (_updateScratch).
 const _scr={pts:[], sparks:[], ripples:[], ringFlash:[0,0,0], flare:0, lastNotes:0, lastTs:0};
 const SCRATCH_LIFE=2000;
+// Çiziğin penadan geriye en fazla uzunluğu (PLAYER_R cinsinden). Süre
+// sınırına ek olarak uygulanır: pena hızlandıkça eski kısım aynı oranda hızlı
+// silinir, yüksek kombolarda bile ekran çizikle dolmaz.
+const SCRATCH_LEN_R=22;
+const _scrDist=new Float32Array(256);
 function scratchColor2D(style,i,t,pc){
   switch(style){
     case 'rainbow': return `hsl(${Math.round(t*60+i*9)%360},90%,62%)`;
@@ -261,6 +266,16 @@ function updateScratch2D(px,py){
   const life = cfg.trail==='comet' ? SCRATCH_LIFE*1.5 : SCRATCH_LIFE;
   while(_scr.pts.length && now-_scr.pts[0].born>life) _scr.pts.shift();
   if(_scr.pts.length>220) _scr.pts.splice(0,_scr.pts.length-220);
+  const maxLen=PLAYER_R*SCRATCH_LEN_R*(cfg.trail==='comet'?1.4:1);
+  const m=_scr.pts.length;
+  if(m) _scrDist[m-1]=Math.hypot(px-_scr.pts[m-1].x, py-_scr.pts[m-1].y);
+  for(let i=m-2;i>=0;i--){
+    const a=_scr.pts[i], b=_scr.pts[i+1];
+    _scrDist[i] = b.brk ? Infinity : _scrDist[i+1]+Math.hypot(b.x-a.x,b.y-a.y);
+  }
+  let cut=0;
+  while(cut<m && _scrDist[cut]>maxLen) cut++;
+  if(cut){ _scr.pts.splice(0,cut); _scrDist.copyWithin(0,cut,m); }
   // Temas kıvılcımları — kombo/hız arttıkça daha çok.
   if(state==='play'){
     const rate=(0.3+Math.min(1.2,(player.speed-1.5)*0.6))*(cfg.trail==='sparkle'?2.2:1);
@@ -304,7 +319,9 @@ function drawScratch2D(t,px,py,pc){
     const p0=pts[i-1], p1 = i<n ? pts[i] : {x:px,y:py,born:now,brk:false};
     if(p1.brk) continue;
     if(style==='pixel' && i%4===0) continue;                 // kesik kesik çizik
-    const age=now-p1.born, k=Math.max(0,1-age/life);
+    const age=now-p1.born;
+    const maxLen=PLAYER_R*SCRATCH_LEN_R*(style==='comet'?1.4:1), dd = i<n ? _scrDist[i] : 0;
+    const k=Math.max(0,Math.min(1-age/life,(maxLen-dd)/(maxLen*0.6)));
     if(k<=0) continue;
     const hot=Math.max(0,1-age/300);
     let x0=p0.x, y0=p0.y, x1=p1.x, y1=p1.y;

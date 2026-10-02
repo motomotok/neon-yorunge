@@ -17,7 +17,8 @@ export const ITEM_TYPES = ['star','gold','diamond','coin','heart','shield','slow
 const HAZARDS = new Set(['hazard','hazardJump','hazardBomb','hazardPull','hazardTwin','hazardTwinDecoy','hazardPulse','hazardCreep']);
 // Manifest görsellerinin varsayılan göreli boyutu (2D sürümdeki oranlar).
 const TYPE_SIZE = {hazardBomb:1.5, diamond:1.0, coin:0.9, heart:1.1};
-const HOVER = 1.55;            // öğelerin plaktan yüksekliği (R biriminde)
+const HOVER = 1.55;
+const SCRATCH_LEN_R = 22;       // çiziğin en fazla uzunluğu (PLAYER_R cinsinden)            // öğelerin plaktan yüksekliği (R biriminde)
 const FALLBACK_PX = 160;       // klasik çizimden üretilen dokunun çözünürlüğü
 
 const _col = new Map();
@@ -420,6 +421,22 @@ export class Entities {
       }
     }
     while(sc.pts.length && now - sc.pts[0].born > LIFE*1.5) sc.pts.shift();
+    // Uzunluk sınırı: çizik penadan geriye en fazla maxLen kadar uzar. Pena
+    // hızlandıkça eski kısım aynı oranda hızlı silinir, yani hız ne olursa
+    // olsun ekranda hep yaklaşık aynı uzunlukta bir çizik kalır.
+    const maxLen = R*SCRATCH_LEN_R*(f.trail==='comet' ? 1.4 : 1);
+    const dist = sc.dist || (sc.dist = new Float32Array(512));
+    {
+      const m = sc.pts.length;
+      if(m) dist[m-1] = 0;
+      for(let i=m-2;i>=0;i--){
+        const a = sc.pts[i], b = sc.pts[i+1];
+        dist[i] = b.brk ? Infinity : dist[i+1] + Math.hypot(b.x-a.x, b.z-a.z);
+      }
+      let cut = 0;
+      while(cut < m && dist[cut] > maxLen) cut++;
+      if(cut){ sc.pts.splice(0, cut); dist.copyWithin(0, cut, m); }
+    }
     sc.flare = Math.max(0, sc.flare - dt*0.035);
 
     const B = sc.batch; B.begin(); B.strip();
@@ -428,7 +445,9 @@ export class Entities {
     const wMul = style==='comet' ? 1.35 : style==='phantom' ? 1.2 : 1;
     for(let i=0;i<n;i++){
       const p = sc.pts[i];
-      const age = now - p.born, k = Math.max(0, 1 - age/life);
+      const age = now - p.born;
+      // Zamanla sönme ve uzunluk sınırına yaklaştıkça sönme; hangisi güçlüyse o geçerli.
+      const k = Math.max(0, Math.min(1 - age/life, (maxLen - dist[i])/(maxLen*0.6)));
       // Piksel stili: kesik kesik çizik (2 nokta çiz, 2 nokta boşluk).
       if(p.brk || (style==='pixel' && i%4===0)){ B.endStrip(); B.strip(); }
       if(style==='pixel' && i%4===3) continue;
