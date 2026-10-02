@@ -212,6 +212,7 @@ function openCoreInfo(id){
         clearTimeout(coreJustBoughtTimer);
         coreJustBoughtTimer=setTimeout(()=>{ coreJustBoughtId=null; renderCoreTree(); }, 2400);
         closeCoreInfo(); renderCoreTree(); updatePrestigePreview();
+        if(tutorialActive && typeof tutorialOnCoreBought==='function') tutorialOnCoreBought(id);
       } else {
         queueToast(t('core_insufficient_toast')); beep(200,0.1,'square',0.1);
       }
@@ -233,8 +234,9 @@ function attemptPrestige(){
   const gain=coresPreview();
   if(gain<=0){ queueToast(t('prestige_zero_toast')); beep(200,0.1,'square',0.1); return; }
   showPurchaseConfirm('replay', t('reset_progress_btn')+' — +'+gain+' ⚛', null, ()=>{
-    performPrestige();
+    const got=performPrestige();
     renderUpgrades(); renderCoreTree(); updatePrestigePreview();
+    if(tutorialActive && typeof tutorialOnPrestige==='function') tutorialOnPrestige(got);
     beep(300,0.15,'square',0.12); beep(500,0.15,'triangle',0.1);
   }, t('reset_progress_confirm'));
 }

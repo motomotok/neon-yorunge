@@ -8,7 +8,7 @@ let _narr = {timer:null, ctaTimer:null, typing:false};
 
 function narratorIsTyping(){ return _narr.typing; }
 
-// opts: {cta, onCta, onDone, skippable}
+// opts: {cta, onCta, onDone, skippable, pos:'top'|'bottom'}
 function narratorSay(msg, opts){
   opts = opts || {};
   const box = document.getElementById('tutorialBox'); if(!box) return;
@@ -18,6 +18,7 @@ function narratorSay(msg, opts){
   clearInterval(_narr.timer); clearTimeout(_narr.ctaTimer);
   cta.style.display = 'none'; cta.onclick = null;
   if(skip) skip.style.display = opts.skippable===false ? 'none' : '';
+  box.classList.toggle('atBottom', opts.pos==='bottom');
   box.classList.add('show', 'talking');
   // Array.from: emoji / çok baytlı karakterler (Arapça, Japonca…) bölünmesin.
   const chars = Array.from(msg);
