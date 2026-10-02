@@ -1,4 +1,4 @@
-const CACHE = 'beat-orbit-v1';
+const CACHE = 'beat-orbit-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -9,6 +9,9 @@ const ASSETS = [
   './premium.js',
   './season-pass.js',
   './playgames.js',
+  './pena-shop.js',
+  './render3d-bundle.js',
+  './assets3d/manifest.js',
   './privacy.html',
   './licenses.html',
   './fonts/orbitron.woff2',
@@ -17,12 +20,16 @@ const ASSETS = [
   './fonts/rajdhani-700.woff2',
   './game/icons.js',
   './game/data.js',
+  './game/i18n.js',
   './game/fx.js',
   './game/engine.js',
   './game/render.js',
+  './game/gfx.js',
   './game/screens.js',
   './game/shop-ui.js',
   './game/battlepass-ui.js',
+  './game/upgrades-ui.js',
+  './game/tutorial.js',
   './game/input.js',
   './game/main.js',
   './icons/icon-192.png',
@@ -57,6 +64,6 @@ self.addEventListener('fetch', e => {
       const clone = res.clone();
       caches.open(CACHE).then(c => c.put(e.request, clone));
       return res;
-    }).catch(() => caches.match(e.request))
+    }).catch(() => caches.match(e.request, { ignoreSearch: true }))
   );
 });

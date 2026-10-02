@@ -38,6 +38,7 @@ workflows:
           # burada YENİDEN üretilmeleri şart, yoksa Xcode eski/boş bir web
           # klasörü paketler.
           npm run build:ads
+          npm run build:3d
           # "cap sync ios" kendi içinde "pod install" da çalıştırıyor; bu adım
           # Google-Mobile-Ads-SDK'yı dl.google.com'dan indiriyor ve CI
           # makineleriyle Google'ın CDN'i arasında ara sıra geçici ağ zaman

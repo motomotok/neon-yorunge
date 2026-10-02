@@ -33,12 +33,23 @@ let last=0;
 function loop(ts){
   const dt=Math.min(40, ts-last)/16.6667 || 1; last=ts;
   ctx.clearRect(0,0,W,H);
-  updateShootingStars(dt);
-  drawBg(dt);
-  if(state==='play') update(dt);
-  else if(MENU_STATES[state]) updateIdleOrb(dt);
-  drawWorld();
-  drawParticles(dt);
+  // 3D modda (bkz. gfx.js) dünya WebGL canvas'ına (#game3d) çizilir; bu 2D
+  // canvas onun üstünde saydam kalır ve sadece tam ekran flaşları taşır.
+  // Oyun mantığı (update) iki modda da birebir aynı.
+  if(gfx3dActive()){
+    if(state==='play') update(dt);
+    else if(MENU_STATES[state]) updateIdleOrb(dt);
+    updateParticles(dt);
+    renderFrame3D(dt);
+    drawScreenOverlays();
+  } else {
+    updateShootingStars(dt);
+    drawBg(dt);
+    if(state==='play') update(dt);
+    else if(MENU_STATES[state]) updateIdleOrb(dt);
+    drawWorld();
+    drawParticles(dt);
+  }
   requestAnimationFrame(loop);
 }
 
@@ -60,6 +71,7 @@ function drawWorld(){
   drawSun(t);
 
   for(const r of RINGS) drawRing(r);
+  drawRingFlash2D();
 
   if(GAME_STATES[state]){
     for(const it of items){
@@ -69,13 +81,17 @@ function drawWorld(){
     }
   }
   if(GAME_STATES[state] && bossTelegraph) drawBossTelegraph(t, bossTelegraph);
-  else drawTonearmIdle();
+  else { drawTonearmIdle(); drawBossAfterglow(); }
 
   // Oyuncu küresi gerçek oyunda VE menü ailesindeki ekranlarda (yavaşça
   // dönerek, "canlı menü") çizilir — sadece parçacık/asteroit menüde yok.
   if(GAME_STATES[state] || MENU_STATES[state]) drawPlayer(t);
   ctx.restore();
-
+  drawScreenOverlays();
+}
+// Çarpışma (kırmızı) ve zaman dondurma (buz mavisi) tam ekran flaşları —
+// iki çizim modunun ortak katmanı.
+function drawScreenOverlays(){
   if(flash>0 && GAME_STATES[state]){ ctx.fillStyle=hexA(T.peril, flash*0.4); ctx.fillRect(0,0,W,H); }
   if(freezeFlash>0 && GAME_STATES[state]){ ctx.fillStyle=hexA('#7fe8ff', freezeFlash*0.22); ctx.fillRect(0,0,W,H); }
 }
@@ -217,64 +233,140 @@ function drawRing(r){
   }
 }
 
-function drawTrail(t,pr,pc){
-  const style = cfg.trail;
-  if(style==='comet' || style==='ribbon'){
-    ctx.beginPath();
-    for(let i=0;i<=12;i++){
-      const a=player.ang - i*0.045;
-      const wob = style==='ribbon' ? Math.sin(t*4-i*0.5)*PLAYER_R*0.4 : 0;
-      const rad = pr+wob;
-      const x=CX+Math.cos(a)*rad, y=CY+Math.sin(a)*rad;
-      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
-    }
-    ctx.strokeStyle=hexA(pc, style==='comet'?.55:.5);
-    ctx.lineWidth=PLAYER_R*(style==='comet'?1.4:1.1); ctx.lineCap='round';
-    ctx.globalAlpha=0.6; ctx.stroke(); ctx.globalAlpha=1;
-    return;
+// Pena çiziği (klasik mod): kuyruk yerine pena geçtiği yolu ince, parlayan
+// bir çizikle kazıyormuş gibi bırakır; çizik ~2 sn'de söner. Nota alınınca
+// çizik parlar, penadan bir ses dalgası halkası yayılır ve pena'nın oluğu
+// bir an yanar — "pena plağı çiziyor, notalar şarkıyı çalıyor" hissi.
+// Renk/şekil mağazadaki İz Efekti seçimini (cfg.trail) izler.
+// 3D modun karşılığı: src/render3d/entities.js (_updateScratch).
+const _scr={pts:[], sparks:[], ripples:[], ringFlash:[0,0,0], flare:0, lastNotes:0, lastTs:0};
+const SCRATCH_LIFE=2000;
+// Çiziğin penadan geriye en fazla uzunluğu (PLAYER_R cinsinden). Süre
+// sınırına ek olarak uygulanır: pena hızlandıkça eski kısım aynı oranda hızlı
+// silinir, yüksek kombolarda bile ekran çizikle dolmaz.
+const SCRATCH_LEN_R=22;
+const _scrDist=new Float32Array(256);
+function scratchColor2D(style,i,t,pc){
+  switch(style){
+    case 'rainbow': return `hsl(${Math.round(t*60+i*9)%360},90%,62%)`;
+    case 'sparkle': return i%3===0 ? '#ffffff' : '#fff2c4';
+    case 'quantum': return (i>>2)%2===0 ? pc : '#7fe8ff';
+    case 'phantom': return '#eaf2ff';
+    case 'season1_trail': return (i>>2)%2===0 ? '#54e0ff' : '#fff6c8';
+    case 'season2_trail': return `hsl(${Math.round(28+Math.sin(t*3-i*0.2)*10)},95%,55%)`;
+    default: return pc;
   }
-  // İz uzunluğu 10->14 segmente, görünürlük çarpanları da yükseltildi —
-  // varsayılan (ücretsiz) "classic" iz dahil hepsi daha belirgin ve daha
-  // uzun takip etsin diye (bkz. kullanıcı talebi: mağazadaki diğer iz
-  // seçeneklerinin de bu gözle görülür etkiyle fark edilmesi isteniyor).
-  for(let i=1;i<=13;i++){
-    const a=player.ang - i*0.05;
-    const tx=CX+Math.cos(a)*pr, ty=CY+Math.sin(a)*pr;
-    const baseSize=PLAYER_R*(1-i/14);
-    let col=pc, size=baseSize;
-    if(style==='sparkle'){
-      if(i%2===0) continue;
-      col='#ffffff'; size=baseSize*(0.6+((i*37)%10)/10);
-    } else if(style==='rainbow'){
-      col=`hsl(${(t*60+i*22)%360},90%,65%)`;
-    } else if(style==='pixel'){
-      ctx.globalAlpha=(1-i/14)*0.6; ctx.fillStyle=col;
-      ctx.fillRect(tx-size/2,ty-size/2,size,size); continue;
-    } else if(style==='quantum'){
-      col = (i%2===0) ? pc : '#7fe8ff';
-      size = baseSize*(1+Math.sin(t*6-i*0.8)*0.25);
-    } else if(style==='phantom'){
-      col='#eaf2ff'; size=baseSize*1.1;
-      ctx.globalAlpha=(1-i/14)*0.3;
-      ctx.beginPath(); ctx.arc(tx,ty,size,0,7); ctx.fill(); continue;
-    } else if(style==='season1_trail'){
-      col = (i%2===0) ? '#54e0ff' : '#fff6c8';
-      size = baseSize*(1+Math.sin(t*5-i*0.6)*0.2);
-    } else if(style==='season2_trail'){
-      col = `hsl(${28+Math.sin(t*3-i*0.4)*10},95%,${Math.max(35,60-i*2)}%)`;
-      size = baseSize*(1+Math.cos(t*4-i*0.5)*0.15);
-    }
-    ctx.globalAlpha=(1-i/14)*0.55; ctx.fillStyle=col;
-    ctx.beginPath(); ctx.arc(tx,ty,size,0,7); ctx.fill();
+}
+function updateScratch2D(px,py){
+  const now=performance.now(), dt=Math.min(3, (now-(_scr.lastTs||now))/16.67); _scr.lastTs=now;
+  const last=_scr.pts[_scr.pts.length-1];
+  const d=last ? Math.hypot(px-last.x,py-last.y) : Infinity;
+  if(d>PLAYER_R*8) _scr.pts.push({x:px,y:py,born:now,brk:true});
+  else if(d>PLAYER_R*0.3) _scr.pts.push({x:px,y:py,born:now,brk:false});
+  const life = cfg.trail==='comet' ? SCRATCH_LIFE*1.5 : SCRATCH_LIFE;
+  while(_scr.pts.length && now-_scr.pts[0].born>life) _scr.pts.shift();
+  if(_scr.pts.length>220) _scr.pts.splice(0,_scr.pts.length-220);
+  const maxLen=PLAYER_R*SCRATCH_LEN_R*(cfg.trail==='comet'?1.4:1);
+  const m=_scr.pts.length;
+  if(m) _scrDist[m-1]=Math.hypot(px-_scr.pts[m-1].x, py-_scr.pts[m-1].y);
+  for(let i=m-2;i>=0;i--){
+    const a=_scr.pts[i], b=_scr.pts[i+1];
+    _scrDist[i] = b.brk ? Infinity : _scrDist[i+1]+Math.hypot(b.x-a.x,b.y-a.y);
   }
-  ctx.globalAlpha=1;
+  let cut=0;
+  while(cut<m && _scrDist[cut]>maxLen) cut++;
+  if(cut){ _scr.pts.splice(0,cut); _scrDist.copyWithin(0,cut,m); }
+  // Temas kıvılcımları — kombo/hız arttıkça daha çok.
+  if(state==='play'){
+    const rate=(0.3+Math.min(1.2,(player.speed-1.5)*0.6))*(cfg.trail==='sparkle'?2.2:1);
+    if(Math.random()<rate*dt && _scr.sparks.length<80){
+      const a=Math.random()*Math.PI*2, sp=0.6+Math.random()*1.8;
+      _scr.sparks.push({x:px,y:py,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:1,hot:Math.random()<0.6});
+    }
+    // Nota toplandı mı?
+    if(session.stars>_scr.lastNotes){
+      _scr.flare=1;
+      _scr.ripples.push({x:px,y:py,life:1,col:playerColor()});
+      _scr.ringFlash[player.targetRing]=1;
+    }
+  }
+  _scr.lastNotes = session ? session.stars : 0;
+  _scr.flare=Math.max(0,_scr.flare-0.035*dt);
+  for(let i=0;i<3;i++) _scr.ringFlash[i]=Math.max(0,_scr.ringFlash[i]-0.045*dt);
+  for(const r of _scr.ripples) r.life-=0.03*dt;
+  _scr.ripples=_scr.ripples.filter(r=>r.life>0);
+  for(const k of _scr.sparks){ k.x+=k.vx*dt; k.y+=k.vy*dt; k.vx*=0.93; k.vy*=0.93; k.life-=0.05*dt; }
+  _scr.sparks=_scr.sparks.filter(k=>k.life>0);
+}
+// Nota alınınca pena'nın bulunduğu halka bir an parlar (drawWorld'den çağrılır).
+function drawRingFlash2D(){
+  for(let i=0;i<3;i++){
+    const f=_scr.ringFlash[i]; if(f<=0.01) continue;
+    ctx.save(); ctx.globalCompositeOperation='lighter';
+    ctx.strokeStyle=hexA(T.star,f*0.55); ctx.lineWidth=2+f*3;
+    ctx.beginPath(); ctx.arc(CX,CY,RINGS[i],0,7); ctx.stroke();
+    ctx.restore();
+  }
+}
+function drawScratch2D(t,px,py,pc){
+  updateScratch2D(px,py);
+  const now=performance.now(), style=cfg.trail, pts=_scr.pts, n=pts.length;
+  const life = style==='comet' ? SCRATCH_LIFE*1.5 : SCRATCH_LIFE;
+  const wMul = style==='comet' ? 1.35 : 1;
+  // butt: yuvarlak uçlar 'lighter' modda ek yerlerinde boncuk gibi parlıyordu
+  ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.lineCap='butt';
+  for(let i=1;i<=n;i++){
+    const p0=pts[i-1], p1 = i<n ? pts[i] : {x:px,y:py,born:now,brk:false};
+    if(p1.brk) continue;
+    if(style==='pixel' && i%4===0) continue;                 // kesik kesik çizik
+    const age=now-p1.born;
+    const maxLen=PLAYER_R*SCRATCH_LEN_R*(style==='comet'?1.4:1), dd = i<n ? _scrDist[i] : 0;
+    const k=Math.max(0,Math.min(1-age/life,(maxLen-dd)/(maxLen*0.6)));
+    if(k<=0) continue;
+    const hot=Math.max(0,1-age/300);
+    let x0=p0.x, y0=p0.y, x1=p1.x, y1=p1.y;
+    if(style==='ribbon'){                                     // dalgalı çizik
+      const o0=Math.sin((i-1)*0.45-t*3)*PLAYER_R*0.45, o1=Math.sin(i*0.45-t*3)*PLAYER_R*0.45;
+      const d0=Math.hypot(x0-CX,y0-CY)||1, d1=Math.hypot(x1-CX,y1-CY)||1;
+      x0+=(x0-CX)/d0*o0; y0+=(y0-CY)/d0*o0; x1+=(x1-CX)/d1*o1; y1+=(y1-CY)/d1*o1;
+    }
+    const a=Math.min(1,Math.pow(k,1.4)*(style==='phantom'?0.45:0.9)*(1+_scr.flare*0.8));
+    const w=PLAYER_R*(0.3+hot*0.4+_scr.flare*0.3*k)*wMul;
+    ctx.strokeStyle=hexA(colorToHex(scratchColor2D(style,n-i,t,pc)),a*0.55);
+    ctx.lineWidth=w*2.2; ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
+    ctx.strokeStyle=`rgba(255,255,255,${a*(0.35+hot*0.6)})`;
+    ctx.lineWidth=Math.max(1,w*0.5); ctx.stroke();
+  }
+  for(const k of _scr.sparks){
+    ctx.fillStyle = k.hot ? `rgba(255,255,255,${k.life})` : hexA(pc,k.life);
+    ctx.beginPath(); ctx.arc(k.x,k.y,PLAYER_R*0.16*k.life+0.6,0,7); ctx.fill();
+  }
+  for(const r of _scr.ripples){
+    const u=1-r.life;
+    ctx.strokeStyle=hexA(r.col,r.life*0.7); ctx.lineWidth=2+r.life*2;
+    ctx.beginPath(); ctx.arc(r.x,r.y,PLAYER_R*(1.2+u*8),0,7); ctx.stroke();
+  }
+  ctx.restore();
+}
+// scratchColor2D hem hex hem hsl() dönebilir; hexA hex beklediği için
+// hsl'yi bir kez gizli canvas ile hex'e çevirip önbellekler.
+const _colHexCache=new Map();
+function colorToHex(c){
+  if(c[0]==='#') return c;
+  let h=_colHexCache.get(c);
+  if(!h){
+    const g=colorToHex._c || (colorToHex._c=document.createElement('canvas').getContext('2d'));
+    g.fillStyle=c; h=g.fillStyle; _colHexCache.set(c,h);
+    if(_colHexCache.size>720) _colHexCache.clear();
+  }
+  return h;
 }
 
 function drawPlayer(t){
   const pr=player.curRadius;
   const px=CX+Math.cos(player.ang)*pr, py=CY+Math.sin(player.ang)*pr;
   const pc = playerColor();
-  drawTrail(t,pr,pc);
+  drawScratch2D(t,px,py,pc);
   const blink = player.invulT>0 && (Math.floor(player.invulT/4)%2===0);
   if(!blink){
     if(player.ghostT>0) ctx.globalAlpha = 0.5+Math.sin(t*10)*0.15;
@@ -529,31 +621,114 @@ function drawTonearmBody(g, headGlowAlpha, headGlowR){
 function drawTonearmIdle(){
   drawTonearmBody(tonearmGeometry(0), 0, 0);
 }
-function drawBossTelegraph(t, tel){
-  const scale = 1+tel.stageIndex*0.25;
-  // bossTelegraphIntensity() (engine.js) ilk 3 saniyede yavaş, son 2
-  // saniyede hızla ivmelenen bir eğri döner — kolun iniş hızı, parlama ve
-  // nabız hepsi bu tek eğriden besleniyor, "yavaş yavaş heyecanlanıp sona
-  // doğru vurmak üzereymiş gibi" hissi için.
-  const intensity = bossTelegraphIntensity(tel.t);
-  const g = tonearmGeometry(intensity);
-  const pulseSpeed = 5+intensity*24;
-  const pulse = 1+Math.sin(t*pulseSpeed)*(0.15+intensity*0.3);
-  drawTonearmBody(g, (0.6+intensity*0.3)*Math.min(1,scale), g.discR*(0.45+intensity*0.55)*pulse*scale);
-  ctx.strokeStyle=hexA('#5ad1ff',0.45+Math.sin(t*pulseSpeed)*(0.18+intensity*0.22)); ctx.lineWidth=2+intensity*1.6; ctx.setLineDash([3,4]);
-  ctx.beginPath(); ctx.arc(g.tipX,g.tipY,g.discR*0.2*pulse,0,7); ctx.stroke(); ctx.setLineDash([]);
+// Boss uyarısının zaman çizelgesi (tt: 0->1, BOSS_WARN_SECONDS boyunca).
+// Klasik ve 3D çizim aynı fazları kullanır — sadece görsel; boss'un ne
+// zaman ve nasıl geldiği (engine.js) değişmedi:
+//   swing     0.00-0.28  iğne plağın üstüne gelip yüzeye iner
+//   gather    0.28-0.40  kolun sabit ucunda elektrik yükü toplanır
+//   travel    0.40-0.82  yük kol boyunca iğne ucuna akar
+//   discharge 0.82-1.00  uçtan plağa şimşekler yayılır -> boss patlar
+function bossTelegraphPhases(tt){
+  const cl=v=>Math.max(0,Math.min(1,v)), ss=v=>v*v*(3-2*v);
+  return {swing:ss(cl(tt/0.28)), gather:cl((tt-0.28)/0.12), travel:ss(cl((tt-0.40)/0.42)), discharge:cl((tt-0.82)/0.18)};
 }
-function drawParticles(dt){
+const ELECTRIC_COL='#7fe8ff';
+// Zikzaklı şimşek. Rastgelelik ~18 kez/sn değişen bir tohumdan gelir:
+// şimşek titrer ama her karede baştan zıplamaz.
+function drawBolt2D(ax,ay,bx,by,segs,amp,w,alpha,grow,seed){
+  const rng=mulberry32(seed);
+  const dx=bx-ax, dy=by-ay, l=Math.hypot(dx,dy)||1, nx=-dy/l, ny=dx/l;
+  const m=Math.max(1,Math.ceil(segs*Math.max(0,Math.min(1,grow==null?1:grow))));
+  ctx.beginPath(); ctx.moveTo(ax,ay);
+  for(let k=1;k<=m;k++){
+    const u=k/segs, off=(k===segs)?0:(rng()*2-1)*amp*l*Math.sin(u*Math.PI);
+    ctx.lineTo(ax+dx*u+nx*off, ay+dy*u+ny*off);
+  }
+  ctx.strokeStyle=hexA(ELECTRIC_COL,alpha); ctx.lineWidth=w*2.6; ctx.stroke();
+  ctx.strokeStyle=`rgba(255,255,255,${alpha})`; ctx.lineWidth=w; ctx.stroke();
+}
+function electricGlow(x,y,r,alpha){
+  const g=ctx.createRadialGradient(x,y,0,x,y,r);
+  g.addColorStop(0,`rgba(235,255,255,${alpha})`); g.addColorStop(0.3,hexA(ELECTRIC_COL,alpha*0.7)); g.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.fill();
+}
+let _bossDischargeTs=-1e9;
+function drawBossTelegraph(t, tel){
+  const ph=bossTelegraphPhases(tel.t);
+  const g=tonearmGeometry(ph.swing);
+  drawTonearmBody(g, 0, 0);
+  const bucket=Math.floor(performance.now()/55), flick=0.75+((bucket*9301)%100)/400;
+  ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.lineCap='round'; ctx.lineJoin='round';
+  if(ph.gather>0 && ph.travel<1){
+    // Yük toplanıyor: kolun sabit ucunda büyüyen parıltı + çıtırdayan arklar.
+    const a=ph.gather*(1-ph.travel*0.6)*flick;
+    electricGlow(g.pivotX,g.pivotY,g.discR*(0.25+0.4*ph.gather),a);
+    const n=2+Math.round(ph.gather*3);
+    for(let i=0;i<n;i++){
+      const r2=mulberry32(bucket*31+i), ang=r2()*Math.PI*2, rr=g.discR*(0.15+r2()*0.3*ph.gather);
+      drawBolt2D(g.pivotX,g.pivotY,g.pivotX+Math.cos(ang)*rr,g.pivotY+Math.sin(ang)*rr,5,0.35,1.2,a,1,bucket*97+i);
+    }
+  }
+  if(ph.travel>0 && ph.discharge<1){
+    // Yük kol boyunca iğne ucuna akıyor: dolan kısım parlıyor.
+    const ox=g.pivotX+(g.tipX-g.pivotX)*ph.travel, oy=g.pivotY+(g.tipY-g.pivotY)*ph.travel;
+    ctx.strokeStyle=hexA(ELECTRIC_COL,0.55*flick); ctx.lineWidth=Math.max(3,g.discR*0.09);
+    ctx.beginPath(); ctx.moveTo(g.pivotX,g.pivotY); ctx.lineTo(ox,oy); ctx.stroke();
+    for(let i=0;i<3;i++){
+      const r2=mulberry32(bucket*17+i), back=Math.max(0,ph.travel-(0.05+r2()*0.25));
+      drawBolt2D(ox,oy,g.pivotX+(g.tipX-g.pivotX)*back,g.pivotY+(g.tipY-g.pivotY)*back,6,0.25,1.1,0.85*flick,1,bucket*53+i);
+    }
+    electricGlow(ox,oy,g.discR*(0.22+0.12*ph.travel)*flick,1);
+  }
+  if(ph.discharge>0){
+    // Boşalma: iğne ucundan halkalara yayılan dallı şimşekler.
+    const grow=Math.min(1,ph.discharge*1.4);
+    electricGlow(g.tipX,g.tipY,g.discR*(0.35+ph.discharge*0.5)*flick,1);
+    for(let i=0;i<8;i++){
+      const r2=mulberry32(bucket*13+i), ang=(i/8)*Math.PI*2+r2()*0.5, rr=RINGS[i%3]*(0.95+r2()*0.1);
+      const bx=CX+Math.cos(ang)*rr, by=CY+Math.sin(ang)*rr;
+      drawBolt2D(g.tipX,g.tipY,bx,by,12,0.16,1.6,flick,grow,bucket*71+i);
+      if(r2()<0.7){
+        const u=0.35+r2()*0.35, mx=g.tipX+(bx-g.tipX)*u, my=g.tipY+(by-g.tipY)*u;
+        const ba=ang+(r2()-0.5)*1.4, br=g.discR*(0.3+r2()*0.5);
+        drawBolt2D(mx,my,mx+Math.cos(ba)*br,my+Math.sin(ba)*br,5,0.3,1,0.8*flick,Math.max(0,(grow-u)/(1-u)),bucket*113+i);
+      }
+    }
+    for(const r of RINGS){ ctx.strokeStyle=hexA(ELECTRIC_COL,ph.discharge*0.5*flick); ctx.lineWidth=2.5; ctx.beginPath(); ctx.arc(CX,CY,r,0,7); ctx.stroke(); }
+    if(ph.discharge>0.85) _bossDischargeTs=performance.now();
+  }
+  ctx.restore();
+}
+// Boss patlama anı: elektrik merkezden dış halkaya dalga halinde yayılıp söner.
+function drawBossAfterglow(){
+  const age=performance.now()-_bossDischargeTs;
+  if(age>550 || !GAME_STATES[state]) return;
+  const a=1-age/550, bucket=Math.floor(performance.now()/55);
+  ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.lineCap='round'; ctx.lineJoin='round';
+  for(let i=0;i<10;i++){
+    const r2=mulberry32(bucket*29+i), ang=(i/10)*Math.PI*2+r2()*0.4, rr=RINGS[2]*(1+r2()*0.12);
+    drawBolt2D(CX,CY,CX+Math.cos(ang)*rr,CY+Math.sin(ang)*rr,14,0.14,1.7,a,1,bucket*61+i);
+  }
+  for(const r of RINGS){ ctx.strokeStyle=hexA(ELECTRIC_COL,a*0.6); ctx.lineWidth=3; ctx.beginPath(); ctx.arc(CX,CY,r,0,7); ctx.stroke(); }
+  ctx.restore();
+}
+// Parçacık fiziği çizimden ayrı: 3D modda sadece bu çalışır, çizimi
+// Render3D yapar.
+function updateParticles(dt){
   for(const p of particles){
     p.x+=p.vx*dt; p.y+=p.vy*dt; p.vx*=0.94; p.vy*=0.94; p.life-=0.03*dt;
-    if(p.life<=0) continue;
+  }
+  let _pw=0;
+  for(let _pr=0;_pr<particles.length;_pr++){ if(particles[_pr].life>0) particles[_pw++]=particles[_pr]; }
+  particles.length=_pw;
+}
+function drawParticles(dt){
+  updateParticles(dt);
+  for(const p of particles){
     ctx.globalAlpha=Math.max(0,p.life); ctx.fillStyle=p.color;
     ctx.beginPath(); ctx.arc(p.x,p.y,p.r*p.life,0,7); ctx.fill();
   }
   ctx.globalAlpha=1;
-  let _pw=0;
-  for(let _pr=0;_pr<particles.length;_pr++){ if(particles[_pr].life>0) particles[_pw++]=particles[_pr]; }
-  particles.length=_pw;
 }
 function hexA(hex,a){
   const h=hex.replace('#',''); const n=parseInt(h.length===3? h.split('').map(c=>c+c).join(''):h,16);

@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.3.0';
+const GAME_VERSION = '2.4.0';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -412,7 +412,7 @@ function seasonXpEventMult(){ return stats.eventType==='xp2x' ? 2 : 1; }
     }
   }catch(e){}
 })();
-let cfg = load('beatOrbitCfg', {sound:true, theme:'neon', skin:'teal', trail:'classic', sun:'classic', ringStyle:'classic', bigButtons:false, leftHand:false, colorblind:false, lang:'tr'});
+let cfg = load('beatOrbitCfg', {sound:true, theme:'neon', skin:'teal', trail:'classic', sun:'classic', ringStyle:'classic', bigButtons:false, leftHand:false, colorblind:false, lang:'tr', gfx:'classic', gfxQuality:'auto'});
 let stats = load('beatOrbitStats', {
   best:0, stars:0, games:0, maxLevel:1, magnets:0, golds:0, diamonds:0,
   unlocked:[], leaderboard:[], dailyDate:'', dailyDone:false, dailyScore:0, dailyCount:0,

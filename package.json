@@ -1,12 +1,14 @@
 {
   "name": "beat-orbit",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "description": "Beat Orbit - tarayıcı tabanlı refleks/arcade oyunu ve Android uygulaması",
   "private": true,
   "scripts": {
     "serve": "npx serve www -l 8080",
     "build:ads": "esbuild src/native-ads.js --bundle --format=iife --outfile=www/native-ads-bundle.js",
-    "cap:sync": "npm run build:ads && cap sync",
+    "build:3d": "esbuild src/render3d/index.js --bundle --minify --format=iife --target=es2019 --outfile=www/render3d-bundle.js",
+    "build": "npm run build:ads && npm run build:3d",
+    "cap:sync": "npm run build && cap sync",
     "android:open": "cap open android",
     "android:debug": "cd android && gradlew.bat assembleDebug",
     "ios:open": "cap open ios"
@@ -17,7 +19,8 @@
     "@capacitor/core": "^6.2.0",
     "@capacitor/ios": "^6.2.2",
     "@openforge/capacitor-game-connect": "^5.0.2",
-    "cordova-plugin-purchase": "^13.18.0"
+    "cordova-plugin-purchase": "^13.18.0",
+    "three": "^0.186.1"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",

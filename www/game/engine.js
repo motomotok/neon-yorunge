@@ -2,7 +2,9 @@
 // tespiti, güç-yükseltmeleri, can/revive akışı ve HUD güncellemesi.
 // (Çizim mantığı render.js'de, ekran/durum geçişleri screens.js'de.)
 const cv = document.getElementById('game');
-const ctx = cv.getContext('2d');
+// let: gfx.js (3D mod) klasik öğe çizimlerini doku olarak üretmek için
+// drawItem()'ı geçici olarak başka bir canvas'a yönlendirir (bkz. paintItem3D).
+let ctx = cv.getContext('2d');
 let W,H,CX,CY,DPR, RINGS=[], PLAYER_R;
 const NUM_RINGS = 3, MIN_GAP = 0.55;
 
@@ -675,19 +677,15 @@ function bumpCombo(){
 // alır — her karede (60/sn) unconditional DOM yazımı yerine, sadece
 // gerçekten değişen elemanlar güncellenir (davranış aynı, gereksiz
 // reflow/style recalculation önlenir).
-const _hud = {score:null, combo:null, level:null, hp:null, hpText:null, isTime:null, timer:null, pw:null, flash:null, wallet:null, goal:null, bestLive:null, waveActive:null, wave:null};
+const _hud = {score:null, combo:null, level:null, hp:null, hpText:null, isTime:null, timer:null, pw:null, flash:null, wallet:null, goal:null, waveActive:null, wave:null};
 function updateHud(){
   if(_hud.score!==score){ document.getElementById('scoreHud').textContent=score.toFixed(2); _hud.score=score; }
-  // Referans görsellerdeki "BEST: X" satırı — mevcut menu_best i18n anahtarı
-  // ("En iyi: {n}") aynen yeniden kullanılıyor, yeni bir çeviri gerekmiyor.
-  const bestText = mode==='zen' ? '' : t('menu_best',{n:stats.best.toFixed(2)});
-  if(_hud.bestLive!==bestText){ document.getElementById('bestLiveHud').textContent=bestText; _hud.bestLive=bestText; }
   // "Dalga" satırı: sıradaki boss dalgasının numarası (sonsuz boss sistemi
   // olduğu için sabit bir payda yok, bkz. bossStageFor()). Zen modda boss
   // hiç yok, satır tamamen gizlenir.
   const waveActive = mode!=='zen';
   if(_hud.waveActive!==waveActive){
-    document.getElementById('waveRow').style.display = waveActive ? 'flex' : 'none';
+    document.getElementById('waveRow').style.display = waveActive ? '' : 'none';
     _hud.waveActive=waveActive;
   }
   if(waveActive){
