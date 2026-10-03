@@ -36,6 +36,20 @@ const view = {aspect:1, tilt:0, ground(nx, ny, y){
   return {x:(o.x + _rd.x*k)/base, z:(o.z + _rd.z*k)/base};
 }};
 const fps = {acc:0, frames:0, lowFor:0, highFor:0, downgraded:false, value:60};
+// Bloom katmanı yeniden kurulunca / boyut değişince (kalite değişimi, ekran
+// döndürme, uygulamaya geri dönme) iOS'ta yeni doku ilk karede eski/çöp veri
+// taşıyıp tek karelik sarı-yeşil bir "elektrik çarpması" parlaması yapıyordu.
+// Hedefleri temizleyip bloom'u birkaç karede yumuşakça geri açıyoruz.
+let bloomWarm = 0;
+function clearBloomTargets(){
+  if(!renderer || !bloomPass) return;
+  const prev = renderer.getRenderTarget();
+  const rts = [...(bloomPass.renderTargetsHorizontal||[]), ...(bloomPass.renderTargetsVertical||[]), bloomPass.renderTargetBright,
+    composer && composer.renderTarget1, composer && composer.renderTarget2].filter(Boolean);
+  for(const rt of rts){ renderer.setRenderTarget(rt); renderer.clear(true, true, true); }
+  renderer.setRenderTarget(prev);
+  bloomWarm = 0;
+}
 
 function supported(){
   try{
@@ -145,6 +159,7 @@ function resize(w, h, b){
     composer.setSize(W, H);
     const s = QUALITY[qualityLive].bloomScale;
     bloomPass.resolution.set(W*pr*s, H*pr*s);
+    clearBloomTargets();
   }
   fitBackground();
 }
@@ -165,8 +180,12 @@ let lastTs = 0;
 function render(f){
   if(!renderer || failed) return;
   const now = performance.now();
-  const dtMs = lastTs ? Math.min(100, now-lastTs) : 16.7; lastTs = now;
-  trackFps(dtMs);
+  const gap = lastTs ? now-lastTs : 0;
+  const dtMs = lastTs ? Math.min(100, gap) : 16.7; lastTs = now;
+  // Uzun ara (arka plandan dönüş, kontrol merkezi): FPS ölçümü yanıltmasın,
+  // bloom da yumuşakça geri gelsin.
+  if(gap > 250){ fps.acc = 0; fps.frames = 0; fps.lowFor = 0; fps.highFor = 0; bloomWarm = 0; }
+  else trackFps(dtMs);
   const t = now*0.001, dt = f.dt || 1;
   if(f.W !== W || f.H !== H) resize(f.W, f.H, f.base);
   if(!bgDef){
@@ -190,7 +209,8 @@ function render(f){
   const zoomIn = 1 - (f.bossIntensity||0)*0.06;
   camera.position.set(bp.x + (Math.random()-0.5)*sh*1.2, bp.y*zoomIn + (Math.random()-0.5)*sh*0.6, bp.z*zoomIn);
   camera.lookAt(tg);
-  if(bloomPass) bloomPass.strength = (world.bloomBase ?? 0.45) + (f.flash||0)*0.15 + (f.bossIntensity||0)*0.3 + (world.elec||0)*0.6;
+  bloomWarm = Math.min(1, bloomWarm + 0.08*dt);
+  if(bloomPass) bloomPass.strength = ((world.bloomBase ?? 0.45) + (f.flash||0)*0.15 + (f.bossIntensity||0)*0.3 + (world.elec||0)*0.6) * bloomWarm*bloomWarm;
 
   if(composer) composer.render(); else renderer.render(scene, camera);
 }
