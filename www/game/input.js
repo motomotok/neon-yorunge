@@ -167,13 +167,10 @@ window.addEventListener('resize', ()=>{ resize(); initStars(); });
 
 if('serviceWorker' in navigator && location.protocol==='https:'){
   window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
-  // Yeni bir service worker devreye girdiğinde (güncelleme yayınlandığında)
-  // sayfayı bir kez otomatik yeniler — kullanıcı elle önbellek temizlemek
-  // zorunda kalmadan en güncel sürümü görür.
-  let swRefreshed=false;
-  navigator.serviceWorker.addEventListener('controllerchange', ()=>{
-    if(swRefreshed) return; swRefreshed=true; location.reload();
-  });
+  // Not: yeni service worker devreye girince sayfa artık otomatik YENİLENMEZ.
+  // Eskiden yenileniyordu ve açılış animasyonu (bazen oyun başladıktan sonra)
+  // ikinci kez oynuyordu. SW zaten "önce ağ" çalıştığı için dosyalar her
+  // açılışta günceldir; yeni sürüm en geç bir sonraki açılışta tam devrededir.
 }
 async function clearAppCache(){
   try{

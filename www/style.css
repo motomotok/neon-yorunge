@@ -189,7 +189,7 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
   50%{box-shadow:0 0 16px 0px currentColor;}
 }
 
-.menuSideDock{position:absolute;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;z-index:2;}
+.menuSideDock{position:absolute;top:61%;transform:translateY(-50%);display:flex;flex-direction:column;gap:10px;z-index:2;}
 .menuSideDock.left{left:calc(env(safe-area-inset-left) + 10px);}
 .menuSideDock.right{right:calc(env(safe-area-inset-right) + 10px);}
 .menuDockBtn{display:flex;flex-direction:column;align-items:center;gap:4px;background:rgba(5,6,15,.62);
@@ -198,6 +198,15 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
 .menuDockBtn:active{transform:scale(.92);background:rgba(84,224,255,.18);}
 .menuDockBtn .gicon{width:22px;height:22px;color:var(--star);}
 .menuDockBtn span{font-size:11px;font-weight:600;opacity:.85;white-space:nowrap;}
+/* Ortadaki oda videosu açık kalsın: dock butonları sade, köşe butonları küçük */
+.menuSideDock .menuDockBtn{width:60px;padding:9px 6px;border-radius:16px;background:rgba(5,6,15,.5);}
+.menuCorner{position:absolute;top:calc(env(safe-area-inset-top) + 10px);display:flex;gap:8px;z-index:3;}
+.menuCorner.left{left:calc(env(safe-area-inset-left) + 10px);}
+.menuCorner.right{right:calc(env(safe-area-inset-right) + 10px);}
+.menuDockBtn.mini{width:50px;padding:7px 3px 6px;gap:3px;border-radius:14px;background:rgba(5,6,15,.42);}
+.menuDockBtn.mini .gicon{width:18px;height:18px;}
+.menuDockBtn.mini span{font-size:9.5px;max-width:46px;overflow:hidden;text-overflow:ellipsis;}
+.menuDockBtn.mini .dockFlag{width:22px;height:15px;}
 
 /* Mağaza, kullanıcıların keşfedip tıklamasını istediğimiz en önemli dock
    girişi — diğer sade dock butonlarından farklı olarak altın/mor degrade +
@@ -896,7 +905,7 @@ h1 .gicon,h2 .gicon{color:var(--star);}
 
 /* ---------- Açılış: ClampGames logosu (piksel sanat) ---------- */
 #splash{position:fixed;inset:0;z-index:200;background:#000;display:flex;align-items:center;justify-content:center;
-  transition:opacity .45s ease;cursor:pointer;}
+  transition:opacity .85s ease;cursor:pointer;}
 #splash.out{opacity:0;pointer-events:none;}
 .splashInner{display:flex;flex-direction:column;align-items:center;gap:min(2.6vw,12px);animation:pxShake .3s 1.2s steps(4);}
 .splashIcon{width:min(56vw,270px);height:auto;overflow:visible;image-rendering:pixelated;}
@@ -922,7 +931,7 @@ h1 .gicon,h2 .gicon{color:var(--star);}
 /* ---------- Retro oda menüsü + giriş ---------- */
 #roomCanvas{position:fixed;inset:0;z-index:5;}
 #roomFlash{position:fixed;inset:0;z-index:30;pointer-events:none;background:#000;opacity:0;}
-#roomFlash.fade{animation:roomFlashFade .55s ease-out;}
+#roomFlash.fade{animation:roomFlashFade .8s ease-out;}
 @keyframes roomFlashFade{0%{opacity:1;}100%{opacity:0;}}
 /* Oda menüsünde menünün alt yazıları ve kenar butonları odanın üstünde okunaklı kalsın */
 body.roomMenu #screen-menu .menuFooter{text-shadow:0 1px 4px rgba(0,0,0,.9);}

@@ -3,9 +3,9 @@
 //
 // Ana menünün arkasında, gece vakti retro bir oda videosu (img/room/room.mp4):
 // camda yağmur, dönen plak; üstüne titreyen abajur ışığı ve borudan notalar.
-// BAŞLA'ya basılınca dalış videosu (img/room/dive.mp4, ~2.8 sn) plağın içine
-// girer; video hazır değilse kamera ~1.35 sn'de kod ile dalar. Oyun siyahtan
-// açılır. "Tekrar Oyna" dalışı oynatmaz. Ekrana dokunmak dalışı atlar.
+// BAŞLA'ya basılınca sahne ~1.1 sn'de hafifçe ilerleyip karanlığa iner, oyun
+// siyahtan açılır (ROOM_DIVE_VIDEO açılırsa dikey dalış videosu oynar).
+// "Tekrar Oyna" geçişi oynatmaz. Ekrana dokunmak geçişi atlar.
 // Fotoğraf yüklenemezse eski prosedürel oda çizilir.
 //
 // Tamamen ayrı bir katman (#roomCanvas): Ayarlar > "Retro oda menüsü"
@@ -201,7 +201,8 @@ function _roomDrawRecord(g, t, squash, elec, zoom){
 // plak) — oynayana kadar ilk karesi (room.jpg) gösterilir. İkisi de yoksa
 // prosedürel oda çizilir.
 const ROOM_PHOTO = {w:720, h:1280, rec:{x:352, y:659, rx:81, ry:23}, lamp:{x:540, y:372}, horn:{x:300, y:470}};
-const ROOM_DIVE = 1.35;   // BAŞLA → plağa dalış süresi (sn)
+const ROOM_DIVE = 1.1;    // BAŞLA → yumuşak geçiş süresi (sn)
+const ROOM_DIVE_VIDEO = false;   // dikey dalış videosu gelince true (img/room/dive.mp4)
 function _roomPhoto(){
   if(!_room.img){ _room.img=new Image(); _room.img.decoding='async'; _room.img.src='img/room/room.jpg'; }
   if(!_room.vid){
@@ -215,12 +216,22 @@ function _roomPhoto(){
     const d=document.createElement('video');
     d.muted=true; d.defaultMuted=true; d.playsInline=true; d.preload='auto';
     d.setAttribute('muted',''); d.setAttribute('playsinline',''); d.setAttribute('webkit-playsinline','');
-    d.src = v.src.endsWith('.mp4') ? 'img/room/dive.mp4' : 'img/room/dive.webm';
-    _room.dive=d;
+    if(ROOM_DIVE_VIDEO) d.src = v.src.endsWith('.mp4') ? 'img/room/dive.mp4' : 'img/room/dive.webm';
+    _room.dive = ROOM_DIVE_VIDEO ? d : null;
   }
   const v=_room.vid;
   if(v.readyState>=2 && !v.paused) return v;
   return _room.img.complete && _room.img.naturalWidth>0 ? _room.img : null;
+}
+// Açılış ekranı (splash.js) bunu bekler: oda görseli ve videosu hazır mı?
+function roomAssetsReady(){
+  if(!roomEnabled()) return true;
+  if(!_roomInit()) return true;
+  _roomPhoto();
+  const img=_room.img, v=_room.vid;
+  const imgOk = img.complete;                       // hata da "tamam" sayılır (yedek çizim var)
+  const vidOk = v.readyState>=3 || !!v.error || v.networkState===3;
+  return imgOk && vidOk;
 }
 // Oda görünürken video oynar, oyunda durur (pil).
 function _roomVideoRun(on){
@@ -238,9 +249,11 @@ function _roomDiveCam(SW, SH, menuZoom, rec, ty, k){
   ox=Math.min(0, Math.max(W-SW*s1, ox)); oy=Math.min(0, Math.max(H-SH*s1, oy));
   if(k<=0) return {s:s1, ox, oy};
   const px=rec.x*s1+ox, py=rec.y*s1+oy;
-  const e=k*k*k, m=k*k*(3-2*k);
-  const s=s1*(1+e*11);
-  const tx=px+(W/2-px)*m, ty2=py+(H/2-py)*m;
+  // Yumuşak geçiş: çok hafif bir ileri kayma (+%7) — büyük yakınlaşma
+  // 720p görüntüyü bulanıklaştırıyordu.
+  const m=k*k*(3-2*k);
+  const s=s1*(1+m*0.07);
+  const tx=px+(W/2-px)*m*0.25, ty2=py+(H/2-py)*m*0.25;
   return {s, ox:tx-rec.x*s, oy:ty2-rec.y*s};
 }
 
@@ -249,7 +262,7 @@ function _roomFrame(dt){
   const I=_room.intro, it = I ? (I.freeze!=null ? I.freeze : (performance.now()-I.t0)/1000) : 0;   // freeze: test/önizleme için
   if(I && I.vid) return _roomDiveVideoFrame(g, W, H, dt, t, it);
   const k = I ? Math.min(1, it/ROOM_DIVE) : 0;
-  const black = I ? Math.max(0, Math.min(1, (it-ROOM_DIVE*0.6)/(ROOM_DIVE*0.4))) : 0;
+  const bq = I ? Math.max(0, Math.min(1, (it-ROOM_DIVE*0.15)/(ROOM_DIVE*0.85))) : 0, black = bq*bq*(3-2*bq);
   const land = W>H;
   const photo=_roomPhoto();
   g.setTransform(1,0,0,1,0,0);
