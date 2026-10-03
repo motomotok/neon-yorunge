@@ -202,11 +202,21 @@
   <div class="screen fullpin" id="screen-stats">
     <div class="screenHead">
       <h2 data-i18n="stats_title">İstatistikler</h2>
-      <div class="card">
-        <div class="row"><span class="k"><i class="gicon" data-icon="trophy"></i> <span data-i18n="stat_best">En iyi skor</span></span><span class="v" id="stBest">0</span></div>
-        <div class="row"><span class="k"><i class="gicon" data-icon="star"></i> <span data-i18n="stat_stars">Toplam yıldız</span></span><span class="v" id="stStars">0</span></div>
-        <div class="row"><span class="k"><i class="gicon" data-icon="gamepad"></i> <span data-i18n="stat_games">Oynanan oyun</span></span><span class="v" id="stGames">0</span></div>
-        <div class="row"><span class="k"><i class="gicon" data-icon="chart"></i> <span data-i18n="stat_level">En yüksek seviye</span></span><span class="v" id="stLevel">1</span></div>
+      <!-- En iyi skor = müzik endüstrisindeki gibi bir "ödül plağı" (Demo →
+           Bronz → Gümüş → Altın → Platin → Elmas). bkz. shop-ui.js syncStats -->
+      <div class="stHero" id="stHero">
+        <div class="stAward"><div class="stAwardDisc"><div class="stAwardLabel"><i class="gicon" data-icon="trophy"></i></div></div><div class="stAwardSheen"></div></div>
+        <div class="stHeroTxt">
+          <div class="stHeroCap" data-i18n="stat_best">En iyi skor</div>
+          <div class="stBest" id="stBest">0</div>
+          <div class="stAwardName" id="stAwardName"></div>
+          <div class="stNextAward" id="stNextAward"></div>
+        </div>
+      </div>
+      <div class="stTiles">
+        <div class="stTile"><i class="gicon" data-icon="star"></i><b id="stStars">0</b><span data-i18n="stat_stars">Toplam nota</span></div>
+        <div class="stTile"><i class="gicon" data-icon="gamepad"></i><b id="stGames">0</b><span data-i18n="stat_games">Oynanan oyun</span></div>
+        <div class="stTile"><i class="gicon" data-icon="chart"></i><b id="stLevel">1</b><span data-i18n="stat_level">En yüksek seviye</span></div>
       </div>
       <div class="shopTabs" id="statsTabs">
         <div class="stab sel" data-stat-tab="ach"><i class="gicon" data-icon="trophy"></i> <span data-i18n="tab_achievements">Başarımlar</span></div>
@@ -215,7 +225,9 @@
       </div>
     </div>
     <div class="screenBody">
-      <div class="card" id="achCard"><b><span data-i18n="ach_header">Başarımlar</span> (<span id="achCount">0</span>/<span id="achTotal">10</span>)</b>
+      <div class="card" id="achCard">
+        <div class="achHead"><b data-i18n="ach_header">Başarımlar</b><span class="achCountTxt"><span id="achCount">0</span>/<span id="achTotal">10</span></span></div>
+        <div class="achBar"><div class="achBarFill" id="achBarFill"></div></div>
         <div class="achGrid" id="achGrid"></div>
       </div>
       <div class="card" id="lbCard" style="display:none">
