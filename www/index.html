@@ -17,9 +17,6 @@
 <body>
 <canvas id="game3d" style="display:none"></canvas>
 <canvas id="game"></canvas>
-<!-- Retro oda menüsü + giriş animasyonu (bkz. game/room.js) -->
-<canvas id="roomCanvas" style="display:none"></canvas>
-<div id="roomFlash"></div>
 <div id="toast"></div>
 <div id="achTooltip" class="achTooltip"></div>
 
@@ -201,7 +198,6 @@
         <div class="toggle"><span data-i18n="toggle_hand">Sol El Modu</span> <div class="sw" id="handSw"></div></div>
         <div class="toggle"><span data-i18n="toggle_cb">Renk Körü Simgeler</span> <div class="sw" id="cbSw"></div></div>
         <div class="toggle"><span data-i18n="toggle_gfx3d">3D Grafik</span> <div class="sw" id="gfxSw"></div></div>
-        <div class="toggle"><span data-i18n="toggle_room_menu">Retro Oda Menüsü</span> <div class="sw" id="roomSw"></div></div>
         <div class="toggle" id="gfxQRow"><span data-i18n="gfx_quality">Grafik Kalitesi</span> <button class="gfxQBtn" id="gfxQBtn">Otomatik</button></div>
       </div>
       <div class="acctRow" id="acctRow">
@@ -474,7 +470,6 @@
 <script src="game/battlepass-ui.js"></script>
 <script src="game/upgrades-ui.js"></script>
 <script src="game/narrator.js"></script>
-<script src="game/room.js"></script>
 <script src="game/tutorial.js"></script>
 <script src="game/input.js"></script>
 <script src="game/main.js"></script>

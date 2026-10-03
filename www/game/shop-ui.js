@@ -7,7 +7,6 @@ function syncSettings(){
   document.getElementById('handSw').classList.toggle('on', cfg.leftHand);
   document.getElementById('cbSw').classList.toggle('on', cfg.colorblind);
   syncGfxSettings();
-  document.getElementById('roomSw').classList.toggle('on', (cfg.menuScene||'room')==='room');
   renderThemeGrid();
   document.querySelectorAll('.theme').forEach(el=>el.classList.toggle('sel', el.dataset.key===cfg.theme));
   renderSkins();
