@@ -96,6 +96,34 @@ function renderFrame3D(dt){
   f.skinImg=penaImg(); f.playerColor=playerColor(); f.colorblind=cfg.colorblind; f.easeOut=easeOut;
   try{ Render3D.render(f); }
   catch(e){ gfx3dFailed(e && e.message); }
+  if(state==='menu' && (++_menuAnchorTick % 12)===1) syncMenuAnchors();
+}
+
+// Ana menüde "Reklamsız Premium" şeridi pikap kolu (iğne) ile plağın üst
+// kenarının tam ortasına oturur; ikisini de kapatmaz. Konum 3D sahneden
+// okunur, böylece her telefon ekran oranında doğru yerde durur. 3D yoksa
+// (klasik çizim) şerit varsayılan yerinde kalır.
+let _menuAnchorTick=0;
+function syncMenuAnchors(){
+  const row=document.querySelector('#screen-menu .menuTopRow'); if(!row) return;
+  const chip=document.getElementById('premiumCard'); const cr=chip ? chip.getBoundingClientRect() : row.getBoundingClientRect();
+  const a = gfx3dActive() && Render3D.menuAnchors ? Render3D.menuAnchors(cr.left-6, cr.right+6) : null;
+  const cur = parseFloat(row.dataset.dy||'0'), curX = parseFloat(row.dataset.dx||'0');
+  let dy = 0, dx = 0;
+  if(a && isFinite(a.recordTop)){
+    const rect=row.getBoundingClientRect(), h=rect.height, natTop=rect.top-cur;
+    if(!isFinite(a.armBottom)) a.armBottom = natTop;      // kol şeridin hizasında değilse
+    const corner=document.querySelector('#screen-menu .menuCorner');
+    const minTop = corner ? corner.getBoundingClientRect().bottom+6 : natTop;
+    const want = (a.armBottom + a.recordTop)/2 - h/2;
+    dy = Math.round(Math.max(minTop, want) - natTop);
+    // Kolun sağdaki ayağına değiyorsa şerit biraz sola kayar.
+    if(isFinite(a.baseLeft)){ const natRight = cr.right - curX; dx = Math.round(Math.max(8 - (cr.left - curX), Math.min(0, a.baseLeft - 8 - natRight))); }
+  }
+  if(Math.abs(dy-cur) >= 1 || Math.abs(dx-curX) >= 1){
+    row.dataset.dy=dy; row.dataset.dx=dx;
+    row.style.transform = (dy||dx) ? `translate(${dx}px,${dy}px)` : '';
+  }
 }
 
 // Manifest'te görseli verilmeyen öğe tipleri için klasik 2D çizimi (render.js

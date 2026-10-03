@@ -19,7 +19,7 @@ const ClampShader = {
   fragmentShader:`uniform sampler2D tDiffuse; uniform float uMax; varying vec2 vUv;
     void main(){ vec4 c=texture2D(tDiffuse,vUv); c.rgb=min(max(c.rgb,vec3(0.0)),vec3(uMax)); gl_FragColor=c; }`,
 };
-import { World } from './world.js';
+import { World, DISC_R, TOP_Y } from './world.js';
 import { Entities } from './entities.js';
 import { resolveSlot, loadErrors } from './assets.js';
 
@@ -234,9 +234,42 @@ function fail(reason){
   if(onFail) onFail(reason);
 }
 
+// Ana menü yerleşimi için: pikap kolunun (iğne) ekrandaki alt kenarı ve
+// plağın üst kenarı (CSS piksel). Menüdeki premium şeridi ikisinin arasına
+// oturtulur (bkz. gfx.js syncMenuAnchors) — her ekran oranında doğru yer.
+const _mv = new THREE.Vector3();
+// xMin/xMax (CSS px): yalnız bu yatay aralıkta kalan kol noktaları sayılır
+// (kolun sağdaki ayağı/gövdesi şeridin altına inse de şeridi etkilemez).
+function menuAnchors(xMin, xMax){
+  if(!renderer || !world || failed) return null;
+  const r = renderer.domElement.getBoundingClientRect();
+  if(!r.width || !r.height) return null;
+  if(xMin==null){ xMin = -Infinity; xMax = Infinity; }
+  const toScreen = v => { v.project(camera); return {x:r.left + (v.x+1)/2*r.width, y:r.top + (1-v.y)/2*r.height}; };
+  let bottom = -Infinity, baseLeft = Infinity;
+  const scan = (obj, isBase) => obj.traverse(o => {
+    if(!o.isMesh || !o.visible || !o.geometry || !o.geometry.attributes.position) return;
+    const pos = o.geometry.attributes.position, step = Math.max(1, Math.floor(pos.count/400));
+    for(let i=0;i<pos.count;i+=step){
+      _mv.fromBufferAttribute(pos, i); o.localToWorld(_mv);
+      const p = toScreen(_mv);
+      if(isBase){ if(p.x < baseLeft) baseLeft = p.x; }
+      else if(p.x >= xMin && p.x <= xMax && p.y > bottom) bottom = p.y;
+    }
+  });
+  // armProcedural: [plinth, plinthRing, post, housing, tube, weight, weightCap, head, cart, lift, stylus]
+  const ap = world.armProcedural||[];
+  const armParts = [ap[4], ap[7], ap[8], ap[9], ap[10]].filter(m=>m && m.visible);
+  const baseParts = [ap[0], ap[1], ap[2], ap[3], ap[5], ap[6]].filter(m=>m && m.visible);
+  if(armParts.length){ armParts.forEach(m=>scan(m,false)); baseParts.forEach(m=>scan(m,true)); }
+  else scan(world.armTilt, false);
+  const rec = toScreen(world.root.localToWorld(_mv.set(0, TOP_Y, -DISC_R)));
+  return {armBottom:bottom, baseLeft, recordTop:rec.y};
+}
+
 function info(){
   return {quality:qualityLive, preference:qualityPref, fps:Math.round(fps.value), failed, missingAssets:loadErrors.slice(),
     scratchPoints: entities ? entities.scratch.pts.length : 0};
 }
 
-window.Render3D = { supported, init, resize, render, setQuality, info, fail };
+window.Render3D = { supported, init, resize, render, setQuality, info, fail, menuAnchors };

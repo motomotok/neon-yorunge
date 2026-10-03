@@ -11,7 +11,19 @@ function showScreen(id){
   overlayEl.classList.toggle('live', id==='menu');
 }
 function setHud(on){ document.getElementById('hud').classList.toggle('show', on);
-  document.getElementById('hint').style.display = on?'block':'none'; }
+  document.getElementById('hint').style.display = on?'block':'none';
+  if(!on) clearPlayOverlays(); }
+// Oyundan çıkınca (oyun sonu, ana menü, mod ekranı…) oyun içi geçici
+// yazı/animasyonlar menüye taşmasın: "SEVİYE 5" flaşı, başlangıçtaki
+// sol/sağ parmak-izi ipuçları ve devam geri sayımı temizlenir.
+function clearPlayOverlays(){
+  clearTimeout(tutorialHideTimer);
+  const th=document.getElementById('tutorialHint'); if(th) th.classList.remove('show');
+  levelFlashT=0;
+  const lf=document.getElementById('levelFlash'); if(lf) lf.style.opacity=0;
+  if(typeof _hud!=='undefined') _hud.flash=0;
+  if(typeof cancelResumeCountdown==='function') cancelResumeCountdown();
+}
 
 // Her oyun başlangıcında 5 saniyeliğine sol/sağ dokunma bölgelerini
 // gösteren yanıp sönen parmak-izi ipuçları — yeni oyuncu kontrolleri
@@ -61,9 +73,10 @@ function goUpgrades(){ state='upgrades'; setHud(false); showScreen('upgrades'); 
 }
 
 function startGame(m,d){
-  m = m || mode; d = d || diffKey;
+  m = m || mode;
   if(AC && AC.state==='suspended') AC.resume();
-  mode=m; diffKey = (mode==='daily') ? 'normal' : d;
+  // Zorluk seçimi kaldırıldı: her mod tek, dengeli (normal) zorlukta oynanır.
+  mode=m; diffKey='normal';
   diffCfg = DIFF[diffKey];
   if(mode==='daily'){
     const td=todayStr();
