@@ -92,22 +92,32 @@ async function showInterstitial(onClose) {
   }
 }
 
+let rewardedShowing = false;   // aynı anda tek ödüllü reklam
 async function showRewarded(onReward, onCancel) {
   if (!isNative()) { onCancel && onCancel(); return; }
+  if (rewardedShowing) return;
+  rewardedShowing = true;
+  let rewardListener = null, dismissListener = null, settled = false;
+  // Dinleyiciler her durumda (hata dahil) temizlenir; sızan bir dinleyici
+  // sonraki reklamda eski bir callback'i (ör. eski bir revive) tetiklemesin.
+  const cleanup = () => {
+    try { rewardListener && rewardListener.remove(); } catch (e) {}
+    try { dismissListener && dismissListener.remove(); } catch (e) {}
+    rewardListener = dismissListener = null;
+  };
+  const finish = (rewarded) => {
+    if (settled) return; settled = true;
+    cleanup(); rewardedShowing = false; preloadRewarded();
+    if (rewarded) onReward && onReward(); else onCancel && onCancel();
+  };
   try {
     if (!rewardedReady) await AdMob.prepareRewardVideoAd({ adId: REWARDED_AD_ID, isTesting: ADS_TEST_MODE });
     let gotReward = false;
-    const rewardListener = await AdMob.addListener('onRewardedVideoAdReward', () => { gotReward = true; });
-    const dismissListener = await AdMob.addListener('onRewardedVideoAdDismissed', () => {
-      rewardListener.remove();
-      dismissListener.remove();
-      preloadRewarded();
-      if (gotReward) onReward && onReward(); else onCancel && onCancel();
-    });
+    rewardListener = await AdMob.addListener('onRewardedVideoAdReward', () => { gotReward = true; });
+    dismissListener = await AdMob.addListener('onRewardedVideoAdDismissed', () => finish(gotReward));
     await AdMob.showRewardVideoAd();
   } catch (e) {
-    preloadRewarded();
-    onCancel && onCancel();
+    finish(false);
   }
 }
 

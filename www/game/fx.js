@@ -33,14 +33,14 @@ function playMelodyNote(comboVal, vol){
   beep(melodyFreq(comboVal-1), 0.10, 'sine', vol||0.14, true);
 }
 
-let toastQueue=[], toastShowing=false;
-// Kuyruk en fazla 1 bekleyen mesaj tutuyor (gösterilenin dışında) — bir
-// butona art arda hızlıca basılırsa (örn. yetersiz çekirdek/nota
-// hatası) her tıklama kuyruğa eklenmesin diye. Böylece ekranda HER ZAMAN
-// en fazla "gösterilen + 1 bekleyen" olur, spam sonsuz bir yazı akışına
-// dönüşmez — süresi dolan mesaj normal şekilde kaybolmaya devam eder.
-const TOAST_QUEUE_MAX = 1;
+let toastQueue=[], toastShowing=false, toastCurrent=null;
+// Spam koruması aynı metnin tekrarına uygulanır (bir butona art arda basınca
+// aynı hata tekrar tekrar kuyruğa girmez). Farklı mesajlar (görev, birden
+// fazla başarım, rakip) sırayla gösterilir; eskiden kuyruk 1 ile sınırlı
+// olduğu için oyun sonunda kazanılan başarımlar sessizce kayboluyordu.
+const TOAST_QUEUE_MAX = 5;
 function queueToast(text){
+  if(text===toastCurrent || toastQueue.includes(text)) return;
   if(toastQueue.length >= TOAST_QUEUE_MAX) return;
   toastQueue.push(text); pumpToast();
 }
@@ -48,6 +48,6 @@ function pumpToast(){
   if(toastShowing || !toastQueue.length) return;
   toastShowing=true;
   const el=document.getElementById('toast');
-  el.innerHTML=toastQueue.shift(); el.classList.add('show');
-  setTimeout(()=>{ el.classList.remove('show'); setTimeout(()=>{ toastShowing=false; pumpToast(); },300); },2400);
+  toastCurrent=toastQueue.shift(); el.innerHTML=toastCurrent; el.classList.add('show');
+  setTimeout(()=>{ el.classList.remove('show'); setTimeout(()=>{ toastShowing=false; toastCurrent=null; pumpToast(); },300); },2400);
 }

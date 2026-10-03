@@ -68,6 +68,9 @@ function startGame(m,d){
   if(mode==='daily'){
     const td=todayStr();
     if(stats.dailyDate===td && stats.dailyDone){ queueToast(t('toast_daily_done')); goMode(); return; }
+    // Günün tek denemesi başlarken harcanır: yarıda bırakıp (Ana Menü /
+    // uygulamayı kapatma) tekrar denemek mümkün olmasın.
+    stats.dailyDate=td; stats.dailyDone=true; stats.dailyScore=0; saveStats();
     rngFn = mulberry32(dateSeed());
   } else rngFn = Math.random;
   if(pendingBoost && (stats.boosts[pendingBoost]||0)>0){
@@ -84,7 +87,41 @@ function startGame(m,d){
 }
 function pauseGame(){ if(state!=='play') return; state='pause'; showScreen('pause');
   document.getElementById('zenFinishBtn').style.display = mode==='zen' ? 'block' : 'none'; }
-function resumeGame(){ if(state!=='pause') return; state='play'; showScreen(null); }
+// Devam: oyuncu doğrudan bir tehlikenin içine düşmesin diye kısa 3-2-1
+// geri sayım; bu sırada oyun duraklatılmış kalır.
+let _resumeCd=null;
+function resumeGame(){
+  if(state!=='pause' || _resumeCd) return;
+  showScreen(null);
+  let el=document.getElementById('resumeCount');
+  if(!el){ el=document.createElement('div'); el.id='resumeCount'; document.body.appendChild(el); }
+  let n=3;
+  const tick=()=>{
+    if(n<=0){ el.className=''; _resumeCd=null; if(state==='pause') state='play'; return; }
+    el.textContent=n; el.className=''; void el.offsetWidth; el.className='show';
+    beep(n===1?660:440,0.08,'sine',0.08);
+    n--; _resumeCd=setTimeout(tick, 550);
+  };
+  tick();
+}
+function cancelResumeCountdown(){
+  if(!_resumeCd) return false;
+  clearTimeout(_resumeCd); _resumeCd=null;
+  const el=document.getElementById('resumeCount'); if(el) el.className='';
+  return true;
+}
+// Uygulama arka plana geçince (telefon çaldı, uygulama değişti) oyun
+// otomatik duraklar; geri sayım sürüyorsa iptal edilip duraklatma ekranı döner.
+function autoPause(){
+  if(cancelResumeCountdown() && state==='pause'){ showScreen('pause'); return; }
+  if(state==='play' && !tutorialActive) pauseGame();
+}
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden) autoPause(); });
+window.addEventListener('pagehide', autoPause);
+try{
+  const capApp = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.App;
+  if(capApp && capApp.addListener) capApp.addListener('pause', autoPause);
+}catch(e){}
 
 let adGamesLeft = null;
 function rollAdInterval(){ return 2 + Math.floor(Math.random()*2); } // 2 ya da 3 oyun
@@ -124,18 +161,25 @@ function nearestCheapCosmetic(){
 function gameOver(reason){
   state='over';
   const runScore=score, elapsedSec=elapsed/60;
-  newRecord = runScore>stats.best;
-  const beatenRival = (stats.rivalScore>0 && runScore>=stats.rivalScore) ? stats.rivalName : null;
-  stats.best=Math.max(stats.best, runScore);
-  stats.stars += session.stars; stats.games++; stats.maxLevel=Math.max(stats.maxLevel, level);
-  addToLeaderboard(runScore);
+  // Zen (tehlikesiz, sınırsız kombo) ilerleme sistemlerinden ayrı tutulur:
+  // rekor, liderlik, rakip, sezon XP'si, görev ve skor başarımları sayılmaz
+  // (risksiz kasma açığı). Zen'in kendi rekoru stats.zenBest'te.
+  const ranked = mode!=='zen';
+  if(ranked) newRecord = runScore>stats.best;
+  else { newRecord = runScore>(stats.zenBest||0); stats.zenBest=Math.max(stats.zenBest||0, runScore); }
+  const beatenRival = (ranked && stats.rivalScore>0 && runScore>=stats.rivalScore) ? stats.rivalName : null;
+  if(ranked) stats.best=Math.max(stats.best, runScore);
+  stats.stars += session.stars; stats.games++; if(ranked) stats.maxLevel=Math.max(stats.maxLevel, level);
+  if(ranked) addToLeaderboard(runScore);
   if(mode==='daily'){ stats.dailyDate=todayStr(); stats.dailyDone=true; stats.dailyScore=runScore; stats.dailyCount=(stats.dailyCount||0)+1; }
   ensureTodayQuest();
   const q=currentQuest();
-  if(!stats.questDone && q.check(session,{elapsedSec, level})){
+  if(ranked && !stats.questDone && q.check(session,{elapsedSec, level})){
     stats.questDone=true; queueToast(t('toast_quest_done',{text:t(q.textKey)}));
   }
-  checkAchievements({runScore, level, session, mode, elapsedSec});
+  // Zen'de yalnız skora bağlı olmayan başarımlar (ör. Zen Ustası) açılabilir.
+  checkAchievements(ranked ? {runScore, level, session, mode, elapsedSec}
+    : {runScore:0, level:0, session:{...session, streakMax:0, shieldSaved:false}, mode, elapsedSec});
   const scoreBonus = Math.round(Math.floor(runScore/12)*weekendMult()*(1+upgradeBonus('coinPct')));
   // Zen modunda ("sonsuz mod") ne parçacık toplama ne de bu bonus cüzdana
   // yansır — risk almadan sınırsız kasmayı önlemek için (bkz. engine.js'de
@@ -145,7 +189,7 @@ function gameOver(reason){
   // Bölen 8'den 40'a çıkarıldı: eskiden 2 oyunda 5. kademeye varılabiliyordu
   // (aşırı hızlı), artık ~2 oyunda 2. kademeye, ~10-12 oyunda 5. kademeye
   // ulaşılacak şekilde (bkz. SEASON_TIERS'teki yorum).
-  addSeasonXp(Math.max(1, Math.floor(runScore/40)));
+  if(ranked) addSeasonXp(Math.max(1, Math.floor(runScore/40)));
   ensureRival();
   saveStats();
   if(mode!=='zen' && window.PlayGames && PlayGames.isNative() && PlayGames.signedIn) PlayGames.submitScore(runScore);
@@ -159,7 +203,7 @@ function gameOver(reason){
   document.getElementById('finalScore').textContent=runScore.toFixed(2);
   const melodyOctave=Math.floor(session.streakMax/MELODY_SCALE.length);
   const melodyText = melodyOctave>0 ? t('melody_octave',{n:melodyOctave}) : '';
-  document.getElementById('overStats').textContent=t('over_stats_line',{n:stats.games, reason:reasonText, best:stats.best.toFixed(2), level, melody:melodyText});
+  document.getElementById('overStats').textContent=t('over_stats_line',{n:stats.games, reason:reasonText, best:(ranked ? stats.best : (stats.zenBest||0)).toFixed(2), level, melody:melodyText});
   document.getElementById('recordBadge').innerHTML = newRecord ? `<span class="badge">${icon('trophy')} ${t('new_record_badge')}</span>` : '';
   document.getElementById('nextGoalLine').textContent = nextGoalLineText(runScore, newRecord);
   if(mode==='zen'){
@@ -175,7 +219,8 @@ function gameOver(reason){
     adGamesLeft--;
     if(adGamesLeft<=0){
       adGamesLeft=rollAdInterval();
-      setTimeout(()=>{ Ads.showInterstitial(); }, 700);
+      // Oyuncu bu arada "Tekrar"a bastıysa reklam yeni oyunun ortasında açılmasın.
+      setTimeout(()=>{ if(state==='over') Ads.showInterstitial(); }, 700);
     }
   }
   if(tutorialActive && typeof tutorialOnGameOver==='function') tutorialOnGameOver();

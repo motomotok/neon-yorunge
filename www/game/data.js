@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.27.1';
+const GAME_VERSION = '2.28.0';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -461,7 +461,26 @@ let stats = load('beatOrbitStats', {
   cores:0, lifetimeCores:0, totalPrestiges:0, bestAtPrestige:0, gamesAtPrestige:0,
   coreUnlocked:['core_root'],
 });
-function load(k,def){ try{ return Object.assign({}, def, JSON.parse(localStorage.getItem(k)||'{}')); }catch(e){ return def; } }
+// Kayıt yükleme: iç içe nesneler (owned, upgrades, boosts…) de varsayılanlarla
+// birleştirilir (eski kayıtlarda yeni eklenen anahtar eksik kalmasın). Kayıt
+// bozuksa (JSON hatası) ham veri '<anahtar>_bak' altına yedeklenir; ilk
+// saveStats() üzerine yazsa bile ilerleme kurtarılabilir.
+function load(k,def){
+  let raw=null;
+  try{
+    raw=localStorage.getItem(k);
+    const data=JSON.parse(raw||'{}');
+    const out=Object.assign({}, def, data);
+    for(const key in def){
+      const dv=def[key], v=data[key];
+      if(dv && typeof dv==='object' && !Array.isArray(dv) && v && typeof v==='object' && !Array.isArray(v)) out[key]=Object.assign({}, dv, v);
+    }
+    return out;
+  }catch(e){
+    try{ if(raw) localStorage.setItem(k+'_bak', raw); }catch(e2){}
+    return Object.assign({}, def);
+  }
+}
 // Senkron localStorage yazımı WebView'de kare kaybettirir; oyun sonunda art arda
 // çağrılan kayıtlar tek yazımda birleşsin diye ertelenir, uygulama arka plana
 // giderken de zorla yazılır.
@@ -709,6 +728,8 @@ function watchAdForCoins(){
   }
   if(adRewardsLeftToday()<=0){ queueToast(t('toast_ad_cap_reached')); beep(200,0.1,'square',0.1); return; }
   Ads.showRewarded(()=>{
+    // Sınırlar ödül anında da kontrol edilir (bekleme/günlük hak).
+    if(adRewardsLeftToday()<=0 || adCooldownRemainingMs()>0) return;
     stats.adRewardsToday=(stats.adRewardsToday||0)+1;
     stats.lastAdRewardAt=Date.now();
     addNotes(REWARD_AD_COINS); saveStats();

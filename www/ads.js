@@ -6,6 +6,7 @@
 //   overlay'i ile aynı akış (izle → ödül) test edilebilir, oyun bozulmaz.
 (function () {
   const SIM_AD_SECONDS = 4;
+  let rewardedBusy = false;
 
   function isNative() {
     return !!(window.NativeAds && window.NativeAds.isNative && window.NativeAds.isNative());
@@ -55,10 +56,19 @@
       // uygulama içinde çalışır.
       onClose && onClose();
     },
+    // Aynı anda yalnız bir ödüllü reklam: hızlı çoklu tıklama N reklam/N ödül
+    // açmasın. Her callback en fazla bir kez çalışır.
     showRewarded(onReward, onCancel) {
-      if (isNative()) { window.NativeAds.showRewarded(onReward, onCancel); return; }
-      showSimAd(onReward, onCancel);
+      if (rewardedBusy) return false;
+      rewardedBusy = true;
+      let done = false;
+      const ok = () => { if (done) return; done = true; rewardedBusy = false; onReward && onReward(); };
+      const no = () => { if (done) return; done = true; rewardedBusy = false; onCancel && onCancel(); };
+      if (isNative()) window.NativeAds.showRewarded(ok, no);
+      else showSimAd(ok, no);
+      return true;
     },
+    isRewardedBusy() { return rewardedBusy; },
     showPrivacyOptions() {
       if (isNative()) { window.NativeAds.showPrivacyOptions(); return; }
       // Web sürümünde AdMob/UMP yok — reklam onayı yalnızca uygulama içinde geçerli.

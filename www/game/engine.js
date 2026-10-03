@@ -28,7 +28,7 @@ let state='menu';
 const GAME_STATES = {play:1, pause:1, over:1, revive:1, story:1};
 // Menü ailesindeki tüm ekranlar: gerçek oyun burada değil ama oyuncu küresi
 // hâlâ yörüngede yavaşça dönüyor olmalı — "canlı menü" hissi için.
-const MENU_STATES = {menu:1, mode:1, shop:1, settings:1, stats:1, battlepass:1, upgrades:1, howto:1, language:1};
+const MENU_STATES = {menu:1, mode:1, shop:1, settings:1, stats:1, battlepass:1, upgrades:1, howto:1, language:1, loginstreak:1};
 let mode='classic', diffKey='normal';
 let player, items, particles, score, combo, hp, maxHp, level, elapsed, spawnCooldown, shake, flash;
 let levelFlashT, session, timeLeft, newRecord, timeScale, timeScaleT, activeBoost=null, pendingBoost=null;
@@ -583,7 +583,16 @@ function update(dt){
 
     if(it.type==='hazardJump' && !it.expiring){
       it.jumpT-=dt;
-      if(it.jumpT<=0){ it.ring=(it.ring+(Math.random()<0.5?1:-1)+NUM_RINGS)%NUM_RINGS; it.jumpT=70+Math.random()*60; }
+      if(it.jumpT<=0){
+        // Yalnız komşu halkaya atlar (eskiden 0→2 sarmalı iki halka zıplıyordu)
+        // ve oyuncunun hemen önüne, onun halkasına ışınlanmaz (tepki süresi
+        // kalmıyordu) — öyleyse atlama kısa süre ertelenir. rnd(): günlük mod
+        // herkes için aynı kalsın.
+        let nr = it.ring + (rnd()<0.5 ? 1 : -1);
+        if(nr<0 || nr>NUM_RINGS-1) nr = it.ring + (it.ring===0 ? 1 : -1);
+        if(nr===player.targetRing && normAng(it.ang-player.ang) < 0.8) it.jumpT=20;
+        else { it.ring=nr; it.jumpT=70+rnd()*60; }
+      }
     }
     if(it.type==='hazardPulse' && !it.expiring){
       it.pulsePhase += dt*0.045;
@@ -707,7 +716,12 @@ function update(dt){
   let _iw=0;
   for(let _ir=0;_ir<items.length;_ir++){ if(items[_ir].alive) items[_iw++]=items[_ir]; }
   items.length=_iw;
-  if(items.length>60) items.splice(0, items.length-60);   // jeton/sol anahtarı bir tur daha kaldığı için 30'dan artırıldı
+  if(items.length>60){
+    // Atılanlar ölü işaretlenir: aksi hâlde boss dalgası listesinde "canlı"
+    // kalıp dalganın hiç bitmemesine (boss kilitlenmesi) yol açabiliyordu.
+    for(let i=0;i<items.length-60;i++) items[i].alive=false;
+    items.splice(0, items.length-60);
+  }   // jeton/sol anahtarı bir tur daha kaldığı için 30'dan artırıldı
 
   if(bossActive){
     bossWaveItems = bossWaveItems.filter(it=>it.alive);
@@ -725,7 +739,10 @@ function update(dt){
   } else if(!zen){
     const stage = bossStageFor(bossNextIndex), warnStart = stage.score-BOSS_WARN_SCORE_GAP;
     if(bossTelegraph && bossTelegraph.stageIndex===bossNextIndex){
-      const elapsedSec = (performance.now()-bossTelegraph.startTs)/1000;
+      // Oyun zamanıyla sayılır: duraklatma/reklam/arka planda geçen süre sayılmaz
+      // (eskiden duvar saatine bağlıydı; devam edilince boss anında patlıyordu).
+      bossTelegraph.el += dt/60;
+      const elapsedSec = bossTelegraph.el;
       bossTelegraph.t = Math.min(1, elapsedSec/BOSS_WARN_SECONDS);
       shake=Math.max(shake, bossTelegraphIntensity(bossTelegraph.t)*10);
       // Skor eşiğe erken ulaşılsa BİLE animasyon kesilmiyor — telegraph
@@ -738,7 +755,7 @@ function update(dt){
         bossNextIndex++;
       }
     } else if(score>=warnStart){
-      bossTelegraph = {stageIndex:bossNextIndex, startTs:performance.now(), t:0};
+      bossTelegraph = {stageIndex:bossNextIndex, el:0, t:0};
       showFlash('⚠ '+t('flash_boss_incoming'),50);
     }
   }
@@ -749,7 +766,7 @@ function update(dt){
   // Melodi kombosunun "yavaş çekim" anı bitince timeScale eskiden tek
   // karede 0.3'ten 1'e fırlıyordu — bu da anlık bir hız patlaması gibi
   // hissettiriyordu. Artık geri sayım bitince yumuşakça 1'e yaklaşıyor.
-  if(timeScaleT>0) timeScaleT-=1;
+  if(timeScaleT>0) timeScaleT-=dt;   // dt ile: 120 Hz ekranda yarı sürmesin
   else if(timeScale<1) timeScale=Math.min(1, timeScale+0.05*dt);
   if(tutorialActive && typeof tutorialTick==='function') tutorialTick();
   updateHud();
@@ -780,7 +797,7 @@ function reviveSubRender(hpVal, secs){
   const el=document.getElementById('reviveSub'); if(el) el.innerHTML=t('revive_sub_html',{hp:hpVal, sec:secs});
 }
 function offerRevive(){
-  state='revive'; showScreen('revive');
+  state='revive'; showScreen('revive'); reviveAdPending=false;
   const hpVal=Math.max(1,Math.ceil(maxHp/2));
   let secs=6;
   reviveSubRender(hpVal, secs);
@@ -790,14 +807,23 @@ function offerRevive(){
     if(secs<=0){ clearInterval(reviveTimer); declineRevive(); }
   },1000);
 }
+let reviveAdPending=false;
 function acceptRevive(){
+  // Çift tıklama / reklam sürerken tekrar basma korunur; ödül geldiğinde oyun
+  // hâlâ revive ekranında değilse (ör. süre doldu, oyun bitti) hiçbir şey olmaz.
+  if(state!=='revive' || reviveAdPending) return;
   clearInterval(reviveTimer);
-  Ads.showRewarded(()=>{
+  reviveAdPending=true;
+  const started=Ads.showRewarded(()=>{
+    reviveAdPending=false;
+    if(state!=='revive') return;
     session.revivedUsed=true; hp=Math.max(1,Math.ceil(maxHp/2)); combo=1; player.invulT=INVUL*3;
     state='play'; showScreen(null); queueToast(t('revive_continue_toast'));
-  }, ()=>{ declineRevive(); });
+  }, ()=>{ reviveAdPending=false; declineRevive(true); });
+  if(started===false){ reviveAdPending=false; declineRevive(true); }
 }
-function declineRevive(){
+function declineRevive(fromAd){
+  if(reviveAdPending && !fromAd) return;   // reklam açıkken "geç" sayılmaz
   clearInterval(reviveTimer);
   if(state==='revive') gameOver();
 }
@@ -875,15 +901,29 @@ function updateHud(){
     const timerText=Math.ceil(timeLeft)+'s';
     if(_hud.timer!==timerText){ document.getElementById('timerHud').textContent=timerText; _hud.timer=timerText; }
   }
-  let html='';
-  if(player.shieldHits>0) html+=`<div class="pwchip">${icon('shield')}${player.shieldHits>1?' ×'+player.shieldHits:''}</div>`;
-  if(player.slowT>0) html+=chip('clock', player.slowT/SLOW_DUR);
-  if(player.magnetT>0) html+=chip('magnet', player.magnetT/MAGNET_DUR);
-  if(player.multT>0) html+=chip('coin', player.multT/MULT_DUR);
-  if(_hud.pw!==html){ document.getElementById('pw').innerHTML=html; _hud.pw=html; }
+  // Güç çipleri: yapı (hangi güçler aktif) değişince bir kez HTML üretilir;
+  // her karede yalnız çubuk genişlikleri güncellenir (eskiden her karede
+  // innerHTML yeniden yazılıyordu → düşük seviye telefonlarda kare düşüşü).
+  const durMul = 1+upgradeBonus('boostDur');
+  const timed=[];
+  if(player.slowT>0) timed.push(['clock', player.slowT/(SLOW_DUR*durMul)]);
+  if(player.magnetT>0) timed.push(['magnet', player.magnetT/(MAGNET_DUR*durMul)]);
+  if(player.multT>0) timed.push(['coin', player.multT/(MULT_DUR*durMul)]);
+  const key=(player.shieldHits>0 ? 's'+player.shieldHits : '')+'|'+timed.map(x=>x[0]).join(',');
+  const pwEl=document.getElementById('pw');
+  if(_hud.pw!==key){
+    let html='';
+    if(player.shieldHits>0) html+=`<div class="pwchip">${icon('shield')}${player.shieldHits>1?' ×'+player.shieldHits:''}</div>`;
+    for(const [ic] of timed) html+=chip(ic);
+    pwEl.innerHTML=html; _hud.pw=key; _hud.pwBars=[...pwEl.querySelectorAll('.pwbar i')]; _hud.pwW=[];
+  }
+  timed.forEach(([,frac],i)=>{
+    const w=Math.round(Math.max(0,Math.min(1,frac))*100);
+    if(_hud.pwW[i]!==w && _hud.pwBars[i]){ _hud.pwBars[i].style.width=w+'%'; _hud.pwW[i]=w; }
+  });
   const flashOpacity = levelFlashT>0 ? Math.min(1, levelFlashT/20) : 0;
   if(_hud.flash!==flashOpacity){ document.getElementById('levelFlash').style.opacity=flashOpacity; _hud.flash=flashOpacity; }
   const wallet = stats.notes||0;
   if(_hud.wallet!==wallet){ document.getElementById('walletHud').textContent=wallet; _hud.wallet=wallet; }
 }
-function chip(iconKey,frac){ return `<div class="pwchip">${icon(iconKey)}<div class="pwbar"><i style="width:${Math.max(0,frac)*100}%"></i></div></div>`; }
+function chip(iconKey){ return `<div class="pwchip">${icon(iconKey)}<div class="pwbar"><i style="width:0%"></i></div></div>`; }

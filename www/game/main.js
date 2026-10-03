@@ -18,7 +18,7 @@ resetGame(); renderThemeGrid(); goMenu();
 syncGfxMode(); // cfg.gfx==='3d' ise 3D paketi burada tembel yüklenir (bkz. gfx.js)
 Ads.init();
 syncAdButtons();
-setInterval(syncAdButtons, 1000); // "Reklam İzle" butonlarındaki bekleme geri sayımını canlı tutar
+setInterval(()=>{ if(state!=='play') syncAdButtons(); }, 1000); // "Reklam İzle" butonlarındaki bekleme geri sayımını canlı tutar
 if(window.PlayGames && PlayGames.isNative()){
   PlayGames.signIn().then(()=>{ syncPlayGamesUI(); });
 }
@@ -52,8 +52,10 @@ function initIAP(){
           stats.owned.skins.push(productId); saveStats();
           const sk=SKINS.find(s=>s.id===productId);
           if(sk) queueToast(t('purchased_toast',{name:t(sk.nameKey)}));
+          // Yalnız yeni satın alımda kuşan: mağaza her açılışta sahip olunan
+          // ürünleri de bildiriyor; oyuncunun seçtiği pena ezilmesin.
+          setEquipped('skins', productId);
         }
-        setEquipped('skins', productId);
         syncShopIfOpen(); renderSkins();
       },
       (productId, price)=>{ setPenaLivePrice(productId, price); }

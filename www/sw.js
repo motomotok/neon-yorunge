@@ -1,4 +1,4 @@
-const CACHE = 'beat-orbit-v38';
+const CACHE = 'beat-orbit-v39';
 const ASSETS = [
   './',
   './index.html',
@@ -69,8 +69,12 @@ self.addEventListener('fetch', e => {
   if (e.request.headers.has('range') || /\.(mp4|webm)$/.test(e.request.url)) return;
   e.respondWith(
     fetch(e.request).then(res => {
-      const clone = res.clone();
-      caches.open(CACHE).then(c => c.put(e.request, clone));
+      // Yalnız başarılı, kendi sitemizden gelen yanıtlar önbelleğe girer (hata
+      // sayfaları / dış kaynaklar birikmesin).
+      if (res.ok && res.type === 'basic') {
+        const clone = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, clone)).catch(() => {});
+      }
       return res;
     }).catch(() => caches.match(e.request, { ignoreSearch: true }))
   );

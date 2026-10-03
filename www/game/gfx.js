@@ -51,6 +51,13 @@ function syncGfxMode(){
 function gfx3dFailed(reason){
   console.warn('[gfx] 3D devre dışı:', reason);
   _gfx3dState='failed';
+  // Bağlam kaybı (Android'de arka plana geçince sık) geçicidir: bu oturumda 2D'ye
+  // düşülür ama tercih kaydedilmez, bir sonraki açılışta 3D yeniden denenir.
+  // Kalıcı hatalarda (WebGL yok, paket yüklenemedi) klasik moda geçilip kaydedilir.
+  if(reason==='context-lost'){
+    const c3=document.getElementById('game3d'); if(c3) c3.style.display='none';
+    return;
+  }
   cfg.gfx='classic'; saveCfg();
   const c3=document.getElementById('game3d'); if(c3) c3.style.display='none';
   if(typeof queueToast==='function') queueToast(t('gfx_unsupported_toast'));
