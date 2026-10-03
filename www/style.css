@@ -443,15 +443,13 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
 #tutorialBox.show{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0);}
 /* Menü/yetenek ekranlarında içerik üstteyse kutu alta iner. */
 #tutorialBox.atBottom{top:auto;bottom:calc(env(safe-area-inset-bottom) + 18px);}
-.narrAvatar{flex:none;width:62px;height:62px;animation:narrBob 2.4s ease-in-out infinite;}
-.narrAvatar svg{width:100%;height:100%;overflow:visible;filter:drop-shadow(0 4px 8px rgba(0,0,0,.5));}
-.narrLabel{fill:var(--star);}
-.narrEyes{transform-box:fill-box;transform-origin:center;animation:narrBlink 4.2s infinite;}
-.narrMouth{transform-box:fill-box;transform-origin:center;transform:scaleY(.45);}
-#tutorialBox.talking .narrMouth{animation:narrTalk .16s ease-in-out infinite alternate;}
+.narrAvatar{flex:none;width:72px;height:72px;border-radius:50%;animation:narrBob 2.4s ease-in-out infinite;}
+.narrAvatar img{width:100%;height:100%;display:block;border-radius:50%;
+  border:2px solid rgba(255,207,122,.6);box-shadow:0 4px 10px rgba(0,0,0,.5),0 0 0 rgba(255,180,90,0);}
+/* Konuşurken: hafif sallanma + çevresinde nabız gibi atan altın ışık. */
 #tutorialBox.talking .narrAvatar{animation:narrBob .5s ease-in-out infinite;}
-@keyframes narrTalk{from{transform:scaleY(.35);}to{transform:scaleY(1.25);}}
-@keyframes narrBlink{0%,92%,100%{transform:scaleY(1);}95%{transform:scaleY(.1);}}
+#tutorialBox.talking .narrAvatar img{animation:narrGlow .5s ease-in-out infinite alternate;}
+@keyframes narrGlow{from{box-shadow:0 4px 10px rgba(0,0,0,.5),0 0 4px rgba(255,180,90,.25);}to{box-shadow:0 4px 10px rgba(0,0,0,.5),0 0 14px rgba(255,180,90,.6);}}
 @keyframes narrBob{0%,100%{transform:translateY(0) rotate(-2deg);}50%{transform:translateY(-3px) rotate(2deg);}}
 .narrBody{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:6px;}
 .narrName{font-family:var(--font-display);font-size:11px;font-weight:800;letter-spacing:2px;color:var(--star);text-transform:uppercase;}
