@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.31.0';
+const GAME_VERSION = '2.32.0';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -703,6 +703,13 @@ const ACHIEVEMENTS = [
   {id:'dailyexplorer', icon:'calendar', nameKey:'ach_dailyexplorer_name', descKey:'ach_dailyexplorer_desc', reward:100, check:(s)=>s.dailyCount>=1},
   {id:'legend', icon:'trophy', nameKey:'ach_legend_name', descKey:'ach_legend_desc', reward:300, check:(s)=>s.best>=500},
   {id:'richling', icon:'coin', nameKey:'ach_richling_name', descKey:'ach_richling_desc', reward:150, check:(s)=>s.lifetimeNotes>=1000},
+  // Zorlu başarımlar: 50-60 oyunda kendiliğinden açılmaz, ustalık ister.
+  {id:'virtuoso', icon:'atom', nameKey:'ach_virtuoso_name', descKey:'ach_virtuoso_desc', reward:500, check:(s,c)=>c.runScore>=4000},
+  {id:'bossslayer', icon:'medal', nameKey:'ach_bossslayer_name', descKey:'ach_bossslayer_desc', reward:500, check:(s,c)=>(c.session.bossesCleared||0)>=3},
+  {id:'untouchable', icon:'shield', nameKey:'ach_untouchable_name', descKey:'ach_untouchable_desc', reward:400, check:(s,c)=>c.runScore>=1000 && c.session.hits===0},
+  {id:'combo75', icon:'lightning', nameKey:'ach_combo75_name', descKey:'ach_combo75_desc', reward:400, check:(s,c)=>c.session.streakMax>=75},
+  {id:'veteran', icon:'gamepad', nameKey:'ach_veteran_name', descKey:'ach_veteran_desc', reward:300, check:(s)=>s.games>=250},
+  {id:'notemogul', icon:'sparkle', nameKey:'ach_notemogul_name', descKey:'ach_notemogul_desc', reward:500, check:(s)=>(s.lifetimeNotes||0)>=25000},
   {id:'collector', icon:'palette', nameKey:'ach_collector_name', descKey:'ach_collector_desc', reward:200, check:(s)=>Object.values(s.owned).reduce((n,arr)=>n+arr.length,0)>=5},
 ];
 function checkAchievements(c){
@@ -811,17 +818,20 @@ function activeSeason(d){
 // 5. kademeye ulaşacak şekilde ayarlandı. Ödül miktarları (free/premium)
 // önceki sürüme göre 10 katına çıkarıldı — kademeler daha yavaş
 // açılıyor ama açıldığında çok daha değerli.
+// Premium (Sezon Bileti) çizgisi kademe kademe ARTAR — her kademede ücretsiz
+// çizginin belirgin üstünde, son kademeler kozmetikle birlikte en değerlisi;
+// bilete para vermenin anlamı olsun (eskiden hepsi düz 1000'di).
 const SEASON_TIERS = [
-  {xp:100,  free:300,  premium:1000},
-  {xp:200,  free:400,  premium:1000},
-  {xp:400,  free:500,  premium:1000},
-  {xp:700,  free:600,  premium:1000},
-  {xp:1100, free:700,  premium:1000},
-  {xp:1600, free:900,  premium:1000},
-  {xp:2200, free:1100, premium:1000},
-  {xp:2900, free:1300, premium:1000},
-  {xp:3700, free:1600, premium:1000, cosmeticSlot:'trails'},
-  {xp:4600, free:2000, premium:1000, cosmeticSlot:'skins'},
+  {xp:100,  free:300,  premium:800},
+  {xp:200,  free:400,  premium:1100},
+  {xp:400,  free:500,  premium:1400},
+  {xp:700,  free:600,  premium:1800},
+  {xp:1100, free:700,  premium:2300},
+  {xp:1600, free:900,  premium:2900},
+  {xp:2200, free:1100, premium:3600},
+  {xp:2900, free:1300, premium:4500},
+  {xp:3700, free:1600, premium:5500, cosmeticSlot:'trails'},
+  {xp:4600, free:2000, premium:7000, cosmeticSlot:'skins'},
 ];
 function ensureSeason(){
   const k = 'S'+activeSeason().id;

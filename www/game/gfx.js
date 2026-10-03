@@ -88,6 +88,7 @@ function syncGfxSettings(){
   document.querySelectorAll('#gfxQSeg .gfxQOpt').forEach(b=>{
     b.classList.toggle('sel', b.dataset.q===cur);
     b.classList.toggle('autoPick', auto && b.dataset.q===cur);
+    b.dataset.auto = t('gfx_q_auto_tag');
   });
   const hint=document.getElementById('gfxQHint');
   if(hint) hint.textContent = cfg.gfx!=='3d' ? t('gfx_q_hint_off') : auto ? t('gfx_q_hint_auto') : t('gfx_q_hint_manual');
