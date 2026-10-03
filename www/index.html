@@ -17,6 +17,10 @@
 <body>
 <canvas id="game3d" style="display:none"></canvas>
 <canvas id="game"></canvas>
+<!-- Retro oda menüsü + giriş animasyonu (bkz. game/room.js) -->
+<canvas id="roomCanvas" style="display:none"></canvas>
+<div id="roomCaption"></div>
+<div id="roomFlash"></div>
 <div id="toast"></div>
 <div id="achTooltip" class="achTooltip"></div>
 
@@ -51,6 +55,43 @@
 </div>
 
 <!-- Anlatıcı DJ Vinil (bkz. game/narrator.js): tutorial ve hikâye anları -->
+<!-- ClampGames açılış logosu (bkz. game/splash.js). Kendi logon gelirse
+     sadece bu bloğun içi değişir. -->
+<div id="splash" aria-hidden="true">
+  <div class="splashInner">
+    <svg class="splashIcon" viewBox="0 0 220 220">
+      <defs>
+        <linearGradient id="cgFrame" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff4f7b"/><stop offset="1" stop-color="#ffa53d"/></linearGradient>
+        <linearGradient id="cgSteel" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#6b7280"/><stop offset=".45" stop-color="#f4f6fa"/><stop offset="1" stop-color="#5b6270"/></linearGradient>
+        <radialGradient id="cgGlow"><stop offset="0" stop-color="#5ff3ff" stop-opacity=".9"/><stop offset="1" stop-color="#5ff3ff" stop-opacity="0"/></radialGradient>
+      </defs>
+      <g class="cgGlow"><circle cx="150" cy="104" r="62" fill="url(#cgGlow)"/></g>
+      <!-- C gövdesi -->
+      <g class="cgFrame">
+        <path d="M156 46 H86 Q46 46 46 86 V124 Q46 164 86 164 H156" fill="none" stroke="url(#cgFrame)" stroke-width="32" stroke-linecap="round"/>
+        <path d="M150 38 H88 Q56 38 54 70" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="5" stroke-linecap="round"/>
+        <rect x="130" y="58" width="40" height="10" rx="4" fill="url(#cgSteel)"/>
+      </g>
+      <!-- Oyun küpü (izometrik) -->
+      <g class="cgCube">
+        <path d="M150 70 L172 82 L150 94 L128 82 Z" fill="#b9fbff"/>
+        <path d="M128 82 L150 94 L150 120 L128 108 Z" fill="#2fc6e6"/>
+        <path d="M172 82 L150 94 L150 120 L172 108 Z" fill="#147fae"/>
+        <path d="M150 70 L172 82 L150 94 L128 82 Z" fill="none" stroke="#ffffff" stroke-opacity=".7" stroke-width="1.5"/>
+      </g>
+      <!-- Vida + çene (yukarı sıkıştırır) -->
+      <g class="cgScrew">
+        <rect x="130" y="120" width="40" height="10" rx="4" fill="url(#cgSteel)"/>
+        <rect x="144" y="128" width="12" height="62" rx="3" fill="url(#cgSteel)"/>
+        <g stroke="rgba(30,34,44,.55)" stroke-width="2.2"><path d="M144 140 L156 135 M144 150 L156 145 M144 172 L156 167 M144 182 L156 177"/></g>
+        <g class="cgHandle"><rect x="120" y="188" width="60" height="9" rx="4.5" fill="url(#cgSteel)"/><circle cx="121" cy="192.5" r="7" fill="#ffa53d"/><circle cx="179" cy="192.5" r="7" fill="#ffa53d"/></g>
+      </g>
+      <circle class="cgRing" cx="150" cy="95" r="30" fill="none" stroke="#5ff3ff" stroke-width="3"/>
+    </svg>
+    <div class="splashWord">clamp</div>
+    <div class="splashSub">GAMES</div>
+  </div>
+</div>
 <div id="narrBlocker"></div>
 <div id="tutorialBox">
   <button id="tutorialSkipBtn" data-i18n="tutorial_skip">Atla</button>
@@ -181,6 +222,7 @@
         <div class="toggle"><span data-i18n="toggle_hand">Sol El Modu</span> <div class="sw" id="handSw"></div></div>
         <div class="toggle"><span data-i18n="toggle_cb">Renk Körü Simgeler</span> <div class="sw" id="cbSw"></div></div>
         <div class="toggle"><span data-i18n="toggle_gfx3d">3D Grafik</span> <div class="sw" id="gfxSw"></div></div>
+        <div class="toggle"><span data-i18n="toggle_room_menu">Retro Oda Menüsü</span> <div class="sw" id="roomSw"></div></div>
         <div class="toggle" id="gfxQRow"><span data-i18n="gfx_quality">Grafik Kalitesi</span> <button class="gfxQBtn" id="gfxQBtn">Otomatik</button></div>
       </div>
       <div class="acctRow" id="acctRow">
@@ -453,8 +495,10 @@
 <script src="game/battlepass-ui.js"></script>
 <script src="game/upgrades-ui.js"></script>
 <script src="game/narrator.js"></script>
+<script src="game/room.js"></script>
 <script src="game/tutorial.js"></script>
 <script src="game/input.js"></script>
 <script src="game/main.js"></script>
+<script src="game/splash.js"></script>
 </body>
 </html>
