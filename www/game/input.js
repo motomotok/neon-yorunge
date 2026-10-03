@@ -40,6 +40,9 @@ document.querySelectorAll('[data-go]').forEach(b=>{
     }
     if(g==='mode') goMode();
     else if(g==='quickstart'){
+      // Tutorial zaten sürüyorsa asla baştan başlatma (eskiden son adımda
+      // BAŞLA'ya basılınca tutorial yeniden başlıyordu).
+      if(tutorialActive) return;
       if(!stats.tutorialDone && typeof startTutorial==='function') startTutorial();
       else startGame('classic','normal');
     }

@@ -183,8 +183,11 @@ const TUTORIAL_STEPS = {
     tutorialSpotlight(document.querySelector('#screen-upgrades [data-go="menu"]'));
     narratorSay(t('tut2_backmenu'), {pos:'top'});
   },
+  // Son söz: ana menüde. Yazı akarken ekran kilitli (bkz. narrator.js
+  // engelleyici), sonra yalnızca "Anladım" açık; basınca tutorial biter ve
+  // oyuncu menüde serbest kalır — BAŞLA ile gerçek oyuna kendisi geçer.
   end(){
-    narratorSay(t('tut2_end'), {cta:t('tut2_cta_go'), onCta:()=>tutorialStartRealGame()});
+    narratorSay(t('tut2_end'), {cta:t('tut_cta_understood'), onCta:()=>tutorialFinish()});
   },
 };
 
@@ -235,7 +238,7 @@ function tutorialOnGameOver(){
 function tutorialExpectedNav(){
   if(tutorialStep==='over') return 'upgrades';
   if(tutorialStep==='backMenu') return 'menu';
-  if(['buyHp','prestige','core','stronger'].includes(tutorialStep)) return '__none';
+  if(['buyHp','prestige','core','stronger','end'].includes(tutorialStep)) return '__none';
   return null;
 }
 function tutorialOnNav(target){
@@ -274,10 +277,6 @@ function tutorialFinish(){
 function tutorialSkip(){
   tutorialFinish();
   goMenu();
-}
-function tutorialStartRealGame(){
-  tutorialFinish();
-  startGame('classic','normal');
 }
 
 // --- UI yardımcıları ---

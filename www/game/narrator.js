@@ -25,6 +25,7 @@ function narratorSay(msg, opts){
   let i = 0;
   txt.textContent = '';
   _narr.typing = true;
+  setNarrBlock(true);
   _narr.timer = setInterval(()=>{
     i++;
     txt.textContent = chars.slice(0, i).join('');
@@ -34,6 +35,7 @@ function narratorSay(msg, opts){
     if(i >= chars.length){
       clearInterval(_narr.timer);
       _narr.typing = false;
+      setNarrBlock(false);
       box.classList.remove('talking');
       if(opts.onDone) opts.onDone();
       if(opts.cta){
@@ -47,9 +49,16 @@ function narratorSay(msg, opts){
   }, NARRATOR_CHAR_MS);
 }
 
+// Yazı akarken tüm ekran tıklamaya kapalı (yalnızca anlatıcı kutusu —
+// ör. Atla — açık): oyuncu metni okumadan bir yere basıp akışı bozamaz.
+function setNarrBlock(on){
+  const b = document.getElementById('narrBlocker'); if(b) b.classList.toggle('on', !!on);
+}
+
 function narratorHide(){
   clearInterval(_narr.timer); clearTimeout(_narr.ctaTimer);
   _narr.typing = false;
+  setNarrBlock(false);
   const box = document.getElementById('tutorialBox');
   if(box) box.classList.remove('show', 'talking');
   const cta = document.getElementById('tutorialBoxCta');
