@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.30.0';
+const GAME_VERSION = '2.31.0';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -830,6 +830,18 @@ function ensureSeason(){
     stats.seasonClaimedFree=[]; stats.seasonClaimedPremium=[];
     saveStats();
   }
+}
+// Alınmayı bekleyen sezon ödülü sayısı (ücretsiz + varsa premium) — ana
+// menüdeki Sezon butonunda kırmızı rozet olarak gösterilir.
+function seasonClaimableCount(){
+  ensureSeason();
+  let n=0;
+  SEASON_TIERS.forEach((tr,i)=>{
+    if(stats.seasonXp < tr.xp) return;
+    if(!stats.seasonClaimedFree.includes(i)) n++;
+    if(stats.seasonPremium && !stats.seasonClaimedPremium.includes(i)) n++;
+  });
+  return n;
 }
 function seasonCosmeticFor(slot, season){
   season = season || activeSeason();

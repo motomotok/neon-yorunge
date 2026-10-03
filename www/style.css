@@ -265,9 +265,18 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
       linear-gradient(160deg,var(--glass-brd-soft),transparent) border-box;
   border:2px solid transparent;border-radius:14px;padding:8px 6px;cursor:pointer;
   display:flex;flex-direction:column;gap:5px;align-items:center;
-  transition:border-color .15s, transform .12s, box-shadow .15s;}
+  transition:transform .12s;}
 .theme:active{transform:scale(.96);}
-.theme.sel{border-color:var(--star);box-shadow:0 0 18px rgba(84,224,255,.35),0 0 0 1px rgba(84,224,255,.15) inset;}
+.theme{position:relative;}
+.theme.sel{border-color:var(--gold,#ffd24a);box-shadow:0 0 18px rgba(255,210,74,.4),0 0 0 1px rgba(255,210,74,.2) inset;
+  background:linear-gradient(180deg,rgba(255,210,74,.16),rgba(255,210,74,.04)) padding-box;}
+/* Seçili tema: sağ üstte onay rozeti + adın altında "Seçili" — hangisinin
+   seçili olduğu bir bakışta anlaşılsın. */
+.theme.sel::after{content:'✓';position:absolute;top:-7px;right:-7px;width:22px;height:22px;border-radius:50%;
+  background:var(--gold,#ffd24a);color:#2a1a08;font-weight:900;font-size:13px;line-height:22px;text-align:center;
+  box-shadow:0 2px 8px rgba(0,0,0,.45);}
+.theme .tsel{display:none;font-size:10px;font-weight:800;letter-spacing:.6px;color:var(--gold,#ffd24a);text-transform:uppercase;}
+.theme.sel .tsel{display:block;}
 .theme.locked{opacity:.55;}
 .swatch{display:flex;gap:4px;}
 /* Tema kartında küçük dönen plak: temanın etiketi + siyah oluklu kenar. */
@@ -311,8 +320,34 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
 .toggleGrid .sw::after{width:14px;height:14px;top:2px;left:2px;}
 .toggleGrid .sw.on::after{left:16px;}
 .toggleGrid .toggle.disabled{opacity:.45;pointer-events:none;}
-.gfxQBtn{align-self:flex-end;font:inherit;font-weight:700;font-size:11px;color:var(--star);background:rgba(255,255,255,.06);
-  border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:2px 10px;cursor:pointer;}
+/* 3D Grafik satırı iki sütunu kaplar (kalite kartı altında ayrı). */
+.toggleGrid .toggle.wide{grid-column:1/-1;flex-direction:row;align-items:center;justify-content:space-between;}
+.toggleGrid .toggle.wide .sw{align-self:center;}
+/* Grafik kalitesi kartı */
+.gfxQCard{width:100%;border-radius:12px;padding:9px 10px 8px;margin-top:6px;
+  background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02)) padding-box,
+      linear-gradient(160deg,var(--glass-brd-soft),transparent) border-box;border:1px solid transparent;}
+.gfxQCard.disabled{opacity:.45;pointer-events:none;}
+.gfxQHead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px;}
+.gfxQTitle{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;}
+.gfxQTitle .gicon{width:15px;height:15px;color:var(--star);}
+.gfxQAuto{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;opacity:.9;cursor:pointer;}
+.gfxQAuto .sw{width:32px;height:18px;}
+.gfxQAuto .sw::after{width:14px;height:14px;top:2px;left:2px;}
+.gfxQAuto .sw.on::after{left:16px;}
+.gfxQSeg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+.gfxQOpt{display:flex;flex-direction:column;align-items:center;gap:4px;padding:7px 4px 6px;border-radius:10px;cursor:pointer;
+  font:inherit;font-size:11.5px;font-weight:700;color:#eaf2ff;background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,0);opacity:.7;}
+.gfxQOpt .bars{display:flex;align-items:flex-end;gap:2px;height:12px;}
+.gfxQOpt .bars i{display:block;width:4px;border-radius:1px;background:currentColor;}
+.gfxQOpt .bars i:nth-child(1){height:5px;} .gfxQOpt .bars i:nth-child(2){height:8px;} .gfxQOpt .bars i:nth-child(3){height:12px;}
+.gfxQOpt.sel{opacity:1;color:#fff;border-color:var(--star);background:rgba(84,224,255,.14);box-shadow:0 0 12px -3px rgba(84,224,255,.7);}
+/* Otomatik seçimde: kesik kenarlık + "OTO" etiketi — "bunu oyun seçti,
+   istersen değiştirebilirsin" hissi. */
+.gfxQOpt.autoPick{border-style:dashed;position:relative;}
+.gfxQOpt.autoPick::after{content:'AUTO';position:absolute;top:-8px;right:4px;font-size:8px;font-weight:900;letter-spacing:.5px;
+  padding:1px 5px;border-radius:6px;background:var(--star);color:#06202a;}
+.gfxQHint{font-size:10px;opacity:.6;margin-top:6px;text-align:center;line-height:1.3;}
 
 .acctRow{display:grid;grid-template-columns:1fr;gap:8px;width:100%;}
 .acctRow.single{grid-template-columns:1fr;}
@@ -592,9 +627,12 @@ body.left-hand .hudTop{flex-direction:row-reverse;}
 
 .shopTabs{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;width:100%;}
 .stab{padding:8px 13px;border-radius:999px;background:rgba(255,255,255,.05);cursor:pointer;
-  font-family:var(--font-ui);font-size:13px;font-weight:700;border:2px solid transparent;color:var(--ink,#eaf2ff);opacity:.65;
-  letter-spacing:.2px;transition:opacity .15s,border-color .15s,background .15s;}
-.stab.sel{border-color:var(--accent-2,#a97bff);opacity:1;background:rgba(169,123,255,.14);}
+  font-family:var(--font-ui);font-size:13px;font-weight:700;border:2px solid rgba(255,255,255,0);color:var(--ink,#eaf2ff);opacity:.6;
+  letter-spacing:.2px;box-shadow:none;}
+/* Seçili sekme: geçiş animasyonu YOK — iOS WebKit animasyonlu kenarlık
+   rengini bazen yeniden çizmiyor, eski sekmeler de "yanık" kalıyordu. */
+.stab.sel{border-color:var(--accent-2,#a97bff);opacity:1;background:rgba(169,123,255,.2);
+  box-shadow:0 0 12px -3px rgba(169,123,255,.7);}
 .shopGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px;width:100%;}
 /* Mağaza kataloğu (Temalar/Orblar/İzler/Güneşler/Halkalar/Takviyeler) satır
    başına 2 yerine 3 karta sığacak şekilde küçültüldü — Yetenekler
@@ -940,3 +978,165 @@ h1 .gicon,h2 .gicon{color:var(--star);}
 /* Premium şeridi iğne ile plağın arasındaki dar boşluğa sığsın diye kompakt */
 #screen-menu .menuPremiumChip{padding:3px 5px 3px 11px;}
 #screen-menu .menuPremiumChip .btn.small{padding:4px 11px;}
+
+/* Ana menü bildirim rozetleri */
+.menuDockBtn{position:relative;}
+.nBadge{position:absolute;top:-7px;right:-7px;min-width:19px;height:19px;padding:0 5px;border-radius:10px;
+  background:linear-gradient(180deg,#ff5a4a,#e0201a);color:#fff;font:900 10.5px/15px var(--font-ui);text-align:center;
+  border:2px solid #1a0a06;box-shadow:0 2px 8px rgba(224,32,26,.6);pointer-events:none;z-index:2;
+  animation:nBadgePulse 1.6s ease-in-out infinite;}
+.nBadge.txt{right:50%;transform:translateX(50%);top:-9px;font-size:9px;letter-spacing:.4px;white-space:nowrap;}
+.nBadge.pop{animation:nBadgePop .35s cubic-bezier(.34,1.6,.64,1), nBadgePulse 1.6s .35s ease-in-out infinite;}
+@keyframes nBadgePulse{0%,100%{box-shadow:0 2px 8px rgba(224,32,26,.55);}50%{box-shadow:0 2px 14px rgba(255,70,50,.95);}}
+@keyframes nBadgePop{0%{scale:.3;}100%{scale:1;}}
+.menuDockBtn.hasReward{border-color:rgba(255,90,74,.55);}
+
+/* ---------- Nasıl Oynanır: plak kapağının arka yüzü ---------- */
+#screen-howto .htBody{gap:12px;}
+.htHero{width:100%;border-radius:18px;padding:12px 12px 10px;position:relative;overflow:hidden;
+  background:radial-gradient(120% 90% at 50% 0%,rgba(255,170,90,.16),rgba(0,0,0,0) 60%),
+    linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.015));
+  border:1px solid rgba(255,200,140,.18);box-shadow:0 10px 30px -14px rgba(0,0,0,.8);}
+.htDisc{width:100%;height:auto;display:block;filter:drop-shadow(0 8px 14px rgba(0,0,0,.55));}
+.htDisc .htGrooves{animation:htSpin 6s linear infinite;transform-origin:150px 78px;}
+.htRing{fill:none;stroke:#d9b48a;stroke-opacity:.35;stroke-width:1.4;}
+.htRing.in{animation:htRingIn 4s ease-in-out infinite;}
+.htRing.out{animation:htRingOut 4s ease-in-out infinite;}
+.htPena{animation:htPena 4s cubic-bezier(.5,0,.3,1) infinite;filter:drop-shadow(0 0 5px #2fe6c4);}
+@keyframes htSpin{to{transform:rotate(360deg);}}
+/* 0-12%: dış halka · 12%: SOL dokunuş → iç halka · 50-62%: SAĞ dokunuş → dış halka */
+@keyframes htPena{0%,12%{transform:translate(150px,132px);}22%,58%{transform:translate(150px,106px);}68%,100%{transform:translate(150px,132px);}}
+@keyframes htRingIn{0%,14%{stroke-opacity:.3;stroke:#d9b48a;}22%,58%{stroke-opacity:.95;stroke:#2fe6c4;}66%,100%{stroke-opacity:.3;stroke:#d9b48a;}}
+@keyframes htRingOut{0%,10%{stroke-opacity:.95;stroke:#2fe6c4;}20%,62%{stroke-opacity:.3;stroke:#d9b48a;}70%,100%{stroke-opacity:.95;stroke:#2fe6c4;}}
+.htTaps{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px;}
+.htTap{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 6px;border-radius:12px;position:relative;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);}
+.htTap b{font-family:var(--font-display);font-size:12px;letter-spacing:1px;color:#fff;}
+.htTap small{font-size:11px;opacity:.75;}
+.htTapDot{width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,.5);margin-bottom:2px;position:relative;}
+.htTapDot::after{content:'';position:absolute;inset:4px;border-radius:50%;background:rgba(255,255,255,.5);}
+.htTap.L{animation:htTapL 4s infinite;} .htTap.R{animation:htTapR 4s infinite;}
+.htTap.L .htTapDot{animation:htDotL 4s infinite;} .htTap.R .htTapDot{animation:htDotR 4s infinite;}
+@keyframes htTapL{0%,8%{border-color:rgba(255,255,255,.08);background:rgba(255,255,255,.04);}12%,20%{border-color:#2fe6c4;background:rgba(47,230,196,.16);}28%,100%{border-color:rgba(255,255,255,.08);background:rgba(255,255,255,.04);}}
+@keyframes htTapR{0%,46%{border-color:rgba(255,255,255,.08);background:rgba(255,255,255,.04);}50%,58%{border-color:#2fe6c4;background:rgba(47,230,196,.16);}66%,100%{border-color:rgba(255,255,255,.08);background:rgba(255,255,255,.04);}}
+@keyframes htDotL{0%,8%,28%,100%{transform:scale(1);border-color:rgba(255,255,255,.5);}12%{transform:scale(.8);border-color:#2fe6c4;box-shadow:0 0 0 8px rgba(47,230,196,0),0 0 14px #2fe6c4;}}
+@keyframes htDotR{0%,46%,66%,100%{transform:scale(1);border-color:rgba(255,255,255,.5);}50%{transform:scale(.8);border-color:#2fe6c4;box-shadow:0 0 14px #2fe6c4;}}
+.htLead{font-size:12px;line-height:1.4;text-align:center;opacity:.85;margin-top:9px;padding:0 6px;}
+
+/* Şarkı listesi tarzı bölümler */
+.htSide{width:100%;border-radius:16px;padding:10px 10px 6px;
+  background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.015));
+  border:1px solid rgba(255,255,255,.08);}
+.htSideHead{display:flex;align-items:center;gap:8px;padding:0 2px 8px;border-bottom:1px dashed rgba(255,255,255,.12);margin-bottom:4px;}
+.htSideTag{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;
+  font-family:var(--font-display);font-weight:900;font-size:12px;color:#2a1608;
+  background:radial-gradient(circle at 50% 50%,#2a1608 0 3px,#ffcf7a 3.5px 100%);box-shadow:0 0 0 2px rgba(255,207,122,.25);}
+.htSideTag{color:transparent;}
+.htSideTag.b{background:radial-gradient(circle at 50% 50%,#2a0d0d 0 3px,#ff7a6a 3.5px 100%);box-shadow:0 0 0 2px rgba(255,122,106,.25);}
+.htSideTag.c,.htSideTag.d{background:rgba(255,255,255,.08);box-shadow:none;color:var(--gold,#ffd24a);}
+.htSideTag .gicon{width:15px;height:15px;}
+.htSideLbl{font-family:var(--font-display);font-size:10px;letter-spacing:1.6px;opacity:.6;}
+.htSideTitle{margin-left:auto;font-weight:800;font-size:14px;}
+.htSideTitle.good{color:#7fe8a8;} .htSideTitle.bad{color:#ff8a7a;} .htSideTitle.pw{color:#ffd24a;}
+.htTrack{display:flex;align-items:center;gap:9px;padding:7px 2px;border-bottom:1px solid rgba(255,255,255,.05);}
+.htTrack:last-child{border-bottom:none;}
+.htNo{width:22px;flex:none;font-family:var(--font-display);font-size:10px;opacity:.45;text-align:center;}
+.htTrack .howtoIcon{width:30px;height:30px;flex:none;}
+.htName{display:flex;flex-direction:column;flex:1;min-width:0;font-size:13px;font-weight:700;line-height:1.2;}
+.htName small{font-size:10.5px;font-weight:500;opacity:.6;margin-top:1px;}
+.htVal{flex:none;max-width:46%;text-align:right;font-size:11.5px;font-weight:800;padding:3px 8px;border-radius:999px;line-height:1.25;}
+.htVal.good{color:#9ff5c2;background:rgba(127,232,168,.1);}
+.htVal.bad{color:#ffb1a6;background:rgba(255,90,74,.14);font-family:var(--font-display);font-size:13px;min-width:38px;text-align:center;}
+.htVal.pw{color:#ffe08a;background:rgba(255,210,74,.1);font-weight:700;}
+.htBoss{display:flex;gap:10px;align-items:flex-start;padding:8px 4px 10px;}
+.htBoss>.gicon{width:26px;height:26px;flex:none;color:#ff7a4a;filter:drop-shadow(0 0 6px rgba(255,122,74,.6));}
+.htBoss b{font-size:13.5px;} .htBoss p{font-size:11.5px;opacity:.75;line-height:1.35;margin-top:2px;}
+.htModes{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.htMode{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 9px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);}
+.htMode .gicon{width:18px;height:18px;color:var(--star);margin-bottom:2px;}
+.htMode b{font-size:12.5px;} .htMode small{font-size:10.5px;opacity:.65;line-height:1.3;}
+.htTip{display:flex;gap:6px;align-items:flex-start;font-size:11.5px;line-height:1.35;opacity:.85;margin:10px 2px 4px;padding:8px 10px;border-radius:10px;background:rgba(255,210,74,.07);border:1px solid rgba(255,210,74,.15);}
+.htTip .gicon{width:15px;height:15px;color:var(--gold,#ffd24a);flex:none;margin-top:1px;}
+#screen-howto .htBody>*{flex:none;}
+.htName,.htMode,.htBoss,.htTip{text-align:left;}
+
+/* ---------- Sezon Bileti ---------- */
+#screen-battlepass .screenHead{gap:8px;}
+.bpHero{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border-radius:16px;
+  background:radial-gradient(120% 120% at 0% 0%,rgba(255,170,90,.18),rgba(0,0,0,0) 60%),linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.015));
+  border:1px solid rgba(255,200,140,.18);}
+.bpNowDisc{width:64px;height:64px;flex:none;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;
+  background:radial-gradient(circle,#c94a2c 0 15px,#1a1412 15.5px 100%);
+  box-shadow:0 0 0 2px rgba(255,138,61,.45),0 6px 16px rgba(0,0,0,.6),inset 0 0 0 6px rgba(255,255,255,.03),inset 0 0 0 12px rgba(0,0,0,.25);
+  animation:bpSpin 9s linear infinite;}
+.bpNowDisc b{font-family:var(--font-display);font-size:19px;line-height:1;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6);}
+.bpNowDisc small{font-size:6.5px;font-weight:800;letter-spacing:.8px;color:#ffd9c2;margin-top:1px;}
+@keyframes bpSpin{0%{box-shadow:0 0 0 2px rgba(255,138,61,.45),0 6px 16px rgba(0,0,0,.6),inset 0 0 0 6px rgba(255,255,255,.03),inset 0 0 0 12px rgba(0,0,0,.25);}
+  50%{box-shadow:0 0 0 2px rgba(255,138,61,.8),0 6px 16px rgba(0,0,0,.6),inset 0 0 0 6px rgba(255,255,255,.06),inset 0 0 0 12px rgba(0,0,0,.25);}
+  100%{box-shadow:0 0 0 2px rgba(255,138,61,.45),0 6px 16px rgba(0,0,0,.6),inset 0 0 0 6px rgba(255,255,255,.03),inset 0 0 0 12px rgba(0,0,0,.25);}}
+.bpHeroInfo{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;text-align:left;}
+.bpHeroTop{display:flex;align-items:center;justify-content:space-between;gap:6px;}
+.bpHeroTop b{font-size:15px;font-weight:800;}
+.bpDays{display:flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:999px;background:rgba(255,255,255,.07);white-space:nowrap;}
+.bpDays .gicon{width:12px;height:12px;}
+.bpBar{position:relative;height:16px;border-radius:999px;background:rgba(0,0,0,.4);overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,.6);}
+.bpBar i{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:linear-gradient(90deg,#ff8a3d,#ffd24a);box-shadow:0 0 10px rgba(255,180,80,.6);transition:width .5s ease;}
+.bpBar span{position:relative;display:block;text-align:center;font-size:10px;font-weight:800;line-height:16px;text-shadow:0 1px 2px rgba(0,0,0,.8);}
+.bpNext{font-size:10.5px;opacity:.7;}
+
+/* Altın bilet: kenarlarda bilet çentikleri */
+.bpTicket{display:flex;align-items:center;gap:10px;width:100%;padding:9px 12px 9px 14px;border-radius:12px;position:relative;
+  background:linear-gradient(110deg,#3a2608,#6b4512 45%,#3a2608);border:1px solid rgba(255,210,74,.55);
+  box-shadow:0 0 18px -6px rgba(255,210,74,.6);
+  -webkit-mask:radial-gradient(circle 8px at 0 50%,#0000 98%,#000) left/51% 100% no-repeat,radial-gradient(circle 8px at 100% 50%,#0000 98%,#000) right/51% 100% no-repeat;
+          mask:radial-gradient(circle 8px at 0 50%,#0000 98%,#000) left/51% 100% no-repeat,radial-gradient(circle 8px at 100% 50%,#0000 98%,#000) right/51% 100% no-repeat;}
+.bpTicket::before{content:'';position:absolute;left:46px;top:6px;bottom:6px;border-left:1.5px dashed rgba(255,210,74,.45);}
+.bpTicketIc{width:30px;flex:none;display:flex;justify-content:center;}
+.bpTicketIc .gicon{width:24px;height:24px;color:#ffd24a;filter:drop-shadow(0 0 6px rgba(255,210,74,.7));}
+.bpTicketTxt{flex:1;min-width:0;text-align:left;font-size:11px;line-height:1.3;color:#ffeac0;padding-left:8px;}
+.bpTicketTxt b{display:block;font-family:var(--font-display);font-size:12px;letter-spacing:1.5px;color:#ffd24a;}
+.bpTicket .btn.small{flex:none;padding:7px 11px;font-size:11.5px;}
+.bpTicket.active{background:linear-gradient(110deg,#203a12,#3d6b1d 45%,#203a12);border-color:rgba(127,232,168,.55);}
+.bpTicket.active .bpTicketTxt b{color:#9ff5c2;}
+
+.bpCols{display:grid;grid-template-columns:1fr 64px 1fr;width:100%;font-family:var(--font-display);font-size:9.5px;letter-spacing:1.4px;opacity:.75;margin-top:2px;}
+.bpCols span{text-align:center;} .bpCols .prem{color:#ffd24a;}
+
+/* Ödül hattı */
+.bpTrack{display:flex;flex-direction:column;width:100%;}
+.bpRow{display:grid;grid-template-columns:1fr 64px 1fr;align-items:center;min-height:66px;}
+.bpNode{position:relative;height:100%;min-height:66px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;}
+.bpRail{position:absolute;left:50%;top:-50%;bottom:50%;width:4px;transform:translateX(-50%);background:rgba(255,255,255,.08);border-radius:2px;}
+.bpRow:first-child .bpRail{display:none;}
+.bpRail i{position:absolute;left:0;right:0;top:0;background:linear-gradient(180deg,#ff8a3d,#ffd24a);border-radius:2px;box-shadow:0 0 8px rgba(255,180,80,.6);}
+.bpRow::after{content:'';}
+.bpDiscN{position:relative;z-index:1;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(circle,#3a3330 0 8px,#141110 8.5px 100%);box-shadow:0 0 0 2px rgba(255,255,255,.12),inset 0 0 0 5px rgba(255,255,255,.03);}
+.bpDiscN b{font-family:var(--font-display);font-size:12px;color:rgba(255,255,255,.55);}
+.bpNode small{position:relative;z-index:1;font-size:8.5px;font-weight:700;opacity:.55;}
+.bpRow.reached .bpDiscN{background:radial-gradient(circle,#d9552f 0 8px,#1a1210 8.5px 100%);box-shadow:0 0 0 2px #ffb054,0 0 12px rgba(255,160,70,.6);}
+.bpRow.reached .bpDiscN b{color:#fff;}
+.bpRow.current .bpDiscN{box-shadow:0 0 0 2px rgba(255,255,255,.35);animation:bpCur 1.8s ease-in-out infinite;}
+@keyframes bpCur{50%{box-shadow:0 0 0 3px rgba(255,210,74,.7),0 0 14px rgba(255,210,74,.5);}}
+.bpReward{position:relative;display:flex;align-items:center;justify-content:center;gap:5px;height:44px;margin:0 2px;border-radius:12px;
+  font:inherit;font-size:12.5px;font-weight:800;color:#eaf2ff;cursor:pointer;
+  background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.08);}
+.bpReward .bpAmt{display:flex;align-items:center;gap:4px;}
+.bpReward .bpAmt .gicon{width:15px;height:15px;}
+.bpCos .gicon{width:15px;height:15px;color:#ff9ad5;}
+.bpReward.premium{background:linear-gradient(180deg,rgba(255,210,74,.12),rgba(255,210,74,.03));border-color:rgba(255,210,74,.28);color:#ffe9b0;}
+.bpState{position:absolute;top:-7px;right:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-size:9.5px;font-weight:900;letter-spacing:.4px;}
+.bpState .gicon{width:11px;height:11px;}
+.bpState.ok{background:#3fbf6a;color:#06200f;}
+.bpState.lk{background:rgba(20,16,14,.9);color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.15);}
+.bpState.go{background:linear-gradient(180deg,#ff5a4a,#e0201a);color:#fff;border:2px solid #1a0a06;box-shadow:0 2px 8px rgba(224,32,26,.6);}
+.bpReward.locked{opacity:.55;}
+.bpReward.claimed{opacity:.6;}
+.bpReward.claimed .bpAmt{text-decoration:line-through;text-decoration-color:rgba(255,255,255,.35);}
+.bpReward.claimable{opacity:1;border-color:#7fe8ff;background:linear-gradient(180deg,rgba(127,232,255,.25),rgba(127,232,255,.08));
+  box-shadow:0 0 14px -2px rgba(127,232,255,.6);animation:bpClaim 1.4s ease-in-out infinite;}
+.bpReward.premium.claimable{border-color:#ffd24a;background:linear-gradient(180deg,rgba(255,210,74,.35),rgba(255,210,74,.1));box-shadow:0 0 14px -2px rgba(255,210,74,.7);}
+@keyframes bpClaim{50%{transform:scale(1.04);}}
+.bpReward:active:not(:disabled){transform:scale(.95);}
+.bpHow{font-size:10.5px;opacity:.6;text-align:center;line-height:1.35;margin:10px 8px 4px;}

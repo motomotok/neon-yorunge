@@ -61,7 +61,10 @@ document.getElementById('pauseBtn').addEventListener('click', e=>{ e.stopPropaga
 document.getElementById('tutorialSkipBtn').addEventListener('click', e=>{ e.stopPropagation(); if(typeof tutorialSkip==='function') tutorialSkip(); });
 document.getElementById('soundSw').addEventListener('click', ()=>{ cfg.sound=!cfg.sound; saveCfg(); syncSettings(); if(cfg.sound) beep(700,0.08,'sine',0.12); });
 document.getElementById('gfxSw').addEventListener('click', ()=>{ setGfxMode(cfg.gfx!=='3d'); beep(600,0.06,'sine',0.1); });
-document.getElementById('gfxQBtn').addEventListener('click', e=>{ e.stopPropagation(); cycleGfxQuality(); beep(550,0.05,'sine',0.08); });
+document.getElementById('gfxAutoRow').addEventListener('click', e=>{ e.preventDefault(); e.stopPropagation();
+  setGfxQuality((cfg.gfxQuality||'auto')==='auto' ? (gfxLiveQuality()||'medium') : 'auto'); beep(600,0.06,'sine',0.1); });
+document.querySelectorAll('#gfxQSeg .gfxQOpt').forEach(b=>b.addEventListener('click', e=>{ e.stopPropagation();
+  setGfxQuality(b.dataset.q); beep(550,0.05,'sine',0.08); }));
 document.getElementById('bigSw').addEventListener('click', ()=>{ cfg.bigButtons=!cfg.bigButtons; saveCfg(); applyAccessibility(); syncSettings(); beep(600,0.06,'sine',0.1); });
 document.getElementById('handSw').addEventListener('click', ()=>{ cfg.leftHand=!cfg.leftHand; saveCfg(); applyAccessibility(); syncSettings(); beep(600,0.06,'sine',0.1); });
 document.getElementById('cbSw').addEventListener('click', ()=>{ cfg.colorblind=!cfg.colorblind; saveCfg(); syncSettings(); beep(600,0.06,'sine',0.1); });
@@ -71,7 +74,7 @@ document.getElementById('cbSw').addEventListener('click', ()=>{ cfg.colorblind=!
 document.querySelectorAll('.toggleGrid .toggle').forEach(row=>{
   row.addEventListener('click', e=>{
     if(e.target.classList.contains('sw')) return;
-    const sw=row.querySelector('.sw, .gfxQBtn'); if(sw) sw.click();
+    const sw=row.querySelector('.sw'); if(sw) sw.click();
   });
 });
 document.getElementById('resetProgressBtn').addEventListener('click', ()=>{ attemptPrestige(); });
