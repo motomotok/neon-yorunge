@@ -67,7 +67,7 @@ function resetGame(){
   // (yüksek bir kombodan) başlatır — kalıcı, sıfırlanmayan bir avantaj.
   combo=1+Math.floor(coreBonus('startCombo'));
   maxHp = mode==='zen' ? 9999 : maxHpFor(); hp = maxHp;
-  level=1; elapsed=0; spawnCooldown=0; threatCd=0; breathT=0; nextBreath=720; shake=0; flash=0; levelFlashT=0;
+  level=1; elapsed=0; spawnCooldown=0; threatCd=150; breathT=0; nextBreath=720; shake=0; flash=0; levelFlashT=0;   // threatCd: tehdit yönetmeni ilk ~2.5 sn bekler
   session = {stars:0, golds:0, diamonds:0, magnets:0, hits:0, shieldSaved:false, streakMax:0,
              coins:0, coinPickups:0, luckyCharges:0, noteMult:1, revivedUsed:false};
   timeLeft = mode==='time' ? 60 : null;
@@ -85,7 +85,8 @@ function resetGame(){
   // dağıtalım (tamamen rastgele bırakılırsa 4'ü de aynı halkaya düşebilir).
   const seedRings=[0,1,2,0];
   for(let i=seedRings.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [seedRings[i],seedRings[j]]=[seedRings[j],seedRings[i]]; }
-  for(let i=0;i<4;i++) spawnItem(player.ang + 1.4 + i*0.95, seedRings[i]);
+  // İlk tohum öğeleri asla cızırtı değil — oyun başlar başlamaz çarpılmasın.
+  for(let i=0;i<4;i++) spawnItem(player.ang + 1.4 + i*0.95, seedRings[i], false, true);
   updateHud();
 }
 
@@ -291,7 +292,7 @@ function spawnBossColumns(){
 // sistemi zaten çakışmasız bir yer bulup buraya iletir); ikisi de
 // verilmezse resetGame()'in ilk tohumlaması için basit bir arama yapar.
 // İkisi de başarıyla yerleştirilip yerleştirilmediğini boolean döner.
-function spawnItem(atAng, atRing, forceHazard){
+function spawnItem(atAng, atRing, forceHazard, safe){
   const zen = mode==='zen';
   // Çekirdek Ağacı'ndaki "Sağlamlık" dalı tehlike ihtimalini kalıcı olarak
   // hafifçe düşürür — %30'la sınırlı, zorluk hep anlamlı kalsın diye.
@@ -321,6 +322,7 @@ function spawnItem(atAng, atRing, forceHazard){
   } else {
     let r=rnd();
     if(session.luckyCharges>0 && r<hazChance){ session.luckyCharges--; r=hazChance; }
+    if((safe || (!forceHazard && elapsed<150)) && r < hazChance) r = 1;   // güvenli tohum / ilk ~2.5 sn: cızırtı yerine nota
     if(r < hazChance){
       type = pickHazardKind();
     } else if(r < hazChance+0.03) type='diamond';
@@ -663,7 +665,7 @@ function update(dt){
       const ix=CX+Math.cos(it.ang)*radiusFor(it.ring), iy=CY+Math.sin(it.ang)*radiusFor(it.ring);
       it.alive=false;
       if(it.type==='diamond'){ combo++; addScore((20+level*4)*mult); session.stars++; session.diamonds++; stats.diamonds++;
-        burst(ix,iy,'#fff4e0',26,6); shake=8; beep(1200,0.1,'triangle',0.15); beep(1600,0.12,'sine',0.12); playMelodyNote(combo,0.12); bumpCombo(); checkStreak(ix,iy,mult); }
+        burst(ix,iy,'#fff4e0',10,3); shake=3; beep(1200,0.1,'triangle',0.15); beep(1600,0.12,'sine',0.12); playMelodyNote(combo,0.12); bumpCombo(); checkStreak(ix,iy,mult); }
       else if(it.type==='star'){ combo++;
         // Yıldızın tam merkezine ne kadar yakın toplandığına göre küçük bir
         // "hassasiyet" küsuratı eklenir (0-0.99) — skorun her zaman anlamlı
@@ -671,7 +673,7 @@ function update(dt){
         // tüm kazanımlar (altın/elmas/parçacık/takviye) tam sayı kalıyor ama
         // toplam zaten bu küsuratı taşımaya devam ediyor.
         addScore(combo*mult + rnd()*0.99); session.stars++;
-        burst(ix,iy,T.star,14,4); shake=3; playMelodyNote(combo,0.16); bumpCombo(); checkStreak(ix,iy,mult);
+        burst(ix,iy,T.star,6,2.4); shake=1.5; playMelodyNote(combo,0.16); bumpCombo(); checkStreak(ix,iy,mult);
         if(it.tutorialTag && typeof tutorialOnItemResolved==='function') tutorialOnItemResolved(it.tutorialTag); }
       else if(it.type==='coin'){
         // Parçacık Değeri yükseltmesi (kalıcı) tabana sabit ek yapar, Nota
@@ -685,7 +687,7 @@ function update(dt){
         // kalıyor ama cüzdana (stats.notes) hiç yansımıyor.
         if(mode!=='zen') addNotes(gained);
         session.coins+=gained; session.coinPickups++;
-        burst(ix,iy,'#ffb454',18,4.5); shake=4; beep(950,0.08,'triangle',0.13); beep(1400,0.06,'sine',0.1);
+        burst(ix,iy,'#ffb454',8,2.8); shake=2; beep(950,0.08,'triangle',0.13); beep(1400,0.06,'sine',0.1);
         if(it.tutorialTag && typeof tutorialOnItemResolved==='function') tutorialOnItemResolved(it.tutorialTag);
       }
       else if(it.type==='heart'){
@@ -761,7 +763,7 @@ function hitHazard(ix,iy,subtype){
     beep(300,0.2,'square',0.14,true); return; }
   const dmg = HAZARD_DAMAGE[subtype]||1;
   hp = Math.max(0, hp-dmg); combo=1; shake=Math.min(20, 8+dmg*1.2); flash=1; session.hits++;
-  burst(ix,iy,T.peril,34,6); beep(120,0.4,'sawtooth',0.2,true); beep(80,0.5,'square',0.15,true); vibrate([40,30,40]);
+  burst(ix,iy,T.peril,22,5); beep(120,0.4,'sawtooth',0.2,true); beep(80,0.5,'square',0.15,true); vibrate([40,30,40]);
   if(hp<=0){
     // Tutorial'da ölüm senaryonun bir parçası — reklamlı "devam et" ekranı
     // (offerRevive) akışı kesip 6 saniyelik bir bekleme dayatır, bu yüzden

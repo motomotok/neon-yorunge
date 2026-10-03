@@ -1,6 +1,6 @@
 {
   "name": "beat-orbit",
-  "version": "2.22.1",
+  "version": "2.23.0",
   "description": "Beat Orbit - tarayıcı tabanlı refleks/arcade oyunu ve Android uygulaması",
   "private": true,
   "scripts": {

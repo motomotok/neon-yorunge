@@ -297,7 +297,6 @@ function updateScratch2D(px,py){
     // Nota toplandı mı?
     if(session.stars>_scr.lastNotes){
       _scr.flare=1;
-      _scr.ripples.push({x:px,y:py,life:1,col:playerColor()});
       _scr.ringFlash[player.targetRing]=1;
     }
   }
