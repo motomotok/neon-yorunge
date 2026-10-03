@@ -550,6 +550,13 @@ function drawItem(x,y,type,sc,t,it){
     ctx.fillStyle='#0a0604'; ctx.beginPath(); ctx.arc(0,0,R*0.1,0,7); ctx.fill();
     ctx.restore();
     }
+  } else if(imgReady(ITEM_IMG[type])){
+    // Can ve takviyeler: görsel; kalp atar, diğerleri hafifçe salınır
+    // (it yoksa — 3D doku üretimi — hareket 3D tarafında yapılır).
+    const pulse = (type==='heart' && it) ? 1+Math.sin(t*5)*0.08 : 1;
+    const bob = (it && type!=='heart') ? Math.sin(t*2.4 + it.ang*3)*R*0.18 : 0;
+    const s = R*1.4*pulse;
+    ctx.drawImage(ITEM_IMG[type], x-s, y-s+bob, s*2, s*2);
   } else if(type==='heart'){
     const pulse=1+Math.sin(t*5)*0.08;
     drawHeartShape(x,y,R*1.15*pulse,col);

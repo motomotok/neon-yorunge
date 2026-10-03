@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.18.2';
+const GAME_VERSION = '2.19.0';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -99,6 +99,10 @@ for(let i=1;i<=16;i++){ const im=new Image(); im.src='img/monsters/monster'+i+'.
 // Toplanabilir öğe görselleri (kullanıcının verdiği): nota ve nota jetonu.
 const ITEM_IMG = {};
 ['note','coin','clef'].forEach(k=>{ const im=new Image(); im.src='img/items/'+k+'.png'; ITEM_IMG[k]=im; });
+// Can ve takviyeler: nota/jeton stilinde parlak, plak/müzik konseptli görseller
+// (kalp, plaklı kalkan, mıknatıs, metronom=yavaşlatma, buzdaki nota=dondurma,
+// x2 madalyon, kulaklıklı hayalet). Anahtar = öğe tipi.
+['heart','shield','magnet','slow','freeze','mult','ghost'].forEach(k=>{ const im=new Image(); im.src='img/items/pw_'+k+'.png'; ITEM_IMG[k]=im; });
 function imgReady(im){ return !!(im && im.complete && im.naturalWidth>0); }
 function playerColor(){
   const sk=SKINS.find(s=>s.id===cfg.skin)||SKINS[0];

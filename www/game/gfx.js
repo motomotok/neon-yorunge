@@ -105,5 +105,6 @@ function paintItem3D(type, cnv){
   if(type==='star') return imgReady(ITEM_IMG.note);
   if(type==='coin') return imgReady(ITEM_IMG.coin);
   if(type==='diamond') return imgReady(ITEM_IMG.clef);
+  if(ITEM_IMG[type]) return imgReady(ITEM_IMG[type]);   // can ve takviyeler
   return true;
 }
