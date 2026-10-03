@@ -107,8 +107,10 @@ function renderRivalLeague(){
     </div>`;
   }).join('');
 }
+// Ayarlar'daki pena seçici kaldırıldı (penalar mağazadan seçiliyor); ızgara
+// yoksa sessizce çık.
 function renderSkins(){
-  const grid=document.getElementById('skinGrid'); grid.innerHTML='';
+  const grid=document.getElementById('skinGrid'); if(!grid) return; grid.innerHTML='';
   SKINS.forEach(sk=>{
     const unlocked=isUnlockedItem('skins', sk);
     const d=document.createElement('div');

@@ -9,7 +9,30 @@ function showScreen(id){
   // Ana menü hariç her ekranda karartma normal (okunaklı); ana menüde
   // arkadaki dönen yörünge görünsün diye çok hafif — "canlı menü".
   overlayEl.classList.toggle('live', id==='menu');
+  requestAnimationFrame(()=>updateScrollCues());
 }
+// "Aşağıda daha fazlası var" göstergesi: kaydırılabilen ekran gövdesinin
+// altında içerik kaldıkça yumuşak bir solma + zıplayan ok görünür; dibe
+// gelince kaybolur. Oka dokunmak bir sayfa aşağı kaydırır.
+function updateScrollCues(){
+  const sc=document.querySelector('.screen.active'); if(!sc) return;
+  const sb=sc.querySelector('.screenBody'); if(!sb) return;
+  let cue=sc.querySelector(':scope > .scrollCue');
+  if(!cue){
+    cue=document.createElement('button'); cue.className='scrollCue'; cue.setAttribute('aria-label','scroll');
+    cue.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+    cue.addEventListener('click', e=>{ e.stopPropagation(); sb.scrollBy({top:sb.clientHeight*0.7, behavior:'smooth'}); });
+    sc.appendChild(cue);
+  }
+  if(!sb._cueBound){ sb._cueBound=true; sb.addEventListener('scroll', ()=>updateScrollCues(), {passive:true}); }
+  const more = sb.scrollHeight - sb.scrollTop - sb.clientHeight > 12;
+  sc.classList.toggle('moreBelow', more);
+  cue.style.top = (sb.offsetTop + sb.clientHeight - 40)+'px';
+  cue.classList.toggle('show', more);
+}
+// İçerik sekmeyle/yeniden çizimle değişebilir — görünür ekranı hafifçe izle.
+setInterval(()=>{ if(document.querySelector('.screen.active')) updateScrollCues(); }, 500);
+window.addEventListener('resize', ()=>updateScrollCues());
 function setHud(on){ document.getElementById('hud').classList.toggle('show', on);
   document.getElementById('hint').style.display = on?'block':'none';
   if(!on) clearPlayOverlays(); }

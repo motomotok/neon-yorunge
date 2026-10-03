@@ -77,10 +77,19 @@ function renderBattlepass(){
     wrap.appendChild(row);
     if(!focusEl && i===reachedN) focusEl=row;
   });
-  // Alınabilir ödüle (yoksa sıradaki kademeye) kaydır.
+  // Açılışta liste, oyuncunun SIRADAKİ ödülünün satırından başlar: önce ilk
+  // alınabilir ödül, yoksa ulaşılacak ilk kademe (hepsi bittiyse son satır).
+  // Ekran geçişi bitince bir kez daha hizalanır (geçiş animasyonu ölçümü
+  // kaydırmasın).
+  const rows=[...wrap.querySelectorAll('.bpRow')];
+  const target = (focusEl && focusEl.closest('.bpRow')) || rows[Math.min(reachedN, rows.length-1)];
   const body=wrap.closest('.screenBody');
-  if(body && focusEl) requestAnimationFrame(()=>{
-    const r=focusEl.getBoundingClientRect(), br=body.getBoundingClientRect();
-    body.scrollTop = Math.max(0, body.scrollTop + (r.top-br.top) - br.height*0.3);
-  });
+  const align=()=>{
+    if(!body || !target) return;
+    const r=target.getBoundingClientRect(), br=body.getBoundingClientRect();
+    body.scrollTop = Math.max(0, body.scrollTop + (r.top-br.top) - 10);
+    if(typeof updateScrollCues==='function') updateScrollCues();
+  };
+  requestAnimationFrame(()=>requestAnimationFrame(align));
+  setTimeout(align, 420);
 }

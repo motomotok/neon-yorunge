@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.33.0';
+const GAME_VERSION = '2.34.0';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -710,6 +710,8 @@ const ACHIEVEMENTS = [
   {id:'combo75', icon:'lightning', nameKey:'ach_combo75_name', descKey:'ach_combo75_desc', reward:400, check:(s,c)=>c.session.streakMax>=75},
   {id:'veteran', icon:'gamepad', nameKey:'ach_veteran_name', descKey:'ach_veteran_desc', reward:300, check:(s)=>s.games>=250},
   {id:'notemogul', icon:'sparkle', nameKey:'ach_notemogul_name', descKey:'ach_notemogul_desc', reward:500, check:(s)=>(s.lifetimeNotes||0)>=25000},
+  {id:'survivor', icon:'hourglass', nameKey:'ach_survivor_name', descKey:'ach_survivor_desc', reward:400, check:(s,c)=>c.mode==='classic' && c.elapsedSec>=300},
+  {id:'clefking', icon:'target', nameKey:'ach_clefking_name', descKey:'ach_clefking_desc', reward:400, check:(s,c)=>(c.session.diamonds||0)>=8},
   {id:'collector', icon:'palette', nameKey:'ach_collector_name', descKey:'ach_collector_desc', reward:200, check:(s)=>Object.values(s.owned).reduce((n,arr)=>n+arr.length,0)>=5},
 ];
 function checkAchievements(c){
