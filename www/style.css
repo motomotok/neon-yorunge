@@ -189,9 +189,6 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
   50%{box-shadow:0 0 16px 0px currentColor;}
 }
 
-.menuSideDock{position:absolute;top:61%;transform:translateY(-50%);display:flex;flex-direction:column;gap:10px;z-index:2;}
-.menuSideDock.left{left:calc(env(safe-area-inset-left) + 10px);}
-.menuSideDock.right{right:calc(env(safe-area-inset-right) + 10px);}
 .menuDockBtn{display:flex;flex-direction:column;align-items:center;gap:4px;background:rgba(5,6,15,.62);
   border:1px solid var(--glass-brd-soft);border-radius:18px;padding:12px 8px;width:66px;color:#eaf2ff;cursor:pointer;
   transition:transform .12s ease,background .15s ease;}
@@ -199,7 +196,6 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
 .menuDockBtn .gicon{width:22px;height:22px;color:var(--star);}
 .menuDockBtn span{font-size:11px;font-weight:600;opacity:.85;white-space:nowrap;}
 /* Ortadaki oda videosu açık kalsın: dock butonları sade, köşe butonları küçük */
-.menuSideDock .menuDockBtn{width:60px;padding:9px 6px;border-radius:16px;background:rgba(5,6,15,.5);}
 .menuCorner{position:absolute;top:calc(env(safe-area-inset-top) + 10px);display:flex;gap:8px;z-index:3;}
 .menuCorner.left{left:calc(env(safe-area-inset-left) + 10px);}
 .menuCorner.right{right:calc(env(safe-area-inset-right) + 10px);}
@@ -218,7 +214,7 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
 }
 .menuDockBtn[data-go="shop"] .gicon{color:var(--gold);}
 
-.menuCenter{position:absolute;top:60%;left:50%;transform:translate(-50%,-50%);z-index:2;
+.menuCenter{position:absolute;top:72%;left:50%;transform:translate(-50%,-50%);z-index:2;
   display:flex;flex-direction:column;align-items:center;gap:10px;}
 .menuStartBtn{width:min(210px,58vw);padding:15px 14px;}
 
@@ -242,7 +238,7 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
 .menuFooter{position:absolute;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom) + 10px);
   display:flex;flex-direction:column;align-items:center;gap:2px;z-index:2;
   text-shadow:0 1px 6px rgba(0,0,0,.85), 0 0 14px rgba(0,0,0,.5);}
-.menuFooter .muted{font-size:11px;opacity:.85;}
+.menuFooter .muted{display:none;}   /* ana ekran sade: alttaki bilgi satırları kaldırıldı, sadece sürüm */
 .menuFooter .versionTag{position:static;margin-top:2px;}
 
 .legend{display:flex;gap:16px 22px;flex-wrap:wrap;justify-content:center;font-size:14px;opacity:.9;}
@@ -939,3 +935,8 @@ body.roomIntro #overlay,body.roomIntro #hud{opacity:0;pointer-events:none;}
 /* Oda menüsünde menü katmanının renkli sisi/lekeleri videoyu bulanıklaştırmasın */
 body.roomMenu #overlay.live{background:none;}
 body.roomMenu #overlay.live::before,body.roomMenu #overlay.live::after{display:none;}
+
+/* Ana menü: Mağaza/İstatistik premium şeridinin iki yanında, Modlar/Nasıl?
+   BAŞLA'nın sol üst / sağ üstünde. */
+.menuTopRow{display:flex;align-items:center;justify-content:center;gap:10px;}
+.menuStartSide{display:flex;justify-content:space-between;width:min(268px,74vw);margin-bottom:-4px;}
