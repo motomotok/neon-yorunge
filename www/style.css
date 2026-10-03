@@ -159,7 +159,7 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
 #screen-menu{max-width:none;width:100%;height:var(--app-h,100vh);max-height:var(--app-h,100vh);padding:0;overflow:hidden;}
 #screen-menu::before,#screen-menu::after{content:none;margin:0;}
 
-.menuTop{position:absolute;top:calc(env(safe-area-inset-top) + 60px);left:16px;right:16px;
+.menuTop{position:absolute;top:calc(env(safe-area-inset-top) + 24px);left:16px;right:16px;
   display:flex;flex-direction:column;align-items:center;gap:8px;z-index:2;}
 .menuTopTitle{font-family:var(--font-display);font-weight:900;font-size:clamp(13px,3.6vw,16px);letter-spacing:1.5px;
   background:linear-gradient(90deg,var(--star),var(--player));-webkit-background-clip:text;background-clip:text;color:transparent;
@@ -196,7 +196,7 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
 .menuDockBtn .gicon{width:22px;height:22px;color:var(--star);}
 .menuDockBtn span{font-size:11px;font-weight:600;opacity:.85;white-space:nowrap;}
 /* Ortadaki oda videosu açık kalsın: dock butonları sade, köşe butonları küçük */
-.menuCorner{position:absolute;top:calc(env(safe-area-inset-top) + 10px);display:flex;gap:8px;z-index:3;}
+.menuCorner{position:absolute;top:calc(env(safe-area-inset-top) + 10px);display:grid;grid-template-columns:repeat(2,50px);gap:8px;z-index:3;}
 .menuCorner.left{left:calc(env(safe-area-inset-left) + 10px);}
 .menuCorner.right{right:calc(env(safe-area-inset-right) + 10px);}
 .menuDockBtn.mini{width:50px;padding:7px 3px 6px;gap:3px;border-radius:14px;background:rgba(5,6,15,.42);}
@@ -936,7 +936,7 @@ body.roomIntro #overlay,body.roomIntro #hud{opacity:0;pointer-events:none;}
 body.roomMenu #overlay.live{background:none;}
 body.roomMenu #overlay.live::before,body.roomMenu #overlay.live::after{display:none;}
 
-/* Ana menü: Mağaza/İstatistik premium şeridinin iki yanında, Modlar/Nasıl?
-   BAŞLA'nın sol üst / sağ üstünde. */
 .menuTopRow{display:flex;align-items:center;justify-content:center;gap:10px;}
-.menuStartSide{display:flex;justify-content:space-between;width:min(268px,74vw);margin-bottom:-4px;}
+/* Başlık iki köşe grubunun arasında; para/güç göstergeleri 2x2 köşe
+   butonlarının altından başlar (büyük sayılarda çakışmasın). */
+.menuTop .menuTopStats{margin-top:64px;}
