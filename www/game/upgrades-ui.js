@@ -143,6 +143,19 @@ function coreTreeLayout(){
   lines.push({x1:CORE_CX,y1:CORE_CY+CORE_RING_R,x2:capX,y2:capY,to:'core_capstone',ring:true});
   return {nodes, lines};
 }
+// Ağaç sabit en-boy oranlı (580/610); kısa ekranlarda (Safari çubukları,
+// küçük iPhone'lar) kaydırma olmadan sığsın diye genişliği eldeki
+// yüksekliğe göre küçültülür.
+function fitCoreTree(){
+  const stage=document.querySelector('#coreTreeWrap .coreTreeStage');
+  const body=document.querySelector('#screen-upgrades .screenBody');
+  if(!stage || !body || !body.clientHeight) return;
+  const line=document.querySelector('#coreTreeWrap .coreProgressLine');
+  const avail=body.clientHeight - (line ? line.offsetHeight : 0) - 12;
+  const w=Math.max(220, Math.min(body.clientWidth, 380, avail*580/610));
+  stage.style.width=w+'px';
+}
+window.addEventListener('resize', ()=>{ if(upgradesTab==='core') fitCoreTree(); });
 function renderCoreTree(){
   const wrap=document.getElementById('coreTree'); if(!wrap) return;
   const ownedCount=(stats.coreUnlocked||[]).length, total=CORE_TREE.length;
@@ -177,6 +190,7 @@ function renderCoreTree(){
   });
 
   wrap.innerHTML = `<div class="coreTreeStage">${svg}<div class="coreTreeNodes">${overlay}</div></div>`;
+  fitCoreTree();
   wrap.querySelectorAll('[data-core-id]').forEach(el=>{
     el.addEventListener('click', ()=>openCoreInfo(el.dataset.coreId));
   });

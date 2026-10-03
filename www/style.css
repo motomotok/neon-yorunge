@@ -465,6 +465,10 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
 .tutorialTarget{position:relative;z-index:41;outline:3px solid var(--star);outline-offset:3px;
   border-radius:16px;animation:tutorialTargetPulse 1.1s ease-in-out infinite;}
 @keyframes tutorialTargetPulse{0%,100%{box-shadow:0 0 0 0 rgba(84,224,255,.55);}50%{box-shadow:0 0 0 10px rgba(84,224,255,0);}}
+/* Kaydırılan alanların içindeki kartlarda çerçeve dışa taşmasın/kesilmesin:
+   çizgi ve nabız kartın İÇİNDE. */
+.shopCard.tutorialTarget,.coreNode.tutorialTarget{outline-offset:-3px;animation-name:tutorialTargetPulseIn;}
+@keyframes tutorialTargetPulseIn{0%,100%{box-shadow:inset 0 0 0 0 rgba(84,224,255,.5);}50%{box-shadow:inset 0 0 14px 2px rgba(84,224,255,.45);}}
 .tutorialDim{opacity:.3;pointer-events:none;filter:grayscale(.5);transition:opacity .2s;}
 
 
@@ -668,6 +672,24 @@ body.left-hand .hudTop{flex-direction:row-reverse;}
 .shopCard .price.lockreq{color:#8f97b5;font-size:10.5px;}
 .shopCard .bdesc{font-size:10.5px;color:#8f97b5;line-height:1.4;min-height:26px;}
 .shopCard .ownedTag{font-size:10px;opacity:.6;}
+/* Yetenekler > Kademe: kartlar yatay ve kompakt (simge solda, metin
+   sağda) — 6 kart iPhone'da (Safari çubuklarıyla ~715px) tek ekrana
+   kaydırmadan sığar. */
+#upgradesGrid{grid-template-columns:repeat(2,1fr);gap:8px;}
+#upgradesGrid .shopCard{display:grid;grid-template-columns:34px 1fr;grid-template-rows:auto auto auto;
+  column-gap:8px;row-gap:2px;align-items:center;text-align:left;padding:9px 10px 9px 8px;}
+#upgradesGrid .shopCard .boostIcon{grid-row:1 / span 3;font-size:24px;align-self:center;justify-self:center;}
+#upgradesGrid .shopCard .cn{font-size:12px;text-align:left;line-height:1.2;}
+#upgradesGrid .shopCard .bdesc{font-size:9.5px;line-height:1.3;min-height:0;}
+#upgradesGrid .shopCard .price{font-size:11px;}
+#screen-upgrades #upgradesSubText{font-size:12.5px;line-height:1.4;margin:0;}
+@media (max-height:640px){
+  #screen-upgrades #upgradesSubText{display:none;}
+  #screen-upgrades h2{font-size:22px;}
+  #screen-upgrades .walletBig{font-size:17px;padding-top:5px;padding-bottom:5px;}
+  #screen-upgrades .screenHead{gap:6px;}
+  #upgradesGrid .shopCard{padding-top:7px;padding-bottom:7px;}
+}
 .boostCard .boostIcon{font-size:30px;filter:drop-shadow(0 0 8px rgba(120,180,255,.4));}
 
 .bpGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;width:100%;}
@@ -715,3 +737,6 @@ h1 .gicon,h2 .gicon{color:var(--star);}
   .theme:hover,.modeCard:hover,.shopCard:hover,.acctCard:hover{border-color:var(--glass-brd);}
   .stab:hover{opacity:.9;}
 }
+
+/* Nasıl Oynanır > Takviyeler: açıklama metni (hasar sayıları gibi büyük değil). */
+#screen-howto .row .v.vtxt{font-family:var(--font-ui);font-size:12px;font-weight:600;color:#c9cfda;text-align:right;max-width:58%;line-height:1.3;}
