@@ -97,7 +97,7 @@
     <!-- Köşeler (2x2): sol üst Seri/Sezon + Mağaza/Nasıl?, sağ üst Dil/Ayarlar + Modlar/İstatistik -->
     <div class="menuCorner left">
       <button class="menuDockBtn mini" id="loginStreakDockBtn" data-go="loginstreak"><i class="gicon" data-icon="calendar"></i><span data-i18n="nav_loginstreak">Seri</span></button>
-      <button class="menuDockBtn mini" data-go="battlepass"><i class="gicon" data-icon="ticket"></i><span data-i18n="nav_season">Sezon</span></button>
+      <button class="menuDockBtn mini" id="seasonDockBtn" data-go="battlepass"><i class="gicon" data-icon="ticket"></i><span data-i18n="nav_season">Sezon</span></button>
       <button class="menuDockBtn mini" data-go="shop"><i class="gicon" data-icon="cart"></i><span data-i18n="nav_shop">Mağaza</span></button>
       <button class="menuDockBtn mini" data-go="howto"><i class="gicon" data-icon="book"></i><span data-i18n="nav_howto">Nasıl?</span></button>
     </div>
@@ -146,32 +146,71 @@
     <div class="screenHead">
       <h2 data-i18n="howto_title">Nasıl Oynanır</h2>
     </div>
-    <div class="screenBody">
-    <div class="card">
-      <b>✅ <span data-i18n="howto_collect_title">Topla</span></b>
-      <div class="row"><span class="k"><canvas class="howtoIcon" width="30" height="30" data-type="star"></canvas> <span data-i18n="legend_star">Yıldız</span></span><span class="v" data-i18n="howto_star_v">Kombo kadar puan</span></div>
-      <div class="row"><span class="k"><canvas class="howtoIcon" width="30" height="30" data-type="diamond"></canvas> <span data-i18n="legend_diamond">Sol Anahtarı</span></span><span class="v" data-i18n="howto_diamond_v">20+ puan</span></div>
-      <div class="row"><span class="k"><canvas class="howtoIcon" width="30" height="30" data-type="particle"></canvas> <span data-i18n="howto_particle_row">Nota Parçacığı</span></span><span class="v" data-i18n="howto_particle_v">Nota kazandırır</span></div>
-      <div class="row"><span class="k"><canvas class="howtoIcon" width="30" height="30" data-type="heartItem"></canvas> <span data-i18n="legend_heart">Can</span></span><span class="v" data-i18n="howto_heart_v">+1 can</span></div>
-    </div>
-    <div class="card">
-      <b>⚠️ <span data-i18n="howto_avoid_title">Kaçın</span></b>
-      <div class="row"><span class="k"><canvas class="howtoIcon" width="30" height="30" data-type="hazard"></canvas> <span class="hzName"><span data-i18n="glitch_red_name">Kırmızı Cızırtı</span><small data-i18n="glitch_red_desc"></small></span></span><span class="v">-1</span></div>
-      <div class="row"><span class="k"><canvas class="howtoIcon" width="30" height="30" data-type="hazardJump"></canvas> <span class="hzName"><span data-i18n="glitch_blue_name">Mavi Cızırtı</span><small data-i18n="glitch_blue_desc"></small></span></span><span class="v">-1</span></div>
-      <div class="row"><span class="k"><canvas class="howtoIcon" width="30" height="30" data-type="hazardBomb"></canvas> <span class="hzName"><span data-i18n="glitch_green_name">Yeşil Cızırtı</span><small data-i18n="glitch_green_desc"></small></span></span><span class="v">-2</span></div>
-      <div class="row"><span class="k"><canvas class="howtoIcon" width="30" height="30" data-type="hazardPull"></canvas> <span class="hzName"><span data-i18n="glitch_yellow_name">Sarı Cızırtı</span><small data-i18n="glitch_yellow_desc"></small></span></span><span class="v">-3</span></div>
-      <div class="row"><span class="k"><canvas class="howtoIcon" width="30" height="30" data-type="hazardTwin"></canvas> <span class="hzName"><span data-i18n="glitch_purple_name">Mor Cızırtı</span><small data-i18n="glitch_purple_desc"></small></span></span><span class="v">-4</span></div>
-      <div class="row"><span class="k"><canvas class="howtoIcon" width="30" height="30" data-type="hazardPulse"></canvas> <span class="hzName"><span data-i18n="glitch_orange_name">Turuncu Cızırtı</span><small data-i18n="glitch_orange_desc"></small></span></span><span class="v">-6</span></div>
-      <div class="row"><span class="k"><canvas class="howtoIcon" width="30" height="30" data-type="hazardCreep"></canvas> <span class="hzName"><span data-i18n="glitch_pink_name">Pembe Cızırtı</span><small data-i18n="glitch_pink_desc"></small></span></span><span class="v">-10</span></div>
-    </div>
-    <div class="card">
-      <b>⚡ <span data-i18n="howto_powerups_title2">Güç-yükseltmeleri</span></b>
-      <div class="row"><span class="k"><canvas class="howtoIcon" width="30" height="30" data-type="pwShield"></canvas> <span data-i18n="boost_shield_row">Kalkan</span></span><span class="v vtxt" data-i18n="boost_shield_v">1 çarpışmayı emer</span></div>
-      <div class="row"><span class="k"><canvas class="howtoIcon" width="30" height="30" data-type="pwSlow"></canvas> <span data-i18n="boost_slow_row">Yavaşlatma</span></span><span class="v vtxt" data-i18n="boost_slow_v">Orbu yavaşlatır</span></div>
-      <div class="row"><span class="k"><canvas class="howtoIcon" width="30" height="30" data-type="pwMagnet"></canvas> <span data-i18n="boost_magnet_row">Mıknatıs</span></span><span class="v vtxt" data-i18n="boost_magnet_v">Yıldızları çeker</span></div>
-      <div class="row"><span class="k"><canvas class="howtoIcon" width="30" height="30" data-type="pwMult"></canvas> <span data-i18n="boost_mult_row">Çarpan</span></span><span class="v vtxt" data-i18n="boost_mult_v">Puan ×2</span></div>
-    </div>
-    <div class="sub" data-i18n="howto_modes_hint">Mod Seç ekranından Klasik / Zaman Yarışı / Zen / Günlük modları ve zorluk seç.</div>
+    <div class="screenBody htBody">
+      <!-- Kontrol şeması: pena iç/dış halka arasında gidip gelir, hangi
+           tarafa dokunulduğu eşzamanlı yanar. -->
+      <div class="htHero">
+        <svg class="htDisc" viewBox="0 0 300 150" aria-hidden="true">
+          <defs>
+            <radialGradient id="htVinyl" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#2a2522"/><stop offset=".6" stop-color="#121010"/><stop offset="1" stop-color="#060505"/></radialGradient>
+            <radialGradient id="htLbl" cx="45%" cy="40%" r="60%"><stop offset="0" stop-color="#e2583a"/><stop offset="1" stop-color="#8f2414"/></radialGradient>
+            <linearGradient id="htSheen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".09"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+          </defs>
+          <ellipse cx="150" cy="78" rx="128" ry="64" fill="url(#htVinyl)" stroke="#ff8a3d" stroke-opacity=".55" stroke-width="1.5"/>
+          <g class="htGrooves" fill="none" stroke="#fff" stroke-opacity=".06"><ellipse cx="150" cy="78" rx="112" ry="56"/><ellipse cx="150" cy="78" rx="98" ry="49"/><ellipse cx="150" cy="78" rx="84" ry="42"/><ellipse cx="150" cy="78" rx="70" ry="35"/></g>
+          <ellipse class="htRing in" cx="150" cy="78" rx="56" ry="28"/>
+          <ellipse class="htRing mid" cx="150" cy="78" rx="82" ry="41"/>
+          <ellipse class="htRing out" cx="150" cy="78" rx="108" ry="54"/>
+          <ellipse cx="150" cy="78" rx="128" ry="64" fill="url(#htSheen)"/>
+          <ellipse cx="150" cy="78" rx="26" ry="13" fill="url(#htLbl)"/>
+          <circle cx="150" cy="78" r="2.4" fill="#1a0d08"/>
+          <g class="htPena"><path d="M0,-9 C7,-9 9,-4 7,1 C5,6 2,10 0,12 C-2,10 -5,6 -7,1 C-9,-4 -7,-9 0,-9Z" fill="#2fe6c4" stroke="#bffff2" stroke-width="1"/></g>
+        </svg>
+        <div class="htTaps">
+          <div class="htTap L"><span class="htTapDot"></span><b data-i18n="ht_tap_left">SOLA DOKUN</b><small data-i18n="ht_inner">iç halkaya geç</small></div>
+          <div class="htTap R"><span class="htTapDot"></span><b data-i18n="ht_tap_right">SAĞA DOKUN</b><small data-i18n="ht_outer">dış halkaya geç</small></div>
+        </div>
+        <p class="htLead" data-i18n="ht_lead"></p>
+      </div>
+
+      <div class="htSide">
+        <div class="htSideHead"><span class="htSideTag">A</span><span class="htSideLbl" data-i18n="ht_side_a">A YÜZÜ</span><span class="htSideTitle good" data-i18n="howto_collect_title">Topla</span></div>
+        <div class="htTrack"><span class="htNo">A1</span><canvas class="howtoIcon" width="34" height="34" data-type="star"></canvas><span class="htName"><span data-i18n="legend_star"></span></span><span class="htVal good" data-i18n="howto_star_v"></span></div>
+        <div class="htTrack"><span class="htNo">A2</span><canvas class="howtoIcon" width="34" height="34" data-type="diamond"></canvas><span class="htName"><span data-i18n="legend_diamond"></span></span><span class="htVal good" data-i18n="howto_diamond_v"></span></div>
+        <div class="htTrack"><span class="htNo">A3</span><canvas class="howtoIcon" width="34" height="34" data-type="particle"></canvas><span class="htName"><span data-i18n="howto_particle_row"></span></span><span class="htVal good" data-i18n="howto_particle_v"></span></div>
+        <div class="htTrack"><span class="htNo">A4</span><canvas class="howtoIcon" width="34" height="34" data-type="heartItem"></canvas><span class="htName"><span data-i18n="legend_heart"></span></span><span class="htVal good" data-i18n="howto_heart_v"></span></div>
+      </div>
+
+      <div class="htSide">
+        <div class="htSideHead"><span class="htSideTag b">B</span><span class="htSideLbl" data-i18n="ht_side_b">B YÜZÜ</span><span class="htSideTitle bad" data-i18n="howto_avoid_title">Kaçın</span></div>
+        <div class="htTrack"><span class="htNo">B1</span><canvas class="howtoIcon" width="34" height="34" data-type="hazard"></canvas><span class="htName"><span data-i18n="glitch_red_name"></span><small data-i18n="glitch_red_desc"></small></span><span class="htVal bad">-1</span></div>
+        <div class="htTrack"><span class="htNo">B2</span><canvas class="howtoIcon" width="34" height="34" data-type="hazardJump"></canvas><span class="htName"><span data-i18n="glitch_blue_name"></span><small data-i18n="glitch_blue_desc"></small></span><span class="htVal bad">-1</span></div>
+        <div class="htTrack"><span class="htNo">B3</span><canvas class="howtoIcon" width="34" height="34" data-type="hazardBomb"></canvas><span class="htName"><span data-i18n="glitch_green_name"></span><small data-i18n="glitch_green_desc"></small></span><span class="htVal bad">-2</span></div>
+        <div class="htTrack"><span class="htNo">B4</span><canvas class="howtoIcon" width="34" height="34" data-type="hazardPull"></canvas><span class="htName"><span data-i18n="glitch_yellow_name"></span><small data-i18n="glitch_yellow_desc"></small></span><span class="htVal bad">-3</span></div>
+        <div class="htTrack"><span class="htNo">B5</span><canvas class="howtoIcon" width="34" height="34" data-type="hazardTwin"></canvas><span class="htName"><span data-i18n="glitch_purple_name"></span><small data-i18n="glitch_purple_desc"></small></span><span class="htVal bad">-4</span></div>
+        <div class="htTrack"><span class="htNo">B6</span><canvas class="howtoIcon" width="34" height="34" data-type="hazardPulse"></canvas><span class="htName"><span data-i18n="glitch_orange_name"></span><small data-i18n="glitch_orange_desc"></small></span><span class="htVal bad">-6</span></div>
+        <div class="htTrack"><span class="htNo">B7</span><canvas class="howtoIcon" width="34" height="34" data-type="hazardCreep"></canvas><span class="htName"><span data-i18n="glitch_pink_name"></span><small data-i18n="glitch_pink_desc"></small></span><span class="htVal bad">-10</span></div>
+      </div>
+
+      <div class="htSide">
+        <div class="htSideHead"><span class="htSideTag c"><i class="gicon" data-icon="lightning"></i></span><span class="htSideLbl" data-i18n="ht_bonus">BONUS PARÇALAR</span><span class="htSideTitle pw" data-i18n="howto_powerups_title2">Güç-yükseltmeleri</span></div>
+        <div class="htTrack"><span class="htNo">★</span><canvas class="howtoIcon" width="34" height="34" data-type="pwShield"></canvas><span class="htName"><span data-i18n="boost_shield_row"></span></span><span class="htVal pw" data-i18n="boost_shield_v"></span></div>
+        <div class="htTrack"><span class="htNo">★</span><canvas class="howtoIcon" width="34" height="34" data-type="pwSlow"></canvas><span class="htName"><span data-i18n="boost_slow_row"></span></span><span class="htVal pw" data-i18n="boost_slow_v"></span></div>
+        <div class="htTrack"><span class="htNo">★</span><canvas class="howtoIcon" width="34" height="34" data-type="pwMagnet"></canvas><span class="htName"><span data-i18n="boost_magnet_row"></span></span><span class="htVal pw" data-i18n="boost_magnet_v"></span></div>
+        <div class="htTrack"><span class="htNo">★</span><canvas class="howtoIcon" width="34" height="34" data-type="pwMult"></canvas><span class="htName"><span data-i18n="boost_mult_row"></span></span><span class="htVal pw" data-i18n="boost_mult_v"></span></div>
+      </div>
+
+      <div class="htSide liner">
+        <div class="htSideHead"><span class="htSideTag d"><i class="gicon" data-icon="book"></i></span><span class="htSideLbl" data-i18n="ht_liner">KAPAK NOTLARI</span></div>
+        <div class="htBoss"><i class="gicon" data-icon="flame"></i><div><b data-i18n="ht_boss_title">Boss Dalgası</b><p data-i18n="ht_boss_text"></p></div></div>
+        <div class="htModes">
+          <div class="htMode"><i class="gicon" data-icon="orbit"></i><b data-i18n="mode_classic_name">Klasik</b><small data-i18n="mode_classic_desc"></small></div>
+          <div class="htMode"><i class="gicon" data-icon="clock"></i><b data-i18n="mode_time_name">Zaman Yarışı</b><small data-i18n="mode_time_desc"></small></div>
+          <div class="htMode"><i class="gicon" data-icon="moon"></i><b data-i18n="mode_zen_name">Zen</b><small data-i18n="mode_zen_desc"></small></div>
+          <div class="htMode"><i class="gicon" data-icon="calendar"></i><b data-i18n="mode_daily_name">Günlük</b><small data-i18n="mode_daily_desc"></small></div>
+        </div>
+        <p class="htTip"><i class="gicon" data-icon="sparkle"></i> <span data-i18n="ht_tip"></span></p>
+      </div>
     </div>
     <div class="screenFoot">
       <button class="btn alt small" data-go="menu"><i class="gicon" data-icon="back"></i> <span data-i18n="btn_back">Geri</span></button>
@@ -191,8 +230,22 @@
         <div class="toggle"><span data-i18n="toggle_big">Büyük Butonlar</span> <div class="sw" id="bigSw"></div></div>
         <div class="toggle"><span data-i18n="toggle_hand">Sol El Modu</span> <div class="sw" id="handSw"></div></div>
         <div class="toggle"><span data-i18n="toggle_cb">Renk Körü Simgeler</span> <div class="sw" id="cbSw"></div></div>
-        <div class="toggle"><span data-i18n="toggle_gfx3d">3D Grafik</span> <div class="sw" id="gfxSw"></div></div>
-        <div class="toggle" id="gfxQRow"><span data-i18n="gfx_quality">Grafik Kalitesi</span> <button class="gfxQBtn" id="gfxQBtn">Otomatik</button></div>
+        <div class="toggle wide"><span data-i18n="toggle_gfx3d">3D Grafik</span> <div class="sw" id="gfxSw"></div></div>
+      </div>
+      <!-- Grafik kalitesi: "Otomatik" açıkken oyun cihaza göre seçer ve seçtiği
+           seviye aşağıda işaretli görünür; oyuncu bir seviyeye dokunursa
+           Otomatik kapanır ve o seviye sabitlenir. -->
+      <div class="gfxQCard" id="gfxQRow">
+        <div class="gfxQHead">
+          <span class="gfxQTitle"><i class="gicon" data-icon="sparkle"></i> <span data-i18n="gfx_quality">Grafik Kalitesi</span></span>
+          <label class="gfxQAuto" id="gfxAutoRow"><span data-i18n="gfx_q_auto">Otomatik</span> <div class="sw" id="gfxAutoSw"></div></label>
+        </div>
+        <div class="gfxQSeg" id="gfxQSeg">
+          <button class="gfxQOpt" data-q="low"><span class="bars"><i></i></span><span data-i18n="gfx_q_low">Düşük</span></button>
+          <button class="gfxQOpt" data-q="medium"><span class="bars"><i></i><i></i></span><span data-i18n="gfx_q_medium">Orta</span></button>
+          <button class="gfxQOpt" data-q="high"><span class="bars"><i></i><i></i><i></i></span><span data-i18n="gfx_q_high">Yüksek</span></button>
+        </div>
+        <div class="gfxQHint" id="gfxQHint"></div>
       </div>
       <div class="acctRow" id="acctRow">
         <div class="acctCard" id="playGamesCard">
@@ -308,14 +361,25 @@
   <div class="screen fullpin" id="screen-battlepass">
     <div class="screenHead">
       <h2><i class="gicon" data-icon="ticket"></i> <span data-i18n="battlepass_title">Sezon Bileti</span></h2>
-      <div class="sub" id="seasonXpLine">0 XP</div>
-      <div class="card" id="seasonPassCard" style="text-align:center;margin-top:4px;">
-        <div id="seasonPassStatusText" style="font-weight:700;margin-bottom:10px;"><i class="gicon" data-icon="ticket"></i> Premium çizgi ile daha büyük ödüller</div>
-        <button class="btn small" id="seasonPassBuyBtn"><i class="gicon" data-icon="ticket"></i> Sezon Bileti — 29 TL</button>
+      <div class="bpHero">
+        <div class="bpNowDisc"><b id="bpTierNow">0</b><small data-i18n="bp_tier_word">KADEME</small></div>
+        <div class="bpHeroInfo">
+          <div class="bpHeroTop"><b id="bpSeasonName">Sezon 1</b><span class="bpDays" id="bpDays"></span></div>
+          <div class="bpBar"><i id="bpBarFill"></i><span id="bpBarTxt"></span></div>
+          <small class="bpNext" id="bpNextLine"></small>
+        </div>
       </div>
+      <div class="bpTicket" id="seasonPassCard">
+        <div class="bpTicketIc"><i class="gicon" data-icon="ticket"></i></div>
+        <div id="seasonPassStatusText" class="bpTicketTxt"></div>
+        <button class="btn small" id="seasonPassBuyBtn"></button>
+      </div>
+      <div class="bpCols"><span data-i18n="bp_free">ÜCRETSİZ</span><span></span><span class="prem" data-i18n="bp_premium">PREMIUM</span></div>
+      <div class="sub" id="seasonXpLine" style="display:none"></div>
     </div>
     <div class="screenBody">
-      <div class="bpGrid" id="battlepassTiers"></div>
+      <div class="bpTrack" id="battlepassTiers"></div>
+      <p class="bpHow" data-i18n="bp_how"></p>
     </div>
     <div class="screenFoot">
       <button class="btn alt small" data-go="menu"><i class="gicon" data-icon="back"></i> <span data-i18n="btn_back">Geri</span></button>

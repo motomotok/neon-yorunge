@@ -69,15 +69,28 @@ function setGfxMode(on){
   if(on && _gfx3dState==='failed') _gfx3dState='off'; // kullanıcı yeniden denemek isterse
   syncGfxMode(); syncGfxSettings();
 }
-function cycleGfxQuality(){
-  const i=GFX_QUALITIES.indexOf(cfg.gfxQuality||'auto');
-  cfg.gfxQuality=GFX_QUALITIES[(i+1)%GFX_QUALITIES.length]; saveCfg();
-  if(window.Render3D && _gfx3dState==='ready') Render3D.setQuality(cfg.gfxQuality);
+// Kalite: 'auto' (cihaza/FPS'e göre) ya da sabit 'low'|'medium'|'high'.
+function setGfxQuality(q){
+  cfg.gfxQuality=q; saveCfg();
+  if(window.Render3D && _gfx3dState==='ready') Render3D.setQuality(q);
   syncGfxSettings();
+}
+// Otomatik modda o an fiilen kullanılan seviye (3D hazır değilse null).
+function gfxLiveQuality(){
+  return (window.Render3D && _gfx3dState==='ready' && Render3D.info) ? Render3D.info().quality : null;
 }
 function syncGfxSettings(){
   const sw=document.getElementById('gfxSw'); if(sw) sw.classList.toggle('on', cfg.gfx==='3d');
-  const qb=document.getElementById('gfxQBtn'); if(qb) qb.textContent=t('gfx_q_'+(cfg.gfxQuality||'auto'));
+  const auto=(cfg.gfxQuality||'auto')==='auto';
+  const live=gfxLiveQuality();
+  const cur = auto ? live : cfg.gfxQuality;
+  const as=document.getElementById('gfxAutoSw'); if(as) as.classList.toggle('on', auto);
+  document.querySelectorAll('#gfxQSeg .gfxQOpt').forEach(b=>{
+    b.classList.toggle('sel', b.dataset.q===cur);
+    b.classList.toggle('autoPick', auto && b.dataset.q===cur);
+  });
+  const hint=document.getElementById('gfxQHint');
+  if(hint) hint.textContent = cfg.gfx!=='3d' ? t('gfx_q_hint_off') : auto ? t('gfx_q_hint_auto') : t('gfx_q_hint_manual');
   const qr=document.getElementById('gfxQRow'); if(qr) qr.classList.toggle('disabled', cfg.gfx!=='3d');
 }
 
@@ -97,6 +110,8 @@ function renderFrame3D(dt){
   try{ Render3D.render(f); }
   catch(e){ gfx3dFailed(e && e.message); }
   if(state==='menu' && (++_menuAnchorTick % 12)===1) syncMenuAnchors();
+  // Ayarlar açıkken otomatik kalite değişirse işaretli seviye güncellensin.
+  if(state==='settings' && (++_menuAnchorTick % 30)===0) syncGfxSettings();
 }
 
 // Ana menüde "Reklamsız Premium" şeridi pikap kolu (iğne) ile plağın üst

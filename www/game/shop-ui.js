@@ -398,9 +398,21 @@ function renderHowtoIcons(){
     drawHowtoIconShape(cv.getContext('2d'), cv.dataset.type, cv.width);
   });
 }
+// Ana menü rozetleri (Clash Royale tarzı): alınacak bir şey varsa butonun
+// köşesinde kırmızı rozet — oyuncu orada bekleyen bir ödül olduğunu anlasın.
+function setDockBadge(btn, text){
+  if(!btn) return;
+  let b=btn.querySelector('.nBadge');
+  if(!text){ if(b) b.remove(); btn.classList.remove('hasReward'); return; }
+  if(!b){ b=document.createElement('span'); b.className='nBadge'; btn.appendChild(b); }
+  if(b.textContent!==String(text)){ b.textContent=text; b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); }
+  b.classList.toggle('txt', typeof text==='string' && text.length>2);
+  btn.classList.add('hasReward');
+}
 function syncLoginStreakDock(){
-  const btn=document.getElementById('loginStreakDockBtn'); if(!btn) return;
-  btn.classList.toggle('hasReward', !loginRewardClaimedToday());
+  setDockBadge(document.getElementById('loginStreakDockBtn'), loginRewardClaimedToday() ? null : t('badge_claim'));
+  const n = typeof seasonClaimableCount==='function' ? seasonClaimableCount() : 0;
+  setDockBadge(document.getElementById('seasonDockBtn'), n>0 ? String(n) : null);
 }
 
 let pendingPurchase = null;
@@ -580,7 +592,7 @@ function renderBoostsShop(){
   });
 }
 function renderShopTab(){
-  document.querySelectorAll('.stab').forEach(t2=>t2.classList.toggle('sel', t2.dataset.tab===shopTab));
+  document.querySelectorAll('#shopTabs .stab').forEach(t2=>t2.classList.toggle('sel', t2.dataset.tab===shopTab));
   if(shopTab==='boosts') renderBoostsShop(); else renderShopGrid(shopTab);
 }
 function renderBoostRow(){
@@ -617,14 +629,14 @@ function renderThemeGrid(){
     const th=THEMES[key];
     const item = Object.assign({id:key}, th);
     const unlocked = isUnlockedItem('themes', item);
-    const d=document.createElement('div'); d.className='theme'+(!unlocked?' locked':''); d.dataset.key=key;
+    const d=document.createElement('div'); d.className='theme'+(!unlocked?' locked':'')+(key===cfg.theme?' sel':''); d.dataset.key=key;
     const themeIsDeal = !unlocked && stats.dealCategory==='themes' && stats.dealId===key;
     const priceTag = !unlocked
       ? (themeIsDeal
         ? `<div class="price" style="font-size:10.5px;color:#ffd28a;margin-top:2px">${icon('flame')} <s style="opacity:.6">${th.gate.price}</s> ${icon('coin')} ${effectivePrice('themes',item)}</div>`
         : `<div class="price" style="font-size:10.5px;color:#ffd28a;margin-top:2px">${icon('coin')} ${th.gate.price}</div>`)
       : '';
-    d.innerHTML=`<div class="themeLabelPreview"><img src="${themeLabelSrc(key)}" alt=""></div><div class="swatch"><span style="background:${th.star}"></span><span style="background:${th.gold}"></span><span style="background:${th.peril}"></span><span style="background:${th.player}"></span></div><div class="tn">${t(th.nameKey)}</div>${priceTag}`;
+    d.innerHTML=`<div class="themeLabelPreview"><img src="${themeLabelSrc(key)}" alt=""></div><div class="swatch"><span style="background:${th.star}"></span><span style="background:${th.gold}"></span><span style="background:${th.peril}"></span><span style="background:${th.player}"></span></div><div class="tn">${t(th.nameKey)}</div><div class="tsel">${t('theme_selected')}</div>${priceTag}`;
     d.addEventListener('click', ()=>onShopCardClick('themes', item));
     grid.appendChild(d);
   });
