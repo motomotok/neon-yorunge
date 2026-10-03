@@ -232,37 +232,62 @@ function cosmeticItemName(cat, id){
   const item = list.find(i=>i.id===id);
   return item ? item.nameKey : '';
 }
+// Ödülün büyük görseli (plak etiketinde) ve adı.
+function loginRewardHero(r){
+  if(r.type==='notes') return {ic:`<img src="img/items/coin.png" alt="">`, amt:'+'+r.amount, name:t('login_toast_stardust',{amount:r.amount}).replace(/^[^:：]*[:：]\s*/,'')};
+  if(r.type==='boost'){ const b=BOOSTS.find(x=>x.id===r.id); return {ic:icon(b?b.icon:'shield'), amt:'×'+r.amount, name:(b?t(b.nameKey):'')+' ×'+r.amount}; }
+  if(r.type==='cosmetic') return {ic:icon('gift'), amt:'', name:t(cosmeticItemName(r.cat,r.id))};
+  const sk=SKINS.find(x=>x.id===r.id);
+  return {ic:sk&&sk.img?`<img src="${sk.img}" alt="">`:icon('gem'), amt:'', name:t(sk?sk.nameKey:'login_special_badge')};
+}
+let _lsTimer=null;
 function renderLoginStreakScreen(){
-  const grid=document.getElementById('loginStreakGrid'); if(!grid) return;
-  const todayDay = loginCycleDay(), claimedToday = loginRewardClaimedToday();
-  document.getElementById('loginStreakDayText').textContent = t('login_day_of_seven',{n:todayDay, total:LOGIN_STREAK_REWARDS.length});
-  grid.innerHTML='';
-  LOGIN_STREAK_REWARDS.forEach((r,i)=>{
-    const dayNum=i+1;
-    let state;
-    if(dayNum<todayDay || (dayNum===todayDay && claimedToday)) state='claimed';
-    else if(dayNum===todayDay) state='today-ready';
-    else state='locked';
-    const {ic, label} = loginRewardIconLabel(r);
-    const card=document.createElement('div');
-    card.className='loginDayCard '+state;
-    card.dataset.day=dayNum;
-    card.innerHTML = (state==='today-ready' ? `<div class="ldBadge">${t('login_tap_badge')}</div>` : '')
-      + `<div class="ldNum">${t('login_day_short',{n:dayNum})}</div><div class="ldIcon">${state==='claimed'?icon('check'):ic}</div><div class="ldLabel">${label}</div>`;
-    grid.appendChild(card);
+  const A=document.getElementById('lsSideA'), B=document.getElementById('lsSideB'); if(!A||!B) return;
+  const N=LOGIN_STREAK_REWARDS.length, todayDay=loginCycleDay(), claimed=loginRewardClaimedToday();
+  const r=LOGIN_STREAK_REWARDS[todayDay-1], hero=loginRewardHero(r);
+  document.getElementById('lsChip').innerHTML=icon('flame')+' '+t('login_streak_chip',{n:Math.max(1,stats.loginStreak||1)});
+  document.getElementById('lsRewardIc').innerHTML=claimed?icon('check'):hero.ic;
+  document.getElementById('lsRewardAmt').textContent=claimed?'':hero.amt;
+  document.getElementById('lsTodayCap').textContent=claimed?t('login_claimed_today'):t('login_today_reward')+' · '+t('login_day_of_seven',{n:todayDay,total:N});
+  document.getElementById('lsRewardName').textContent=claimed?'':hero.name;
+  const wrap=document.getElementById('lsDiscWrap');
+  wrap.classList.toggle('ready',!claimed); wrap.classList.toggle('done',claimed);
+  const done = todayDay-1+(claimed?1:0);
+  const fg=document.getElementById('lsRingFg'), C=2*Math.PI*56;
+  fg.style.strokeDasharray=C; fg.style.strokeDashoffset=C*(1-done/N);
+  document.getElementById('lsClaimBtn').style.display=claimed?'none':'';
+  updateLoginNext();
+  clearInterval(_lsTimer);
+  if(claimed) _lsTimer=setInterval(()=>{ if(state!=='loginstreak'){ clearInterval(_lsTimer); return; } updateLoginNext(); },1000);
+  A.innerHTML=''; B.innerHTML='';
+  LOGIN_STREAK_REWARDS.forEach((rw,i)=>{
+    const d=i+1;
+    const st = (d<todayDay || (d===todayDay && claimed)) ? 'claimed' : d===todayDay ? 'today' : 'locked';
+    const {ic,label}=loginRewardIconLabel(rw);
+    const el=document.createElement('div');
+    el.className='lsDay '+st+(d%7===0?' milestone':'');
+    el.innerHTML=`<div class="lsDayNum">${d}</div><div class="lsMini"><span>${st==='claimed'?icon('check'):ic}</span></div><div class="lsDayLbl">${label}</div>`;
+    if(st==='today') el.addEventListener('click', claimLoginFromScreen);
+    (d<=7?A:B).appendChild(el);
   });
 }
-document.addEventListener('click', e=>{
-  const card = e.target.closest && e.target.closest('.loginDayCard.today-ready');
-  if(!card) return;
-  const result = claimLoginReward();
-  if(!result) return;
-  card.classList.remove('today-ready'); card.classList.add('claimed','justClaimed');
-  card.innerHTML = `<div class="ldNum">${t('login_day_short',{n:result.day})}</div><div class="ldIcon">${icon('check')}</div><div class="ldLabel"></div>`;
+function updateLoginNext(){
+  const el=document.getElementById('lsNext'); if(!el) return;
+  if(!loginRewardClaimedToday()){ el.textContent=''; return; }
+  const now=new Date(), mid=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1);
+  const s=Math.max(0,Math.floor((mid-now)/1000)), hh=String(Math.floor(s/3600)).padStart(2,'0'), mm=String(Math.floor(s%3600/60)).padStart(2,'0'), ss=String(s%60).padStart(2,'0');
+  el.textContent=t('login_next_in',{t:`${hh}:${mm}:${ss}`});
+}
+function claimLoginFromScreen(){
+  const result=claimLoginReward(); if(!result) return;
+  const wrap=document.getElementById('lsDiscWrap');
+  wrap.classList.add('claiming');
   queueToast(icon('gift')+' '+loginRewardDesc(result.reward));
-  beep(700,0.1,'sine',0.13); beep(1000,0.1,'triangle',0.12);
+  beep(700,0.1,'sine',0.13); beep(1000,0.1,'triangle',0.12); beep(1300,0.12,'sine',0.1);
   syncLoginStreakDock();
-});
+  setTimeout(()=>{ wrap.classList.remove('claiming'); renderLoginStreakScreen(); }, 900);
+}
+document.getElementById('lsClaimBtn').addEventListener('click', e=>{ e.stopPropagation(); claimLoginFromScreen(); });
 // Nasıl Oynanır ekranındaki ikonlar artık boş renkli daireler değil,
 // render.js'teki drawItem()'ın çizdiği GERÇEK oyun-içi şekiller (üçgen/
 // kare/beşgen/altıgen/yıldız siluetleri) — ama TAMAMEN AYRI, kendi küçük
@@ -278,8 +303,6 @@ const HOWTO_ICON_SHAPES = {
   pwSlow:      {kind:'itemImg', key:'slow'},
   pwMagnet:    {kind:'itemImg', key:'magnet'},
   pwMult:      {kind:'itemImg', key:'mult'},
-  pwFreeze:    {kind:'itemImg', key:'freeze'},
-  pwGhost:     {kind:'itemImg', key:'ghost'},
   hazard:      {kind:'img', monster:'glitch_red'},
   hazardJump:  {kind:'img', monster:'glitch_blue'},
   hazardBomb:  {kind:'img', monster:'glitch_green'},

@@ -159,8 +159,6 @@
       <div class="row"><span class="k"><canvas class="howtoIcon" width="30" height="30" data-type="pwSlow"></canvas> <span data-i18n="boost_slow_row">Yavaşlatma</span></span><span class="v vtxt" data-i18n="boost_slow_v">Orbu yavaşlatır</span></div>
       <div class="row"><span class="k"><canvas class="howtoIcon" width="30" height="30" data-type="pwMagnet"></canvas> <span data-i18n="boost_magnet_row">Mıknatıs</span></span><span class="v vtxt" data-i18n="boost_magnet_v">Yıldızları çeker</span></div>
       <div class="row"><span class="k"><canvas class="howtoIcon" width="30" height="30" data-type="pwMult"></canvas> <span data-i18n="boost_mult_row">Çarpan</span></span><span class="v vtxt" data-i18n="boost_mult_v">Puan ×2</span></div>
-      <div class="row"><span class="k"><canvas class="howtoIcon" width="30" height="30" data-type="pwFreeze"></canvas> <span data-i18n="boost_freeze_row">Dondurma</span></span><span class="v vtxt" data-i18n="boost_freeze_v">Zamanı kısa süre durdurur</span></div>
-      <div class="row"><span class="k"><canvas class="howtoIcon" width="30" height="30" data-type="pwGhost"></canvas> <span data-i18n="boost_ghost_row">Hayalet</span></span><span class="v vtxt" data-i18n="boost_ghost_v">Cızırtıların içinden geçersin</span></div>
     </div>
     <div class="sub" data-i18n="howto_modes_hint">Mod Seç ekranından Klasik / Zaman Yarışı / Zen / Günlük modları ve zorluk seç.</div>
     </div>
@@ -343,13 +341,33 @@
     <button class="btn alt small" data-go="menu"><i class="gicon" data-icon="back"></i> <span data-i18n="btn_back">Geri</span></button>
   </div>
 
+  <!-- Giriş Serisi: 14 gün = iki yüzlü bir "seri plağı". Üstte bugünün
+       ödülünü taşıyan büyük dönen plak (çevresindeki halka = ilerleme),
+       altta A Yüzü (1-7) ve B Yüzü (8-14) minik plaklar. bkz. shop-ui.js -->
   <div class="screen fullpin" id="screen-loginstreak">
     <div class="screenHead">
       <h2 data-i18n="login_streak_title">Giriş Serisi</h2>
-      <div class="sub" id="loginStreakDayText" style="margin:0"></div>
+      <div class="lsChip" id="lsChip"></div>
     </div>
-    <div class="screenBody">
-      <div class="loginDayGrid" id="loginStreakGrid"></div>
+    <div class="screenBody lsBody">
+      <div class="lsHero">
+        <div class="lsDiscWrap" id="lsDiscWrap">
+          <svg class="lsRing" viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="lsRingBg" cx="60" cy="60" r="56"/>
+            <circle class="lsRingFg" id="lsRingFg" cx="60" cy="60" r="56"/>
+          </svg>
+          <div class="lsDisc"><div class="lsDiscLabel"></div></div>
+          <div class="lsSheen"></div>
+          <div class="lsLabelContent"><div class="lsRewardIc" id="lsRewardIc"></div><div class="lsRewardAmt" id="lsRewardAmt"></div></div>
+        </div>
+        <div class="lsTodayCap" id="lsTodayCap"></div>
+        <div class="lsRewardName" id="lsRewardName"></div>
+        <button class="btn lsClaimBtn" id="lsClaimBtn"><i class="gicon" data-icon="gift"></i> <span data-i18n="login_claim_btn">Ödülü Al</span></button>
+        <div class="lsNext" id="lsNext"></div>
+      </div>
+      <div class="lsSide"><div class="lsSideTag" data-i18n="login_side_a">A YÜZÜ</div><div class="lsTrack" id="lsSideA"></div></div>
+      <div class="lsSide"><div class="lsSideTag" data-i18n="login_side_b">B YÜZÜ</div><div class="lsTrack" id="lsSideB"></div></div>
+      <div class="lsHint" data-i18n="login_hint"></div>
     </div>
     <div class="screenFoot">
       <button class="btn alt small" data-go="menu"><i class="gicon" data-icon="back"></i> <span data-i18n="btn_back">Geri</span></button>

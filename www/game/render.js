@@ -93,7 +93,6 @@ function drawWorld(){
 // iki çizim modunun ortak katmanı.
 function drawScreenOverlays(){
   if(flash>0 && GAME_STATES[state]){ ctx.fillStyle=hexA(T.peril, flash*0.4); ctx.fillRect(0,0,W,H); }
-  if(freezeFlash>0 && GAME_STATES[state]){ ctx.fillStyle=hexA('#dff3ff', freezeFlash*0.16); ctx.fillRect(0,0,W,H); }
 }
 
 function drawSun(t){
@@ -380,7 +379,6 @@ function drawPlayer(t){
   drawScratch2D(t,px,py,pc);
   const blink = player.invulT>0 && (Math.floor(player.invulT/4)%2===0);
   if(!blink){
-    if(player.ghostT>0) ctx.globalAlpha = 0.5+Math.sin(t*10)*0.15;
     const pg=ctx.createRadialGradient(px,py,0,px,py,PLAYER_R*2.2);
     pg.addColorStop(0,'#ffffff'); pg.addColorStop(0.4, hexA(pc,.85)); pg.addColorStop(1, hexA(pc,0));
     ctx.fillStyle=pg; ctx.beginPath(); ctx.arc(px,py,PLAYER_R*2.2,0,7); ctx.fill();
