@@ -207,63 +207,64 @@ function startBossWave(stageDef){
   // yolunu kapatıp haksızlık yapmasın.
   for(const it of items) if(it.alive && !it.boss) it.expiring = true;
   bossTravel = 0; bossNextCol = 1.0; bossEnd = 1.0 + (stageDef.laps||2)*Math.PI*2;
-  bossBaseAng = player.ang; bossFree = player.targetRing; bossQueue = []; bossSegs = 0;
+  bossBaseAng = player.ang; bossFree = player.targetRing; bossQueue = []; bossSegs = 0; bossRun = 1;
   spawnBossColumns();
 }
 
 // Boss = REFLEKS LABİRENTİ. Plak etrafında 2-3 tur boyunca ara vermeden
-// gelen, sıkı dizilmiş cızırtı duvarlarından oluşan koridorlar:
-//  * koridor: aynı halka açık kalırken diğer iki halkada art arda duvar,
-//  * zikzak: her sütunda açık halka yer değiştirir (art arda hızlı geçiş),
-//  * nefes: tek halkayı kapatan sütun (yalnızca ilk boss'larda, seyrek).
-// Sütunlar penanın yalnızca ~1.9 rad (~1.5 sn) önünde belirir — labirent önceden
-// ezberlenemez, okuyup anında tepki vermek gerekir. Her geçiş penceresi
-// halka yarıçapına göre ölçeklenir (iç halkada açı olarak daha geniş), en az
-// bir halka hep açıktır ve açık halkaya bu pencerede yetişilebilir.
-// Savaş ilerledikçe ve ileri boss'larda pencere daralır, koridorlar uzar.
-let bossStage=null, bossStageIdx=0, bossTravel=0, bossNextCol=0, bossEnd=0, bossBaseAng=0, bossFree=0, bossQueue=[], bossSegs=0;
-const BOSS_LOOKAHEAD = 1.9, BOSS_WALL_STEP = 0.3;
+// gelen cızırtı sütunları. Her sütun, BİR ÖNCEKİ sütunun açık halkasına
+// göre yerleştirilir (bkz. bossPlanSegment):
+//  * Oyuncunun durduğu (önceki açık) halka bir sonraki sütunda hep kapanır
+//    — aynı halkada en fazla 2 sütun art arda açık kalır (kısa duvar çifti,
+//    yalnızca kenar halkalarda), yani "ortadan gidip hepsini geçme" yok.
+//  * Çatal: yalnızca orta halkayı kapatan bir sütun iki yol açar; hemen
+//    ardından gelen sütun yollardan birini çıkmaz sokağa çevirir (yanlış
+//    seçen iki halka birden atlamak zorunda kalır).
+//  * Kenardan kenara (iki halka) atlamalar ileri boss'larda sıklaşır.
+// Sütunlar penanın yalnızca ~1.9 rad (~1.5 sn) önünde belirir — labirent
+// önceden ezberlenemez, okuyup anında tepki vermek gerekir. Her geçiş
+// penceresi halka yarıçapına göre ölçeklenir (iç halkada açı olarak daha
+// geniş) ve en az bir halka hep açıktır; boss ilerledikçe pencere daralır.
+let bossStage=null, bossStageIdx=0, bossTravel=0, bossNextCol=0, bossEnd=0, bossBaseAng=0, bossFree=0, bossQueue=[], bossSegs=0, bossRun=1;
+const BOSS_LOOKAHEAD = 1.9, BOSS_WALL_STEP = 0.32;
 function bossSwitchGap(from, to){
   const def = bossStage, prog = Math.min(1, bossNextCol/bossEnd);
   const sw = Math.max(0.38, def.sw - prog*0.06);
   const rmin = Math.min(radiusFor(from), radiusFor(to)) / radiusFor(1);   // iç halkada açı olarak daha geniş
   return (sw + (Math.abs(to-from)>1 ? 0.3 : 0)) / rmin;
 }
+const _allBut = x=>[0,1,2].filter(r=>r!==x);
 function bossPlanSegment(){
   const idx = bossStageIdx, f = bossFree; bossSegs++;
-  const r = rnd();
-  const breather = idx<=1 && bossSegs%5===0;
-  if(breather){
-    const cand=[0,1,2].filter(x=>x!==f);
-    bossNextCol += 0.7;
-    bossQueue.push({pos:bossNextCol, blocked:[cand[Math.floor(rnd()*cand.length)]]});
+  const prog = Math.min(1, bossNextCol/bossEnd);
+  // Kısa duvar çifti: kenar halkada aynı yol bir sütun daha açık kalır.
+  if(f!==1 && bossRun<2 && rnd() < 0.28){
+    bossNextCol += BOSS_WALL_STEP;
+    bossQueue.push({pos:bossNextCol, blocked:_allBut(f)});
+    bossRun++;
     return;
   }
-  const adj = [0,1,2].filter(x=>Math.abs(x-f)===1);
-  if(r < 0.6){
-    // Koridor: yeni açık halkaya geç, sonra iki duvar arasında ilerle.
-    let nf = adj[Math.floor(rnd()*adj.length)];
-    if(idx>=1 && f!==1 && rnd()<0.25) nf = 2-f;                      // iki halka atlama
-    bossNextCol += bossSwitchGap(f, nf);
-    const L = 2 + Math.floor(rnd()*(2 + Math.min(3, idx)));
-    for(let i=0;i<L;i++){
-      if(i>0) bossNextCol += BOSS_WALL_STEP;
-      bossQueue.push({pos:bossNextCol, blocked:[0,1,2].filter(x=>x!==nf)});
-    }
-    bossFree = nf;
-  } else {
-    // Zikzak: her sütunda açık halka değişir.
-    const n = 2 + Math.floor(rnd()*(2 + Math.min(2, idx)));
-    let cur = f;
-    for(let i=0;i<n;i++){
-      const a2 = [0,1,2].filter(x=>Math.abs(x-cur)===1);
-      const nf = a2[Math.floor(rnd()*a2.length)];
-      bossNextCol += bossSwitchGap(cur, nf);
-      bossQueue.push({pos:bossNextCol, blocked:[0,1,2].filter(x=>x!==nf)});
-      cur = nf;
-    }
-    bossFree = cur;
+  // Çatal (pena ortadayken): orta kapanır, iki kenar açılır; hemen sonra
+  // biri çıkmaz sokak olur.
+  if(f===1 && rnd() < 0.3 + idx*0.05){
+    bossNextCol += bossSwitchGap(1, 0);
+    bossQueue.push({pos:bossNextCol, blocked:[1]});
+    const dead = rnd()<0.5 ? 0 : 2, good = 2-dead;
+    bossNextCol += bossSwitchGap(dead, good);              // yanlış seçen de (zor da olsa) yetişebilsin
+    bossQueue.push({pos:bossNextCol, blocked:_allBut(good)});
+    bossFree = good; bossRun = 1;
+    return;
   }
+  // Geçiş: önceki açık halka MUTLAKA kapanır, yeni açık halka seçilir.
+  let nf;
+  if(f===1) nf = rnd()<0.5 ? 0 : 2;
+  else {
+    const jump = idx>=1 ? Math.min(0.5, 0.25 + idx*0.05 + prog*0.1) : 0.12;   // kenardan kenara atlama
+    nf = rnd() < jump ? 2-f : 1;
+  }
+  bossNextCol += bossSwitchGap(f, nf);
+  bossQueue.push({pos:bossNextCol, blocked:_allBut(nf)});
+  bossFree = nf; bossRun = 1;
 }
 function spawnBossColumns(){
   while(true){
