@@ -926,6 +926,8 @@ h1 .gicon,h2 .gicon{color:var(--star);}
 
 
 .menuTopRow{display:flex;align-items:center;justify-content:center;gap:10px;}
-/* Başlık iki köşe grubunun arasında; para/güç göstergeleri 2x2 köşe
-   butonlarının altından başlar (büyük sayılarda çakışmasın). */
-.menuTop .menuTopStats{margin-top:64px;}
+/* Başlık ve nota puanı iki köşe grubunun arasında; premium şeridi 2x2
+   köşe butonlarının altından başlar. Güç (⚡) göstergesi ana menüde gizli. */
+.menuTop .menuTopStats{margin-top:0;}
+.menuTop #powerLevelLine{display:none;}
+.menuTop .menuTopRow{margin-top:26px;}
