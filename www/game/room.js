@@ -3,7 +3,8 @@
 //
 // Ana menünün arkasında, gece vakti retro bir oda videosu (img/room/room.mp4):
 // camda yağmur, dönen plak; üstüne titreyen abajur ışığı ve borudan notalar.
-// BAŞLA'ya basılınca kamera ~1.35 sn'de plağın içine dalar ve oyun siyahtan
+// BAŞLA'ya basılınca dalış videosu (img/room/dive.mp4, ~2.8 sn) plağın içine
+// girer; video hazır değilse kamera ~1.35 sn'de kod ile dalar. Oyun siyahtan
 // açılır. "Tekrar Oyna" dalışı oynatmaz. Ekrana dokunmak dalışı atlar.
 // Fotoğraf yüklenemezse eski prosedürel oda çizilir.
 //
@@ -210,6 +211,12 @@ function _roomPhoto(){
     v.playbackRate=0.9; v.defaultPlaybackRate=0.9;   // biraz daha sakin
     v.src = v.canPlayType('video/mp4; codecs="avc1.4D401F"') ? 'img/room/room.mp4' : 'img/room/room.webm';
     _room.vid=v;
+    // Dalış videosu: BAŞLA'da oynar (plağın içine sinematik giriş, sonu siyah)
+    const d=document.createElement('video');
+    d.muted=true; d.defaultMuted=true; d.playsInline=true; d.preload='auto';
+    d.setAttribute('muted',''); d.setAttribute('playsinline',''); d.setAttribute('webkit-playsinline','');
+    d.src = v.src.endsWith('.mp4') ? 'img/room/dive.mp4' : 'img/room/dive.webm';
+    _room.dive=d;
   }
   const v=_room.vid;
   if(v.readyState>=2 && !v.paused) return v;
@@ -240,6 +247,7 @@ function _roomDiveCam(SW, SH, menuZoom, rec, ty, k){
 function _roomFrame(dt){
   const g=_room.g, W=_room.w, H=_room.h, t=_room.t;
   const I=_room.intro, it = I ? (I.freeze!=null ? I.freeze : (performance.now()-I.t0)/1000) : 0;   // freeze: test/önizleme için
+  if(I && I.vid) return _roomDiveVideoFrame(g, W, H, dt, t, it);
   const k = I ? Math.min(1, it/ROOM_DIVE) : 0;
   const black = I ? Math.max(0, Math.min(1, (it-ROOM_DIVE*0.6)/(ROOM_DIVE*0.4))) : 0;
   const land = W>H;
@@ -253,6 +261,27 @@ function _roomFrame(dt){
   g.fillStyle=_rg(g,W/2,H*0.45,Math.min(W,H)*0.45,Math.max(W,H)*0.8,[[0,'rgba(0,0,0,0)'],[1,`rgba(0,0,0,${photo?0.3:0.5})`]]); g.fillRect(0,0,W,H);
   if(black>0){ g.fillStyle=`rgba(0,0,0,${black})`; g.fillRect(0,0,W,H); }
   if(I && it>=ROOM_DIVE) _roomFinishIntro();
+}
+
+// Dalış videosu oynarken: oda sahnesinin üstüne video ~0.35 sn'de belirir,
+// video kendi sonunda siyaha iner → oyun siyahtan açılır.
+function _roomDiveVideoFrame(g, W, H, dt, t, it){
+  const d=_room.dive, land=W>H, photo=_roomPhoto();
+  g.setTransform(1,0,0,1,0,0);
+  g.fillStyle='#000'; g.fillRect(0,0,W,H);
+  if(photo) _roomPhotoScene(g, photo, dt, t, 0, land); else _roomProcScene(g, dt, t, 0, land);
+  g.setTransform(1,0,0,1,0,0);
+  if(d.readyState>=2){
+    const vw=d.videoWidth||720, vh=d.videoHeight||1280, s=Math.max(W/vw, H/vh);
+    g.globalAlpha=Math.min(1, Math.max(0, d.currentTime/0.3));
+    g.imageSmoothingEnabled=true; g.imageSmoothingQuality='high';
+    g.drawImage(d, (W-vw*s)/2, (H-vh*s)/2, vw*s, vh*s);
+    g.globalAlpha=1;
+  }
+  // 0.9 sn içinde başlamadıysa (ağ/codec) kod ile yakınlaşmaya düş
+  if((d.readyState<2 || d.currentTime===0) && it>0.9){ const I=_room.intro; I.vid=false; I.t0=performance.now(); d.pause(); return; }
+  const dur = isFinite(d.duration) && d.duration>0 ? d.duration : 2.8;
+  if(d.ended || d.currentTime>=dur-0.05 || it>dur+1.5) _roomFinishIntro();
 }
 
 function _roomPhotoScene(g, img, dt, t, k, land){
@@ -359,6 +388,14 @@ function roomIntroPlay(onDone){
   if(!roomEnabled() || !_room.visible || _room.intro) return false;
   _room.introsPlayed++;
   _room.intro={t0:performance.now(), onDone};
+  // Dalış videosu hazırsa onu oynat; değilse (ya da oynatılamazsa) kod ile yakınlaşma
+  const d=_room.dive;
+  if(d && !d.error){   // iOS veriyi ancak play() ile yükleyebilir → kısa süre bekle (bkz. _roomDiveVideoFrame)
+    const I=_room.intro; I.vid=true;
+    try{ d.currentTime=0; }catch(e){}
+    const pr=d.play();
+    if(pr && pr.catch) pr.catch(()=>{ if(_room.intro===I){ I.vid=false; I.t0=performance.now(); } });
+  }
   if(AC && AC.state==='suspended') AC.resume();
   showScreen(null); setHud(false);
   document.body.classList.add('roomIntro');
@@ -368,6 +405,7 @@ function roomIntroPlay(onDone){
 function _roomFinishIntro(){
   const I=_room.intro; if(!I) return;
   _room.intro=null; _room.notes=[];
+  if(_room.dive && !_room.dive.paused) _room.dive.pause();
   document.body.classList.remove('roomIntro');
   // Oyuna siyahtan açılarak geçiş
   const f=document.getElementById('roomFlash'); if(f){ f.classList.remove('fade'); void f.offsetWidth; f.classList.add('fade'); }
