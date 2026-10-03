@@ -26,7 +26,7 @@
    buradaki px boyutlarını sessizce büyütüp UI'ı taşırabiliyordu — oyun HERKESTE
    aynı boyutta görünmeli diye devre dışı bırakıyoruz. */
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}
-html,body{height:100%;overflow:hidden;background:var(--bg0);}
+html,body{height:100%;overflow:hidden;background:var(--bg0);overscroll-behavior:none;}
 body{
   font-family:var(--font-ui),-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
   color:#eaf2ff;touch-action:none;user-select:none;-webkit-user-select:none;
@@ -1146,3 +1146,39 @@ h1 .gicon,h2 .gicon{color:var(--star);}
 .toggleGrid .toggle.quad .gicon{width:19px;height:19px;color:var(--star);flex:none;}
 .toggleGrid .toggle.quad span{font-size:9.5px;line-height:1.15;font-weight:700;flex:1;display:flex;align-items:center;}
 .toggleGrid .toggle.quad .sw{align-self:center;}
+
+/* Ekranlar yalnız dikeyde kayar; iOS'ta yana çekilip esneme olmasın. */
+.screen,.screenBody{overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y;}
+/* "Aşağıda daha fazlası var" göstergesi */
+.screen.moreBelow .screenBody{-webkit-mask-image:linear-gradient(to bottom,#000 0,#000 calc(100% - 46px),rgba(0,0,0,.15) 100%);
+  mask-image:linear-gradient(to bottom,#000 0,#000 calc(100% - 46px),rgba(0,0,0,.15) 100%);}
+.scrollCue{position:absolute;left:50%;width:34px;height:34px;margin-left:-17px;border-radius:50%;z-index:3;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;padding:0;color:#fff;
+  background:rgba(20,14,12,.75);border:1px solid rgba(255,210,140,.35);box-shadow:0 4px 12px rgba(0,0,0,.5);
+  opacity:0;pointer-events:none;transition:opacity .25s;}
+.scrollCue svg{width:20px;height:20px;}
+.scrollCue.show{opacity:1;pointer-events:auto;animation:cueBob 1.4s ease-in-out infinite;}
+@keyframes cueBob{0%,100%{transform:translateY(0);}50%{transform:translateY(5px);}}
+/* Ayarlar: tek ekrana sığsın — 4 tema tek satırda, kompakt kart */
+#screen-settings .themes{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;}
+#screen-settings .theme{padding:7px 3px 6px;gap:4px;}
+#screen-settings .theme .themeLabelPreview{width:46px;height:46px;}
+#screen-settings .theme .swatch span{width:8px;height:8px;}
+#screen-settings .theme .tn{font-size:9.5px;line-height:1.15;}
+#screen-settings .theme .tsel{font-size:8.5px;}
+#screen-settings .theme.sel::after{width:18px;height:18px;line-height:18px;font-size:11px;top:-6px;right:-6px;}
+/* Kısa ekranlar (iPhone SE vb.): boşlukları sıkıştır, ipucu metnini gizle */
+@media (max-height:700px){
+  #screen-settings .screenBody{gap:7px;}
+  #screen-settings .toggleGrid .toggle.quad{min-height:74px;padding:6px 3px;}
+  #screen-settings .gfxQHint{display:none;}
+  #screen-settings .gfxQCard{padding:7px 9px 7px;}
+  #screen-settings .gfxQOpt{padding:5px 4px 4px;}
+  #screen-settings h2{font-size:24px;}
+}
+@media (max-height:600px){
+  #screen-settings .toggleGrid .toggle.quad .gicon{display:none;}
+  #screen-settings .toggleGrid .toggle.quad{min-height:58px;}
+  #screen-settings .theme .themeLabelPreview{width:38px;height:38px;}
+  #screen-settings .theme .swatch{display:none;}
+}
