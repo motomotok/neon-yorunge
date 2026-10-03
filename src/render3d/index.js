@@ -8,6 +8,17 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
+
+// Bloom'a girmeden önce aşırı parlak (HDR) pikselleri sınırla: üst üste binen
+// toplamalı efektler tek noktada çok yüksek değer üretse bile bloom bunu ekranı
+// kaplayan bir parlama topuna çeviremesin.
+const ClampShader = {
+  uniforms:{ tDiffuse:{value:null}, uMax:{value:1.6} },
+  vertexShader:`varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+  fragmentShader:`uniform sampler2D tDiffuse; uniform float uMax; varying vec2 vUv;
+    void main(){ vec4 c=texture2D(tDiffuse,vUv); c.rgb=min(max(c.rgb,vec3(0.0)),vec3(uMax)); gl_FragColor=c; }`,
+};
 import { World } from './world.js';
 import { Entities } from './entities.js';
 import { resolveSlot, loadErrors } from './assets.js';
@@ -93,6 +104,7 @@ function buildComposer(q){
   const rt = new THREE.WebGLRenderTarget(1, 1, {type:THREE.HalfFloatType, samples:q.msaa});
   composer = new EffectComposer(renderer, rt);
   composer.addPass(renderPass);
+  composer.addPass(new ShaderPass(ClampShader));
   // Sade bloom: yalnızca gerçekten parlak şeyler (öğeler, iğne ucu, elektrik) parlar.
   bloomPass = new UnrealBloomPass(new THREE.Vector2(1,1), 0.45, 0.4, 0.85);
   composer.addPass(bloomPass);
