@@ -924,17 +924,6 @@ h1 .gicon,h2 .gicon{color:var(--star);}
 @keyframes pxSpark{0%{opacity:1;transform:scale(.6);}60%{opacity:1;}100%{opacity:0;transform:scale(1.4);}}
 @keyframes pxShake{0%,100%{transform:none;}25%{transform:translate(4px,-3px);}50%{transform:translate(-4px,3px);}75%{transform:translate(3px,2px);}}
 
-/* ---------- Retro oda menüsü + giriş ---------- */
-#roomCanvas{position:fixed;inset:0;z-index:5;}
-#roomFlash{position:fixed;inset:0;z-index:30;pointer-events:none;background:#000;opacity:0;}
-#roomFlash.fade{animation:roomFlashFade .8s ease-out;}
-@keyframes roomFlashFade{0%{opacity:1;}100%{opacity:0;}}
-/* Oda menüsünde menünün alt yazıları ve kenar butonları odanın üstünde okunaklı kalsın */
-body.roomMenu #screen-menu .menuFooter{text-shadow:0 1px 4px rgba(0,0,0,.9);}
-body.roomIntro #overlay,body.roomIntro #hud{opacity:0;pointer-events:none;}
-/* Oda menüsünde menü katmanının renkli sisi/lekeleri videoyu bulanıklaştırmasın */
-body.roomMenu #overlay.live{background:none;}
-body.roomMenu #overlay.live::before,body.roomMenu #overlay.live::after{display:none;}
 
 .menuTopRow{display:flex;align-items:center;justify-content:center;gap:10px;}
 /* Başlık iki köşe grubunun arasında; para/güç göstergeleri 2x2 köşe

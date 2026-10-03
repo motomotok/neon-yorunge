@@ -3,12 +3,11 @@
 // kavrar — stüdyonun her oyunu (müzik, koşu, kutu oyunu...) için genel bir
 // marka. Dokununca geçilir. Logo değişirse yalnızca #splash içindeki SVG
 // ve yazılar değişir.
-// Logo en az MIN_MS görünür; bu sırada oyun arkada yüklenir (sayfa, oda
-// görseli/videosu, 3D paketi). Hepsi hazır olunca (ya da en geç MAX_MS'de)
+// Logo en az MIN_MS görünür; bu sırada oyun arkada yüklenir (sayfa, 3D
+// paketi). Hepsi hazır olunca (ya da en geç MAX_MS'de)
 // yumuşakça kaybolur ve altında hazır bekleyen ana menü görünür.
 function gameAssetsReady(){
   if(document.readyState!=='complete') return false;
-  if(typeof roomAssetsReady==='function' && !roomAssetsReady()) return false;
   if(typeof cfg!=='undefined' && cfg.gfx==='3d' && typeof _gfx3dState!=='undefined'
      && _gfx3dState!=='ready' && _gfx3dState!=='failed' && _gfx3dState!=='off') return false;
   return true;
