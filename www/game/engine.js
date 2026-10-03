@@ -69,7 +69,7 @@ function resetGame(){
   maxHp = mode==='zen' ? 9999 : maxHpFor(); hp = maxHp;
   level=1; elapsed=0; spawnCooldown=0; threatCd=150; breathT=0; nextBreath=720; shake=0; flash=0; levelFlashT=0;   // threatCd: tehdit yönetmeni ilk ~2.5 sn bekler
   session = {stars:0, golds:0, diamonds:0, magnets:0, hits:0, shieldSaved:false, streakMax:0,
-             coins:0, coinPickups:0, luckyCharges:0, noteMult:1, revivedUsed:false};
+             coins:0, coinPickups:0, luckyCharges:0, noteMult:1, revivedUsed:false, bossesCleared:0};
   timeLeft = mode==='time' ? 60 : null;
   newRecord=false; timeScale=1; timeScaleT=0;
   bossNextIndex=0; bossActive=false; bossWaveItems=[]; bossReward=0; bossTelegraph=null; bossQueue=[]; bossNextCol=0; bossEnd=0;
@@ -731,6 +731,7 @@ function update(dt){
       addNotes(finalReward);
       showFlash(t('flash_wave_cleared'),60);
       queueToast(icon('coin')+' '+t('toast_boss_cleared',{n:finalReward}));
+      session.bossesCleared++; stats.bossesCleared=(stats.bossesCleared||0)+1;
       // İlk boss temizlendi: DJ Vinil ileriye dönük bir meydan okuma yazar
       // (bkz. narrator.js). Kutlama efektleri önce görünsün diye kısa gecikme.
       if(!stats.firstBossStory && typeof narratorFirstBossStory==='function') setTimeout(narratorFirstBossStory, 1100);

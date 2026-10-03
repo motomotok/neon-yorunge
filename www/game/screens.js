@@ -64,7 +64,11 @@ function goHowto(){ state='howto'; setHud(false); showScreen('howto'); renderHow
 function goSettings(){ state='settings'; setHud(false); showScreen('settings'); syncSettings(); }
 function goStats(){ state='stats'; setHud(false); showScreen('stats'); syncStats(); }
 function goMode(){ state='mode'; setHud(false); showScreen('mode'); refreshDailyStatus(); renderBoostRow(); }
-function goShop(){ state='shop'; setHud(false); showScreen('shop'); ensureDailyEvent(); refreshWallet(); renderDealBanner(); renderShopTab(); syncAdButtons(); }
+// Mağaza her açılışta Temalar sekmesiyle ve en üstten başlar (son kalınan
+// sekmeyi hatırlamaz).
+function goShop(){ state='shop'; setHud(false); showScreen('shop'); shopTab='themes';
+  ensureDailyEvent(); refreshWallet(); renderDealBanner(); renderShopTab(); syncAdButtons();
+  const sb=document.querySelector('#screen-shop .screenBody'); if(sb) sb.scrollTop=0; }
 function goBattlepass(){ state='battlepass'; setHud(false); showScreen('battlepass'); renderBattlepass(); }
 function goLoginStreak(){ state='loginstreak'; setHud(false); showScreen('loginstreak'); renderLoginStreakScreen(); }
 function goLanguage(){ state='language'; setHud(false); showScreen('language'); if(typeof syncLangDockButton==='function') syncLangDockButton(); }
