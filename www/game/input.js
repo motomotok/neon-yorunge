@@ -43,8 +43,10 @@ document.querySelectorAll('[data-go]').forEach(b=>{
       // Tutorial zaten sürüyorsa asla baştan başlatma (eskiden son adımda
       // BAŞLA'ya basılınca tutorial yeniden başlıyordu).
       if(tutorialActive) return;
-      if(!stats.tutorialDone && typeof startTutorial==='function') startTutorial();
-      else startGame('classic','normal');
+      const go=()=>{ if(!stats.tutorialDone && typeof startTutorial==='function') startTutorial(); else startGame('classic','normal'); };
+      // Retro oda menüsü açıksa önce sinematik giriş (bkz. room.js).
+      if(typeof roomIntroPlay==='function' && roomIntroPlay(go)) return;
+      go();
     }
     else if(g==='menu') goMenu();
     else if(g==='howto') goHowto();
@@ -69,6 +71,7 @@ document.getElementById('pauseBtn').addEventListener('click', e=>{ e.stopPropaga
 document.getElementById('tutorialSkipBtn').addEventListener('click', e=>{ e.stopPropagation(); if(typeof tutorialSkip==='function') tutorialSkip(); });
 document.getElementById('soundSw').addEventListener('click', ()=>{ cfg.sound=!cfg.sound; saveCfg(); syncSettings(); if(cfg.sound) beep(700,0.08,'sine',0.12); });
 document.getElementById('gfxSw').addEventListener('click', ()=>{ setGfxMode(cfg.gfx!=='3d'); beep(600,0.06,'sine',0.1); });
+document.getElementById('roomSw').addEventListener('click', ()=>{ cfg.menuScene = (cfg.menuScene||'room')==='room' ? 'classic' : 'room'; saveCfg(); syncSettings(); beep(600,0.06,'sine',0.1); });
 document.getElementById('gfxQBtn').addEventListener('click', e=>{ e.stopPropagation(); cycleGfxQuality(); beep(550,0.05,'sine',0.08); });
 document.getElementById('bigSw').addEventListener('click', ()=>{ cfg.bigButtons=!cfg.bigButtons; saveCfg(); applyAccessibility(); syncSettings(); beep(600,0.06,'sine',0.1); });
 document.getElementById('handSw').addEventListener('click', ()=>{ cfg.leftHand=!cfg.leftHand; saveCfg(); applyAccessibility(); syncSettings(); beep(600,0.06,'sine',0.1); });

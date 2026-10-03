@@ -33,6 +33,8 @@ let last=0;
 function loop(ts){
   const dt=Math.min(40, ts-last)/16.6667 || 1; last=ts;
   ctx.clearRect(0,0,W,H);
+  // Retro oda menüsü/girişi ekranı kaplıyorsa arkadaki dünyayı çizmeye gerek yok.
+  if(typeof roomTick==='function' && roomTick(ts)){ requestAnimationFrame(loop); return; }
   // 3D modda (bkz. gfx.js) dünya WebGL canvas'ına (#game3d) çizilir; bu 2D
   // canvas onun üstünde saydam kalır ve sadece tam ekran flaşları taşır.
   // Oyun mantığı (update) iki modda da birebir aynı.
