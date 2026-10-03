@@ -52,8 +52,23 @@ function renderStatsTab(){
   document.getElementById('lbCard').style.display = statsTab==='lb' ? 'block' : 'none';
   document.getElementById('leagueCard').style.display = statsTab==='league' ? 'block' : 'none';
 }
+// En iyi skora göre ödül plağı (müzik endüstrisindeki satış ödülleri gibi).
+const STAT_AWARDS = [
+  {min:0,    key:'award_demo',     cls:'demo'},
+  {min:100,  key:'award_bronze',   cls:'bronze'},
+  {min:250,  key:'award_silver',   cls:'silver'},
+  {min:500,  key:'award_gold',     cls:'gold'},
+  {min:1000, key:'award_platinum', cls:'platinum'},
+  {min:2500, key:'award_diamond',  cls:'diamond'},
+];
 function syncStats(){
   document.getElementById('stBest').textContent=stats.best.toFixed(2);
+  let ai=0; STAT_AWARDS.forEach((a,i)=>{ if(stats.best>=a.min) ai=i; });
+  const aw=STAT_AWARDS[ai], nx=STAT_AWARDS[ai+1];
+  const hero=document.getElementById('stHero');
+  STAT_AWARDS.forEach(a=>hero.classList.remove('aw-'+a.cls)); hero.classList.add('aw-'+aw.cls);
+  document.getElementById('stAwardName').textContent=t(aw.key);
+  document.getElementById('stNextAward').textContent = nx ? t('stat_next_award',{name:t(nx.key), n:Math.ceil(nx.min-stats.best)}) : t('stat_max_award');
   document.getElementById('stStars').textContent=stats.stars;
   document.getElementById('stGames').textContent=stats.games;
   document.getElementById('stLevel').textContent=stats.maxLevel;
@@ -77,12 +92,18 @@ function syncGlobalLeaderboardHint(){
 function renderRivalLeague(){
   const el=document.getElementById('leagueList'); if(!el) return;
   ensureRivalLeague();
+  // Her rakip için en iyi skorunla aradaki mesafe bir ilerleme çubuğu;
+  // henüz geçilmemiş ilk rakip "sıradaki hedef" olarak vurgulanır.
+  let nextMarked=false;
   el.innerHTML = stats.rivalLeague.map(r=>{
     const beaten = stats.best>=r.score;
+    const isNext = !beaten && !nextMarked; if(isNext) nextMarked=true;
     const rn = cfg.lang==='tr' ? turkishAccusative(r.name) : r.name;
-    return `<div class="row" style="${beaten?'opacity:.55':''}">
-      <span class="k">${beaten?icon('check'):icon('target')} ${t('rival_beat_row',{name:rn})}</span>
-      <span class="v">${r.score.toFixed(2)}</span>
+    const pct = Math.max(0, Math.min(100, stats.best/r.score*100));
+    return `<div class="rvRow${beaten?' beaten':''}${isNext?' next':''}">
+      <div class="rvTop"><span class="rvName">${beaten?icon('check'):icon('target')} ${t('rival_beat_row',{name:rn})}</span><span class="rvScore">${r.score.toFixed(2)}</span></div>
+      <div class="rvBar"><div class="rvFill" style="width:${pct.toFixed(1)}%"></div></div>
+      ${isNext?`<div class="rvNextTag">${t('rival_next')}</div>`:''}
     </div>`;
   }).join('');
 }
@@ -108,11 +129,13 @@ function renderAchievements(){
     const d=document.createElement('div');
     d.className='achItem'+(unlocked?' unlocked':'');
     d.title=t(a.descKey);
-    d.innerHTML=`<div class="ic">${icon(a.icon)}</div><div>${t(a.nameKey)}</div>`;
+    d.innerHTML=`<div class="achDisc"><div class="ic">${icon(a.icon)}</div></div><div class="achName">${t(a.nameKey)}</div>`;
     d.addEventListener('click', ()=>showAchTooltip(d, a, unlocked));
     grid.appendChild(d);
   });
   document.getElementById('achCount').textContent=count;
+  document.getElementById('achTotal').textContent=ACHIEVEMENTS.length;
+  const bar=document.getElementById('achBarFill'); if(bar) bar.style.width=(count/ACHIEVEMENTS.length*100).toFixed(1)+'%';
 }
 let achTooltipTimer=null;
 function showAchTooltip(targetEl, a, unlocked){
@@ -141,7 +164,8 @@ document.addEventListener('pointerdown', (e)=>{
 function renderLeaderboard(){
   const el=document.getElementById('lbList');
   if(!stats.leaderboard.length){ el.innerHTML=`<div class="row"><span class="k">${t('no_records')}</span></div>`; return; }
-  el.innerHTML = stats.leaderboard.map(e=>`<div class="row"><span class="k">${e.date} · ${modeLabel(e.mode)}</span><span class="v">${e.score.toFixed(2)}</span></div>`).join('');
+  // Müzik listesi gibi: büyük sıra numarası, minik plak, tarih · mod, skor.
+  el.innerHTML = stats.leaderboard.map((e,i)=>`<div class="lbRow${i===0?' top':''}"><span class="lbRank">${i+1}</span><span class="lbDisc"></span><span class="lbMeta">${e.date} · ${modeLabel(e.mode)}</span><span class="lbScore">${e.score.toFixed(2)}</span></div>`).join('');
 }
 function refreshDailyStatus(){
   const td=todayStr();
