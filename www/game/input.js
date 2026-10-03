@@ -1,22 +1,14 @@
 // Tüm DOM olay bağlamaları (butonlar, dokunma/klavye girişi) ve erişilebilirlik
 // sınıflarının uygulanması. Yeni bir buton eklerken listener'ı buraya ekle.
-let pendingMode='classic', pendingDiff='normal';
+let pendingMode='classic';
 document.querySelectorAll('.modeCard').forEach(el=>{
   el.addEventListener('click', ()=>{
     pendingMode=el.dataset.mode;
     document.querySelectorAll('.modeCard').forEach(x=>x.classList.toggle('sel', x===el));
-    document.getElementById('diffRow').classList.toggle('disabled', pendingMode==='zen'||pendingMode==='daily');
     beep(500,0.06,'sine',0.1); refreshDailyStatus();
   });
 });
-document.querySelectorAll('.diffChip').forEach(el=>{
-  el.addEventListener('click', ()=>{
-    pendingDiff=el.dataset.diff;
-    document.querySelectorAll('.diffChip').forEach(x=>x.classList.toggle('sel', x===el));
-    beep(500,0.05,'sine',0.08);
-  });
-});
-document.getElementById('modeStartBtn').addEventListener('click', ()=>startGame(pendingMode,pendingDiff));
+document.getElementById('modeStartBtn').addEventListener('click', ()=>startGame(pendingMode));
 
 document.querySelectorAll('#shopTabs .stab').forEach(el=>{
   el.addEventListener('click', ()=>{ shopTab=el.dataset.tab; renderShopTab(); beep(500,0.05,'sine',0.08); });
