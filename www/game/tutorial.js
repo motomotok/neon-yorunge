@@ -3,8 +3,9 @@
 // ilk kez BAŞLA'ya basıldığında) tetiklenir — bkz. input.js "quickstart".
 //
 // Akış — oynanış: tanışma → sola dokun → sağa dokun → nota → başka
-// halkadaki nota → art arda 2 nota (kombo 5 = MELODİ anı) → kalp → yaratığa
-// çarp → kalple toparlan → yaratıktan kaç → mıknatısla notaları çek.
+// halkadaki nota → art arda 2 nota (kombo 5 = MELODİ anı) → cızırtıya
+// çarp → kalple toparlan → cızırtıdan kaç. (Eski "ilk kalp" ve "mıknatıs"
+// adımları tutorial'ı kısaltmak için kaldırıldı.)
 // Roguelike döngüsü (gerçekten yaşatılır): bilerek düş → oyun sonu
 // (puan notaya döndü) → YETENEKLER'de Can Kapasitesi al → Süpernova'yı
 // patlat (yetenekler sıfırlanır, Çekirdek kazanılır) → Çekirdek Ağacı'nda
@@ -33,8 +34,8 @@ function startTutorial(){
   items.length = 0; // resetGame()'in otomatik tohum öğelerini temizle — senaryo tamamen elle kontrol edilecek
   // Orta halkada başla: hem SOL (1→0) hem SAĞ (0→1) geçerli birer hamle olsun.
   player.targetRing = 1; player.curRadius = radiusFor(1);
-  // Can biraz eksik başlar: ilk kalp gerçekten bir şey doldursun.
-  hp = Math.max(1, maxHp-1);
+  // Tam canla başlar: cızırtı darbesinden sonra gelen kalp canı yeniden doldurur.
+  hp = maxHp;
   _tutGiftGiven = false;
   state='play'; setHud(true); showScreen(null);
   // Oynanış boyunca duraklat butonu gizli (menüye kaçıp senaryo dışına çıkılmasın).
@@ -99,11 +100,7 @@ const TUTORIAL_STEPS = {
   },
   melody(){
     tutorialSpotlight(document.getElementById('combo'));
-    narratorSay(t('tut2_melody'), {cta:t('tut_cta_understood'), onCta:()=>tutorialGoStep('heart1')});
-  },
-  heart1(){
-    tutorialSpotlight(document.getElementById('hpBarWrap'));
-    _tutSayThen('tut2_heart1', ()=>tutorialSpawnItem('heart','heart1'));
+    narratorSay(t('tut2_melody'), {cta:t('tut_cta_understood'), onCta:()=>tutorialGoStep('hazard')});
   },
   // Kaçış yok: dokunma kapalı, yaratık oyuncunun halkasında. Çarpma
   // hissini (can düşer, kombo sıfırlanır) bilerek yaşatıyoruz.
@@ -122,21 +119,11 @@ const TUTORIAL_STEPS = {
       tutorialSpawnItem('hazard','dodge');
     });
   },
-  magnet(){
-    const lead = t(_tutDodgeHit ? 'tut2_dodge_hit' : 'tut2_dodge_ok');
-    narratorSay(lead+' '+t('tut2_magnet'), {onDone:()=>tutorialSpawnItem('magnet','magnet')});
-  },
-  // Mıknatıs aktif: diğer halkalardaki notalar halka değiştirmeden toplanır.
-  magnetGo(){
-    const others = [0,1,2].filter(r=>r!==player.targetRing);
-    tutorialSpawnItem('star','mag1',others[0],1.0);
-    tutorialSpawnItem('star','mag2',others[1],1.4);
-    tutorialSpawnItem('star','mag3',others[0],1.8);
-    _tutSay('tut2_magnet_go');
-  },
   // ---- Roguelike döngüsü ----
+  // Kaçış adımının sonucu (kaçtı / çarptı) bu metnin başına eklenir.
   fallIntro(){
-    narratorSay(t('tut2_fall_intro'), {cta:t('tut2_cta_show'), onCta:()=>tutorialGoStep('fall')});
+    const lead = t(_tutDodgeHit ? 'tut2_dodge_hit' : 'tut2_dodge_ok');
+    narratorSay(lead+' '+t('tut2_fall_intro'), {cta:t('tut2_cta_show'), onCta:()=>tutorialGoStep('fall')});
   },
   // Kaçışsız son darbe: can 1, yaratık oyuncunun halkasında → oyun biter.
   fall(){
@@ -208,13 +195,10 @@ function tutorialOnItemResolved(tag){
     // Kutu bir an çekilir: "MELODİ" yazısı ve yavaş çekim anı net görünsün.
     if(_tutAllResolved()){ narratorHide(); setTimeout(()=>{ if(tutorialStep==='combo') tutorialGoStep('melody'); }, 1500); }
   }
-  else if(tag==='heart1') tutorialGoStep('hazard');
   else if(tag==='hazard') setTimeout(()=>{ if(tutorialStep==='hazard') tutorialGoStep('heart2'); }, 800);
   else if(tag==='heart2') tutorialGoStep('dodge');
-  else if(tag==='dodge'){ _tutDodgeHit = true; setTimeout(()=>{ if(tutorialStep==='dodge') tutorialGoStep('magnet'); }, 800); }
-  else if(tag==='magnet') tutorialGoStep('magnetGo');
+  else if(tag==='dodge'){ _tutDodgeHit = true; setTimeout(()=>{ if(tutorialStep==='dodge') tutorialGoStep('fallIntro'); }, 800); }
   // 'fall': darbe hitHazard()→gameOver() ile oyunu bitirir; adım geçişi tutorialOnGameOver'da.
-  else if(tag.startsWith('mag') && _tutAllResolved()) setTimeout(()=>{ if(tutorialStep==='magnetGo') tutorialGoStep('fallIntro'); }, 600);
 }
 // Her karede (engine.js update) çağrılır: yanından geçilip kaybolan
 // etiketli öğeleri yakalar. Notalar/kalpler tekrar gelir; kaçış adımında
@@ -224,8 +208,7 @@ function tutorialTick(){
     const p = _tutPending[tag];
     if(p.resolved) continue;
     if(items.some(it=>it.alive && it.tutorialTag===tag)) continue;
-    if(tag==='dodge'){ p.resolved = true; setTimeout(()=>{ if(tutorialStep==='dodge') tutorialGoStep('magnet'); }, 300); }
-    else if(tag.startsWith('mag') && tutorialStep==='magnetGo'){ p.resolved = true; if(_tutAllResolved()) setTimeout(()=>{ if(tutorialStep==='magnetGo') tutorialGoStep('fallIntro'); }, 600); }
+    if(tag==='dodge'){ p.resolved = true; setTimeout(()=>{ if(tutorialStep==='dodge') tutorialGoStep('fallIntro'); }, 300); }
     else tutorialSpawnItem(p.type, tag, p.ring);
   }
 }
