@@ -67,7 +67,7 @@ function resetGame(){
   // (yüksek bir kombodan) başlatır — kalıcı, sıfırlanmayan bir avantaj.
   combo=1+Math.floor(coreBonus('startCombo'));
   maxHp = mode==='zen' ? 9999 : maxHpFor(); hp = maxHp;
-  level=1; elapsed=0; spawnCooldown=0; threatCd=150; breathT=0; nextBreath=720; shake=0; flash=0; levelFlashT=0;   // threatCd: tehdit yönetmeni ilk ~2.5 sn bekler
+  level=1; elapsed=0; spawnCooldown=0; threatCd=150; rareSince=0; teaserCredit=0; teaserLastScore=0; breathT=0; nextBreath=720; shake=0; flash=0; levelFlashT=0;   // threatCd: tehdit yönetmeni ilk ~2.5 sn bekler
   session = {stars:0, golds:0, diamonds:0, magnets:0, hits:0, shieldSaved:false, streakMax:0,
              coins:0, coinPickups:0, luckyCharges:0, noteMult:1, revivedUsed:false, bossesCleared:0};
   timeLeft = mode==='time' ? 60 : null;
@@ -126,15 +126,68 @@ const HAZARD_KINDS = [
 const HAZARD_DAMAGE = {
   hazard:1, hazardJump:1, hazardBomb:2, hazardPull:3, hazardTwin:4, hazardPulse:6, hazardCreep:10,
 };
+// ---- Keşif ("teaser") algoritması ----
+// Gelişmiş tipler eşiklerinden önce de ARA SIRA görünür — oyuncu daha 300-500
+// puandayken "bu renk ne?" diye heyecanlansın. Puan-uzayında bir Poisson
+// süreci gibi çalışır (cızırtı sayısından bağımsız: hızlı da yavaş puanlayan
+// oyuncu da aynı puanda aynı şansa sahip):
+//  1) Yoğunluk e(s) = 100 puan başına beklenen keşif: 150 puana kadar 0;
+//     150→500 arası 0.10→0.25; 500→1000 arası 0.25→0.30; sonrası 0.30.
+//     Toplam beklenen: 500 puana kadar ~0.6 → P(en az bir) ≈ %45 (2-3 oyunda
+//     bir); 1000 puana kadar ~2.0 → ≈ %86.
+//  2) Kredi: her cızırtı seçiminde son seçimden beri kazanılan puan kadar
+//     kredi birikir; zar ihtimali 1-e^(-kredi) ve her zar krediyi harcar
+//     (Poisson inceltme) — keşifler puan ilerledikçe düzenli dağılır.
+//  3) Aralık: iki keşif arasında en az 3 normal cızırtı.
+//  4) Seçim: eşiği henüz gelmemiş tipler arasından; eşiğe yakın olan ve
+//     oyuncunun hiç görmediği tipler daha olası.
+//  5) Adalet: eşiğinden önce gelen keşif cızırtısı en fazla 2 can götürür.
+let rareSince=0, _pickTeaser=false, teaserCredit=0, teaserLastScore=0;
+function teaserRate(s){
+  if(s<150) return 0;
+  if(s<500) return 0.10 + (s-150)/350*0.15;
+  if(s<1000) return 0.25 + (s-500)/500*0.05;
+  return 0.30;
+}
+function teaserChance(){
+  const ds = Math.max(0, score-teaserLastScore); teaserLastScore = score;
+  teaserCredit += teaserRate(score)*ds/100;
+  if(rareSince<3) return 0;                 // aralık dolana kadar kredi birikmeye devam eder
+  const p = 1-Math.exp(-teaserCredit);
+  teaserCredit = 0;                         // her zar o ana kadarki krediyi harcar (Poisson inceltme)
+  return p;
+}
 function pickHazardKind(){
+  _pickTeaser=false;
+  const locked = HAZARD_KINDS.filter(h=>h.min>0 && score<h.min);
+  const tc = teaserChance();
+  if(locked.length && tc>0 && rnd()<tc){
+    const seen = stats.seenHazards||[];
+    let tot=0;
+    const ws = locked.map(h=>{ const w=(1/(1+(h.min-score)/500))*(seen.includes(h.type)?1:2); tot+=w; return w; });
+    let r=rnd()*tot;
+    for(let i=0;i<locked.length;i++){ r-=ws[i]; if(r<=0){ _pickTeaser=true; rareSince=0; teaserCredit=0; return locked[i].type; } }
+  }
   let total=0;
   const weights=HAZARD_KINDS.map(h=>{
     const w = h.min===0 ? h.cap : (score>=h.min ? Math.min(h.cap,(score-h.min)*h.rampPer) : 0);
     total+=w; return w;
   });
   let r=rnd()*total;
-  for(let i=0;i<HAZARD_KINDS.length;i++){ r-=weights[i]; if(r<=0) return HAZARD_KINDS[i].type; }
-  return 'hazard';
+  let type='hazard';
+  for(let i=0;i<HAZARD_KINDS.length;i++){ r-=weights[i]; if(r<=0){ type=HAZARD_KINDS[i].type; break; } }
+  if(type==='hazard'||type==='hazardJump'||type==='hazardBomb') rareSince++; else rareSince=0;
+  return type;
+}
+const RARE_GLITCH_KEYS = {hazardPull:'yellow', hazardTwin:'purple', hazardPulse:'orange', hazardCreep:'pink'};
+// İlk kez görülen gelişmiş cızırtı: kısa bir "Yeni cızırtı!" bildirimi.
+function noteGlitchSeen(type){
+  if(!RARE_GLITCH_KEYS[type] || tutorialActive) return;
+  stats.seenHazards = stats.seenHazards || [];
+  if(stats.seenHazards.includes(type)) return;
+  stats.seenHazards.push(type); saveStats();
+  const k=RARE_GLITCH_KEYS[type];
+  queueToast(t('toast_new_glitch',{name:t('glitch_'+k+'_name'), desc:t('glitch_'+k+'_desc')}));
 }
 
 // Skor eşiklerinde bir kerelik "boss dalgası": güneşten patlama efektiyle
@@ -207,7 +260,7 @@ function startBossWave(stageDef){
   // Sahneyi temizle: boss öncesinden kalan cızırtılar labirentin açık
   // yolunu kapatıp haksızlık yapmasın.
   for(const it of items) if(it.alive && !it.boss) it.expiring = true;
-  bossTravel = 0; bossNextCol = 1.0; bossEnd = 1.0 + (stageDef.laps||2)*Math.PI*2;
+  bossTravel = 0; bossNextCol = 1.0; bossEnd = 1.0 + (stageDef.laps||2)*Math.PI*2; bossColored = 0;
   bossBaseAng = player.ang; bossFree = player.targetRing; bossQueue = []; bossSegs = 0; bossRun = 1;
   spawnBossColumns();
 }
@@ -226,7 +279,7 @@ function startBossWave(stageDef){
 // önceden ezberlenemez, okuyup anında tepki vermek gerekir. Her geçiş
 // penceresi halka yarıçapına göre ölçeklenir (iç halkada açı olarak daha
 // geniş) ve en az bir halka hep açıktır; boss ilerledikçe pencere daralır.
-let bossStage=null, bossStageIdx=0, bossTravel=0, bossNextCol=0, bossEnd=0, bossBaseAng=0, bossFree=0, bossQueue=[], bossSegs=0, bossRun=1;
+let bossColored=0, bossStage=null, bossStageIdx=0, bossTravel=0, bossNextCol=0, bossEnd=0, bossBaseAng=0, bossFree=0, bossQueue=[], bossSegs=0, bossRun=1;
 const BOSS_LOOKAHEAD = 1.9, BOSS_WALL_STEP = 0.32;
 function bossSwitchGap(from, to){
   const def = bossStage, prog = Math.min(1, bossNextCol/bossEnd);
@@ -267,6 +320,10 @@ function bossPlanSegment(){
   bossQueue.push({pos:bossNextCol, blocked:_allBut(nf)});
   bossFree = nf; bossRun = 1;
 }
+const BOSS_COLOR_TYPES = ['hazardJump','hazardPull','hazardTwin','hazardPulse','hazardCreep'];
+// Boss labirentinde renkli (sabit) duvar oranı: 1. boss ~%5, sonra her
+// boss'ta +%3, en fazla %16 — ilk boss'ta 1-3, ilerleyenlerde daha çok.
+function bossColorChance(){ return Math.min(0.16, 0.05 + Math.max(0,bossNextIndex-1)*0.03); }
 function spawnBossColumns(){
   while(true){
     if(!bossQueue.length){
@@ -278,11 +335,21 @@ function spawnBossColumns(){
     bossQueue.shift();
     const ang = normAng(bossBaseAng + col.pos);
     for(const ring of col.blocked){
-      let type = pickHazardKind();
-      // Halka/açı değiştirenler ve "nabız atanlar" labirent duvarını bozmasın.
-      if(type==='hazardJump' || type==='hazardCreep' || type==='hazardPulse' || type==='hazardTwin') type = rnd()<0.85 ? 'hazard' : 'hazardBomb';
+      // Labirent duvarı çoğunlukla kırmızı/yeşil; aralara her boss'ta biraz
+      // daha sık diğer renkler serpiştirilir. Bu "renkli" duvarlar SABİTTİR
+      // (zıplamaz, çekmez, atılmaz, ikiz çıkarmaz, hep tehlikeli) ve 1 can
+      // götürür — labirentin kaçış yolu ve adilliği bozulmaz.
+      let type = rnd()<0.8 ? 'hazard' : 'hazardBomb', bossStatic=false;
+      // Asgari garanti: 1. boss'ta en az 1, 2.'de 2, sonrakilerde 3 renkli
+      // duvar — labirentin son ~yarım turunda hâlâ eksikse zorla eklenir.
+      const minColored = Math.min(3, Math.max(1, bossNextIndex));
+      const nearEnd = bossEnd - col.pos < Math.PI;
+      if(rnd() < bossColorChance() || (nearEnd && bossColored < minColored && rnd()<0.5)){
+        bossColored++;
+        type = BOSS_COLOR_TYPES[Math.floor(rnd()*BOSS_COLOR_TYPES.length)]; bossStatic=true;
+      }
       const it = {ang, ring, type, alive:true, pop:0, expiring:false, prevFwd:null, jumpT:0,
-        pulsePhase:0, pulseDanger:false, creepT:0, creeped:false, boss:true};
+        pulsePhase:0, pulseDanger:bossStatic, creepT:0, creeped:false, boss:true, bossStatic, dmgCap: bossStatic ? 1 : 0};
       items.push(it); bossWaveItems.push(it);
     }
   }
@@ -313,7 +380,7 @@ function spawnItem(atAng, atRing, forceHazard, safe){
     } while(!ok && tries<12);
     if(!ok) return false;
   }
-  let type;
+  let type; _pickTeaser=false;
   const heartEligible = !zen && hp<maxHp && (score-lastHeartScore)>=HEART_SCORE_GAP;
   if(forceHazard){
     type = pickHazardKind();
@@ -338,6 +405,8 @@ function spawnItem(atAng, atRing, forceHazard, safe){
     // geçildikten sonra dolardı. Gecikme, fark edilir bir "bekleme" hissi
     // korurken gerçek erişim süresiyle uyumlu kalacak şekilde kısa tutuldu.
     creepT: type==='hazardCreep' ? 50+rnd()*40 : 0, creeped:false});
+  if(_pickTeaser) items[items.length-1].dmgCap=2;      // eşiğinden önce gelen keşif: en fazla 2 can
+  if(isHazardType(type)) noteGlitchSeen(type);
   if(type==='hazardTwin'){
     const otherRings=[0,1,2].filter(x=>x!==ring);
     const decoyRing=otherRings[Math.floor(rnd()*otherRings.length)];
@@ -388,7 +457,7 @@ function itemsAheadByRing(){
   }
   return {perRing, total};
 }
-function trySpawnOnRing(ring){
+function trySpawnOnRing(ring, safe){
   let ang, tries=0, ok=false;
   do{
     ang = normAng(player.ang + 1.2 + rnd()*(LOOKAHEAD-1.0));
@@ -402,7 +471,7 @@ function trySpawnOnRing(ring){
     tries++;
   } while(!ok && tries<10);
   if(!ok) return false;
-  return spawnItem(ang, ring);
+  return spawnItem(ang, ring, false, safe);
 }
 // ---- Tehdit yönetmeni ----
 // Rastgele akış tek başına oyuncunun halkasını uzun süre boş bırakabiliyordu
@@ -466,16 +535,23 @@ function startBreather(){
     if(clear) items.push({ang, ring, type:'star', alive:true, pop:0, expiring:false, prevFwd:null});
   }
 }
-function updateSpawns(dt){
+function updateSpawns(dt, calm){
   // Tutorial kendi öğelerini elle (tutorial.js) sahneye koyuyor — normal
   // rastgele spawn tamamen susturulur, senaryo hiç bozulmasın.
   if(tutorialActive) return;
-  threatDirector(dt);
-  if(breathT>0) return;                               // nefes molasında akış da susar
+  if(!calm) threatDirector(dt);
+  // Ekran hiçbir zaman boş kalmaz: görünen öğe sayısı MIN_VISIBLE'ın altına
+  // düşerse bekleme ve yoğunluk sınırı atlanıp hemen yeni öğe gelir.
+  // Nefes molasında akış DURMAZ, sadece cızırtı gelmez (eskiden mola boyunca
+  // hiçbir şey doğmuyordu → ölçümde 2 sn'ye varan tamamen boş turlar).
+  const breathing = breathT>0 || !!calm;
+  let visible=0;
+  for(const it of items) if(it.alive && !it.expiring) visible++;
+  const starving = visible < MIN_VISIBLE;
   spawnCooldown -= dt;
-  if(spawnCooldown>0) return;
+  if(spawnCooldown>0 && !starving) return;
   const {perRing, total} = itemsAheadByRing();
-  if(total >= targetDensity()) return;
+  if(total >= targetDensity() && !starving) return;
   // En boş halkayı önce dene (yığılmayı önler); eşit doluluklarda
   // rastgele sırayla (önce karıştır, SONRA doluluğa göre kararlı sırala —
   // sort() içinde rnd() çağırmak yanlış/kararsız sonuç verirdi).
@@ -483,12 +559,13 @@ function updateSpawns(dt){
   for(let i=order.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [order[i],order[j]]=[order[j],order[i]]; }
   order.sort((a,b)=>perRing[a]-perRing[b]);
   for(const ring of order){
-    if(trySpawnOnRing(ring)){
+    if(trySpawnOnRing(ring, breathing)){
       spawnCooldown = Math.max(3, 7/(player.speed/1.5));
       return;
     }
   }
 }
+const MIN_VISIBLE = 3;
 
 function tap(x){
   // Tutorial'ın coin/tehlike adımlarında (senaryo öğesi oyuncunun O ANKİ
@@ -550,7 +627,7 @@ function update(dt){
   let pullMul=1;
   if(!zen){
     for(const it of items){
-      if(!it.alive || it.expiring || it.type!=='hazardPull' || it.ring!==player.targetRing) continue;
+      if(!it.alive || it.expiring || it.type!=='hazardPull' || it.bossStatic || it.ring!==player.targetRing) continue;
       const fwd=normAng(it.ang-player.ang);
       if(fwd>0 && fwd<0.85) pullMul=Math.max(pullMul, 1+(1-fwd/0.85)*0.55);
     }
@@ -575,13 +652,16 @@ function update(dt){
 
   // Boss dalgası sürerken normal akış duraklar — "stage" temiz kalsın,
   // dalganın öğeleriyle karışıp okunaksızlaşmasın.
-  if(!bossActive) updateSpawns(dt);
+  // Labirent bitti ama son sütunlar henüz geride kalmadıysa (boss resmen
+  // bitmeden) normal akış cızırtısız başlar — ekran o arada boş kalmasın.
+  const bossTail = bossActive && bossNextCol>=bossEnd && !bossQueue.length;
+  if(!bossActive || bossTail) updateSpawns(dt, bossTail);
 
   for(const it of items){
     if(!it.alive) continue;
     if(!it.expiring && it.pop<1) it.pop=Math.min(1,it.pop+dt*0.14);
 
-    if(it.type==='hazardJump' && !it.expiring){
+    if(it.type==='hazardJump' && !it.expiring && !it.bossStatic){
       it.jumpT-=dt;
       if(it.jumpT<=0){
         // Yalnız komşu halkaya atlar (eskiden 0→2 sarmalı iki halka zıplıyordu)
@@ -594,11 +674,11 @@ function update(dt){
         else { it.ring=nr; it.jumpT=70+rnd()*60; }
       }
     }
-    if(it.type==='hazardPulse' && !it.expiring){
+    if(it.type==='hazardPulse' && !it.expiring && !it.bossStatic){
       it.pulsePhase += dt*0.045;
       it.pulseDanger = Math.sin(it.pulsePhase) > 0.5;
     }
-    if(it.type==='hazardCreep' && !it.expiring && !it.creeped){
+    if(it.type==='hazardCreep' && !it.expiring && !it.creeped && !it.bossStatic){
       it.creepT-=dt;
       if(it.creepT<=0){
         it.creeped=true;
@@ -645,7 +725,7 @@ function update(dt){
         if(player.invulT<=0){
           it.alive=false;
           if(it.tutorialTag && typeof tutorialOnItemResolved==='function') tutorialOnItemResolved(it.tutorialTag);
-          hitHazard(ix,iy,it.type); if(state!=='play') return;
+          hitHazard(ix,iy,it.type,it); if(state!=='play') return;
         }
       } else { // hazardTwinDecoy
         if(sameRing){ it.alive=false; burst(ix,iy,'#ffb27a',10,3); beep(300,0.05,'sine',0.06); }
@@ -794,13 +874,14 @@ function stepGame(frameDt){
   updateHud();
 }
 
-function hitHazard(ix,iy,subtype){
+function hitHazard(ix,iy,subtype,itm){
   const px=CX+Math.cos(player.ang)*player.curRadius, py=CY+Math.sin(player.ang)*player.curRadius;
   // Bu fonksiyondaki tüm sesler "rakiplere çarpma" anına ait olduğundan
   // melodi-kombosu sesi kısma kuralından muaf tutulur (5. parametre).
   if(player.shieldHits>0){ player.shieldHits--; session.shieldSaved=true; burst(px,py,'#5efc82',26,5); shake=9;
     beep(300,0.2,'square',0.14,true); return; }
-  const dmg = HAZARD_DAMAGE[subtype]||1;
+  let dmg = HAZARD_DAMAGE[subtype]||1;
+  if(itm && itm.dmgCap) dmg = Math.min(dmg, itm.dmgCap);
   hp = Math.max(0, hp-dmg); combo=1; shake=Math.min(20, 8+dmg*1.2); flash=1; session.hits++;
   burst(ix,iy,T.peril,22,5); beep(120,0.4,'sawtooth',0.2,true); beep(80,0.5,'square',0.15,true); vibrate([40,30,40]);
   if(hp<=0){
