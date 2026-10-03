@@ -30,7 +30,7 @@ const GAME_STATES = {play:1, pause:1, over:1, revive:1, story:1};
 // hâlâ yörüngede yavaşça dönüyor olmalı — "canlı menü" hissi için.
 const MENU_STATES = {menu:1, mode:1, shop:1, settings:1, stats:1, battlepass:1, upgrades:1, howto:1, language:1};
 let mode='classic', diffKey='normal';
-let player, items, particles, score, combo, hp, maxHp, level, elapsed, spawnCooldown, shake, flash, freezeFlash;
+let player, items, particles, score, combo, hp, maxHp, level, elapsed, spawnCooldown, shake, flash;
 let levelFlashT, session, timeLeft, newRecord, timeScale, timeScaleT, activeBoost=null, pendingBoost=null;
 // Boss dalgası: skor eşiklerinde (bkz. BOSS_STAGES) güneşten patlayarak
 // beliren, tek seferlik yoğun bir tehlike dalgası. bossWaveItems o dalganın
@@ -49,7 +49,7 @@ let bossTelegraph;
 let lastHeartScore;
 const HEART_CHANCE = 0.06, HEART_SCORE_GAP = 300;
 
-const SLOW_DUR=300, MAGNET_DUR=360, INVUL=47.5, FREEZE_DUR=150, MULT_DUR=360, GHOST_DUR=240; // INVUL eskiden 95'ti, yarıya indirildi
+const SLOW_DUR=300, MAGNET_DUR=360, INVUL=47.5, MULT_DUR=360; // INVUL eskiden 95'ti, yarıya indirildi
 // Kombo başına eklenen hız payı — bkz. update()'teki comboSpeedBonus.
 // diffCfg.speedCap'e göre normal zorlukta tavana ~combo 27'de ulaşılır.
 const COMBO_SPEED_STEP = 0.09;
@@ -57,17 +57,17 @@ const PW = ['shield','slow','magnet','mult'];
 // HUD çipleriyle (bkz. chip() çağrıları aşağıda) aynı ikon setine eşler —
 // oyun dünyasındaki takviye topları da render.js'de bu anahtarlarla,
 // sistem emojisi yerine oyunun kendi SVG ikonlarıyla çizilir.
-const PW_ICON_TYPE = {shield:'shield', slow:'clock', magnet:'magnet', freeze:'hourglass', mult:'coin', ghost:'ghost'};
+const PW_ICON_TYPE = {shield:'shield', slow:'clock', magnet:'magnet', mult:'coin'};
 
 function resetGame(){
   player = { ang:-Math.PI/2, targetRing:0, curRadius:radiusFor(0), speed:1.6, speedMulEase:1,
-             shieldHits:0, slowT:0, magnetT:0, invulT:0, freezeT:0, multT:0, ghostT:0 };
+             shieldHits:0, slowT:0, magnetT:0, invulT:0, multT:0 };
   items=[]; particles=[]; score=0;
   // Çekirdek Ağacı'ndaki "Refleks" dalı, her denemeyi biraz daha ileriden
   // (yüksek bir kombodan) başlatır — kalıcı, sıfırlanmayan bir avantaj.
   combo=1+Math.floor(coreBonus('startCombo'));
   maxHp = mode==='zen' ? 9999 : maxHpFor(); hp = maxHp;
-  level=1; elapsed=0; spawnCooldown=0; threatCd=0; breathT=0; nextBreath=720; shake=0; flash=0; freezeFlash=0; levelFlashT=0;
+  level=1; elapsed=0; spawnCooldown=0; threatCd=0; breathT=0; nextBreath=720; shake=0; flash=0; levelFlashT=0;
   session = {stars:0, golds:0, diamonds:0, magnets:0, hits:0, shieldSaved:false, streakMax:0,
              coins:0, coinPickups:0, luckyCharges:0, noteMult:1, revivedUsed:false};
   timeLeft = mode==='time' ? 60 : null;
@@ -104,7 +104,7 @@ function angDiff(a,b){ let d=b-a; while(d>Math.PI)d-=Math.PI*2; while(d<-Math.PI
 function radiusFor(r){ return RINGS[r]; }
 function easeOut(t){ return 1-Math.pow(1-t,3); }
 function isHazardType(t){ return t==='hazard'||t==='hazardJump'||t==='hazardBomb'||t==='hazardPull'||t==='hazardTwin'||t==='hazardPulse'||t==='hazardCreep'; }
-function isPower(t){ return t==='shield'||t==='slow'||t==='magnet'||t==='freeze'||t==='mult'||t==='ghost'; }
+function isPower(t){ return t==='shield'||t==='slow'||t==='magnet'||t==='mult'; }
 
 // Skor eşiklerinde açılan gelişmiş tehlike tipleri: eşiğe ulaşınca bir anda
 // hep-ya-da-hiç değil, eşikten ne kadar ileri gidersen ihtimali o kadar
@@ -534,7 +534,7 @@ function update(dt){
   // fırlaması) önlemek için hedef çarpana her karede yumuşakça yaklaşılır —
   // "top bi anda aşırı hızlanıyor" hissi buradan geliyordu.
   let targetSpeedMul = 1;
-  if(player.freezeT>0) targetSpeedMul=0.04; else if(player.slowT>0) targetSpeedMul=0.5;
+  if(player.slowT>0) targetSpeedMul=0.5;
   player.speedMulEase += (targetSpeedMul-player.speedMulEase)*Math.min(1,0.1*dt);
   const speedMul = player.speedMulEase;
   // Hız artışı artık SÜREYE/SKORA değil KOMBOYA bağlı: oyunun başında
@@ -568,9 +568,7 @@ function update(dt){
   if(player.slowT>0) player.slowT-=dt;
   if(player.magnetT>0) player.magnetT-=dt;
   if(player.invulT>0) player.invulT-=dt;
-  if(player.freezeT>0) player.freezeT-=dt;
   if(player.multT>0) player.multT-=dt;
-  if(player.ghostT>0) player.ghostT-=dt;
   const mult = (player.multT>0 ? 2+upgradeBonus('multPower') : 1) * (diffCfg.scoreMult||1);
 
   // Boss dalgası sürerken normal akış duraklar — "stage" temiz kalsın,
@@ -633,7 +631,6 @@ function update(dt){
       if(isHazardType(it.type)){
         if(!sameRing) continue;
         if(it.type==='hazardPulse' && !it.pulseDanger) continue;
-        if(player.ghostT>0){ it.alive=false; burst(ix,iy,'#ffffff',10,3); continue; }
         if(player.invulT<=0){
           it.alive=false;
           if(it.tutorialTag && typeof tutorialOnItemResolved==='function') tutorialOnItemResolved(it.tutorialTag);
@@ -746,7 +743,6 @@ function update(dt){
 
   if(shake>0) shake*=Math.pow(0.86,dt);
   if(flash>0) flash=Math.max(0,flash-dt*0.06);
-  if(freezeFlash>0) freezeFlash=Math.max(0,freezeFlash-dt*0.05);
   if(levelFlashT>0) levelFlashT-=dt;
   // Melodi kombosunun "yavaş çekim" anı bitince timeScale eskiden tek
   // karede 0.3'ten 1'e fırlıyordu — bu da anlık bir hız patlaması gibi
@@ -811,9 +807,7 @@ function activatePower(type,x,y){
   if(type==='shield'){ player.shieldHits=shieldHitsFor(); burst(x,y,'#5efc82',12,3.5); beep(700,0.12,'sine',0.13); beep(1050,0.12,'triangle',0.1); }
   else if(type==='slow'){ player.slowT=SLOW_DUR*durMul; burst(x,y,'#7aa2ff',12,3.5); beep(400,0.2,'sine',0.13); }
   else if(type==='magnet'){ player.magnetT=MAGNET_DUR*durMul; session.magnets++; stats.magnets++; burst(x,y,'#ff7ae0',12,3.5); beep(600,0.14,'triangle',0.13); beep(900,0.14,'sine',0.1); }
-  else if(type==='freeze'){ player.freezeT=FREEZE_DUR*durMul; freezeFlash=0.5; burst(x,y,'#e4f6ff',10,3); beep(500,0.18,'sine',0.13); }
   else if(type==='mult'){ player.multT=MULT_DUR*durMul; burst(x,y,'#ffd24a',12,3.5); beep(750,0.14,'triangle',0.13); }
-  else if(type==='ghost'){ player.ghostT=GHOST_DUR*durMul; burst(x,y,'#ffffff',20,5); beep(450,0.16,'sine',0.13); }
   addScore(10*(diffCfg.scoreMult||1)); shake=6; vibrate(15);
 }
 
@@ -849,7 +843,7 @@ function updateHud(){
   // doğrulandı: birden fazla güç-takviyesi chip'i (#pw) aynı anda aktif
   // olunca ikinci satıra taşıp goalHint'in TAM ÜSTÜNE biniyordu — bu
   // yüzden herhangi bir takviye aktifken ipucu geçici olarak gizleniyor.
-  const anyPowerupActive = player.shieldHits>0 || player.slowT>0 || player.magnetT>0 || player.freezeT>0 || player.multT>0 || player.ghostT>0;
+  const anyPowerupActive = player.shieldHits>0 || player.slowT>0 || player.magnetT>0 || player.multT>0;
   let goalText='';
   if(mode!=='zen' && !bossActive && !anyPowerupActive){
     const bossRemain = bossStageFor(bossNextIndex).score - score;
@@ -883,9 +877,7 @@ function updateHud(){
   if(player.shieldHits>0) html+=`<div class="pwchip">${icon('shield')}${player.shieldHits>1?' ×'+player.shieldHits:''}</div>`;
   if(player.slowT>0) html+=chip('clock', player.slowT/SLOW_DUR);
   if(player.magnetT>0) html+=chip('magnet', player.magnetT/MAGNET_DUR);
-  if(player.freezeT>0) html+=chip('hourglass', player.freezeT/FREEZE_DUR);
   if(player.multT>0) html+=chip('coin', player.multT/MULT_DUR);
-  if(player.ghostT>0) html+=chip('ghost', player.ghostT/GHOST_DUR);
   if(_hud.pw!==html){ document.getElementById('pw').innerHTML=html; _hud.pw=html; }
   const flashOpacity = levelFlashT>0 ? Math.min(1, levelFlashT/20) : 0;
   if(_hud.flash!==flashOpacity){ document.getElementById('levelFlash').style.opacity=flashOpacity; _hud.flash=flashOpacity; }

@@ -58,21 +58,6 @@ D.slow=g=>{ const top=30, bot=226;
   g.fillStyle=gold(g,-16,-110,16,-80); g.beginPath(); g.roundRect(-16,-108,32,24,5); g.fill(); g.strokeStyle='rgba(60,30,5,.6)'; g.lineWidth=2; g.stroke(); g.restore();
   g.fillStyle='#2a1406'; g.beginPath(); g.roundRect(52,206,152,24,8); g.fill(); g.fillStyle=gold(g,52,206,52,230); g.fillRect(56,208,144,5);
   spec(g,96,88,30,10,1.3,0.35); sparkle(g,188,58,11,0.9); };
-// 5) Dondurma: buz küpünde donmuş altın nota
-D.freeze=g=>{ const x=44, y=44, w=168, r=26;
-  shadow(g); g.beginPath(); g.roundRect(x,y,w,w,r); g.fillStyle='rgba(20,70,110,.9)'; g.fill(); noShadow(g);
-  const ig=g.createLinearGradient(x,y,x+w,y+w); ig.addColorStop(0,'#c9f4ff'); ig.addColorStop(0.35,'#5cc8f0'); ig.addColorStop(0.75,'#2384c4'); ig.addColorStop(1,'#0f4d86'); g.fillStyle=ig; g.beginPath(); g.roundRect(x,y,w,w,r); g.fill();
-  // donmuş nota: içerden parlayan altın, üstünde ince buz tülü
-  const ng=g.createLinearGradient(-25,-85,40,20); ng.addColorStop(0,'#fff1b0'); ng.addColorStop(0.5,'#f2b53a'); ng.addColorStop(1,'#a8650e');
-  noteShape(g,118,166,46,ng); g.globalAlpha=0.18; g.fillStyle='#dff7ff'; g.beginPath(); g.roundRect(x,y,w,w,r); g.fill(); g.globalAlpha=1;
-  // iç kenar (buz kalınlığı)
-  g.strokeStyle='rgba(10,50,90,.45)'; g.lineWidth=8; g.beginPath(); g.roundRect(x+10,y+10,w-20,w-20,r-8); g.stroke();
-  g.strokeStyle='rgba(255,255,255,.85)'; g.lineWidth=5; g.beginPath(); g.roundRect(x+3,y+3,w-6,w-6,r-3); g.stroke();
-  g.strokeStyle='rgba(255,255,255,.5)'; g.lineWidth=3; g.beginPath(); g.moveTo(x+20,y+40); g.lineTo(x+40,y+20); g.moveTo(x+18,y+70); g.lineTo(x+70,y+18); g.stroke();
-  g.strokeStyle='rgba(255,255,255,.35)'; g.lineWidth=2; g.beginPath(); g.moveTo(x+w-30,y+w-60); g.lineTo(x+w-60,y+w-30); g.moveTo(x+w-50,y+48); g.lineTo(x+w-28,y+70); g.stroke();
-  // kar tanesi
-  g.save(); g.translate(x+w-30,y+30); g.strokeStyle='#fff'; g.lineWidth=3.5; g.lineCap='round'; for(let i=0;i<6;i++){ g.rotate(Math.PI/3); g.beginPath(); g.moveTo(0,0); g.lineTo(0,-20); g.moveTo(0,-12); g.lineTo(-6,-17); g.moveTo(0,-12); g.lineTo(6,-17); g.stroke(); } g.restore();
-  sparkle(g,x+22,y+w-24,10,0.9); };
 // 6) x2: madalyon
 D.mult=g=>{ const cx=128, cy=128, R=104;
   shadow(g); g.beginPath(); g.arc(cx,cy,R,0,7); g.fillStyle='#6e4510'; g.fill(); noShadow(g);
@@ -82,22 +67,6 @@ D.mult=g=>{ const cx=128, cy=128, R=104;
   g.font='900 96px Arial Black, Arial, sans-serif'; g.textAlign='center'; g.textBaseline='middle';
   g.lineWidth=10; g.strokeStyle='#4a2a06'; g.strokeText('x2',cx,cy+6); g.fillStyle=gold(g,cx,cy-40,cx,cy+50); g.fillText('x2',cx,cy+6);
   g.save(); g.beginPath(); g.arc(cx,cy,R,0,7); g.clip(); spec(g,cx-46,cy-56,60,22,-0.6,0.5); g.restore(); sparkle(g,cx+70,cy-70,12,0.95); };
-// 7) Hayalet: kulaklıklı yarı saydam hayalet
-D.ghost=g=>{ const cx=128;
-  const G=()=>{ g.beginPath(); g.moveTo(54,214); g.lineTo(54,118); g.bezierCurveTo(54,58,202,58,202,118); g.lineTo(202,214);
-    for(let i=0;i<4;i++){ const x0=202-i*37; g.quadraticCurveTo(x0-9,196,x0-18.5,214); g.quadraticCurveTo(x0-28,232,x0-37,214); } g.closePath(); };
-  shadow(g); G(); g.fillStyle='rgba(120,90,170,.6)'; g.fill(); noShadow(g);
-  G(); const gg=g.createRadialGradient(cx-26,98,10,cx,140,140); gg.addColorStop(0,'rgba(255,255,255,.98)'); gg.addColorStop(0.55,'rgba(220,214,255,.92)'); gg.addColorStop(1,'rgba(150,130,220,.85)'); g.fillStyle=gg; g.fill();
-  G(); g.lineWidth=3; g.strokeStyle='rgba(255,255,255,.8)'; g.stroke();
-  g.fillStyle='#2a1a40'; g.beginPath(); g.ellipse(104,128,11,15,0,0,7); g.fill(); g.beginPath(); g.ellipse(152,128,11,15,0,0,7); g.fill();
-  g.fillStyle='#fff'; g.beginPath(); g.arc(108,122,4,0,7); g.fill(); g.beginPath(); g.arc(156,122,4,0,7); g.fill();
-  g.fillStyle='rgba(255,120,160,.45)'; g.beginPath(); g.ellipse(88,150,10,6,0,0,7); g.fill(); g.beginPath(); g.ellipse(168,150,10,6,0,0,7); g.fill();
-  g.strokeStyle='#2a1a40'; g.lineWidth=4; g.lineCap='round'; g.beginPath(); g.arc(128,150,10,0.2,Math.PI-0.2); g.stroke();
-  // kulaklık
-  g.lineWidth=11; g.strokeStyle=gold(g,40,40,216,140); g.beginPath(); g.arc(cx,128,82,Math.PI*1.08,Math.PI*1.92); g.stroke();
-  for(const sx of [-1,1]){ const x=cx+sx*80; const pg=g.createLinearGradient(x-16,0,x+16,0); pg.addColorStop(0,'#3a2a12'); pg.addColorStop(0.5,'#f2c55c'); pg.addColorStop(1,'#6e4510'); g.fillStyle=pg; g.beginPath(); g.roundRect(x-15,104,30,48,12); g.fill(); g.fillStyle='#1a1208'; g.beginPath(); g.roundRect(x-9,112,18,32,8); g.fill(); }
-  spec(g,104,88,34,14,-0.4,0.6); sparkle(g,206,70,11,0.9); };
-
 window.ICONS={};
 for(const k of Object.keys(D)){ const c=mk(); const g=c.getContext('2d'); D[k](g); window.ICONS[k]=c.toDataURL('image/png'); }
 window.DONE=true;

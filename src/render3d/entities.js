@@ -12,7 +12,7 @@ import { glowTexture, shadowTexture, dotTexture, bossRingTexture } from './textu
 import { TOP_Y } from './world.js';
 import { RibbonBatch } from './ribbon.js';
 
-export const ITEM_TYPES = ['star','gold','diamond','coin','heart','shield','slow','magnet','freeze','mult','ghost',
+export const ITEM_TYPES = ['star','gold','diamond','coin','heart','shield','slow','magnet','mult',
   'hazard','hazardJump','hazardBomb','hazardPull','hazardTwin','hazardTwinDecoy','hazardPulse','hazardCreep'];
 const HAZARDS = new Set(['hazard','hazardJump','hazardBomb','hazardPull','hazardTwin','hazardTwinDecoy','hazardPulse','hazardCreep']);
 // Manifest görsellerinin varsayılan göreli boyutu (2D sürümdeki oranlar).
@@ -403,7 +403,7 @@ export class Entities {
       p.mat.rotation = -lean*0.35 + (f.inGame ? Math.sin(t*39)*0.04 : 0);
     }
     const blink = pl.invulT>0 && (Math.floor(pl.invulT/4)%2===0);
-    const alpha = blink ? 0 : (pl.ghostT>0 ? 0.5+Math.sin(t*10)*0.15 : 1);
+    const alpha = blink ? 0 : 1;
     p.mat.opacity = alpha;
     if(p.model) p.model.visible = p.model.visible && !blink;
     p.glow.position.y = 0.35; p.glow.scale.setScalar(3.6); p.glow.material.color.copy(linColor(f.playerColor)); p.glow.material.opacity = 0.4*alpha;
