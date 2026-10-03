@@ -1,4 +1,4 @@
-const CACHE = 'beat-orbit-v27';
+const CACHE = 'beat-orbit-v28';
 const ASSETS = [
   './',
   './index.html',
@@ -66,6 +66,8 @@ self.addEventListener('message', e => {
 // bir önceki deploy'u görüyor) neden oluyordu.
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  // Video parça parça (Range) istenir; önbelleğe/SW'ye karışmasın (Safari)
+  if (e.request.headers.has('range') || /\.(mp4|webm)$/.test(e.request.url)) return;
   e.respondWith(
     fetch(e.request).then(res => {
       const clone = res.clone();
