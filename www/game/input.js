@@ -140,6 +140,7 @@ window.addEventListener('pointerdown', e=>{
   if(state==='play'){ e.preventDefault(); tap(e.clientX); }
 }, {passive:false});
 window.addEventListener('keydown', e=>{
+  if(e.repeat){ if(e.code==='Space') e.preventDefault(); return; }   // basılı tutmak art arda halka değiştirmesin
   if(e.code==='ArrowRight' || e.code==='KeyD'){
     if(state==='play') tap(W);
   } else if(e.code==='ArrowLeft' || e.code==='KeyA'){
@@ -186,3 +187,10 @@ async function clearAppCache(){
   }
 }
 document.getElementById('clearCacheBtn').addEventListener('click', e=>{ e.stopPropagation(); clearAppCache(); });
+// iOS (App Store 3.1.1) kalıcı satın alımlar için zorunlu: reklamsız paket ve
+// penalar cihaz değişince/yeniden yüklemede geri gelir.
+document.getElementById('restorePurchasesBtn').addEventListener('click', e=>{
+  e.stopPropagation();
+  if(window.Premium && Premium.isNative()){ Premium.restore(); queueToast(t('restore_started_toast')); }
+  else queueToast(t('restore_web_toast'));
+});

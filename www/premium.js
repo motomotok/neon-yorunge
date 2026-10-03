@@ -39,8 +39,18 @@
       if (p.owned) { onOwned && onOwned(); }
       else if (p.pricing && p.pricing.price) { onPriceReady && onPriceReady(p.pricing.price); }
     });
-    store.when().approved((transaction) => transaction.verify());
-    store.when().verified((receipt) => receipt.finish());
+    // approved→verify ve verified→finish dinleyicileri store genelindedir;
+    // üç IAP dosyası (premium/pena-shop/season-pass) bunları yalnız BİR kez
+    // bağlar (eskiden her dosya ayrı bağladığı için her işlem 3 kez doğrulanıyordu).
+    if (!window.__iapHandlersBound) {
+      window.__iapHandlersBound = true;
+      window.__iapVerifiedHooks = window.__iapVerifiedHooks || [];
+      store.when().approved((transaction) => transaction.verify());
+      store.when().verified((receipt) => {
+        window.__iapVerifiedHooks.forEach((h) => { try { h(receipt); } catch (e) {} });
+        receipt.finish();
+      });
+    }
   }
 
   function purchase() {

@@ -931,3 +931,10 @@ h1 .gicon,h2 .gicon{color:var(--star);}
 .menuTop .menuTopStats{margin-top:0;}
 .menuTop #powerLevelLine{display:none;}
 .menuTop .menuTopRow{margin-top:26px;}
+
+/* Devam ederken 3-2-1 geri sayımı */
+#resumeCount{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%) scale(.6);z-index:25;pointer-events:none;
+  font-family:var(--font-display);font-weight:900;font-size:clamp(64px,22vw,120px);color:#fff;opacity:0;
+  text-shadow:0 0 24px rgba(255,207,122,.7),0 4px 0 rgba(0,0,0,.5);}
+#resumeCount.show{animation:resumeCountPop .55s ease-out forwards;}
+@keyframes resumeCountPop{0%{opacity:0;transform:translate(-50%,-50%) scale(.6);}25%{opacity:1;transform:translate(-50%,-50%) scale(1.05);}100%{opacity:.0;transform:translate(-50%,-50%) scale(1);}}
