@@ -31,13 +31,15 @@ function drawShootingStars(){
 
 let last=0;
 function loop(ts){
-  const dt=Math.min(40, ts-last)/16.6667 || 1; last=ts;
+  const rawMs = last ? ts-last : 16.6667; last=ts;
+  const dt=Math.min(40, rawMs)/16.6667 || 1;          // görsel efektler için
+  const simDt=Math.min(100, rawMs)/16.6667 || 1;      // oyun mantığı (bkz. stepGame)
   ctx.clearRect(0,0,W,H);
   // 3D modda (bkz. gfx.js) dünya WebGL canvas'ına (#game3d) çizilir; bu 2D
   // canvas onun üstünde saydam kalır ve sadece tam ekran flaşları taşır.
   // Oyun mantığı (update) iki modda da birebir aynı.
   if(gfx3dActive()){
-    if(state==='play') update(dt);
+    if(state==='play') stepGame(simDt);
     else if(MENU_STATES[state]) updateIdleOrb(dt);
     updateParticles(dt);
     renderFrame3D(dt);
@@ -45,7 +47,7 @@ function loop(ts){
   } else {
     updateShootingStars(dt);
     drawBg(dt);
-    if(state==='play') update(dt);
+    if(state==='play') stepGame(simDt);
     else if(MENU_STATES[state]) updateIdleOrb(dt);
     drawWorld();
     drawParticles(dt);

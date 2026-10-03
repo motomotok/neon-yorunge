@@ -19,7 +19,7 @@ function syncSeasonPassUI(price){
 function renderBattlepass(){
   ensureSeason();
   const s = activeSeason();
-  const daysLeft = Math.max(0, s.days - seasonDayIndex(s.start, new Date()));
+  const daysLeft = Math.max(0, s.days - seasonDayIndex(s.start, gameNow()));
   document.getElementById('seasonXpLine').textContent = t('season_xp_line',{xp:stats.seasonXp, name:t(s.nameKey), days:daysLeft});
   syncSeasonPassUI();
   const wrap=document.getElementById('battlepassTiers'); wrap.innerHTML='';
