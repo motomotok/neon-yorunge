@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.16.0';
+const GAME_VERSION = '2.17.0';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -487,9 +487,9 @@ window.addEventListener('pagehide',flushSaves);
 // kolaylaştırdığı için (bkz. kullanıcı talebi), taban zorluk da buna
 // karşılık bir tık yükseltildi — skor hâlâ kazanılıyor ama kolay gelmiyor.
 const DIFF = {
-  easy:{label:'Kolay', hazBase:0.06, hazRamp:0.0003, hazCap:0.16, speedRamp:0.00056, speedCap:2.0, scoreMult:0.8},
-  normal:{label:'Normal', hazBase:0.105, hazRamp:0.00054, hazCap:0.26, speedRamp:0.00088, speedCap:2.4, scoreMult:1.0},
-  hard:{label:'Zor', hazBase:0.165, hazRamp:0.00096, hazCap:0.40, speedRamp:0.00128, speedCap:2.9, scoreMult:1.35},
+  easy:{label:'Kolay', hazBase:0.06, hazRamp:0.0003, hazCap:0.16, speedRamp:0.00056, speedCap:2.0, scoreMult:0.8, threatFar:3.4, threatCdMul:1.5},
+  normal:{label:'Normal', hazBase:0.105, hazRamp:0.00054, hazCap:0.26, speedRamp:0.00088, speedCap:2.4, scoreMult:1.0, threatFar:2.7, threatCdMul:1},
+  hard:{label:'Zor', hazBase:0.165, hazRamp:0.00096, hazCap:0.40, speedRamp:0.00128, speedCap:2.9, scoreMult:1.35, threatFar:2.3, threatCdMul:0.8},
 };
 let diffCfg = DIFF.normal;
 

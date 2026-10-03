@@ -67,7 +67,7 @@ function resetGame(){
   // (yüksek bir kombodan) başlatır — kalıcı, sıfırlanmayan bir avantaj.
   combo=1+Math.floor(coreBonus('startCombo'));
   maxHp = mode==='zen' ? 9999 : maxHpFor(); hp = maxHp;
-  level=1; elapsed=0; spawnCooldown=0; shake=0; flash=0; freezeFlash=0; levelFlashT=0;
+  level=1; elapsed=0; spawnCooldown=0; threatCd=0; breathT=0; nextBreath=720; shake=0; flash=0; freezeFlash=0; levelFlashT=0;
   session = {stars:0, golds:0, diamonds:0, magnets:0, hits:0, shieldSaved:false, streakMax:0,
              coins:0, coinPickups:0, luckyCharges:0, noteMult:1, revivedUsed:false};
   timeLeft = mode==='time' ? 60 : null;
@@ -291,7 +291,7 @@ function spawnBossColumns(){
 // sistemi zaten çakışmasız bir yer bulup buraya iletir); ikisi de
 // verilmezse resetGame()'in ilk tohumlaması için basit bir arama yapar.
 // İkisi de başarıyla yerleştirilip yerleştirilmediğini boolean döner.
-function spawnItem(atAng, atRing){
+function spawnItem(atAng, atRing, forceHazard){
   const zen = mode==='zen';
   // Çekirdek Ağacı'ndaki "Sağlamlık" dalı tehlike ihtimalini kalıcı olarak
   // hafifçe düşürür — %30'la sınırlı, zorluk hep anlamlı kalsın diye.
@@ -314,7 +314,9 @@ function spawnItem(atAng, atRing){
   }
   let type;
   const heartEligible = !zen && hp<maxHp && (score-lastHeartScore)>=HEART_SCORE_GAP;
-  if(heartEligible && rnd()<HEART_CHANCE){
+  if(forceHazard){
+    type = pickHazardKind();
+  } else if(heartEligible && rnd()<HEART_CHANCE){
     type='heart'; lastHeartScore=score;
   } else {
     let r=rnd();
@@ -400,10 +402,74 @@ function trySpawnOnRing(ring){
   if(!ok) return false;
   return spawnItem(ang, ring);
 }
+// ---- Tehdit yönetmeni ----
+// Rastgele akış tek başına oyuncunun halkasını uzun süre boş bırakabiliyordu
+// (ölçüm: normal modda zamanın ~%75'inde oyuncunun önünde, kendi halkasında
+// hiç cızırtı yoktu; 9-14 sn'lik boş anlar). Yönetmen, oyuncunun bulunduğu
+// halkada önde (threatFar rad içinde) cızırtı yoksa adil bir mesafeye bir
+// tane koyar — hangi halkaya geçerse geçsin kısa sürede yeni bir tehdit
+// gelir. Adillik: cızırtı en az ~0.8 sn ileride belirir ve o açıda diğer
+// iki halkadan en az biri hep boş kalır (kaçış yolu).
+// Nefes molası: ~12-15 sn'de bir ~2.5 sn yönetmen ve normal akış susar,
+// önüne düz bir nota dizisi gelir (Subway Surfers'taki jeton sırası gibi).
+let threatCd=0, breathT=0, nextBreath=720;
+function threatDirector(dt){
+  if(mode==='zen') return;
+  if(breathT>0){ breathT-=dt; return; }
+  nextBreath -= dt;
+  if(nextBreath<=0){ startBreather(); return; }
+  threatCd -= dt; if(threatCd>0) return;
+  const r = player.targetRing;
+  // Yoğun/sakin nabız: tehdit penceresi yavaşça genişleyip daralır.
+  const angPerSec = player.speed*Math.max(0.5, player.speedMulEase||1)*0.018*60;
+  const near = Math.max(1.2, angPerSec*0.8);        // en az ~0.8 sn tepki süresi
+  // Pencere hızla birlikte kayar (yüksek komboda pena çok hızlı — pencere
+  // sabit kalsaydı yönetmen tam en heyecanlı anda susardı).
+  const far = Math.max((diffCfg.threatFar||2.7) + Math.sin(elapsed*0.012)*0.35, near + 0.9);
+  for(const it of items){
+    if(!it.alive || it.expiring || it.ring!==r || !isHazardType(it.type)) continue;
+    if(normAng(it.ang-player.ang) < far) return;
+  }
+  for(let k=0;k<8;k++){
+    const ang = normAng(player.ang + near + 0.1 + rnd()*(far-near-0.1));
+    let ok = true, blockedOther = new Set();
+    for(const it of items){
+      if(!it.alive || it.expiring) continue;
+      const gap = Math.abs(angDiff(it.ang, ang));
+      if(it.ring===r && gap<0.45){ ok=false; break; }
+      if(it.ring!==r && gap<CROSS_RING_GAP){ ok=false; break; }
+      if(it.ring!==r && gap<0.5 && (isHazardType(it.type))) blockedOther.add(it.ring);
+    }
+    if(!ok || blockedOther.size>=2) continue;          // kaçış yolu kalmazdı
+    if(spawnItem(ang, r, true)){
+      // Yoğun anda ~1.1 sn, sakin anda ~2.5 sn sonra yeni tehdit (nefes payı).
+      const intensity = 0.5 + 0.5*Math.sin(elapsed*0.012);
+      threatCd = (65 + (1-intensity)*85)*(diffCfg.threatCdMul||1); return;
+    }
+  }
+  threatCd = 12;
+}
+function startBreather(){
+  breathT = 150 + rnd()*30; nextBreath = 720 + rnd()*180;
+  // Nota dizisi: oyuncunun halkasına ya da komşusuna, önünde düz bir sıra.
+  const opts = [player.targetRing, player.targetRing, player.targetRing-1, player.targetRing+1].filter(x=>x>=0&&x<3);
+  const ring = opts[Math.floor(rnd()*opts.length)];
+  for(let i=0;i<6;i++){
+    const ang = normAng(player.ang + 1.3 + i*0.2);
+    let clear = true;
+    for(const it of items){
+      if(!it.alive || it.expiring || it.ring!==ring) continue;
+      if(Math.abs(angDiff(it.ang, ang)) < 0.22){ clear=false; break; }
+    }
+    if(clear) items.push({ang, ring, type:'star', alive:true, pop:0, expiring:false, prevFwd:null});
+  }
+}
 function updateSpawns(dt){
   // Tutorial kendi öğelerini elle (tutorial.js) sahneye koyuyor — normal
   // rastgele spawn tamamen susturulur, senaryo hiç bozulmasın.
   if(tutorialActive) return;
+  threatDirector(dt);
+  if(breathT>0) return;                               // nefes molasında akış da susar
   spawnCooldown -= dt;
   if(spawnCooldown>0) return;
   const {perRing, total} = itemsAheadByRing();
