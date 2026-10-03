@@ -125,6 +125,10 @@ export class Entities {
     }
     this.lastNotes = 0;
     this.particles = new PointCloud(900, dotTexture());
+    // Toplama patlamasındaki parçacıklar aynı noktada doğar; toplamalı (additive)
+    // karışımda üst üste binip aşırı parlak bir nokta oluşturuyor, bloom da bunu
+    // dev bir sarı/beyaz topa yayıyordu ("elektrik çarpması"). Normal karışım.
+    this.particles.mat.blending = THREE.NormalBlending;
     this.group.add(this.trail.obj, this.particles.obj);
   }
 
@@ -554,7 +558,9 @@ export class Entities {
     for(const p of f.particles){
       if(p.life<=0) continue;
       const y = baseY + R*(1.2 + (1-p.life)*1.4);
-      P.push(p.x - f.CX, y, p.y - f.CY, p.r*p.life*3.2, linColor(p.color), Math.min(1, p.life*1.2));
+      // İlk birkaç karede (henüz dağılmamışken) görünmez başlayıp açılır.
+      const fadeIn = Math.min(1, (1-p.life)/0.12);
+      P.push(p.x - f.CX, y, p.y - f.CY, p.r*p.life*3.2, linColor(p.color), Math.min(1, p.life*1.2)*fadeIn*0.85);
     }
     P.end();
   }
