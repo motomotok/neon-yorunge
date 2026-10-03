@@ -1,8 +1,8 @@
 // ---------------------------------------------------------------------------
 // Retro Oda menüsü + sinematik giriş.
 //
-// Ana menünün arkasında, gece vakti retro bir oda (img/room/room.jpg): camda
-// yağmur, titreyen abajur ışığı, dönen plak ve borudan süzülen notalar.
+// Ana menünün arkasında, gece vakti retro bir oda videosu (img/room/room.mp4):
+// camda yağmur, dönen plak; üstüne titreyen abajur ışığı ve borudan notalar.
 // BAŞLA'ya basılınca kamera ~1.35 sn'de plağın içine dalar ve oyun siyahtan
 // açılır. "Tekrar Oyna" dalışı oynatmaz. Ekrana dokunmak dalışı atlar.
 // Fotoğraf yüklenemezse eski prosedürel oda çizilir.
@@ -196,15 +196,31 @@ function _roomDrawRecord(g, t, squash, elec, zoom){
   g.fillStyle='#2a1a10'; g.beginPath(); g.arc(R.x+R.rx+4, R.y-6, 8, 0, 7); g.fill();
 }
 
-// Fotoğraf sahnesi (img/room/room.jpg, 768x1376): yüklenince prosedürel
-// çizimin yerine geçer; üstüne hafif canlılık katmanları eklenir.
-const ROOM_PHOTO = {w:768, h:1376, rec:{x:384, y:709, rx:89, ry:25},
-  win:{x:62, y:126, w:212, h:562}, horn:{x:336, y:528, rx:108, ry:136}, lamp:{x:590, y:405}};
+// Oda videosu (img/room/room.mp4, 720x1280, sessiz döngü: camda yağmur, dönen
+// plak) — oynayana kadar ilk karesi (room.jpg) gösterilir. İkisi de yoksa
+// prosedürel oda çizilir.
+const ROOM_PHOTO = {w:720, h:1280, rec:{x:352, y:659, rx:81, ry:23}, lamp:{x:540, y:372}, horn:{x:300, y:470}};
 const ROOM_DIVE = 1.35;   // BAŞLA → plağa dalış süresi (sn)
 function _roomPhoto(){
   if(!_room.img){ _room.img=new Image(); _room.img.decoding='async'; _room.img.src='img/room/room.jpg'; }
+  if(!_room.vid){
+    const v=document.createElement('video');
+    v.muted=true; v.defaultMuted=true; v.loop=true; v.playsInline=true; v.preload='auto';
+    v.setAttribute('muted',''); v.setAttribute('playsinline',''); v.setAttribute('webkit-playsinline','');
+    v.src = v.canPlayType('video/mp4; codecs="avc1.4D401F"') ? 'img/room/room.mp4' : 'img/room/room.webm';
+    _room.vid=v;
+  }
+  const v=_room.vid;
+  if(v.readyState>=2 && !v.paused) return v;
   return _room.img.complete && _room.img.naturalWidth>0 ? _room.img : null;
 }
+// Oda görünürken video oynar, oyunda durur (pil).
+function _roomVideoRun(on){
+  const v=_room.vid; if(!v) return;
+  if(on){ if(v.paused){ const pr=v.play(); if(pr && pr.catch) pr.catch(()=>{}); } }
+  else if(!v.paused) v.pause();
+}
+document.addEventListener('pointerdown', ()=>{ if(_room.visible) _roomVideoRun(true); }, {passive:true});   // otomatik oynatma engellendiyse ilk dokunuşta
 // Dalış kamerası: menü kamerasından (kenarlara kenetli) başlar, plak ekran
 // ortasına kayarken büyür → sıçrama olmadan içine girer.
 function _roomDiveCam(SW, SH, menuZoom, rec, ty, k){
@@ -240,43 +256,32 @@ function _roomFrame(dt){
 
 function _roomPhotoScene(g, img, dt, t, k, land){
   const P=ROOM_PHOTO, R=P.rec;
-  const cam=_roomDiveCam(P.w, P.h, land?1:1.2, R, land?0.4:0.42, k);
+  const cam=_roomDiveCam(P.w, P.h, land?1:1.18, R, land?0.4:0.42, k);
   g.setTransform(cam.s,0,0,cam.s,cam.ox,cam.oy);
   g.drawImage(img,0,0,P.w,P.h);
-  // yağmur: pencere camında, boru önünde değil
-  const Wn=P.win, Hn=P.horn;
-  g.save(); g.beginPath(); g.rect(Wn.x,Wn.y,Wn.w,Wn.h);
-  g.ellipse(Hn.x,Hn.y,Hn.rx,Hn.ry,-0.25,0,Math.PI*2); g.clip('evenodd');
-  g.strokeStyle='rgba(190,215,255,.22)'; g.lineWidth=1;
-  for(const d of _room.rain){ d.y+=0.010*d.s*dt; if(d.y>1.05){ d.y=-0.05; d.x=Math.random(); }
-    const x=Wn.x+d.x*Wn.w, y=Wn.y+d.y*Wn.h; g.beginPath(); g.moveTo(x,y); g.lineTo(x-2,y+13*d.s); g.stroke(); }
-  g.restore();
-  // abajur ışığı hafifçe titreşir
+  // abajur ışığı hafifçe titreşir + ışıkta toz zerreleri
   const flick = 0.85 + Math.sin(t*2.1)*0.08 + Math.sin(t*13)*0.03 + (Math.random()<0.012 ? -0.3 : 0);
-  g.save(); g.globalCompositeOperation='lighter';
   const L=P.lamp;
-  g.fillStyle=_rg(g,L.x,L.y,10,330,[[0,`rgba(255,180,100,${0.16*flick})`],[1,'rgba(255,160,80,0)']]); g.fillRect(L.x-330,L.y-330,660,660);
-  // toz zerreleri (abajur ışığında)
+  g.save(); g.globalCompositeOperation='lighter';
+  g.fillStyle=_rg(g,L.x,L.y,10,300,[[0,`rgba(255,180,100,${0.12*flick})`],[1,'rgba(255,160,80,0)']]); g.fillRect(L.x-300,L.y-300,600,600);
   for(const m of _room.motes){
-    if(!m.px){ m.px=L.x-150+Math.random()*300; m.py=L.y-100+Math.random()*450; }
-    m.py-=0.12*dt; m.px+=Math.sin(t*0.7+m.ph)*0.12*dt; if(m.py<L.y-160){ m.py=L.y+360; m.px=L.x-150+Math.random()*300; }
-    const a=0.28*flick*Math.max(0,1-Math.hypot(m.px-L.x,(m.py-L.y)*0.8)/330);
-    g.fillStyle=`rgba(255,225,180,${a})`; g.beginPath(); g.arc(m.px,m.py,m.s*0.6,0,7); g.fill(); }
+    if(!m.px){ m.px=L.x-140+Math.random()*280; m.py=L.y-80+Math.random()*420; }
+    m.py-=0.12*dt; m.px+=Math.sin(t*0.7+m.ph)*0.12*dt; if(m.py<L.y-150){ m.py=L.y+340; m.px=L.x-140+Math.random()*280; }
+    const a=0.28*flick*Math.max(0,1-Math.hypot(m.px-L.x,(m.py-L.y)*0.8)/300);
+    g.fillStyle=`rgba(255,225,180,${a})`; g.beginPath(); g.arc(m.px,m.py,m.s*0.55,0,7); g.fill(); }
   g.restore();
-  // plak döner: oluklarda gezinen parıltı + etikette dönen işaret
-  const rot=t*3.4;
-  g.save(); g.beginPath(); g.ellipse(R.x,R.y,R.rx,R.ry,0,0,Math.PI*2); g.clip();
-  g.globalCompositeOperation='lighter';
-  for(const off of [0, Math.PI]){
-    const a0=rot+off;
-    for(let r=0.45;r<=0.95;r+=0.1){ g.strokeStyle=`rgba(255,235,210,${0.10-(r-0.45)*0.08})`; g.lineWidth=1.2;
-      g.beginPath(); g.ellipse(R.x,R.y,R.rx*r,R.ry*r,0,a0,a0+0.55); g.stroke(); }
+  // video yokken (ilk kare) plak yine de dönüyormuş gibi görünsün
+  if(img===_room.img){
+    const rot=t*3.4;
+    g.save(); g.beginPath(); g.ellipse(R.x,R.y,R.rx,R.ry,0,0,Math.PI*2); g.clip();
+    g.globalCompositeOperation='lighter';
+    for(const off of [0, Math.PI]){ const a0=rot+off;
+      for(let r=0.45;r<=0.95;r+=0.1){ g.strokeStyle=`rgba(255,235,210,${0.10-(r-0.45)*0.08})`; g.lineWidth=1.2;
+        g.beginPath(); g.ellipse(R.x,R.y,R.rx*r,R.ry*r,0,a0,a0+0.55); g.stroke(); } }
+    g.restore();
   }
-  g.restore();
-  const la=-rot*1.0;
-  g.fillStyle='rgba(255,240,220,.55)'; g.beginPath(); g.ellipse(R.x+Math.cos(la)*R.rx*0.24, R.y+Math.sin(la)*R.ry*0.24, 2.2, 0.9, 0, 0, 7); g.fill();
   // borudan süzülen notalar
-  _roomNotes(g, dt, t, k, 300, 470, 0.7);
+  _roomNotes(g, dt, t, k, P.horn.x-30, P.horn.y-20, 0.65);
 }
 
 function _roomNotes(g, dt, t, k, x0, y0, sc){
@@ -325,6 +330,7 @@ function roomTick(ts){
   if(want!==_room.visible){
     _room.visible=want; _room.cv.style.display = want ? 'block' : 'none';
     document.body.classList.toggle('roomMenu', want);
+    _roomVideoRun(want);
   }
   if(!want) return false;
   const W=window.innerWidth, H=window.innerHeight, dpr=Math.min(2, window.devicePixelRatio||1);
