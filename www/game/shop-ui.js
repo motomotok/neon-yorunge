@@ -298,7 +298,7 @@ function renderLoginStreakScreen(){
 function updateLoginNext(){
   const el=document.getElementById('lsNext'); if(!el) return;
   if(!loginRewardClaimedToday()){ el.textContent=''; return; }
-  const now=new Date(), mid=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1);
+  const now=gameNow(), mid=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1);
   const s=Math.max(0,Math.floor((mid-now)/1000)), hh=String(Math.floor(s/3600)).padStart(2,'0'), mm=String(Math.floor(s%3600/60)).padStart(2,'0'), ss=String(s%60).padStart(2,'0');
   el.textContent=t('login_next_in',{t:`${hh}:${mm}:${ss}`});
 }

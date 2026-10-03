@@ -769,6 +769,27 @@ function update(dt){
   if(timeScaleT>0) timeScaleT-=dt;   // dt ile: 120 Hz ekranda yarı sürmesin
   else if(timeScale<1) timeScale=Math.min(1, timeScale+0.05*dt);
   if(tutorialActive && typeof tutorialTick==='function') tutorialTick();
+  if(!_simBatch) updateHud();
+}
+
+// Sabit adımlı simülasyon: oyun mantığı her zaman SIM_STEP (1/240 sn)
+// adımlarla ilerler, ekran yenileme hızından bağımsız.
+// - 60 Hz ve 120 Hz cihazlar aynı adım dizisini görür (günlük mod herkese
+//   aynı; rnd() tüketimi FPS'e bağlı değil).
+// - Düşük FPS'te tek karede büyük sıçrama olmaz → pena tehlikelerin
+//   "içinden geçemez", notalar kaçmaz (eskiden dış halkada kare başına açı
+//   çarpışma penceresini aşabiliyordu).
+// - 25 FPS'in altında oyun ağır çekime girmez (kare başına 100 ms'ye kadar
+//   yetişir; daha uzun duraklamalar — arka plan vb. — atlanır).
+const SIM_STEP = 0.25, SIM_MAX_STEPS = 24;
+let _simAcc = 0, _simBatch = false;
+function stepGame(frameDt){
+  _simAcc = Math.min(_simAcc + frameDt, SIM_STEP*SIM_MAX_STEPS);
+  _simBatch = true;
+  try{
+    while(_simAcc >= SIM_STEP && state==='play'){ update(SIM_STEP); _simAcc -= SIM_STEP; }
+  } finally { _simBatch = false; }
+  if(state!=='play') _simAcc = 0;
   updateHud();
 }
 

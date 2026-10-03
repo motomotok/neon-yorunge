@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.28.0';
+const GAME_VERSION = '2.29.0';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -524,13 +524,28 @@ function mulberry32(seed){
     return ((t ^ t >>> 14) >>> 0) / 4294967296;
   };
 }
-function dateSeed(d){ d=d||new Date(); return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate(); }
-function todayStr(d){ d=d||new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+// Oyun saati: cihaz saati geri alınsa bile görülen en ileri an kullanılır.
+// Saati ileri alıp günlük ödülü/serisini/reklam hakkını toplayan ve sonra
+// geri dönen oyuncu, gerçek saat o ana yetişene kadar yeni gün alamaz
+// (sunucusuz en makul önlem). Date.now() UTC olduğu için saat dilimi
+// değişikliği (yolculuk) bunu tetiklemez.
+function gameNowMs(){
+  const n=Date.now(), last=(typeof stats!=='undefined' && stats.lastSeenTs)||0;
+  if(n>last && typeof stats!=='undefined'){
+    const big = n-last > 60000;
+    stats.lastSeenTs=n;
+    if(big && typeof saveStats==='function') saveStats();
+  }
+  return Math.max(n,last);
+}
+function gameNow(){ return new Date(gameNowMs()); }
+function dateSeed(d){ d=d||gameNow(); return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate(); }
+function todayStr(d){ d=d||gameNow(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function daysBetweenStr(a,b){
   const da=new Date(a+'T00:00:00'), db=new Date(b+'T00:00:00');
   return Math.round((db-da)/86400000);
 }
-function weekendMult(){ return [5,6,0].includes(new Date().getDay()) ? 1.2 : 1; }
+function weekendMult(){ return [5,6,0].includes(gameNow().getDay()) ? 1.2 : 1; }
 let rngFn = Math.random;
 function rnd(){ return rngFn(); }
 
@@ -716,7 +731,7 @@ function adRewardsLeftToday(){
   return Math.max(0, DAILY_AD_REWARD_CAP - (stats.adRewardsToday||0));
 }
 function adCooldownRemainingMs(){
-  return Math.max(0, AD_REWARD_COOLDOWN_MS - (Date.now() - (stats.lastAdRewardAt||0)));
+  return Math.max(0, AD_REWARD_COOLDOWN_MS - (gameNowMs() - (stats.lastAdRewardAt||0)));
 }
 function watchAdForCoins(){
   const cooldown = adCooldownRemainingMs();
@@ -731,7 +746,7 @@ function watchAdForCoins(){
     // Sınırlar ödül anında da kontrol edilir (bekleme/günlük hak).
     if(adRewardsLeftToday()<=0 || adCooldownRemainingMs()>0) return;
     stats.adRewardsToday=(stats.adRewardsToday||0)+1;
-    stats.lastAdRewardAt=Date.now();
+    stats.lastAdRewardAt=gameNowMs();
     addNotes(REWARD_AD_COINS); saveStats();
     queueToast(t('toast_ad_watched',{n:REWARD_AD_COINS}));
     beep(700,0.1,'sine',0.13); beep(1000,0.1,'triangle',0.12);
@@ -779,7 +794,7 @@ function seasonDayIndex(startStr, d){
   return Math.floor((d-start)/86400000);
 }
 function activeSeason(d){
-  d = d || new Date();
+  d = d || gameNow();
   for(let i=0;i<SEASONS.length;i++){
     const s=SEASONS[i];
     const idx=seasonDayIndex(s.start, d);
