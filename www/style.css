@@ -927,3 +927,6 @@ h1 .gicon,h2 .gicon{color:var(--star);}
 /* Oda menüsünde menünün alt yazıları ve kenar butonları odanın üstünde okunaklı kalsın */
 body.roomMenu #screen-menu .menuFooter{text-shadow:0 1px 4px rgba(0,0,0,.9);}
 body.roomIntro #overlay,body.roomIntro #hud{opacity:0;pointer-events:none;}
+/* Oda menüsünde menü katmanının renkli sisi/lekeleri videoyu bulanıklaştırmasın */
+body.roomMenu #overlay.live{background:none;}
+body.roomMenu #overlay.live::before,body.roomMenu #overlay.live::after{display:none;}

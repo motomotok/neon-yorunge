@@ -207,6 +207,7 @@ function _roomPhoto(){
     const v=document.createElement('video');
     v.muted=true; v.defaultMuted=true; v.loop=true; v.playsInline=true; v.preload='auto';
     v.setAttribute('muted',''); v.setAttribute('playsinline',''); v.setAttribute('webkit-playsinline','');
+    v.playbackRate=0.9; v.defaultPlaybackRate=0.9;   // biraz daha sakin
     v.src = v.canPlayType('video/mp4; codecs="avc1.4D401F"') ? 'img/room/room.mp4' : 'img/room/room.webm';
     _room.vid=v;
   }
@@ -249,21 +250,21 @@ function _roomFrame(dt){
   else _roomProcScene(g, dt, t, k, land);
   g.setTransform(1,0,0,1,0,0);
   // vinyet
-  g.fillStyle=_rg(g,W/2,H*0.45,Math.min(W,H)*0.35,Math.max(W,H)*0.8,[[0,'rgba(0,0,0,0)'],[1,'rgba(0,0,0,.5)']]); g.fillRect(0,0,W,H);
+  g.fillStyle=_rg(g,W/2,H*0.45,Math.min(W,H)*0.45,Math.max(W,H)*0.8,[[0,'rgba(0,0,0,0)'],[1,`rgba(0,0,0,${photo?0.3:0.5})`]]); g.fillRect(0,0,W,H);
   if(black>0){ g.fillStyle=`rgba(0,0,0,${black})`; g.fillRect(0,0,W,H); }
   if(I && it>=ROOM_DIVE) _roomFinishIntro();
 }
 
 function _roomPhotoScene(g, img, dt, t, k, land){
   const P=ROOM_PHOTO, R=P.rec;
-  const cam=_roomDiveCam(P.w, P.h, land?1:1.18, R, land?0.4:0.42, k);
+  const cam=_roomDiveCam(P.w, P.h, land?1:1.1, R, land?0.4:0.43, k);   // video 720p: fazla büyütme bulanıklaştırır; plak BAŞLA'nın üstünde kalacak kadar
+  g.imageSmoothingEnabled=true; g.imageSmoothingQuality='high';
   g.setTransform(cam.s,0,0,cam.s,cam.ox,cam.oy);
   g.drawImage(img,0,0,P.w,P.h);
-  // abajur ışığı hafifçe titreşir + ışıkta toz zerreleri
-  const flick = 0.85 + Math.sin(t*2.1)*0.08 + Math.sin(t*13)*0.03 + (Math.random()<0.012 ? -0.3 : 0);
+  // abajur ışığında süzülen toz zerreleri
+  const flick = 0.9 + Math.sin(t*1.3)*0.08;
   const L=P.lamp;
   g.save(); g.globalCompositeOperation='lighter';
-  g.fillStyle=_rg(g,L.x,L.y,10,300,[[0,`rgba(255,180,100,${0.12*flick})`],[1,'rgba(255,160,80,0)']]); g.fillRect(L.x-300,L.y-300,600,600);
   for(const m of _room.motes){
     if(!m.px){ m.px=L.x-140+Math.random()*280; m.py=L.y-80+Math.random()*420; }
     m.py-=0.12*dt; m.px+=Math.sin(t*0.7+m.ph)*0.12*dt; if(m.py<L.y-150){ m.py=L.y+340; m.px=L.x-140+Math.random()*280; }
