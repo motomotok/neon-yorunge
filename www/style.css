@@ -894,35 +894,30 @@ h1 .gicon,h2 .gicon{color:var(--star);}
 #lbCard #globalLeaderboardBtn{padding-top:9px;padding-bottom:9px;font-size:14px;}
 #lbCard #globalLeaderboardHint{font-size:11.5px;opacity:.6;line-height:1.35;}
 
-/* ---------- Açılış: ClampGames logosu ---------- */
+/* ---------- Açılış: ClampGames logosu (piksel sanat) ---------- */
 #splash{position:fixed;inset:0;z-index:200;background:#000;display:flex;align-items:center;justify-content:center;
   transition:opacity .45s ease;cursor:pointer;}
 #splash.out{opacity:0;pointer-events:none;}
-.splashInner{display:flex;flex-direction:column;align-items:center;animation:cgShake .28s 1.22s ease-out;}
-.splashIcon{width:min(52vw,250px);height:auto;overflow:visible;}
-.splashIcon g{transform-box:fill-box;transform-origin:center;}
-.cgFrame{opacity:0;animation:cgFrameIn .55s .25s cubic-bezier(.2,1.6,.4,1) forwards;}
-.cgCube{opacity:0;animation:cgCubeIn .5s .7s cubic-bezier(.3,1.5,.5,1) forwards;}
-.cgScrew{opacity:0;transform:translateY(18px);animation:cgScrewIn .35s .55s ease-out forwards,cgClamp .3s 1.0s ease-in forwards;}
-.cgHandle{animation:cgTurn .16s 1.0s 2 linear;}
-.cgGlow{opacity:0;animation:cgGlowIn 1.2s 1.22s ease-out forwards;}
-.cgRing{opacity:0;transform-box:fill-box;transform-origin:center;animation:cgRing .6s 1.22s ease-out forwards;}
-.splashWord{font-family:var(--font-display);font-weight:900;font-size:min(15vw,72px);letter-spacing:2px;line-height:1;color:#fff;
-  margin-top:10px;opacity:0;transform:translateX(-24px);animation:cgWord .5s 1.35s ease-out forwards;
-  text-shadow:0 0 22px rgba(255,120,110,.35);}
-.splashSub{font-family:var(--font-ui);font-weight:700;font-size:min(5.6vw,26px);letter-spacing:.9em;margin-left:.9em;margin-top:4px;
-  background:linear-gradient(90deg,#ff4f7b,#ffa53d);-webkit-background-clip:text;background-clip:text;color:transparent;
-  opacity:0;animation:cgSub .6s 1.6s ease-out forwards;}
-@keyframes cgFrameIn{0%{opacity:0;transform:scale(.6);}100%{opacity:1;transform:scale(1);}}
-@keyframes cgCubeIn{0%{opacity:0;transform:translateY(-120px) rotate(-25deg);}100%{opacity:1;transform:none;}}
-@keyframes cgScrewIn{to{opacity:1;}}
-@keyframes cgClamp{from{transform:translateY(18px);}to{transform:translateY(0);}}
-@keyframes cgTurn{0%,100%{transform:scaleX(1);}50%{transform:scaleX(.25);}}
-@keyframes cgGlowIn{0%{opacity:0;}25%{opacity:1;}100%{opacity:.55;}}
-@keyframes cgRing{0%{opacity:.9;transform:scale(.6);}100%{opacity:0;transform:scale(2.4);}}
-@keyframes cgWord{to{opacity:1;transform:none;}}
-@keyframes cgSub{to{opacity:1;}}
-@keyframes cgShake{0%,100%{transform:none;}25%{transform:translate(3px,-2px);}50%{transform:translate(-3px,2px);}75%{transform:translate(2px,1px);}}
+.splashInner{display:flex;flex-direction:column;align-items:center;gap:min(2.6vw,12px);animation:pxShake .3s 1.2s steps(4);}
+.splashIcon{width:min(56vw,270px);height:auto;overflow:visible;image-rendering:pixelated;}
+.splashIcon g{transform-box:fill-box;}
+/* adımlı (steps) animasyonlar piksel sanat hissini korur */
+.pxBase{opacity:0;animation:pxPop .3s .2s steps(3) forwards;}
+.pxStick{opacity:0;transform-origin:50% 100%;animation:pxPop .3s .3s steps(3) forwards,pxWiggle .5s .55s steps(4) 2;}
+.pxFrame{opacity:0;transform:translateY(-40px);animation:pxDrop .45s .6s steps(6) forwards;}
+.pxScrew{opacity:0;transform:translateX(7px);animation:pxPop .1s .85s forwards,pxClamp .35s .9s steps(5) forwards;}
+.pxSpark{opacity:0;animation:pxSpark .6s 1.22s steps(3) forwards;}
+.splashWordPx{width:min(52vw,250px);height:auto;fill:#c9f7c1;filter:drop-shadow(0 3px 0 #1f6a2a);}
+.splashWordPx.sub{width:min(52vw,250px);fill:#5fd96a;filter:drop-shadow(0 3px 0 #0d220f);}
+.pxL{opacity:0;animation:pxPop .08s steps(1) forwards;}
+.splashWordPx rect{stroke:#c9f7c1;stroke-width:.5;}
+.splashWordPx.sub rect{stroke:#5fd96a;}
+@keyframes pxPop{to{opacity:1;}}
+@keyframes pxWiggle{0%,100%{transform:rotate(0);}25%{transform:rotate(-6deg);}75%{transform:rotate(6deg);}}
+@keyframes pxDrop{0%{opacity:1;transform:translateY(-40px);}80%{opacity:1;transform:translateY(2px);}100%{opacity:1;transform:translateY(0);}}
+@keyframes pxClamp{from{transform:translateX(7px);}to{transform:translateX(0);}}
+@keyframes pxSpark{0%{opacity:1;transform:scale(.6);}60%{opacity:1;}100%{opacity:0;transform:scale(1.4);}}
+@keyframes pxShake{0%,100%{transform:none;}25%{transform:translate(4px,-3px);}50%{transform:translate(-4px,3px);}75%{transform:translate(3px,2px);}}
 
 /* ---------- Retro oda menüsü + giriş ---------- */
 #roomCanvas{position:fixed;inset:0;z-index:5;}
