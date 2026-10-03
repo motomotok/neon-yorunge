@@ -1,13 +1,11 @@
 // ---------------------------------------------------------------------------
-// Retro Oda menüsü + sinematik giriş ("elektrik kaçağı").
+// Retro Oda menüsü + sinematik giriş.
 //
-// Ana menünün arkasında, gece vakti retro bir oturma odası: yağmurlu pencere,
-// titreyen abajur, duvarda altın plak ödülü, masada dönen bir gramofon ve
-// borusundan süzülen notalar. BAŞLA'ya basılınca (oturumda ilk kez) ~4.5 sn'lik
-// bir giriş oynar: prizde kısa devre → kablo boyunca elektrik gramofona akar →
-// plak elektriklenir, cızırtılar plaktan fışkırır → kamera plağın içine dalar →
-// oyun başlar. Oturumdaki sonraki BAŞLA'larda kısa (~1.2 sn) dalış oynar;
-// "Tekrar Oyna" hiç oynatmaz. Ekrana dokunmak girişi atlar.
+// Ana menünün arkasında, gece vakti retro bir oda (img/room/room.jpg): camda
+// yağmur, titreyen abajur ışığı, dönen plak ve borudan süzülen notalar.
+// BAŞLA'ya basılınca kamera ~1.35 sn'de plağın içine dalar ve oyun siyahtan
+// açılır. "Tekrar Oyna" dalışı oynatmaz. Ekrana dokunmak dalışı atlar.
+// Fotoğraf yüklenemezse eski prosedürel oda çizilir.
 //
 // Tamamen ayrı bir katman (#roomCanvas): Ayarlar > "Retro oda menüsü"
 // (cfg.menuScene: 'room' | 'classic') kapatılırsa menü birebir eski hâline
@@ -24,7 +22,7 @@ function roomCovers(){ return _room.visible; }
 function _roomInit(){
   if(_room.cv) return true;
   const cv=document.getElementById('roomCanvas'); if(!cv) return false;
-  _room.cv=cv; _room.g=cv.getContext('2d');
+  _room.cv=cv; _room.g=cv.getContext('2d'); _roomPhoto();
   for(let i=0;i<70;i++) _room.rain.push({x:Math.random(), y:Math.random(), s:0.6+Math.random()*0.8});
   for(let i=0;i<26;i++) _room.motes.push({x:760+Math.random()*240, y:600+Math.random()*700, ph:Math.random()*9, s:1.5+Math.random()*2.5});
   // Şehir pencereleri (sabit konum, bazıları yanıp söner)
@@ -198,104 +196,125 @@ function _roomDrawRecord(g, t, squash, elec, zoom){
   g.fillStyle='#2a1a10'; g.beginPath(); g.arc(R.x+R.rx+4, R.y-6, 8, 0, 7); g.fill();
 }
 
+// Fotoğraf sahnesi (img/room/room.jpg, 768x1376): yüklenince prosedürel
+// çizimin yerine geçer; üstüne hafif canlılık katmanları eklenir.
+const ROOM_PHOTO = {w:768, h:1376, rec:{x:384, y:709, rx:89, ry:25},
+  win:{x:62, y:126, w:212, h:562}, horn:{x:336, y:528, rx:108, ry:136}, lamp:{x:590, y:405}};
+const ROOM_DIVE = 1.35;   // BAŞLA → plağa dalış süresi (sn)
+function _roomPhoto(){
+  if(!_room.img){ _room.img=new Image(); _room.img.decoding='async'; _room.img.src='img/room/room.jpg'; }
+  return _room.img.complete && _room.img.naturalWidth>0 ? _room.img : null;
+}
+// Dalış kamerası: menü kamerasından (kenarlara kenetli) başlar, plak ekran
+// ortasına kayarken büyür → sıçrama olmadan içine girer.
+function _roomDiveCam(SW, SH, menuZoom, rec, ty, k){
+  const W=_room.w, H=_room.h;
+  const base=Math.max(W/SW, H/SH), s1=base*menuZoom;
+  let ox=W/2-rec.x*s1, oy=H*ty-rec.y*s1;
+  ox=Math.min(0, Math.max(W-SW*s1, ox)); oy=Math.min(0, Math.max(H-SH*s1, oy));
+  if(k<=0) return {s:s1, ox, oy};
+  const px=rec.x*s1+ox, py=rec.y*s1+oy;
+  const e=k*k*k, m=k*k*(3-2*k);
+  const s=s1*(1+e*11);
+  const tx=px+(W/2-px)*m, ty2=py+(H/2-py)*m;
+  return {s, ox:tx-rec.x*s, oy:ty2-rec.y*s};
+}
+
 function _roomFrame(dt){
   const g=_room.g, W=_room.w, H=_room.h, t=_room.t;
   const I=_room.intro, it = I ? (I.freeze!=null ? I.freeze : (performance.now()-I.t0)/1000) : 0;   // freeze: test/önizleme için
-  // --- giriş zaman çizelgesi ---
-  let zoom=1, dark=0, spark=0, arc=0, elec=0, glitch=0, flashA=0, squash=ROOM_REC.ry/ROOM_REC.rx, creatures=0;
-  if(I){
-    const ease=x=>x<0?0:x>1?1:x*x*(3-2*x);
-    if(I.short){
-      zoom = 1 + ease(it/1.1)*7.5; squash += (0.92-squash)*ease((it-0.3)/0.8); flashA = ease((it-0.75)/0.35);
-    } else {
-      zoom = 1 + ease(it/2.6)*0.75 + ease((it-2.9)/1.2)*6.5;
-      dark = (it>0.45 && it<1.6) ? (Math.random()<0.35 ? 0.75 : 0.25) : (it>=1.6 && it<3.0 ? 0.3 : 0);
-      spark = (it>0.5 && it<1.3) ? 1 : 0;
-      arc = Math.max(0, Math.min(1, (it-0.85)/0.65));
-      elec = it>1.4 ? Math.min(1,(it-1.4)/0.3) : 0;
-      creatures = Math.max(0, Math.min(1, (it-1.7)/0.8));
-      glitch = (it>1.5 && it<3.1 && Math.random()<0.18) ? 1 : 0;
-      squash += (0.92-squash)*ease((it-3.0)/1.0);
-      flashA = ease((it-3.7)/0.45);
-    }
-  }
-  const cam=_roomCam(zoom, ROOM_REC.x, ROOM_REC.y + (I? 0 : 0));
+  const k = I ? Math.min(1, it/ROOM_DIVE) : 0;
+  const black = I ? Math.max(0, Math.min(1, (it-ROOM_DIVE*0.6)/(ROOM_DIVE*0.4))) : 0;
+  const land = W>H;
+  const photo=_roomPhoto();
   g.setTransform(1,0,0,1,0,0);
   g.fillStyle='#120806'; g.fillRect(0,0,W,H);
+  if(photo) _roomPhotoScene(g, photo, dt, t, k, land);
+  else _roomProcScene(g, dt, t, k, land);
+  g.setTransform(1,0,0,1,0,0);
+  // vinyet
+  g.fillStyle=_rg(g,W/2,H*0.45,Math.min(W,H)*0.35,Math.max(W,H)*0.8,[[0,'rgba(0,0,0,0)'],[1,'rgba(0,0,0,.5)']]); g.fillRect(0,0,W,H);
+  if(black>0){ g.fillStyle=`rgba(0,0,0,${black})`; g.fillRect(0,0,W,H); }
+  if(I && it>=ROOM_DIVE) _roomFinishIntro();
+}
+
+function _roomPhotoScene(g, img, dt, t, k, land){
+  const P=ROOM_PHOTO, R=P.rec;
+  const cam=_roomDiveCam(P.w, P.h, land?1:1.2, R, land?0.4:0.42, k);
+  g.setTransform(cam.s,0,0,cam.s,cam.ox,cam.oy);
+  g.drawImage(img,0,0,P.w,P.h);
+  // yağmur: pencere camında, boru önünde değil
+  const Wn=P.win, Hn=P.horn;
+  g.save(); g.beginPath(); g.rect(Wn.x,Wn.y,Wn.w,Wn.h);
+  g.ellipse(Hn.x,Hn.y,Hn.rx,Hn.ry,-0.25,0,Math.PI*2); g.clip('evenodd');
+  g.strokeStyle='rgba(190,215,255,.22)'; g.lineWidth=1;
+  for(const d of _room.rain){ d.y+=0.010*d.s*dt; if(d.y>1.05){ d.y=-0.05; d.x=Math.random(); }
+    const x=Wn.x+d.x*Wn.w, y=Wn.y+d.y*Wn.h; g.beginPath(); g.moveTo(x,y); g.lineTo(x-2,y+13*d.s); g.stroke(); }
+  g.restore();
+  // abajur ışığı hafifçe titreşir
+  const flick = 0.85 + Math.sin(t*2.1)*0.08 + Math.sin(t*13)*0.03 + (Math.random()<0.012 ? -0.3 : 0);
+  g.save(); g.globalCompositeOperation='lighter';
+  const L=P.lamp;
+  g.fillStyle=_rg(g,L.x,L.y,10,330,[[0,`rgba(255,180,100,${0.16*flick})`],[1,'rgba(255,160,80,0)']]); g.fillRect(L.x-330,L.y-330,660,660);
+  // toz zerreleri (abajur ışığında)
+  for(const m of _room.motes){
+    if(!m.px){ m.px=L.x-150+Math.random()*300; m.py=L.y-100+Math.random()*450; }
+    m.py-=0.12*dt; m.px+=Math.sin(t*0.7+m.ph)*0.12*dt; if(m.py<L.y-160){ m.py=L.y+360; m.px=L.x-150+Math.random()*300; }
+    const a=0.28*flick*Math.max(0,1-Math.hypot(m.px-L.x,(m.py-L.y)*0.8)/330);
+    g.fillStyle=`rgba(255,225,180,${a})`; g.beginPath(); g.arc(m.px,m.py,m.s*0.6,0,7); g.fill(); }
+  g.restore();
+  // plak döner: oluklarda gezinen parıltı + etikette dönen işaret
+  const rot=t*3.4;
+  g.save(); g.beginPath(); g.ellipse(R.x,R.y,R.rx,R.ry,0,0,Math.PI*2); g.clip();
+  g.globalCompositeOperation='lighter';
+  for(const off of [0, Math.PI]){
+    const a0=rot+off;
+    for(let r=0.45;r<=0.95;r+=0.1){ g.strokeStyle=`rgba(255,235,210,${0.10-(r-0.45)*0.08})`; g.lineWidth=1.2;
+      g.beginPath(); g.ellipse(R.x,R.y,R.rx*r,R.ry*r,0,a0,a0+0.55); g.stroke(); }
+  }
+  g.restore();
+  const la=-rot*1.0;
+  g.fillStyle='rgba(255,240,220,.55)'; g.beginPath(); g.ellipse(R.x+Math.cos(la)*R.rx*0.24, R.y+Math.sin(la)*R.ry*0.24, 2.2, 0.9, 0, 0, 7); g.fill();
+  // borudan süzülen notalar
+  _roomNotes(g, dt, t, k, 300, 470, 0.7);
+}
+
+function _roomNotes(g, dt, t, k, x0, y0, sc){
+  if(k<=0){
+    _room.noteT=(_room.noteT||0)-dt;
+    if(_room.noteT<=0){ _room.noteT=40+Math.random()*30; _room.notes.push({x:x0+Math.random()*50, y:y0+Math.random()*40, vx:-0.4-Math.random()*0.5, ph:Math.random()*6, life:1}); }
+  }
+  const img=ITEM_IMG && ITEM_IMG.note;
+  for(const n of _room.notes){ n.x+=n.vx*sc*dt; n.y-=0.8*sc*dt; n.life-=0.0045*dt;
+    const a=Math.max(0,Math.min(1,n.life*1.6))*(1-k); const s=24*sc;
+    g.globalAlpha=a*0.85;
+    if(imgReady(img)) g.drawImage(img, n.x+Math.sin(t*2+n.ph)*10*sc-s/2, n.y-s/2, s, s);
+    g.globalAlpha=1; }
+  _room.notes=_room.notes.filter(n=>n.life>0);
+}
+
+// Fotoğraf yüklenene kadar (ya da yüklenemezse) prosedürel oda.
+function _roomProcScene(g, dt, t, k, land){
+  const cam=_roomDiveCam(ROOM_SW, ROOM_SH, land?1:ROOM_MENU_ZOOM, ROOM_REC, land?0.36:0.44, k);
   g.setTransform(cam.s,0,0,cam.s,cam.ox,cam.oy);
   if(_room.stat) g.drawImage(_room.stat,0,0,ROOM_SW,ROOM_SH);
-  // yağmur (pencere içi)
   g.save(); g.beginPath(); g.rect(99,189,302,442); g.clip();
   g.strokeStyle='rgba(170,200,255,.35)'; g.lineWidth=1.6;
   for(const d of _room.rain){ d.y+=0.012*d.s*dt; if(d.y>1.05){ d.y=-0.05; d.x=Math.random(); }
     const x=99+d.x*302, y=189+d.y*442; g.beginPath(); g.moveTo(x,y); g.lineTo(x-4,y+18*d.s); g.stroke(); }
   for(const L of _room.lights){ if(Math.random()<0.002) L.on=!L.on; if(!L.on) continue; g.fillStyle='rgba(255,205,120,.75)'; g.fillRect(L.x,L.y,5,7); }
   g.restore();
-  // abajur ışığı (titreşir; girişte söner/yanar)
-  const flick = 0.92 + Math.sin(t*13)*0.03 + (Math.random()<0.02 ? -0.25 : 0);
-  const lampOn = Math.max(0, flick - dark*1.2);
+  const lampOn = 0.92 + Math.sin(t*13)*0.03 + (Math.random()<0.02 ? -0.25 : 0);
   g.save(); g.globalCompositeOperation='lighter';
   g.fillStyle=_rg(g,880,600,10,560,[[0,`rgba(255,190,110,${0.30*lampOn})`],[1,'rgba(255,170,90,0)']]); g.fillRect(320,40,680,1300);
   g.fillStyle=_rg(g,880,1340,10,260,[[0,`rgba(255,190,110,${0.18*lampOn})`],[1,'rgba(255,170,90,0)']]); g.fillRect(600,1200,400,300);
   g.fillStyle=_rg(g,500,880,10,420,[[0,`rgba(255,170,90,${0.10*lampOn})`],[1,'rgba(255,170,90,0)']]); g.fillRect(80,460,840,840);
-  // toz zerreleri
   for(const m of _room.motes){ m.y-=0.25*dt; m.x+=Math.sin(t*0.7+m.ph)*0.25*dt; if(m.y<520){ m.y=1300; m.x=760+Math.random()*240; }
     g.fillStyle=`rgba(255,220,170,${0.35*lampOn})`; g.beginPath(); g.arc(m.x,m.y,m.s,0,7); g.fill(); }
   g.restore();
-  // plak
-  _roomDrawRecord(g, t, squash, elec, zoom);
-  // borudan süzülen notalar
-  if(!I || it<1.4){
-    _room.noteT=(_room.noteT||0)-dt;
-    if(_room.noteT<=0){ _room.noteT=38+Math.random()*30; _room.notes.push({x:400+Math.random()*60, y:600+Math.random()*40, vx:-0.5-Math.random()*0.6, ph:Math.random()*6, life:1}); }
-  }
-  for(const n of _room.notes){ n.x+=n.vx*dt; n.y-=0.9*dt; n.life-=0.0045*dt;
-    const a=Math.max(0,Math.min(1,n.life*1.6)); const s=24;
-    const img=ITEM_IMG && ITEM_IMG.note;
-    g.globalAlpha=a*0.9;
-    if(imgReady(img)) g.drawImage(img, n.x+Math.sin(t*2+n.ph)*10-s/2, n.y-s/2, s, s);
-    g.globalAlpha=1; }
-  _room.notes=_room.notes.filter(n=>n.life>0);
-  // --- giriş efektleri ---
-  if(I && !I.short){
-    // prizde kıvılcımlar
-    if(spark){ g.save(); g.globalCompositeOperation='lighter';
-      for(let i=0;i<6;i++){ const a=Math.random()*Math.PI*2, l=10+Math.random()*34; g.strokeStyle='rgba(180,240,255,.9)'; g.lineWidth=2;
-        g.beginPath(); g.moveTo(806,1069); g.lineTo(806+Math.cos(a)*l, 1069+Math.sin(a)*l); g.stroke(); }
-      g.fillStyle=_rg(g,806,1069,2,60,[[0,'rgba(200,250,255,.9)'],[1,'rgba(90,230,255,0)']]); g.fillRect(746,1009,120,120); g.restore(); }
-    // kablo boyunca akan elektrik
-    if(arc>0 && arc<1.2){ g.save(); g.globalCompositeOperation='lighter';
-      const head=_roomCablePoint(Math.min(1,arc));
-      g.strokeStyle='rgba(120,235,255,.85)'; g.lineWidth=5; g.beginPath();
-      for(let u=0; u<=Math.min(1,arc); u+=0.04){ const p=_roomCablePoint(u); const j=(Math.random()-0.5)*6; u===0?g.moveTo(p.x,p.y+j):g.lineTo(p.x,p.y+j); } g.stroke();
-      g.fillStyle=_rg(g,head.x,head.y,2,46,[[0,'rgba(220,255,255,1)'],[1,'rgba(90,230,255,0)']]); g.fillRect(head.x-46,head.y-46,92,92); g.restore(); }
-    // plaktan fışkıran cızırtılar
-    if(creatures>0){
-      const keys=['glitch_red','glitch_blue','glitch_green','glitch_yellow','glitch_purple','glitch_orange'];
-      keys.forEach((k,i)=>{
-        const img=MONSTER_IMG[k]; if(!imgReady(img)) return;
-        const a=i/keys.length*Math.PI*2 + it*1.6, rr=30+creatures*130, lift=creatures*(70+Math.sin(it*6+i)*14);
-        const x=ROOM_REC.x+Math.cos(a)*rr, y=ROOM_REC.y+Math.sin(a)*rr*0.35-lift, s=26+creatures*22;
-        g.save(); g.translate(x+(Math.random()-0.5)*4, y+(Math.random()-0.5)*4); g.rotate(it*3+i);
-        g.globalAlpha=Math.min(1,creatures*1.5)*(0.8+Math.random()*0.2); g.drawImage(img,-s/2,-s/2,s,s); g.restore();
-      });
-    }
-  }
-  g.setTransform(1,0,0,1,0,0);
-  // vinyet
-  g.fillStyle=_rg(g,W/2,H*0.45,Math.min(W,H)*0.35,Math.max(W,H)*0.8,[[0,'rgba(0,0,0,0)'],[1,'rgba(0,0,0,.55)']]); g.fillRect(0,0,W,H);
-  if(dark>0){ g.fillStyle=`rgba(0,0,0,${dark*0.6})`; g.fillRect(0,0,W,H); }
-  if(glitch){ // RGB kayması: yatay şeritleri kaydır
-    for(let i=0;i<5;i++){ const y=Math.random()*H, h=8+Math.random()*30, dx=(Math.random()-0.5)*40*_room.dpr;
-      g.drawImage(_room.cv, 0, y*_room.dpr, W*_room.dpr, h*_room.dpr, dx/_room.dpr, y, W, h); }
-    g.fillStyle='rgba(90,230,255,.08)'; g.fillRect(0,0,W,H);
-  }
-  if(flashA>0){ g.fillStyle=`rgba(225,250,255,${flashA})`; g.fillRect(0,0,W,H); }
-  // giriş bitti mi?
-  if(I){
-    const end = I.short ? 1.15 : 4.15;
-    if(it>=end) _roomFinishIntro();
-  }
+  const sq=ROOM_REC.ry/ROOM_REC.rx;
+  _roomDrawRecord(g, t, sq, 0, 1+k*11);
+  _roomNotes(g, dt, t, k, 400, 600, 1);
 }
 
 // Ana döngüden (render.js) her karede çağrılır; oda görünürse true döner
@@ -331,47 +350,21 @@ function roomTick(ts){
 // giriş bitince onDone() (startGame / startTutorial) çağrılır.
 function roomIntroPlay(onDone){
   if(!roomEnabled() || !_room.visible || _room.intro) return false;
-  const short = _room.introsPlayed>0;
   _room.introsPlayed++;
-  _room.intro={t0:performance.now(), short, onDone};
+  _room.intro={t0:performance.now(), onDone};
   if(AC && AC.state==='suspended') AC.resume();
   showScreen(null); setHud(false);
   document.body.classList.add('roomIntro');
-  _roomCaptions(short);
-  _roomIntroSfx(short);
+  if(typeof beep==='function'){ beep(180,0.9,'sine',0.05); setTimeout(()=>beep(360,0.5,'sine',0.045), 650); }
   return true;
 }
 function _roomFinishIntro(){
   const I=_room.intro; if(!I) return;
   _room.intro=null; _room.notes=[];
   document.body.classList.remove('roomIntro');
-  _roomCaptionClear();
-  // Oyuna beyazdan açılarak geçiş
+  // Oyuna siyahtan açılarak geçiş
   const f=document.getElementById('roomFlash'); if(f){ f.classList.remove('fade'); void f.offsetWidth; f.classList.add('fade'); }
   I.onDone();
 }
 function roomSkipIntro(){ if(_room.intro) _roomFinishIntro(); }
-
-let _roomCapTimers=[];
-function _roomCaptions(short){
-  const el=document.getElementById('roomCaption'); if(!el) return;
-  _roomCaptionClear();
-  if(short) return;
-  const show=(txt,cls,at,dur)=>{ _roomCapTimers.push(setTimeout(()=>{ el.textContent=txt; el.className='show '+cls; }, at*1000));
-    _roomCapTimers.push(setTimeout(()=>{ el.className=''; }, (at+dur)*1000)); };
-  show(t('intro_cap1'),'warn',0.75,1.15);
-  show(t('intro_cap2'),'',2.0,1.2);
-  show(t('intro_cap3'),'big',3.25,0.85);
-}
-function _roomCaptionClear(){ _roomCapTimers.forEach(clearTimeout); _roomCapTimers=[]; const el=document.getElementById('roomCaption'); if(el) el.className=''; }
-function _roomIntroSfx(short){
-  if(typeof beep!=='function') return;
-  const at=(s,f)=>setTimeout(f,s*1000);
-  if(short){ at(0,()=>beep(300,0.25,'sawtooth',0.06)); at(0.5,()=>beep(600,0.3,'sine',0.07)); return; }
-  at(0.5,()=>{ beep(60,0.35,'sawtooth',0.12); beep(120,0.2,'square',0.08); });
-  at(0.8,()=>beep(1400,0.05,'square',0.06)); at(0.95,()=>beep(900,0.05,'square',0.06));
-  at(1.4,()=>{ beep(80,0.5,'sawtooth',0.12); beep(2400,0.04,'square',0.05); });
-  at(1.8,()=>beep(220,0.12,'square',0.08)); at(2.1,()=>beep(330,0.12,'square',0.08)); at(2.4,()=>beep(180,0.15,'square',0.09));
-  at(3.0,()=>beep(200,0.9,'sine',0.08)); at(3.5,()=>beep(400,0.6,'sine',0.08)); at(3.8,()=>beep(800,0.4,'triangle',0.08));
-}
 document.addEventListener('pointerdown', ()=>{ if(_room.intro && performance.now()-_room.intro.t0>300) roomSkipIntro(); }, true);

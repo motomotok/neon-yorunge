@@ -190,7 +190,7 @@ function render(f){
   const zoomIn = 1 - (f.bossIntensity||0)*0.06;
   camera.position.set(bp.x + (Math.random()-0.5)*sh*1.2, bp.y*zoomIn + (Math.random()-0.5)*sh*0.6, bp.z*zoomIn);
   camera.lookAt(tg);
-  if(bloomPass) bloomPass.strength = (world.bloomBase ?? 0.45) + (f.flash||0)*0.5 + (f.bossIntensity||0)*0.3 + (world.elec||0)*0.6;
+  if(bloomPass) bloomPass.strength = (world.bloomBase ?? 0.45) + (f.flash||0)*0.15 + (f.bossIntensity||0)*0.3 + (world.elec||0)*0.6;
 
   if(composer) composer.render(); else renderer.render(scene, camera);
 }

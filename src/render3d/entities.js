@@ -528,10 +528,9 @@ export class Entities {
   // ve pena'nın bulunduğu oluk bir an yanar — "notalar şarkıyı çalıyor".
   _noteHit(f){
     const pl = f.player, pr = pl.curRadius;
-    this.scratch.flare = 1;
-    const rp = this.ripples.find(r=>r.life<=0) || this.ripples[0];
-    rp.life = 1; rp.x = Math.cos(pl.ang)*pr; rp.z = Math.sin(pl.ang)*pr;
-    rp.mesh.material.color.copy(linColor(f.playerColor));
+    // Sadece çizik hafifçe parlar ve oluk yanıp söner (pena etrafındaki
+    // büyüyen halka kaldırıldı — kullanıcı geri bildirimi).
+    this.scratch.flare = 0.5;
     if(this.onNote) this.onNote(pl.targetRing);
   }
   _updateRipples(f, dt){

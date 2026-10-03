@@ -921,16 +921,9 @@ h1 .gicon,h2 .gicon{color:var(--star);}
 
 /* ---------- Retro oda menüsü + giriş ---------- */
 #roomCanvas{position:fixed;inset:0;z-index:5;}
-#roomFlash{position:fixed;inset:0;z-index:30;pointer-events:none;background:#e1faff;opacity:0;}
-#roomFlash.fade{animation:roomFlashFade .7s ease-out;}
+#roomFlash{position:fixed;inset:0;z-index:30;pointer-events:none;background:#000;opacity:0;}
+#roomFlash.fade{animation:roomFlashFade .55s ease-out;}
 @keyframes roomFlashFade{0%{opacity:1;}100%{opacity:0;}}
-#roomCaption{position:fixed;left:0;right:0;top:20%;z-index:25;text-align:center;pointer-events:none;padding:0 18px;
-  font-family:var(--font-display);font-weight:900;font-size:clamp(20px,6vw,34px);letter-spacing:1px;color:#fff;
-  text-shadow:0 0 18px rgba(90,230,255,.7),0 3px 0 rgba(0,0,0,.6);opacity:0;transform:scale(.9);transition:opacity .2s,transform .25s;}
-#roomCaption.show{opacity:1;transform:none;}
-#roomCaption.warn{color:#ffe14a;text-shadow:0 0 18px rgba(255,120,40,.8),0 3px 0 rgba(0,0,0,.6);animation:roomCapFlicker .18s steps(2) infinite;}
-#roomCaption.big{font-size:clamp(30px,10vw,58px);color:#7fe8ff;}
-@keyframes roomCapFlicker{0%{opacity:1;}50%{opacity:.55;}}
 /* Oda menüsünde menünün alt yazıları ve kenar butonları odanın üstünde okunaklı kalsın */
 body.roomMenu #screen-menu .menuFooter{text-shadow:0 1px 4px rgba(0,0,0,.9);}
 body.roomIntro #overlay,body.roomIntro #hud{opacity:0;pointer-events:none;}
