@@ -415,7 +415,9 @@ export class World {
     this.chargeOrb.material.opacity = charging ? flick : 0;
     this.chargeOrb.position.set(_armKinkX(tr), 0.004, ARM_LEN*this.armS*tr);
     this.chargeOrb.scale.setScalar((0.045 + 0.03*g + 0.035*tr + 0.08*dis)*flick);
-    this.chargeBar.visible = tr > 0 && dis < 1;
+    // Düz şarj çubuğu kıvrımlı kol görselinin dışına taşıyordu (mavi şerit) —
+    // kapalı; kol boyunca ilerleyen şarj küresi ve şimşekler yeterli.
+    this.chargeBar.visible = false;
     this.chargeBar.scale.set(1, 1, Math.max(0.001, ARM_LEN*this.armS*tr));
     this.chargeBar.material.opacity = 0.55*flick;
     this.armLight.position.set(_armKinkX(tr), -0.01, ARM_LEN*this.armS*tr);
