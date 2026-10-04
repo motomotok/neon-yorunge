@@ -294,9 +294,34 @@ function renderLoginStreakScreen(){
     el.className='lsDay '+st+(d%7===0?' milestone':'');
     el.innerHTML=`<div class="lsDayNum">${d}</div><div class="lsMini"><span>${st==='claimed'?icon('check'):ic}</span></div><div class="lsDayLbl">${label}</div>`;
     if(st==='today') el.addEventListener('click', claimLoginFromScreen);
+    else el.addEventListener('click', ()=>showLoginTip(el, d, rw, st));
     (d<=7?A:B).appendChild(el);
   });
 }
+// Takvimdeki bir güne dokununca üstünde küçük bir balon: o günün ödülü ne?
+// Kozmetik hediyeler günü gelene kadar sürpriz kalır.
+let _lsTipT=null;
+function showLoginTip(el, day, r, st){
+  let tip=document.getElementById('lsTip');
+  if(!tip){ tip=document.createElement('div'); tip.id='lsTip'; tip.className='lsTip'; document.body.appendChild(tip); }
+  const surprise = r.type==='cosmetic' && st!=='claimed';
+  const txt = surprise ? t('login_tip_surprise') : loginRewardHero(r).name;
+  tip.innerHTML=`<b>${t('login_tip_day',{n:day})}</b><span></span>`;
+  tip.querySelector('span').textContent=txt;
+  const b=el.querySelector('.lsMini').getBoundingClientRect(), cx=b.left+b.width/2;
+  tip.style.display='block';
+  const hw=tip.offsetWidth/2, x=Math.max(hw+8, Math.min(window.innerWidth-hw-8, cx));
+  tip.style.left=x+'px'; tip.style.top=(b.top-8)+'px';
+  tip.style.setProperty('--ax', Math.max(-hw+16, Math.min(hw-16, cx-x))+'px'); tip.style.animation='none'; void tip.offsetWidth; tip.style.animation='';
+  document.querySelectorAll('.lsDay.peek').forEach(e=>e.classList.remove('peek')); el.classList.add('peek');
+  beep(520,0.04,'sine',0.06);
+  clearTimeout(_lsTipT); _lsTipT=setTimeout(hideLoginTip, 2600);
+}
+function hideLoginTip(){
+  const tip=document.getElementById('lsTip'); if(tip) tip.style.display='none';
+  document.querySelectorAll('.lsDay.peek').forEach(e=>e.classList.remove('peek'));
+}
+document.addEventListener('pointerdown', e=>{ if(!e.target.closest || !e.target.closest('.lsDay')) hideLoginTip(); });
 function updateLoginNext(){
   const el=document.getElementById('lsNext'); if(!el) return;
   if(!loginRewardClaimedToday()){ el.textContent=''; return; }

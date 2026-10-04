@@ -1,6 +1,7 @@
 // Ekran/durum makinesi: menü ↔ mod seç ↔ mağaza ↔ oyun ↔ duraklat ↔
 // oyun-sonu geçişleri. Oyun sonu reklamı (interstitial) burada tetiklenir.
 function showScreen(id){
+  if(typeof hideLoginTip==='function') hideLoginTip();
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   if(id){ const el=document.getElementById('screen-'+id); if(el) el.classList.add('active'); }
   const overlayEl=document.getElementById('overlay');
@@ -65,7 +66,7 @@ function goMenu(){ state='menu'; setHud(false); showScreen('menu');
   document.getElementById('menuBest').textContent=t('menu_best',{n:stats.best.toFixed(2)});
   // Roguelike hissini güçlendiren iki kalıcı gösterge: "karakter seviyesi"
   // (6 yükseltme hattının toplam kademesi) ve deneme sayacı.
-  document.getElementById('powerLevelLine').textContent='⚡ '+totalPowerLevel()+'/48';
+  document.getElementById('powerLevelLine').textContent='⚡ '+totalPowerLevel()+'/'+Object.values(META_UPGRADES).reduce((n,u)=>n+u.tiers.length,0);
   document.getElementById('runCountLine').textContent=t('run_count_line',{n:stats.games+1});
   ensureTodayQuest(); const q=currentQuest();
   document.getElementById('questLine').textContent=t('quest_line',{text:t(q.textKey)})+(stats.questDone?' ✅':'');
