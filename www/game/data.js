@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.37.0';
+const GAME_VERSION = '2.38.0';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -171,10 +171,15 @@ const BOOSTS = [
 // (kademe başına etki). Geometrik dizi toplamı C0×(1.5^8-1)/0.5 ≈
 // C0×49.26 olduğundan, hedeflenen toplam maliyetten C0=hedef/49.26 ile
 // geri çözüldü — 6 hattın toplamı ~50.000 nota olacak şekilde.
-function buildTiers(C0, E0){
+function buildTiers(C0, E0, count){
   const tiers=[];
-  for(let i=1;i<=8;i++) tiers.push({cost:Math.round(C0*Math.pow(1.5,i-1)/10)*10, add:E0});
+  for(let i=1;i<=(count||8);i++) tiers.push({cost:Math.round(C0*Math.pow(1.5,i-1)/10)*10, add:E0});
   return tiers;
+}
+// Yüzde: Türkçede "%5", diğer dillerde "5%" (fr/de boşluklu).
+function pctText(n){
+  const v=Math.round(n*1000)/10;
+  return cfg.lang==='tr' ? '%'+v : (cfg.lang==='fr'||cfg.lang==='de') ? v+' %' : v+'%';
 }
 const META_UPGRADES = {
   hp: {
@@ -182,7 +187,7 @@ const META_UPGRADES = {
     tiers: buildTiers(240, 2), // hedef ~12.000, taban 3 -> tavan 19 can
   },
   coinPct: {
-    nameKey:'up_coinpct_name', icon:'sparkle', format:n=>'+%'+(Math.round(n*1000)/10),
+    nameKey:'up_coinpct_name', icon:'sparkle', format:n=>'+'+pctText(n),
     tiers: buildTiers(200, 0.02), // hedef ~10.000, tavan %16 kazanç çarpanı
   },
   itemCoin: {
@@ -190,19 +195,22 @@ const META_UPGRADES = {
     tiers: buildTiers(180, 5), // hedef ~9.000, tavan +40 parçacık başına
   },
   boostDur: {
-    nameKey:'up_boostdur_name', icon:'hourglass', format:n=>'+%'+(Math.round(n*1000)/10),
+    nameKey:'up_boostdur_name', icon:'hourglass', format:n=>'+'+pctText(n),
     tiers: buildTiers(140, 0.025), // hedef ~7.000, tavan %20 (yavaşlatma/mıknatıs/çarpan)
   },
   shieldPower: {
-    nameKey:'up_shieldpower_name', icon:'shield', format:n=>Math.floor(n)+' '+t('unit_hits'),
-    tiers: buildTiers(120, 0.5), // hedef ~6.000, taban 1 -> tavan 5 vuruş emer
+    // Kalkanın emdiği TOPLAM vuruş (taban 1). Eskiden 8 kademe × 0.5 "yarım
+    // vuruş"tu: tek kademeler hiçbir şey vermiyor, kart "0 vuruş" yazıyordu.
+    // Artık 4 kademe, her biri +1 vuruş (tavan yine 5).
+    nameKey:'up_shieldpower_name', icon:'shield', format:n=>(1+Math.floor(n))+' '+t('unit_hits'),
+    tiers: buildTiers(740, 1, 4), // hedef ~6.000, taban 1 -> tavan 5 vuruş emer
   },
   multPower: {
     nameKey:'up_multpower_name', icon:'lightning', format:n=>'×'+(Math.round((2+n)*100)/100),
     tiers: buildTiers(120, 0.15), // hedef ~6.000, taban ×2 -> tavan ×3.2 puan çarpanı
   },
 };
-function upgradeLevel(key){ return (stats.upgrades && stats.upgrades[key]) || 0; }
+function upgradeLevel(key){ return Math.min(META_UPGRADES[key].tiers.length, (stats.upgrades && stats.upgrades[key]) || 0); }
 // Kademe (nota, sıfırlanabilir) + Çekirdek Ağacı (prestij, KALICI) aynı
 // anahtar setini paylaşır — böylece maxHpFor()/shieldHitsFor() ve
 // engine.js'teki her upgradeBonus() çağrısı otomatik olarak ikisinin
@@ -226,7 +234,7 @@ function maxHpFor(){ return 3 + upgradeBonus('hp'); }
 // Taban kalkan 1 vuruş emer; Kalkan Gücü her kademede +0.5 "yarım vuruş"
 // ekler (bkz. buildTiers(120,0.5) yukarıda) — floor ile tam vuruşa çevrilir.
 function shieldHitsFor(){ return 1+Math.floor(upgradeBonus('shieldPower')); }
-// Güç Seviyesi: 6 hattın kademe toplamı (0-48) — roguelike'ın "karakter
+// Güç Seviyesi: 6 hattın kademe toplamı (0-44) — roguelike'ın "karakter
 // seviyesi" karşılığı, ana menüde tek bakışta ilerlemeyi gösterir.
 function totalPowerLevel(){
   return Object.keys(META_UPGRADES).reduce((s,k)=>s+upgradeLevel(k), 0);
@@ -319,7 +327,7 @@ function buyCoreNode(id){
   saveStats(); refreshWallet();
   return true;
 }
-// Çekirdek kazanç ağırlıkları: geliştirme ağacı (Kademe toplamı, 0-48) EN
+// Çekirdek kazanç ağırlıkları: geliştirme ağacı (Kademe toplamı, 0-44) EN
 // yüksek katsayı, en iyi skorda SON sıfırlamadan bu yana yapılan yeni
 // ilerleme ikinci, oynanan yeni oyun sayısı en düşük katsayı. Kare kök
 // kullanılması büyük sayıların (skor binlerce olabiliyor) çekirdek

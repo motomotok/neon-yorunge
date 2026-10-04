@@ -18,15 +18,17 @@ function renderUpgrades(){
     // gelen kalıcı bonus varsa "henüz alınmadı" yerine gerçek değeri göster.
     const totalBonus = upgradeBonus(key);
     const curText = totalBonus>0 ? track.format(totalBonus) : t('upgrade_not_taken');
+    // "Sonraki kademede" kademe artışını değil, alınca ulaşılacak TOPLAMI gösterir.
     const nextText = tier
-      ? t('upgrade_next',{text:track.format(tier.add)})
+      ? t('upgrade_next',{text:track.format(totalBonus+tier.add)})
       : t('upgrade_maxed');
     const priceHtml = tier
       ? `<div class="price">${icon('coin')} ${tier.cost}</div>`
       : `<div class="price ok">${icon('check')} ${t('upgrade_max_badge')}</div>`;
     card.innerHTML = `<div class="boostIcon">${icon(track.icon)}</div>`
       +`<div class="cn">${t(track.nameKey)}</div>`
-      +`<div class="bdesc">${t('upgrade_tier_line',{lvl, cur:curText, next:nextText})}</div>`
+      +`<div class="bdesc upDesc">${t(track.nameKey.replace('_name','_desc'))}</div>`
+      +`<div class="bdesc">${t('upgrade_tier_line',{lvl, max:track.tiers.length, cur:curText, next:nextText})}</div>`
       +priceHtml
       +(justBought?`<span class="cardCheckBadge">${icon('check')}</span>`:'');
     if(tier){
@@ -74,11 +76,11 @@ function renderUpgradesTab(){
 }
 const CORE_EFFECT_FORMAT = {
   hp:n=>'+'+n+' '+t('unit_hp'),
-  coinPct:n=>'+%'+(Math.round(n*1000)/10),
-  boostDur:n=>'+%'+(Math.round(n*1000)/10),
+  coinPct:n=>'+'+pctText(n),
+  boostDur:n=>'+'+pctText(n),
   multPower:n=>'+×'+(Math.round(n*100)/100),
   startCombo:n=>'+'+n+' '+t('unit_combo'),
-  hazardSoften:n=>'-%'+(Math.round(n*1000)/10)+' '+t('unit_hazard'),
+  hazardSoften:n=>'-'+pctText(n)+' '+t('unit_hazard'),
 };
 function coreEffectText(node){
   return Object.keys(node.effects).map(k=>CORE_EFFECT_FORMAT[k](node.effects[k])).join(' · ');
@@ -240,7 +242,7 @@ function updatePrestigePreview(){
   const el=document.getElementById('prestigePreviewText'); if(!el) return;
   const gain=coresPreview();
   el.innerHTML = gain>0
-    ? icon('atom')+' '+t('prestige_preview',{n:gain})
+    ? icon('atom')+' '+t('prestige_preview',{n:gain}).replace(/^⚛\s*/,'')
     : t('prestige_preview_zero');
   const walletEl=document.getElementById('upgradesCoreWallet'); if(walletEl) walletEl.textContent=stats.cores||0;
 }
