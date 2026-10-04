@@ -75,6 +75,7 @@ function drawWorld(){
   for(const r of RINGS) drawRing(r);
   drawRingFlash2D();
 
+  if(GAME_STATES[state]) drawSeals2D(t);
   if(GAME_STATES[state]){
     for(const it of items){
       if(!it.alive) continue;
@@ -188,6 +189,31 @@ function drawSun(t){
   ctx.fillStyle='#0a0604'; ctx.beginPath(); ctx.arc(CX,CY,sunR*0.13,0,7); ctx.fill();
 }
 
+// Sarı cızırtının kilitlediği yarım halka: kalın, tarama desenli sarı-turuncu
+// bant + iki ucunda "kilit" çentikleri. Reddedilen geçişte parlar.
+function drawSeals2D(t){
+  for(const it of items){
+    if(!isSeal(it) && !(it.type==='hazardPull' && !it.bossStatic && it.expiring && it.pop>0)) continue;
+    const r=radiusFor(it.ring), a1=it.ang, a0=it.ang-SEAL_SPAN;
+    const al=Math.max(0,Math.min(1,it.pop))*(0.75+Math.sin(t*5)*0.1)+(it.sealBump||0)*0.6;
+    const w=PLAYER_R*1.5;
+    ctx.save(); ctx.lineCap='butt';
+    ctx.shadowColor='#ffb340'; ctx.shadowBlur=14+(it.sealBump||0)*16;
+    ctx.strokeStyle=hexA('#ff6a2a',0.28*al); ctx.lineWidth=w;
+    ctx.beginPath(); ctx.arc(CX,CY,r,a0,a1); ctx.stroke();
+    ctx.shadowBlur=0;
+    ctx.strokeStyle=hexA('#ffd23b',0.75*al); ctx.lineWidth=w*0.42;
+    ctx.setLineDash([w*0.5,w*0.45]); ctx.lineDashOffset=-t*24;
+    ctx.beginPath(); ctx.arc(CX,CY,r,a0,a1); ctx.stroke(); ctx.setLineDash([]);
+    ctx.strokeStyle=hexA('#ffe9a8',0.6*al); ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.arc(CX,CY,r-w/2,a0,a1); ctx.stroke();
+    ctx.beginPath(); ctx.arc(CX,CY,r+w/2,a0,a1); ctx.stroke();
+    ctx.lineWidth=3; ctx.strokeStyle=hexA('#ffd23b',0.9*al);
+    const cx0=Math.cos(a0), sy0=Math.sin(a0);
+    ctx.beginPath(); ctx.moveTo(CX+cx0*(r-w*0.6),CY+sy0*(r-w*0.6)); ctx.lineTo(CX+cx0*(r+w*0.6),CY+sy0*(r+w*0.6)); ctx.stroke();
+    ctx.restore();
+  }
+}
 function drawRing(r){
   const style = cfg.ringStyle;
   if(style==='dotted'){

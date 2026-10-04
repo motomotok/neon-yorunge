@@ -355,6 +355,44 @@ function spawnBossColumns(){
   }
 }
 
+// ---- Sarı cızırtı: halka kilidi ----
+// Sarı, bulunduğu halkanın yarısını (kendinden geriye doğru yarım tur)
+// kilitler: pena o yay boyunca BU HALKAYA GEÇEMEZ (zaten içindeyse çıkabilir;
+// topun kendisi hâlâ can götürür). Adillik: kilit yalnız kenar halkalara
+// (0/2) konur, aynı anda tek kilit olur ve kilit + cızırtılar bir açıda üç
+// halkayı birden kapatamaz (pinchAt).
+const SEAL_SPAN = Math.PI, JUMP_FIRST = 22, JUMP_EVERY = 42;
+function isSeal(it){ return it.alive && !it.expiring && it.type==='hazardPull' && !it.bossStatic; }
+function sealCovers(it, ang){ const back = normAng(it.ang - ang); return back <= SEAL_SPAN; }
+function sealAt(ring, ang){
+  for(const it of items) if(isSeal(it) && it.ring===ring && sealCovers(it, ang)) return it;
+  return null;
+}
+function activeSeal(){ for(const it of items) if(isSeal(it)) return it; return null; }
+function ringBlockedAt(ring, ang, ignore){
+  if(sealAt(ring, ang)) return true;
+  for(const it of items){
+    if(it===ignore || !it.alive || it.expiring || it.ring!==ring) continue;
+    if((isHazardType(it.type)||it.type==='hazardTwinDecoy') && Math.abs(angDiff(it.ang, ang)) < 0.5) return true;
+  }
+  return false;
+}
+// ring'e ang'da bir cızırtı konursa o açıda hiç açık halka kalmaz mı?
+function pinchAt(ring, ang, ignore){
+  for(let r=0;r<NUM_RINGS;r++) if(r!==ring && !ringBlockedAt(r, ang, ignore)) return false;
+  return true;
+}
+// Yeni kilit (ring, ang) adil mi: yay boyunca diğer iki halka aynı yerde kapalı olmasın.
+function sealFair(ring, ang){
+  if(ring===1 || activeSeal()) return false;
+  const others=[0,1,2].filter(r=>r!==ring);
+  for(const it of items){
+    if(!it.alive || it.expiring || it.ring!==others[0] || !(isHazardType(it.type)||it.type==='hazardTwinDecoy')) continue;
+    if(normAng(ang - it.ang) <= SEAL_SPAN+0.5 && ringBlockedAt(others[1], it.ang)) return false;
+  }
+  return true;
+}
+
 // atAng/atRing verilirse doğrudan o açı+halkaya yerleştirir (yoğunluk
 // sistemi zaten çakışmasız bir yer bulup buraya iletir); ikisi de
 // verilmezse resetGame()'in ilk tohumlaması için basit bir arama yapar.
@@ -397,8 +435,9 @@ function spawnItem(atAng, atRing, forceHazard, safe){
     else if(r < hazChance+0.14) type='coin';
     else type='star';
   }
-  items.push({ang, ring, type, alive:true, pop:0, expiring:false, prevFwd:null,
-    jumpT: type==='hazardJump' ? 70+rnd()*60 : 0,
+  if(type==='hazardPull' && !sealFair(ring, ang)) type='hazard';
+  items.push({ang, ring, type, alive:true, pop:0, expiring:false, prevFwd:null, sealBump:0,
+    jumpT: type==='hazardJump' ? JUMP_FIRST+rnd()*18 : 0,
     pulsePhase: type==='hazardPulse' ? rnd()*Math.PI*2 : 0, pulseDanger:false,
     // Not: oyuncu geç oyunda (bu tip skor 2000+'da açılıyor) halkayı çok
     // hızlı katlediyor; birkaç saniyelik bir gecikme çoğu zaman öğe zaten
@@ -471,7 +510,7 @@ function trySpawnOnRing(ring, safe){
     tries++;
   } while(!ok && tries<10);
   if(!ok) return false;
-  return spawnItem(ang, ring, false, safe);
+  return spawnItem(ang, ring, false, safe || pinchAt(ring, ang));
 }
 // ---- Tehdit yönetmeni ----
 // Rastgele akış tek başına oyuncunun halkasını uzun süre boş bırakabiliyordu
@@ -511,6 +550,7 @@ function threatDirector(dt){
       if(it.ring!==r && gap<CROSS_RING_GAP){ ok=false; break; }
       if(it.ring!==r && gap<0.5 && (isHazardType(it.type))) blockedOther.add(it.ring);
     }
+    for(let o=0;o<NUM_RINGS;o++) if(o!==r && sealAt(o, ang)) blockedOther.add(o);
     if(!ok || blockedOther.size>=2) continue;          // kaçış yolu kalmazdı
     if(spawnItem(ang, r, true)){
       // Yoğun anda ~1.1 sn, sakin anda ~2.5 sn sonra yeni tehdit (nefes payı).
@@ -575,6 +615,13 @@ function tap(x){
   const goOut = x >= W/2;
   const next = player.targetRing + (goOut ? 1 : -1);
   if(next < 0 || next > NUM_RINGS-1) return;
+  const seal = (typeof sealAt==='function') ? sealAt(next, player.ang) : null;
+  if(seal){
+    // Kilitli yay: geçiş reddedilir — kısa bir "tok" ses ve yay parlaması.
+    seal.sealBump = 1; shake = Math.max(shake, 4);
+    beep(140,0.09,'square',0.08);
+    return;
+  }
   player.targetRing = next;
   beep(goOut?620:420,0.07,'triangle',0.10);
   if(tutorialActive && typeof tutorialOnTap==='function') tutorialOnTap(goOut);
@@ -624,18 +671,10 @@ function update(dt){
   // Zen modda devre dışı (zaten tehlike/kayıp yok).
   const comboSpeedBonus = zen ? 0 : Math.min(diffCfg.speedCap, Math.max(0,combo-1)*COMBO_SPEED_STEP);
   player.speed = 1.5 + comboSpeedBonus;
-  let pullMul=1;
-  if(!zen){
-    for(const it of items){
-      if(!it.alive || it.expiring || it.type!=='hazardPull' || it.bossStatic || it.ring!==player.targetRing) continue;
-      const fwd=normAng(it.ang-player.ang);
-      if(fwd>0 && fwd<0.85) pullMul=Math.max(pullMul, 1+(1-fwd/0.85)*0.55);
-    }
-  }
   // Boss dalgası sırasında oyuncu hızından bağımsız, sabit ve yavaş bir
   // açısal hızla ilerlenir — dalga en az ~6-7 saniye sürsün diye (bkz.
   // BOSS_SLOW_RATE, startBossWave()).
-  const angStep = bossActive ? BOSS_SLOW_RATE : player.speed*speedMul*pullMul*0.018;
+  const angStep = bossActive ? BOSS_SLOW_RATE : player.speed*speedMul*0.018;
   player.ang = normAng(player.ang + angStep*dt*timeScale);
   if(bossActive){ bossTravel += angStep*dt*timeScale; spawnBossColumns(); }
 
@@ -660,6 +699,7 @@ function update(dt){
   for(const it of items){
     if(!it.alive) continue;
     if(!it.expiring && it.pop<1) it.pop=Math.min(1,it.pop+dt*0.14);
+    if(it.sealBump>0) it.sealBump=Math.max(0,it.sealBump-dt*0.05);
 
     if(it.type==='hazardJump' && !it.expiring && !it.bossStatic){
       it.jumpT-=dt;
@@ -668,10 +708,12 @@ function update(dt){
         // ve oyuncunun hemen önüne, onun halkasına ışınlanmaz (tepki süresi
         // kalmıyordu) — öyleyse atlama kısa süre ertelenir. rnd(): günlük mod
         // herkes için aynı kalsın.
-        let nr = it.ring + (rnd()<0.5 ? 1 : -1);
-        if(nr<0 || nr>NUM_RINGS-1) nr = it.ring + (it.ring===0 ? 1 : -1);
-        if(nr===player.targetRing && normAng(it.ang-player.ang) < 0.8) it.jumpT=20;
-        else { it.ring=nr; it.jumpT=70+rnd()*60; }
+        // Mavi HER ZAMAN yer değiştirir (gerekirse penanın önüne de);
+        // tek kısıt: bir açıda üç halkanın da kapanmasına yol açmamak.
+        const first = it.ring + (rnd()<0.5 ? 1 : -1);
+        const opts = [first, 2*it.ring-first].filter(r=>r>=0 && r<NUM_RINGS && !pinchAt(r, it.ang, it));
+        if(opts.length){ it.ring=opts[0]; it.jumpT=JUMP_EVERY+rnd()*25; burst(CX+Math.cos(it.ang)*radiusFor(it.ring), CY+Math.sin(it.ang)*radiusFor(it.ring), '#3b8bff', 6, 2); }
+        else it.jumpT=8;
       }
     }
     if(it.type==='hazardPulse' && !it.expiring && !it.bossStatic){

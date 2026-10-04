@@ -95,6 +95,35 @@ let _yarnCoreGeo=null;
 
 export const ITEM_TYPES = ['star','gold','diamond','coin','heart','shield','slow','magnet','mult',
   'hazard','hazardJump','hazardBomb','hazardPull','hazardTwin','hazardTwinDecoy','hazardPulse','hazardCreep'];
+// ---- Sarı cızırtının kilitlediği yarım halka (engine: SEAL_SPAN) ----
+function sealArcGeometry(r, w, span, seg){
+  const pos=[], uv=[], idx=[];
+  for(let i=0;i<=seg;i++){
+    const u=i/seg, a=u*span, c=Math.cos(a), sn=Math.sin(a);
+    pos.push(c*(r-w/2),0,sn*(r-w/2), c*(r+w/2),0,sn*(r+w/2));
+    uv.push(u,0, u,1);
+    if(i<seg){ const k=i*2; idx.push(k,k+1,k+2, k+1,k+3,k+2); }
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos,3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv,2));
+  g.setIndex(idx); return g;
+}
+let _sealTex=null;
+function sealTexture(){
+  if(_sealTex) return _sealTex;
+  const c=document.createElement('canvas'); c.width=128; c.height=64;
+  const x=c.getContext('2d');
+  const gr=x.createLinearGradient(0,0,0,64);
+  gr.addColorStop(0,'rgba(255,233,168,0.95)'); gr.addColorStop(0.12,'rgba(255,106,42,0.35)');
+  gr.addColorStop(0.88,'rgba(255,106,42,0.35)'); gr.addColorStop(1,'rgba(255,233,168,0.95)');
+  x.fillStyle=gr; x.fillRect(0,0,128,64);
+  x.fillStyle='rgba(255,210,59,0.95)';
+  for(let i=-1;i<3;i++){ x.beginPath(); x.moveTo(i*64+8,14); x.lineTo(i*64+40,14); x.lineTo(i*64+72,50); x.lineTo(i*64+40,50); x.closePath(); x.fill(); }
+  _sealTex=new THREE.CanvasTexture(c); _sealTex.colorSpace=THREE.SRGBColorSpace;
+  _sealTex.wrapS=THREE.RepeatWrapping; return _sealTex;
+}
+
 // Cızırtılar kullanıcının kendi görselinden üretilen sprite'larla çizilir
 // (img/monsters/glitch_*.png). true yapılırsa prosedürel 3D yumak kullanılır.
 const YARN_3D = false;
@@ -369,6 +398,39 @@ export class Entities {
     }
     for(const [it, v] of this.live){
       if(!seen.has(it)){ this._release(v); this.live.delete(it); }
+    }
+    this._updateSeals(f, t, baseY);
+  }
+
+  _updateSeals(f, t, baseY){
+    if(!this.seals) this.seals = new Map();
+    const seen = new Set();
+    if(f.inGame){
+      for(const it of f.items){
+        if(!it.alive || it.type!=='hazardPull' || it.bossStatic) continue;
+        const pop = Math.max(0, Math.min(1, it.pop));
+        if(pop<=0) continue;
+        const rad = f.RINGS[it.ring], w = f.PLAYER_R*1.5;
+        const key = rad.toFixed(1)+'|'+w.toFixed(1);
+        let m = this.seals.get(it);
+        if(m && m.userData.key!==key){ this.group.remove(m); m.geometry.dispose(); m.material.dispose(); m=null; }
+        if(!m){
+          const tex = sealTexture().clone(); tex.needsUpdate = true; tex.repeat.x = 14;
+          m = new THREE.Mesh(sealArcGeometry(rad, w, Math.PI, 72),
+            new THREE.MeshBasicMaterial({map:tex, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending, side:THREE.DoubleSide}));
+          m.userData.key = key; m.renderOrder = 2;
+          this.group.add(m); this.seals.set(it, m);
+        }
+        seen.add(it);
+        m.position.y = baseY + 0.15;
+        m.rotation.y = -(it.ang - Math.PI);
+        m.material.map.offset.x = -t*1.6;
+        m.material.opacity = Math.min(1, pop*(0.8+Math.sin(t*5)*0.12) + (it.sealBump||0)*0.8);
+        const s = 1 + (it.sealBump||0)*0.04; m.scale.set(s,1,s);
+      }
+    }
+    for(const [it, m] of this.seals){
+      if(!seen.has(it)){ this.group.remove(m); m.geometry.dispose(); m.material.map.dispose(); m.material.dispose(); this.seals.delete(it); }
     }
   }
 
