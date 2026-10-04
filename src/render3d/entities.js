@@ -95,6 +95,9 @@ let _yarnCoreGeo=null;
 
 export const ITEM_TYPES = ['star','gold','diamond','coin','heart','shield','slow','magnet','mult',
   'hazard','hazardJump','hazardBomb','hazardPull','hazardTwin','hazardTwinDecoy','hazardPulse','hazardCreep'];
+// Cızırtılar kullanıcının kendi görselinden üretilen sprite'larla çizilir
+// (img/monsters/glitch_*.png). true yapılırsa prosedürel 3D yumak kullanılır.
+const YARN_3D = false;
 const HAZARDS = new Set(['hazard','hazardJump','hazardBomb','hazardPull','hazardTwin','hazardTwinDecoy','hazardPulse','hazardCreep']);
 // Manifest görsellerinin varsayılan göreli boyutu (2D sürümdeki oranlar).
 const TYPE_SIZE = {hazardBomb:1.5, diamond:1.0, coin:0.9, heart:1.1};
@@ -267,7 +270,7 @@ export class Entities {
     root.add(shadow); v.shadow = shadow;
 
     const sz = (TYPE_SIZE[type]||1) * (def && def.opts.size || 1);
-    if(!def && HAZARDS.has(type)){
+    if(YARN_3D && !def && HAZARDS.has(type)){
       // Gerçek 3D cızırtı yumağı + tür renginde yumuşak hâle.
       const ball = new THREE.Group();
       ball.add(yarnCore());
