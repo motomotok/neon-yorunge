@@ -11,6 +11,87 @@ import { resolveSlot, instantiateModel, updateSheetFrame } from './assets.js';
 import { glowTexture, shadowTexture, dotTexture, bossRingTexture } from './textures.js';
 import { TOP_Y } from './world.js';
 import { RibbonBatch } from './ribbon.js';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+
+// ---------------- Cızırtı "yumak"ları (gerçek 3D) ----------------
+// Her cızırtı türü, iç içe geçmiş parlayan tüplerden bir yumak: tüplerin
+// çoğu türün ana renginde, bir kısmı kontrast renkte (mavi+pembe gibi) — ışık
+// ve bloom derinliği kendiliğinden verir; ortadaki koyu çekirdek arka tüpleri
+// kısmen gizleyerek 3D hissini güçlendirir. Geometri tür başına BİR kez
+// üretilir, aynı türdeki tüm cızırtılar paylaşır.
+const YARN_COLORS = {
+  hazard:['#ff3b3b','#ffb340'],      hazardJump:['#3b8bff','#ff5fd0'],
+  hazardBomb:['#3bea6a','#2fd9ff'],  hazardPull:['#ffd23b','#ff6a2a'],
+  hazardTwin:['#b04bff','#4fd2ff'],  hazardTwinDecoy:['#b04bff','#4fd2ff'],
+  hazardPulse:['#ff8a1f','#ff3b6b'], hazardCreep:['#ff4fd8','#8a5bff'],
+};
+const YARN_R = 1.6;
+let _yarnGeo = null;
+function _seeded(seed){ return ()=>((seed = (seed*16807) % 2147483647) / 2147483647); }
+// Tüm türler aynı biçimi paylaşır (renkler vertex rengiyle ayrılır): tek
+// geometri, iki renk grubu (0: ana, 1: kontrast) — ana/kontrast oranı ~%70/%30.
+function yarnGeometry(){
+  if(_yarnGeo) return _yarnGeo;
+  const rnd=_seeded(91), parts=[];
+  const LOOPS=14, SEG=80, RAD=7;
+  for(let k=0;k<LOOPS;k++){
+    // Rastgele düzlem: normal vektörü küre üzerinde düzgün dağılmış.
+    const u=rnd()*2-1, th=rnd()*Math.PI*2, n=new THREE.Vector3(Math.sqrt(1-u*u)*Math.cos(th), u, Math.sqrt(1-u*u)*Math.sin(th));
+    const a=new THREE.Vector3(1,0,0); if(Math.abs(n.x)>0.9) a.set(0,1,0);
+    const e1=new THREE.Vector3().crossVectors(n,a).normalize(), e2=new THREE.Vector3().crossVectors(n,e1);
+    const wob=0.06+rnd()*0.08, wf=2+Math.floor(rnd()*3), ph=rnd()*6.28, rr=YARN_R*(0.86+rnd()*0.14);
+    const pts=[];
+    for(let i=0;i<24;i++){
+      const t=i/24*Math.PI*2, r=rr*(1+wob*Math.sin(t*wf+ph));
+      pts.push(new THREE.Vector3().addScaledVector(e1,Math.cos(t)*r).addScaledVector(e2,Math.sin(t)*r).addScaledVector(n,Math.sin(t*wf+ph)*wob*rr*0.6));
+    }
+    const curve=new THREE.CatmullRomCurve3(pts, true);
+    const g=new THREE.TubeGeometry(curve, SEG, 0.075+rnd()*0.035, RAD, true);
+    const accent = k%3===1;
+    const cnt=g.attributes.position.count, col=new Float32Array(cnt);
+    col.fill(accent?1:0); g.setAttribute('aSide', new THREE.BufferAttribute(col,1));
+    parts.push(g);
+  }
+  // Küçük dikenler (görseldeki çıkıntılar)
+  for(let k=0;k<6;k++){
+    const u=rnd()*2-1, th=rnd()*Math.PI*2, d=new THREE.Vector3(Math.sqrt(1-u*u)*Math.cos(th), u, Math.sqrt(1-u*u)*Math.sin(th));
+    const g=new THREE.ConeGeometry(0.09, 0.26, 6); g.translate(0, YARN_R*1.02+0.1, 0);
+    g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0), d));
+    const ng=g.toNonIndexed ? g.index ? g.toNonIndexed() : g : g;
+    const cnt=ng.attributes.position.count, col=new Float32Array(cnt); col.fill(0);
+    ng.setAttribute('aSide', new THREE.BufferAttribute(col,1));
+    if(ng.attributes.uv) ng.deleteAttribute('uv');
+    parts.push(ng);
+  }
+  parts.forEach(g=>{ if(g.index) { const ng=g.toNonIndexed(); parts[parts.indexOf(g)]=ng; } });
+  parts.forEach(g=>{ if(g.attributes.uv) g.deleteAttribute('uv'); });
+  _yarnGeo = mergeGeometries(parts, false);
+  return _yarnGeo;
+}
+const _yarnMats = new Map();
+function yarnMaterial(type){
+  let m=_yarnMats.get(type); if(m) return m;
+  const [c0,c1]=YARN_COLORS[type]||YARN_COLORS.hazard;
+  const ca=new THREE.Color(c0), cb=new THREE.Color(c1);
+  m = new THREE.MeshStandardMaterial({color:0xffffff, roughness:0.35, metalness:0.15, emissive:0xffffff, emissiveIntensity:0.55,
+    transparent: type==='hazardTwinDecoy', opacity: type==='hazardTwinDecoy' ? 0.45 : 1});
+  // Ana/kontrast rengi vertex özniteliğinden seç (tek çizim çağrısı).
+  m.onBeforeCompile = sh=>{
+    sh.uniforms.uCa={value:ca}; sh.uniforms.uCb={value:cb};
+    sh.vertexShader = 'attribute float aSide; varying float vSide;\n' + sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\n vSide = aSide;');
+    sh.fragmentShader = 'uniform vec3 uCa; uniform vec3 uCb; varying float vSide;\n' + sh.fragmentShader
+      .replace('vec4 diffuseColor = vec4( diffuse, opacity );','vec3 yarnCol = mix(uCa, uCb, vSide); vec4 diffuseColor = vec4( yarnCol, opacity );')
+      .replace('vec3 totalEmissiveRadiance = emissive;','vec3 totalEmissiveRadiance = emissive * yarnCol;');
+  };
+  m.customProgramCacheKey = ()=> 'yarn';
+  _yarnMats.set(type, m); return m;
+}
+let _yarnCoreMat=null;
+function yarnCore(){
+  if(!_yarnCoreMat) _yarnCoreMat = new THREE.MeshStandardMaterial({color:0x0a0812, roughness:0.6, metalness:0.2, transparent:true, opacity:0.85});
+  return new THREE.Mesh(_yarnCoreGeo || (_yarnCoreGeo=new THREE.SphereGeometry(YARN_R*0.78, 20, 14)), _yarnCoreMat);
+}
+let _yarnCoreGeo=null;
 
 export const ITEM_TYPES = ['star','gold','diamond','coin','heart','shield','slow','magnet','mult',
   'hazard','hazardJump','hazardBomb','hazardPull','hazardTwin','hazardTwinDecoy','hazardPulse','hazardCreep'];
@@ -186,6 +267,19 @@ export class Entities {
     root.add(shadow); v.shadow = shadow;
 
     const sz = (TYPE_SIZE[type]||1) * (def && def.opts.size || 1);
+    if(!def && HAZARDS.has(type)){
+      // Gerçek 3D cızırtı yumağı + tür renginde yumuşak hâle.
+      const ball = new THREE.Group();
+      ball.add(yarnCore());
+      ball.add(new THREE.Mesh(yarnGeometry(), yarnMaterial(type)));
+      ball.position.y = HOVER; ball.scale.setScalar(sz);
+      root.add(ball); v.body = ball; v.yarn = true; v.yarnSize = sz;
+      v.glow = new THREE.Sprite(new THREE.SpriteMaterial({map:glowTexture(), color:(YARN_COLORS[type]||YARN_COLORS.hazard)[0], transparent:true, opacity:0.5,
+        depthWrite:false, depthTest:false, blending:THREE.AdditiveBlending}));
+      v.glow.position.y = HOVER; v.glow.scale.setScalar(4.4*sz); v.yarnGlowCol = (YARN_COLORS[type]||YARN_COLORS.hazard)[0];
+      root.add(v.glow);
+      return v;
+    }
     if(def && def.kind==='model'){
       const {object, mixer} = instantiateModel(def, 2.6*sz);
       object.position.y = HOVER;
@@ -298,7 +392,16 @@ export class Entities {
     } else if(type==='heart'){
       scale = 1+Math.sin(t*5)*0.08;
     }
-    if(v.mat){
+    if(v.yarn){
+      // Yumak üç eksende yavaşça döner (her cızırtı farklı fazda).
+      const ph = it.ang*7.3;
+      const sp = type==='hazardCreep' ? 1.6 : type==='hazardPulse' ? 1.2 : 1;
+      v.body.rotation.set(t*0.55*sp+ph, t*0.8*sp+ph*0.7, t*0.35*sp);
+      v.body.scale.setScalar(v.yarnSize*scale);
+      v.body.position.y = HOVER + bob;
+      if(v.glow){ v.glow.position.y = HOVER + bob; v.glow.material.color.set(v.yarnGlowCol); v.glow.material.opacity = 0.42*opacity; }
+      v.shadow.material.opacity = 0.5;
+    } else if(v.mat){
       if(!def) setMap(v.mat, this._fallbackTexture(type, styleKey));
       else if(def.kind==='sheet') updateSheetFrame(def, t);
       v.mat.rotation = (def && def.opts.spin===false) ? 0 : spin;
@@ -309,11 +412,13 @@ export class Entities {
       v.body.scale.setScalar(scale);
       if(v.mixer) v.mixer.update(dt/60);
     }
-    v.body.position.y = HOVER + bob;
-    if(v.glow){
-      v.glow.position.y = HOVER + bob;
-      v.glow.material.color.copy(linColor(this._itemColor(type, f, it)));
-      v.glow.material.opacity = 0.5*opacity;
+    if(!v.yarn){
+      v.body.position.y = HOVER + bob;
+      if(v.glow){
+        v.glow.position.y = HOVER + bob;
+        v.glow.material.color.copy(linColor(this._itemColor(type, f, it)));
+        v.glow.material.opacity = 0.5*opacity;
+      }
     }
     v.shadow.material.opacity = 0.5;
     if(v.sparks) for(const s of v.sparks){
