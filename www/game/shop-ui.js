@@ -180,6 +180,8 @@ function refreshWallet(){
   ['walletHud','shopWallet','menuWallet','upgradesWallet'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.textContent=v;
   });
+  const g = stats.gems||0;
+  const gEl=document.getElementById('shopGemWallet'); if(gEl) gEl.textContent=g;
 }
 
 function getEquipped(category){
@@ -205,6 +207,21 @@ function purchase(category, item){
     beep(200,0.12,'square',0.1); return false;
   }
   stats.notes -= price;
+  stats.owned[category].push(item.id);
+  saveStats(); refreshWallet();
+  queueToast(t('purchased_toast',{name:t(item.nameKey)}));
+  beep(700,0.1,'sine',0.13); beep(1000,0.1,'triangle',0.12);
+  return true;
+}
+// Elmas (premium para birimi) ile satın alma — purchase()'ın elmas eşdeğeri.
+// gemPrice ayrı parametre: 'gem' gate'lerde item.gate.price, 'coin_or_gem'
+// gate'lerde item.gate.gemPrice kullanılır (çağıran taraf belirler).
+function purchaseWithGems(category, item, gemPrice){
+  if(stats.gems < gemPrice){
+    queueToast(t('insufficient_gems',{n:gemPrice-stats.gems}));
+    beep(200,0.12,'square',0.1); return false;
+  }
+  stats.gems -= gemPrice;
   stats.owned[category].push(item.id);
   saveStats(); refreshWallet();
   queueToast(t('purchased_toast',{name:t(item.nameKey)}));
@@ -447,14 +464,14 @@ let pendingPurchase = null;
 // istiyor musun?" yerine `message` kullanılır — bu diyalog satın almanın
 // yanı sıra genel "emin misin?" onayları için de (bkz. resetProgression)
 // kullanılabilsin diye.
-function showPurchaseConfirm(iconKey, name, price, onYes, message){
+function showPurchaseConfirm(iconKey, name, price, onYes, message, priceIcon){
   pendingPurchase = onYes;
   document.getElementById('pcIcon').innerHTML = icon(iconKey);
   document.getElementById('pcName').textContent = name;
   document.getElementById('pcMessage').textContent = message || t('purchase_confirm_default');
   const priceEl=document.getElementById('pcPrice');
   if(price==null){ priceEl.style.display='none'; }
-  else { priceEl.style.display='block'; priceEl.innerHTML = icon('coin')+' '+price; }
+  else { priceEl.style.display='block'; priceEl.innerHTML = icon(priceIcon||'coin')+' '+price; }
   document.getElementById('purchaseConfirmOverlay').style.display = 'flex';
   beep(500,0.05,'sine',0.08);
 }
@@ -463,25 +480,31 @@ function hidePurchaseConfirm(){
   pendingPurchase = null;
 }
 
-// Premium pena'ların (gerçek para, IAP) canlı fiyatı — www/pena-shop.js'in
+// Elmas paketlerinin (gerçek para, IAP) canlı fiyatı — gem-shop.js'in
 // register() çağrısındaki onPriceReady callback'i (main.js) burayı doldurur.
 // Mağaza kurulmadan/tarayıcıda hep boş kalır, kartlar fallbackPrice gösterir.
-const _penaLivePrices = {};
-function setPenaLivePrice(productId, price){ _penaLivePrices[productId]=price; syncShopIfOpen(); }
+const _gemLivePrices = {};
+function setGemLivePrice(productId, price){ _gemLivePrices[productId]=price; syncShopIfOpen(); }
+// Elmasla satın alma onayı — 'gem' gate'ler İÇİN kart tıklaması bunu çağırır;
+// 'coin_or_gem' gate'ler için ise kartın kendi içindeki ayrı "Elmas" rozeti
+// (bkz. renderShopGrid/renderThemeGrid) stopPropagation ile doğrudan bunu
+// tetikler — ana kart tıklaması o durumda Nota fiyatını kullanmaya devam eder.
+function confirmGemPurchase(category, item, gemPrice){
+  showPurchaseConfirm('palette', t(item.nameKey), gemPrice, ()=>{
+    if(purchaseWithGems(category,item,gemPrice)) setEquipped(category, item.id);
+    renderSkins(); renderThemeGrid(); syncShopIfOpen();
+  }, null, 'gem');
+}
 function onShopCardClick(category, item){
   const unlocked = isUnlockedItem(category, item);
   if(!unlocked){
-    if(item.gate.type==='coin'){
+    if(item.gate.type==='coin' || item.gate.type==='coin_or_gem'){
       showPurchaseConfirm('palette', t(item.nameKey), effectivePrice(category,item), ()=>{
         if(purchase(category,item)) setEquipped(category, item.id);
         renderSkins(); renderThemeGrid(); syncShopIfOpen();
       });
-    } else if(item.gate.type==='iap'){
-      // Satın alma onayı burada DEĞİL, native mağaza diyaloğunda gerçekleşir
-      // (bkz. pena-shop.js purchase()) — approved/verified sonrası main.js'teki
-      // PenaShop.register() callback'i stats.owned.skins'e ekleyip ekranı günceller.
-      if(window.PenaShop && PenaShop.isNative()) PenaShop.purchase(item.gate.productId);
-      else queueToast(t('iap_unavailable_toast'));
+    } else if(item.gate.type==='gem'){
+      confirmGemPurchase(category, item, item.gate.price);
     } else if(item.gate.type==='seasonpass'){
       queueToast(t('locked_seasonpass_toast',{name:t(item.nameKey)}));
       beep(200,0.1,'square',0.1);
@@ -588,16 +611,27 @@ function renderShopGrid(category){
       priceHtml=`<div class="price lockreq">${icon('ticket')} ${sName?t('season_reward_badge',{name:t(sName.nameKey)}):t('season_reward_generic')}</div>`;
     } else if(!unlocked && item.gate.type==='streak'){
       priceHtml=`<div class="price lockreq">${icon('calendar')} ${t('streak_reward_badge')}</div>`;
-    } else if(!unlocked && item.gate.type==='iap'){
-      // Gerçek para fiyatı mağazadan geldiyse (_penaLivePrices) onu, gelmediyse
-      // yer tutucu fallbackPrice'ı göster — premium.js'teki tek-ürünlü
-      // desenin (syncPremiumUI) çok-ürünlü karşılığı.
-      const live=_penaLivePrices[item.gate.productId];
-      priceHtml=`<div class="price iapPrice">${icon('gem')} ${live||item.gate.fallbackPrice}</div>`;
+    } else if(!unlocked && item.gate.type==='gem'){
+      // Pena'lar artık doğrudan IAP değil, Elmas (premium para birimi) ile
+      // satılıyor — bkz. gem-shop.js'teki elmas paketleri.
+      priceHtml=`<div class="price gemPrice">${icon('gem')} ${item.gate.price}</div>`;
+    } else if(!unlocked && item.gate.type==='coin_or_gem'){
+      // İki ayrı ödeme yolu: Nota (kartın geneli, mevcut 'coin' davranışıyla
+      // aynı) VEYA Elmas (bu küçük rozete özel, stopPropagation ile kartın
+      // genel Nota akışını tetiklemeden doğrudan elmasla satın alır).
+      const isDeal = category===stats.dealCategory && item.id===stats.dealId;
+      const coinSpan = isDeal
+        ? `${icon('flame')} <s style="opacity:.6">${item.gate.price}</s> ${icon('coin')} ${effectivePrice(category,item)}`
+        : `${icon('coin')} ${item.gate.price}`;
+      priceHtml=`<div class="price priceDual"><span class="priceOpt">${coinSpan}</span><span class="priceOpt priceOptGem">${icon('gem')} ${item.gate.gemPrice}</span></div>`;
     } else if(equipped) priceHtml=`<div class="price ok">${icon('check')} ${t('equipped_badge')}</div>`;
     else priceHtml=`<div class="price ok">${t('owned_badge')}</div>`;
     card.innerHTML = swatchHtml(category,item)+`<div class="cn">${t(item.nameKey)}</div>`+priceHtml;
     card.addEventListener('click', ()=>onShopCardClick(category,item));
+    if(!unlocked && item.gate.type==='coin_or_gem'){
+      const gemBtn = card.querySelector('.priceOptGem');
+      if(gemBtn) gemBtn.addEventListener('click', (e)=>{ e.stopPropagation(); confirmGemPurchase(category, item, item.gate.gemPrice); });
+    }
     grid.appendChild(card);
   });
 }
@@ -618,9 +652,29 @@ function renderBoostsShop(){
     grid.appendChild(card);
   });
 }
+// Elmas paketleri: coin/skins/trails/themes'in aksine "sahiplik/kuşanma"
+// kavramı yok — tüketilebilir IAP, her tıklama native mağaza diyaloğunu
+// açar (bkz. gem-shop.js). boostCard'larla aynı mantık (satın al, biriktir).
+function renderGemShop(){
+  const grid=document.getElementById('shopGrid'); grid.innerHTML='';
+  const products = (window.GemShop && GemShop.PRODUCTS) || [];
+  products.forEach(p=>{
+    const live = _gemLivePrices[p.id];
+    const priceText = live || (window.GemShop ? GemShop.fallbackPrice(p.id) : p.fallbackPrice);
+    const card=document.createElement('div'); card.className='shopCard gemPackCard';
+    card.innerHTML = `<div class="boostIcon">${icon('gem')}</div><div class="cn">${p.amount} ${t('currency_gem_name')}</div><div class="price iapPrice">${priceText}</div>`;
+    card.addEventListener('click', ()=>{
+      if(window.GemShop && GemShop.isNative()) GemShop.purchase(p.id);
+      else queueToast(t('iap_unavailable_toast'));
+    });
+    grid.appendChild(card);
+  });
+}
 function renderShopTab(){
   document.querySelectorAll('#shopTabs .stab').forEach(t2=>t2.classList.toggle('sel', t2.dataset.tab===shopTab));
-  if(shopTab==='boosts') renderBoostsShop(); else renderShopGrid(shopTab);
+  if(shopTab==='boosts') renderBoostsShop();
+  else if(shopTab==='gems') renderGemShop();
+  else renderShopGrid(shopTab);
 }
 function renderBoostRow(){
   const row=document.getElementById('boostRow'); if(!row) return;
@@ -658,13 +712,25 @@ function renderThemeGrid(){
     const unlocked = isUnlockedItem('themes', item);
     const d=document.createElement('div'); d.className='theme'+(!unlocked?' locked':'')+(key===cfg.theme?' sel':''); d.dataset.key=key;
     const themeIsDeal = !unlocked && stats.dealCategory==='themes' && stats.dealId===key;
-    const priceTag = !unlocked
-      ? (themeIsDeal
+    let priceTag = '';
+    if(!unlocked && th.gate.type==='gem'){
+      priceTag = `<div class="price" style="font-size:10.5px;color:#ffd28a;margin-top:2px">${icon('gem')} ${th.gate.price}</div>`;
+    } else if(!unlocked && th.gate.type==='coin_or_gem'){
+      const coinSpan = themeIsDeal
+        ? `${icon('flame')} <s style="opacity:.6">${th.gate.price}</s> ${icon('coin')} ${effectivePrice('themes',item)}`
+        : `${icon('coin')} ${th.gate.price}`;
+      priceTag = `<div class="price priceDual" style="font-size:10.5px;color:#ffd28a;margin-top:2px"><span class="priceOpt">${coinSpan}</span><span class="priceOpt priceOptGem">${icon('gem')} ${th.gate.gemPrice}</span></div>`;
+    } else if(!unlocked && th.gate.type==='coin'){
+      priceTag = themeIsDeal
         ? `<div class="price" style="font-size:10.5px;color:#ffd28a;margin-top:2px">${icon('flame')} <s style="opacity:.6">${th.gate.price}</s> ${icon('coin')} ${effectivePrice('themes',item)}</div>`
-        : `<div class="price" style="font-size:10.5px;color:#ffd28a;margin-top:2px">${icon('coin')} ${th.gate.price}</div>`)
-      : '';
+        : `<div class="price" style="font-size:10.5px;color:#ffd28a;margin-top:2px">${icon('coin')} ${th.gate.price}</div>`;
+    }
     d.innerHTML=`<div class="themeLabelPreview"><img src="${themeLabelSrc(key)}" alt=""></div><div class="swatch"><span style="background:${th.star}"></span><span style="background:${th.gold}"></span><span style="background:${th.peril}"></span><span style="background:${th.player}"></span></div><div class="tn">${t(th.nameKey)}</div><div class="tsel">${t('theme_selected')}</div>${priceTag}`;
     d.addEventListener('click', ()=>onShopCardClick('themes', item));
+    if(!unlocked && th.gate.type==='coin_or_gem'){
+      const gemBtn = d.querySelector('.priceOptGem');
+      if(gemBtn) gemBtn.addEventListener('click', (e)=>{ e.stopPropagation(); confirmGemPurchase('themes', item, th.gate.gemPrice); });
+    }
     grid.appendChild(d);
   });
 }

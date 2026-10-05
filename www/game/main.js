@@ -45,20 +45,15 @@ function initIAP(){
       (price)=>{ syncSeasonPassUI(price); }
     );
   }
-  if(window.PenaShop){
-    PenaShop.register(
-      (productId)=>{
-        if(!stats.owned.skins.includes(productId)){
-          stats.owned.skins.push(productId); saveStats();
-          const sk=SKINS.find(s=>s.id===productId);
-          if(sk) queueToast(t('purchased_toast',{name:t(sk.nameKey)}));
-          // Yalnız yeni satın alımda kuşan: mağaza her açılışta sahip olunan
-          // ürünleri de bildiriyor; oyuncunun seçtiği pena ezilmesin.
-          setEquipped('skins', productId);
-        }
-        syncShopIfOpen(); renderSkins();
+  if(window.GemShop){
+    GemShop.register(
+      (productId, amount)=>{
+        stats.gems=(stats.gems||0)+amount; stats.lifetimeGems=(stats.lifetimeGems||0)+amount;
+        saveStats(); refreshWallet();
+        queueToast(t('gems_purchased_toast',{n:amount}));
+        syncShopIfOpen();
       },
-      (productId, price)=>{ setPenaLivePrice(productId, price); }
+      (productId, price)=>{ setGemLivePrice(productId, price); }
     );
   }
   // Hangi mağazada çalıştığımızı Capacitor'e sor — premium.js/season-pass.js'teki

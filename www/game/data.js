@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.39.2';
+const GAME_VERSION = '2.40.0';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -14,9 +14,11 @@ const GAME_VERSION = '2.39.2';
 // (applyTheme()'ün THEMES.neon fallback'i buna bağlı).
 const THEMES = {
   neon:           {nameKey:'theme_neon',           star:'#ffcf7a', gold:'#ffe9b0', peril:'#ff5a3c', player:'#2fe6c4', sun:'#f2c98a', bg0:'#170a08', bg1:'#2b120d', sf:'#ffb98a', gate:{type:'free'}},
-  synthbeats:     {nameKey:'theme_synthbeats',      star:'#19e3ff', gold:'#baf7ff', peril:'#ff2f8a', player:'#19e3ff', sun:'#ff2f8a', bg0:'#030308', bg1:'#0c0718', sf:'#7fe9ff', gate:{type:'coin', price:3200}},
-  urbansounds:    {nameKey:'theme_urbansounds',     star:'#ffb454', gold:'#ffd24a', peril:'#ff2fa0', player:'#3de8d0', sun:'#ff8a3d', bg0:'#0a0604', bg1:'#1a0f08', sf:'#ffb27a', gate:{type:'coin', price:4000}},
-  cosmicsoundwave:{nameKey:'theme_cosmicsoundwave', star:'#7fe8ff', gold:'#ffe9a8', peril:'#ff8a3d', player:'#2fe6c4', sun:'#6a8fff', bg0:'#03040f', bg1:'#0a0f2e', sf:'#8fb0ff', gate:{type:'coin', price:5600}},
+  synthbeats:     {nameKey:'theme_synthbeats',      star:'#19e3ff', gold:'#baf7ff', peril:'#ff2f8a', player:'#19e3ff', sun:'#ff2f8a', bg0:'#030308', bg1:'#0c0718', sf:'#7fe9ff', gate:{type:'coin_or_gem', price:3200, gemPrice:35}},
+  urbansounds:    {nameKey:'theme_urbansounds',     star:'#ffb454', gold:'#ffd24a', peril:'#ff2fa0', player:'#3de8d0', sun:'#ff8a3d', bg0:'#0a0604', bg1:'#1a0f08', sf:'#ffb27a', gate:{type:'coin_or_gem', price:4000, gemPrice:45}},
+  // Kozmik Ses Dalgası BİLEREK sadece Elmas — en üst temalı dünya, notayla
+  // asla açılmıyor (premium para biriminin "sadece elmasla" ucu burası).
+  cosmicsoundwave:{nameKey:'theme_cosmicsoundwave', star:'#7fe8ff', gold:'#ffe9a8', peril:'#ff8a3d', player:'#2fe6c4', sun:'#6a8fff', bg0:'#03040f', bg1:'#0a0f2e', sf:'#8fb0ff', gate:{type:'gem', price:70}},
 };
 let T = THEMES.neon;
 // Her temanın plak etiketi (konsept görsellerinden kesildi). 3D modda
@@ -49,11 +51,13 @@ function applyTheme(key){
 // alanı sadece iz/hâlo rengi için kalır). İki katman:
 //  - 9 "varsayılan" pena: ilki ücretsiz başlangıç, diğer 8'i Nota (oyun-içi
 //    para) ile satılır — eski renkli orb'ların doğal devamı.
-//  - 9 "premium" pena: GERÇEK PARA (IAP, bkz. www/pena-shop.js). Bunların
-//    çalışması için Play Console + App Store Connect'te AYNI product ID'lerle
-//    (pena_fire, pena_ice, ...) ürün oluşturulması GEREKİR — oluşturulana
-//    kadar satın alma butonu tarayıcıda/mağazada sessizce no-op kalır
-//    (premium.js'teki remove_ads ile birebir aynı davranış).
+//  - 9 "premium" pena: Elmas (premium para birimi) ile satılır — Elmas'ın
+//    kendisi gems_* IAP paketleriyle gerçek parayla alınır (bkz.
+//    www/gem-shop.js). Play Console + App Store Connect'te sadece 4 Elmas
+//    paketinin (gems_100/250/600/1500) oluşturulması yeterli — pena başına
+//    ayrı ürün GEREKMEZ, oluşturulana kadar paket satın alma butonu
+//    tarayıcıda/mağazada sessizce no-op kalır (premium.js'teki remove_ads
+//    ile birebir aynı davranış).
 // loyalty_orb/season1_orb/season2_orb'un gate'leri (giriş serisi/sezon
 // bileti) BİLEREK dokunulmadı, sadece görselleri pena'ya çevrildi — silinirse
 // o ödül sistemleri sessizce kırılır.
@@ -67,15 +71,19 @@ const SKINS = [
   {id:'purple',  nameKey:'skin_pena_purple',  img:'img/penas/default/purple.png',  color:'#a35bff', gate:{type:'coin', price:3800}},
   {id:'blue',    nameKey:'skin_pena_blue',    img:'img/penas/default/blue.png',    color:'#3b5bff', gate:{type:'coin', price:4200}},
   {id:'silver',  nameKey:'skin_pena_silver',  img:'img/penas/default/silver.png',  color:'#d8e4ea', gate:{type:'coin', price:4600}},
-  {id:'pena_fire',      nameKey:'skin_pena_fire',      img:'img/penas/premium/fire.png',      color:'#ff6a1a', gate:{type:'iap', productId:'pena_fire',      fallbackPrice:'₺14.99'}},
-  {id:'pena_ice',       nameKey:'skin_pena_ice',       img:'img/penas/premium/ice.png',       color:'#6fd8ff', gate:{type:'iap', productId:'pena_ice',       fallbackPrice:'₺14.99'}},
-  {id:'pena_toxic',     nameKey:'skin_pena_toxic',     img:'img/penas/premium/toxic.png',     color:'#9aff3d', gate:{type:'iap', productId:'pena_toxic',     fallbackPrice:'₺14.99'}},
-  {id:'pena_lightning', nameKey:'skin_pena_lightning', img:'img/penas/premium/lightning.png', color:'#ffd23d', gate:{type:'iap', productId:'pena_lightning', fallbackPrice:'₺19.99'}},
-  {id:'pena_galaxy',    nameKey:'skin_pena_galaxy',    img:'img/penas/premium/galaxy.png',    color:'#8a5bff', gate:{type:'iap', productId:'pena_galaxy',    fallbackPrice:'₺19.99'}},
-  {id:'pena_pinkswirl', nameKey:'skin_pena_pinkswirl', img:'img/penas/premium/pinkswirl.png', color:'#ff4fa0', gate:{type:'iap', productId:'pena_pinkswirl', fallbackPrice:'₺19.99'}},
-  {id:'pena_wood',      nameKey:'skin_pena_wood',      img:'img/penas/premium/wood.png',      color:'#8a6a3d', gate:{type:'iap', productId:'pena_wood',      fallbackPrice:'₺24.99'}},
-  {id:'pena_lion',      nameKey:'skin_pena_lion',      img:'img/penas/premium/lion.png',      color:'#9a9aa0', gate:{type:'iap', productId:'pena_lion',      fallbackPrice:'₺24.99'}},
-  {id:'pena_diamond',   nameKey:'skin_pena_diamond',   img:'img/penas/premium/diamond.png',   color:'#eaf6ff', gate:{type:'iap', productId:'pena_diamond',   fallbackPrice:'₺29.99'}},
+  // Premium pena'lar artık doğrudan gerçek-para IAP değil, Elmas (premium
+  // para birimi) ile satılıyor — Elmas'ın kendisi gems_* paketleriyle
+  // gerçek parayla alınıyor (bkz. gem-shop.js). Fiyat kademeleri eski
+  // ₺14.99/19.99/24.99/29.99 TL karşılıklarına denk gelecek şekilde seçildi.
+  {id:'pena_fire',      nameKey:'skin_pena_fire',      img:'img/penas/premium/fire.png',      color:'#ff6a1a', gate:{type:'gem', price:30}},
+  {id:'pena_ice',       nameKey:'skin_pena_ice',       img:'img/penas/premium/ice.png',       color:'#6fd8ff', gate:{type:'gem', price:30}},
+  {id:'pena_toxic',     nameKey:'skin_pena_toxic',     img:'img/penas/premium/toxic.png',     color:'#9aff3d', gate:{type:'gem', price:30}},
+  {id:'pena_lightning', nameKey:'skin_pena_lightning', img:'img/penas/premium/lightning.png', color:'#ffd23d', gate:{type:'gem', price:40}},
+  {id:'pena_galaxy',    nameKey:'skin_pena_galaxy',    img:'img/penas/premium/galaxy.png',    color:'#8a5bff', gate:{type:'gem', price:40}},
+  {id:'pena_pinkswirl', nameKey:'skin_pena_pinkswirl', img:'img/penas/premium/pinkswirl.png', color:'#ff4fa0', gate:{type:'gem', price:40}},
+  {id:'pena_wood',      nameKey:'skin_pena_wood',      img:'img/penas/premium/wood.png',      color:'#8a6a3d', gate:{type:'gem', price:50}},
+  {id:'pena_lion',      nameKey:'skin_pena_lion',      img:'img/penas/premium/lion.png',      color:'#9a9aa0', gate:{type:'gem', price:50}},
+  {id:'pena_diamond',   nameKey:'skin_pena_diamond',   img:'img/penas/premium/diamond.png',   color:'#eaf6ff', gate:{type:'gem', price:60}},
   {id:'season1_orb', nameKey:'skin_season1orb', img:'img/penas/default/gold.png',    color:'#ffcf3d', gate:{type:'seasonpass', season:1}},
   {id:'season2_orb', nameKey:'skin_season2orb', img:'img/penas/premium/fire.png',    color:'#ff6a1a', gate:{type:'seasonpass', season:2}},
   // 7 Günlük Giriş Serisi'nin tamamlanma ödülü — ne mağazadan ne sezon
@@ -369,7 +377,8 @@ function isUnlockedItem(category, item){
   if(item.gate.type==='coin') return stats.owned[category].includes(item.id);
   if(item.gate.type==='seasonpass') return stats.owned[category].includes(item.id);
   if(item.gate.type==='streak') return stats.owned[category].includes(item.id);
-  if(item.gate.type==='iap') return stats.owned[category].includes(item.id);
+  if(item.gate.type==='gem') return stats.owned[category].includes(item.id);
+  if(item.gate.type==='coin_or_gem') return stats.owned[category].includes(item.id);
   return false;
 }
 
@@ -468,6 +477,7 @@ let stats = load('beatOrbitStats', {
   tutorialDone:false,
   cores:0, lifetimeCores:0, totalPrestiges:0, bestAtPrestige:0, gamesAtPrestige:0,
   coreUnlocked:['core_root'],
+  gems:0, lifetimeGems:0,
 });
 // Kayıt yükleme: iç içe nesneler (owned, upgrades, boosts…) de varsayılanlarla
 // birleştirilir (eski kayıtlarda yeni eklenen anahtar eksik kalmasın). Kayıt

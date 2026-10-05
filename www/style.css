@@ -711,6 +711,16 @@ body.left-hand .hudTop{flex-direction:row-reverse;}
 .shopCard .price{font-size:11.5px;font-weight:800;color:#ffd28a;}
 .shopCard .price.ok{color:#6fe28a;}
 .shopCard .price.lockreq{color:#8f97b5;font-size:10.5px;}
+/* Temalar/penalar artık bazen iki ödeme yoluyla (Nota VEYA Elmas) satın
+   alınabiliyor — iki rozet yan yana, Elmas olanı kendi tıklamasını alıp
+   kartın genel (Nota) satın alma akışını tetiklemiyor (bkz. shop-ui.js
+   .priceOptGem click listener, stopPropagation). */
+.price.priceDual{display:flex;gap:6px;justify-content:center;align-items:center;flex-wrap:wrap;}
+.price.priceDual .priceOpt{display:inline-flex;align-items:center;gap:3px;}
+.price.priceDual .priceOptGem{padding:2px 7px;border-radius:999px;background:rgba(127,232,255,.14);
+  border:1px solid rgba(127,232,255,.35);color:#7fe8ff;cursor:pointer;}
+.price.priceDual .priceOptGem:active{background:rgba(127,232,255,.26);}
+.shopCard .price.gemPrice{color:#7fe8ff;}
 .shopCard .bdesc{font-size:10.5px;color:#8f97b5;line-height:1.4;min-height:26px;}
 .shopCard .ownedTag{font-size:10px;opacity:.6;}
 /* Yetenekler > Kademe: kartlar yatay ve kompakt (simge solda, metin

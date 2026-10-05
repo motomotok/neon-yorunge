@@ -40,7 +40,7 @@
       else if (p.pricing && p.pricing.price) { onPriceReady && onPriceReady(p.pricing.price); }
     });
     // approved→verify ve verified→finish dinleyicileri store genelindedir;
-    // üç IAP dosyası (premium/pena-shop/season-pass) bunları yalnız BİR kez
+    // üç IAP dosyası (premium/gem-shop/season-pass) bunları yalnız BİR kez
     // bağlar (eskiden her dosya ayrı bağladığı için her işlem 3 kez doğrulanıyordu).
     if (!window.__iapHandlersBound) {
       window.__iapHandlersBound = true;

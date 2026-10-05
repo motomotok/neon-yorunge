@@ -1,4 +1,4 @@
-const CACHE = 'beat-orbit-v50';
+const CACHE = 'beat-orbit-v51';
 const ASSETS = [
   './',
   './index.html',
@@ -9,7 +9,7 @@ const ASSETS = [
   './premium.js',
   './season-pass.js',
   './playgames.js',
-  './pena-shop.js',
+  './gem-shop.js',
   './render3d-bundle.js',
   './assets3d/manifest.js',
   './assets3d/themes/neon/label.jpg',
