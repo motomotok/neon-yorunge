@@ -116,8 +116,15 @@ document.getElementById('globalLeaderboardBtn').addEventListener('click', e=>{ e
   if(PlayGames.signedIn){ PlayGames.showLeaderboard(); return; }
   PlayGames.signIn().then(ok=>{ syncPlayGamesUI(); if(ok) PlayGames.showLeaderboard(); else queueToast(t('toast_playgames_failed')); });
 });
-document.getElementById('privacyBtn').addEventListener('click', e=>{ e.stopPropagation(); window.open('privacy.html','_blank'); });
-document.getElementById('licensesBtn').addEventListener('click', e=>{ e.stopPropagation(); window.open('licenses.html','_blank'); });
+// iOS/Android uygulamasında window.open(yerel sayfa) hiçbir şey açmaz
+// (Capacitor yeni pencereyi sistem tarayıcısına yollar, o da capacitor://
+// adresini açamaz) — native'de sayfanın yayındaki kopyası Safari'de açılır.
+function openDocPage(page){
+  const native = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+  window.open(native ? 'https://paslagame.com.tr/'+page : page, '_blank');
+}
+document.getElementById('privacyBtn').addEventListener('click', e=>{ e.stopPropagation(); openDocPage('privacy.html'); });
+document.getElementById('licensesBtn').addEventListener('click', e=>{ e.stopPropagation(); openDocPage('licenses.html'); });
 document.getElementById('adConsentBtn').addEventListener('click', e=>{ e.stopPropagation(); Ads.showPrivacyOptions(); });
 document.getElementById('legalBtn').addEventListener('click', e=>{ e.stopPropagation(); showLegalPopup(); });
 document.getElementById('infoPopupCloseBtn').addEventListener('click', e=>{ e.stopPropagation(); hideLegalPopup(); });
