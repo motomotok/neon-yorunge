@@ -69,14 +69,13 @@
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-3940256099942544~1458002511</string>
 
-	<!-- iOS 14.5+ App Tracking Transparency: reklam SDK'sı (AdMob) IDFA'ya
-	     dokunduğu için bu anahtar ZORUNLU — olmadan Apple App Store inceleme
-	     aşamasında reddeder. capacitor.config.json'daki
-	     requestTrackingAuthorization:false ayarı otomatik istek göstermiyor
-	     (kişiselleştirilmemiş reklamlarla devam ediliyor), ama SDK yine de bu
-	     metni kontrol ediyor. -->
-	<key>NSUserTrackingUsageDescription</key>
-	<string>Bu izin, sana daha ilgini çekebilecek reklamlar göstermek için kullanılır.</string>
+	<!-- NSUserTrackingUsageDescription BİLEREK yok: ATTrackingManager.
+	     requestTrackingAuthorization() kodun hiçbir yerinde çağrılmıyor
+	     (grep ile doğrulandı — @capacitor-community/admob'un kendi plugin
+	     tanımı dışında hiçbir çağrı yok), yani ATT izin penceresi asla
+	     açılmıyor, her zaman kişiselleştirilmemiş reklamla devam ediliyor.
+	     Bu anahtar varken App Store Connect "uygulama takip izni isteyebilir"
+	     diye App Privacy formuyla çelişki buluyordu (gerçek değildi). -->
 
 	<!-- AdMob'un mediation ağları için Google'ın resmi SKAdNetworkIdentifier
 	     listesi (developers.google.com/admob/ios/privacy/strategies) —
