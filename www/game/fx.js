@@ -1,5 +1,6 @@
 // Ses (WebAudio beep'leri), titreşim ve ekran-üstü toast bildirimleri.
 let AC=null;
+function acResume(){ try{ const p=AC.resume(); if(p && p.catch) p.catch(()=>{}); }catch(e){} }
 // Melodi kombosu 4'ü geçtiğinde, melodi notaları VE rakiplere çarpma
 // sesleri dışındaki her şeyin sesi kısılır — oyuncu o an kurduğu melodiye
 // odaklanabilsin diye. `keepFull=true` geçen çağrılar (melodi notaları,
@@ -10,6 +11,7 @@ function beep(freq,dur,type,vol,keepFull){
   if(!keepFull && typeof state!=='undefined' && state==='play' && typeof combo!=='undefined' && combo>4) vol*=0.3;
   try{
     if(!AC) AC=new (window.AudioContext||window.webkitAudioContext)();
+    if(AC.state!=='running') acResume();
     const o=AC.createOscillator(), g=AC.createGain();
     o.type=type; o.frequency.value=freq; o.connect(g); g.connect(AC.destination);
     const t=AC.currentTime;
@@ -18,6 +20,12 @@ function beep(freq,dur,type,vol,keepFull){
     o.start(t); o.stop(t+dur);
   }catch(e){}
 }
+// iOS: telefon görüşmesi, Siri ya da arka plana geçiş ses bağlamını
+// "interrupted"/"suspended" bırakır ve kendiliğinden dönmez — her dokunuşta
+// (kullanıcı hareketi, iOS'un şart koştuğu an) yeniden başlatılır.
+function resumeAudio(){ try{ if(AC && AC.state!=='running') acResume(); }catch(e){} }
+document.addEventListener('pointerdown', resumeAudio, true);
+document.addEventListener('touchend', resumeAudio, true);
 function vibrate(pattern){ try{ if(navigator.vibrate) navigator.vibrate(pattern); }catch(e){} }
 
 // Kombo ilerledikçe çalan üretimsel melodi: La minör pentatonik (A-C-D-E-G),

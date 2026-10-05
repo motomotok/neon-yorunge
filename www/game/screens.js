@@ -102,7 +102,7 @@ function goUpgrades(){ state='upgrades'; setHud(false); showScreen('upgrades'); 
 
 function startGame(m,d){
   m = m || mode;
-  if(AC && AC.state==='suspended') AC.resume();
+  if(AC && AC.state!=='running') acResume();
   // Zorluk seçimi kaldırıldı: her mod tek, dengeli (normal) zorlukta oynanır.
   mode=m; diffKey='normal';
   diffCfg = DIFF[diffKey];
