@@ -1,0 +1,19 @@
+rules_version = '2';
+
+// Elmas/hesap verisinin TEK yazma yolu Cloud Functions (functions/index.js,
+// Admin SDK ile çalışır ve bu kurallara tabi değildir). İstemci (oyun)
+// SADECE kendi dokümanını okuyabilir, hiçbir şeyi doğrudan yazamaz — aksi
+// halde biri tarayıcı konsolundan Firestore'a doğrudan yazıp kendine
+// elmas ekleyebilirdi.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+    match /referralCodes/{code} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+  }
+}

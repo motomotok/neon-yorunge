@@ -1,4 +1,4 @@
-const CACHE = 'beat-orbit-v53';
+const CACHE = 'beat-orbit-v54';
 const ASSETS = [
   './',
   './index.html',
@@ -6,6 +6,7 @@ const ASSETS = [
   './manifest.webmanifest',
   './ads.js',
   './native-ads-bundle.js',
+  './firebase-bundle.js',
   './premium.js',
   './season-pass.js',
   './playgames.js',
@@ -36,6 +37,7 @@ const ASSETS = [
   './game/narrator.js',
   './game/splash.js',
   './game/tutorial.js',
+  './game/cloud-sync.js',
   './game/input.js',
   './game/main.js',
   './icons/icon-192.png',

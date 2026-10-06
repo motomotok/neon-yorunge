@@ -234,6 +234,7 @@ function gameOver(reason){
   if(ranked) addSeasonXp(Math.max(1, Math.floor(runScore/40)));
   ensureRival();
   saveStats();
+  if(window.CloudSync) CloudSync.onGameOver();
   if(mode!=='zen' && window.PlayGames && PlayGames.isNative() && PlayGames.signedIn) PlayGames.submitScore(runScore);
   if(beatenRival){
     const beatenName = cfg.lang==='tr' ? turkishAccusative(beatenRival) : beatenRival;

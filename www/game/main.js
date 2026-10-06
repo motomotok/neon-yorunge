@@ -64,4 +64,5 @@ function initIAP(){
 }
 initIAP();
 document.addEventListener('deviceready', initIAP);
+if(window.CloudSync) CloudSync.init();
 requestAnimationFrame(loop);

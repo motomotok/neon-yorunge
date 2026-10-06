@@ -117,6 +117,10 @@ document.getElementById('playGamesBtn').addEventListener('click', e=>{ e.stopPro
   if(PlayGames.signedIn){ PlayGames.showLeaderboard(); return; }
   PlayGames.signIn().then(ok=>{ syncPlayGamesUI(); if(ok) queueToast(t('toast_playgames_connected')); else queueToast(t('toast_playgames_failed')); });
 });
+document.getElementById('linkGoogleBtn').addEventListener('click', e=>{ e.stopPropagation(); if(window.CloudSync) CloudSync.linkGoogle(); });
+document.getElementById('linkAppleBtn').addEventListener('click', e=>{ e.stopPropagation(); if(window.CloudSync) CloudSync.linkApple(); });
+document.getElementById('referralShareBtn').addEventListener('click', e=>{ e.stopPropagation(); if(window.CloudSync) CloudSync.shareReferralCode(); });
+document.getElementById('referralRedeemBtn').addEventListener('click', e=>{ e.stopPropagation(); if(window.CloudSync) CloudSync.redeemReferral(); });
 document.getElementById('globalLeaderboardBtn').addEventListener('click', e=>{ e.stopPropagation();
   if(!window.PlayGames || !PlayGames.isNative()){ queueToast(t('toast_playgames_native_only')); return; }
   if(PlayGames.signedIn){ PlayGames.showLeaderboard(); return; }
