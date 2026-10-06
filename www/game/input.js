@@ -11,7 +11,7 @@ document.querySelectorAll('.modeCard').forEach(el=>{
 document.getElementById('modeStartBtn').addEventListener('click', ()=>startGame(pendingMode));
 
 document.querySelectorAll('#shopTabs .stab').forEach(el=>{
-  el.addEventListener('click', ()=>{ shopTab=el.dataset.tab; renderShopTab(); beep(500,0.05,'sine',0.08); });
+  el.addEventListener('click', ()=>{ shopTab=el.dataset.tab; renderShopTab(); });
 });
 document.querySelectorAll('#statsTabs .stab').forEach(el=>{
   el.addEventListener('click', ()=>{ statsTab=el.dataset.statTab; renderStatsTab(); beep(500,0.05,'sine',0.08); });

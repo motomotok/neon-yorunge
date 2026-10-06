@@ -164,10 +164,11 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
 .menuTopTitle{font-family:var(--font-display);font-weight:900;font-size:clamp(13px,3.6vw,16px);letter-spacing:1.5px;
   background:linear-gradient(90deg,var(--star),var(--player));-webkit-background-clip:text;background-clip:text;color:transparent;
   filter:drop-shadow(0 0 10px rgba(120,180,255,.3));}
-.menuTopStats{display:flex;align-items:center;justify-content:center;gap:10px;}
+.menuTopStats{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;}
 .walletChip2{display:flex;align-items:center;gap:6px;background:rgba(5,6,15,.62);border:1px solid var(--glass-brd-soft);
   border-radius:999px;padding:7px 15px;font-weight:700;font-size:16px;}
 .walletChip2 .gicon{width:18px;height:18px;}
+.walletChip2.core{color:#7fe8ff;}
 #powerLevelLine{font-size:13px;padding:7px 14px;background:rgba(5,6,15,.62);}
 .menuPremiumChip{display:flex;align-items:center;gap:8px;background:rgba(5,6,15,.4);border:1px solid var(--glass-brd-soft);
   border-radius:999px;padding:5px 8px 5px 13px;font-size:11px;font-weight:600;}
@@ -552,6 +553,7 @@ body.left-hand .hudTop{flex-direction:row-reverse;}
   background:linear-gradient(180deg,rgba(84,224,255,.1),rgba(84,224,255,.03)) padding-box,
       linear-gradient(160deg,rgba(84,224,255,.4),rgba(84,224,255,.1)) border-box;
   text-shadow:0 0 18px rgba(84,224,255,.4);}
+.walletRow{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;}
 
 /* Çekirdek Ağacı: kök merkezde, 6 dal 60°'lik dilimlere yayılan gerçek bir
    radyal ağaç — düğümler dalların UCUNDA birer yuvarlak, aralarındaki

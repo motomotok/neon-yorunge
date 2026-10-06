@@ -182,7 +182,9 @@ function refreshWallet(){
     const el=document.getElementById(id); if(el) el.textContent=v;
   });
   const g = stats.gems||0;
-  const gEl=document.getElementById('shopGemWallet'); if(gEl) gEl.textContent=g;
+  ['shopGemWallet','menuGemWallet'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.textContent=g;
+  });
 }
 
 function getEquipped(category){
@@ -474,7 +476,6 @@ function showPurchaseConfirm(iconKey, name, price, onYes, message, priceIcon){
   if(price==null){ priceEl.style.display='none'; }
   else { priceEl.style.display='block'; priceEl.innerHTML = icon(priceIcon||'coin')+' '+price; }
   document.getElementById('purchaseConfirmOverlay').style.display = 'flex';
-  beep(500,0.05,'sine',0.08);
 }
 function hidePurchaseConfirm(){
   document.getElementById('purchaseConfirmOverlay').style.display = 'none';
@@ -519,7 +520,6 @@ function onShopCardClick(category, item){
     }
   } else {
     setEquipped(category, item.id);
-    beep(600,0.06,'sine',0.1);
     // Zaten sahip olunan bir kozmetiği tekrar takarken (en sık yapılan işlem,
     // örn. izler arasında gezinme) tüm #shopGrid'i yıkıp yeniden kurmuyoruz —
     // bu, kaydırma sırasında kartların anlık "kayması"na yol açıyordu. Sadece
@@ -683,7 +683,7 @@ function renderBoostRow(){
   const noneChip=document.createElement('div');
   noneChip.className='diffChip'+(!pendingBoost?' sel':'');
   noneChip.textContent=t('boost_none');
-  noneChip.addEventListener('click', ()=>{ pendingBoost=null; renderBoostRow(); beep(400,0.05,'sine',0.08); });
+  noneChip.addEventListener('click', ()=>{ pendingBoost=null; renderBoostRow(); });
   row.appendChild(noneChip);
   BOOSTS.forEach(b=>{
     const owned=stats.boosts[b.id]||0;
@@ -691,7 +691,7 @@ function renderBoostRow(){
     const chip=document.createElement('div');
     chip.className='diffChip'+(pendingBoost===b.id?' sel':'');
     chip.textContent=b.icon+' '+t(b.nameKey)+' ×'+owned;
-    chip.addEventListener('click', ()=>{ pendingBoost=b.id; renderBoostRow(); beep(400,0.05,'sine',0.08); });
+    chip.addEventListener('click', ()=>{ pendingBoost=b.id; renderBoostRow(); });
     row.appendChild(chip);
   });
 }
