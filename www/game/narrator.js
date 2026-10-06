@@ -29,9 +29,6 @@ function narratorSay(msg, opts){
   _narr.timer = setInterval(()=>{
     i++;
     txt.textContent = chars.slice(0, i).join('');
-    const ch = chars[i-1];
-    // Daktilo tıkırtısı: her iki harfte bir, boşluklarda sessiz.
-    if(i%2===0 && ch && ch.trim()) beep(1500+Math.random()*250, 0.018, 'square', 0.025, true);
     if(i >= chars.length){
       clearInterval(_narr.timer);
       _narr.typing = false;

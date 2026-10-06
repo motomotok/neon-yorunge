@@ -127,7 +127,8 @@ function startGame(m,d){
   }
 }
 function pauseGame(){ if(state!=='play') return; state='pause'; showScreen('pause');
-  document.getElementById('zenFinishBtn').style.display = mode==='zen' ? 'block' : 'none'; }
+  document.getElementById('zenFinishBtn').style.display = mode==='zen' ? 'block' : 'none';
+  const pauseSw=document.getElementById('pauseSoundSw'); if(pauseSw) pauseSw.classList.toggle('on', cfg.sound); }
 // Devam: oyuncu doğrudan bir tehlikenin içine düşmesin diye kısa 3-2-1
 // geri sayım; bu sırada oyun duraklatılmış kalır.
 let _resumeCd=null;

@@ -60,6 +60,12 @@ document.getElementById('zenFinishBtn').addEventListener('click', e=>{ e.stopPro
 document.getElementById('pauseBtn').addEventListener('click', e=>{ e.stopPropagation(); pauseGame(); });
 document.getElementById('tutorialSkipBtn').addEventListener('click', e=>{ e.stopPropagation(); if(typeof tutorialSkip==='function') tutorialSkip(); });
 document.getElementById('soundSw').addEventListener('click', ()=>{ cfg.sound=!cfg.sound; saveCfg(); syncSettings(); if(cfg.sound) beep(700,0.08,'sine',0.12); });
+document.getElementById('pauseSoundSw').addEventListener('click', ()=>{ cfg.sound=!cfg.sound; saveCfg(); syncSettings(); if(cfg.sound) beep(700,0.08,'sine',0.12); });
+document.querySelector('#screen-pause .toggle').addEventListener('click', e=>{
+  if(e.target.classList.contains('sw')) return;
+  e.stopPropagation();
+  document.getElementById('pauseSoundSw').click();
+});
 document.getElementById('gfxSw').addEventListener('click', ()=>{ setGfxMode(cfg.gfx!=='3d'); beep(600,0.06,'sine',0.1); });
 document.getElementById('gfxAutoRow').addEventListener('click', e=>{ e.preventDefault(); e.stopPropagation();
   setGfxQuality((cfg.gfxQuality||'auto')==='auto' ? (gfxLiveQuality()||'medium') : 'auto'); beep(600,0.06,'sine',0.1); });

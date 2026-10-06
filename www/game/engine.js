@@ -623,7 +623,10 @@ function tap(x){
     return;
   }
   player.targetRing = next;
-  beep(goOut?620:420,0.07,'triangle',0.10);
+  // Her dokunuşta (= her halka değişiminde) çalan "tık" kasıtlı olarak
+  // kaldırıldı — nota/elmas toplama ve combo seslerinin arasına girip
+  // ritmi bozuyordu. Kilitli yay reddi (yukarıdaki beep) ayrı bir nadir
+  // olay olduğu için dokunulmadı.
   if(tutorialActive && typeof tutorialOnTap==='function') tutorialOnTap(goOut);
 }
 
