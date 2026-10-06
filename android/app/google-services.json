@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "905630422658",
+    "project_id": "sentaks",
+    "storage_bucket": "sentaks.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:905630422658:android:b21fd7f0e962c10217069b",
+        "android_client_info": {
+          "package_name": "com.motomotok.neonyorunge"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "905630422658-8rjgisn13j253ap12217mlb2bmg60al8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDbIpisM96A_FL1T2riF2LyYFQnuCSDhK0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "905630422658-8rjgisn13j253ap12217mlb2bmg60al8.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "905630422658-0n9kqoluvi93hrjrjiv2v35n9pj5hsug.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.motomotok.neonyorunge"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

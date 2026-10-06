@@ -1,4 +1,4 @@
-const CACHE = 'beat-orbit-v55';
+const CACHE = 'beat-orbit-v56';
 const ASSETS = [
   './',
   './index.html',
