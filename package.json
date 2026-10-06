@@ -7,7 +7,7 @@
     "serve": "npx serve www -l 8080",
     "build:ads": "esbuild src/native-ads.js --bundle --format=iife --outfile=www/native-ads-bundle.js",
     "build:3d": "esbuild src/render3d/index.js --bundle --minify --format=iife --target=es2019 --outfile=www/render3d-bundle.js",
-    "build:cloud": "esbuild src/cloud-account.js --bundle --format=iife --target=es2019 --outfile=www/firebase-bundle.js",
+    "build:cloud": "esbuild src/cloud-account.js --bundle --minify --format=iife --target=es2019 --outfile=www/firebase-bundle.js",
     "build": "npm run build:ads && npm run build:3d && npm run build:cloud",
     "cap:sync": "npm run build && cap sync",
     "android:open": "cap open android",
