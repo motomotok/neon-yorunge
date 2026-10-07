@@ -130,3 +130,52 @@ workflows:
         submit_to_testflight: false
         # beta_groups:
         #   - "İç Test"
+
+  android-play:
+    name: Android — Play (AAB + APK)
+    max_build_duration: 45
+    instance_type: linux_x2
+    environment:
+      # Codemagic → Team settings → Code signing identities → Android
+      # keystores bölümüne bilgisayarındaki release keystore'u (MOBILE_APP.md'de
+      # anlatılan neon-yorunge-release.keystore) yükle ve "Reference name"
+      # olarak buradakini yaz. Codemagic, şifreleri CM_KEYSTORE_* ortam
+      # değişkenleri olarak verir; aşağıda keystore.properties'e yazılır.
+      android_signing:
+        - beat_orbit_upload
+      node: 20.11.1
+      java: 21
+    scripts:
+      - name: Install npm dependencies
+        script: |
+          npm install --legacy-peer-deps
+      - name: Build web bundles & sync Capacitor Android project
+        script: |
+          npm run build:ads
+          npm run build:3d
+          npx cap sync android
+      - name: Write keystore.properties
+        script: |
+          cat > "$CM_BUILD_DIR/android/keystore.properties" <<PROPS
+          storeFile=$CM_KEYSTORE_PATH
+          storePassword=$CM_KEYSTORE_PASSWORD
+          keyAlias=$CM_KEY_ALIAS
+          keyPassword=$CM_KEY_PASSWORD
+          PROPS
+      - name: Build release AAB and APK
+        script: |
+          cd android
+          chmod +x gradlew
+          # versionCode her build'de artmalı (Play aynı numarayı ikinci kez
+          # kabul etmez) — Codemagic'in kendi artan sayacı kullanılıyor.
+          ./gradlew bundleRelease assembleRelease -PversionCode=$((BUILD_NUMBER + 1))
+    artifacts:
+      - android/app/build/outputs/bundle/release/*.aab
+      - android/app/build/outputs/apk/release/*.apk
+    publishing:
+      email:
+        recipients:
+          - aliaslan625625@gmail.com
+        notify:
+          success: true
+          failure: true
