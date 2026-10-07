@@ -9,7 +9,10 @@ let W,H,CX,CY,DPR, RINGS=[], PLAYER_R;
 const NUM_RINGS = 3, MIN_GAP = 0.55;
 
 function resize(){
-  DPR = Math.min(window.devicePixelRatio||1, 1.5);
+  // 3D modda bu canvas yalnız tam ekran flaşları taşır (dünya WebGL'de):
+  // yüksek çözünürlük gereksiz yere her karede ekstra tam ekran katman demek.
+  const overlayOnly = typeof cfg!=='undefined' && cfg.gfx==='3d' && (typeof _gfx3dState==='undefined' || _gfx3dState!=='failed');
+  DPR = overlayOnly ? 1 : Math.min(window.devicePixelRatio||1, 1.5);
   W = window.innerWidth; H = window.innerHeight;
   // Bazı Android WebView'lerde (örn. Redmi Note 9) 100dvh 0'a çözülüyor ve
   // tüm menü/ekranlar çökeyip görünmez oluyordu; gerçek yüksekliği CSS'e

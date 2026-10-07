@@ -51,6 +51,7 @@ function syncGfxMode(){
 function gfx3dFailed(reason){
   console.warn('[gfx] 3D devre dışı:', reason);
   _gfx3dState='failed';
+  resize(); // 2D'ye düşünce canvas tekrar tam çözünürlükte çizilsin
   // Bağlam kaybı (Android'de arka plana geçince sık) geçicidir: bu oturumda 2D'ye
   // düşülür ama tercih kaydedilmez, bir sonraki açılışta 3D yeniden denenir.
   // Kalıcı hatalarda (WebGL yok, paket yüklenemedi) klasik moda geçilip kaydedilir.
@@ -67,7 +68,7 @@ function gfx3dFailed(reason){
 function setGfxMode(on){
   cfg.gfx = on ? '3d' : 'classic'; saveCfg();
   if(on && _gfx3dState==='failed') _gfx3dState='off'; // kullanıcı yeniden denemek isterse
-  syncGfxMode(); syncGfxSettings();
+  resize(); syncGfxMode(); syncGfxSettings();
 }
 // Kalite: 'auto' (cihaza/FPS'e göre) ya da sabit 'low'|'medium'|'high'.
 function setGfxQuality(q){
@@ -98,6 +99,7 @@ function syncGfxSettings(){
 // Render3D'ye her karede gönderilen salt-okunur anlık görüntü. Tek nesne
 // yeniden kullanılır (her karede yeni nesne üretip GC baskısı yaratmasın).
 const _frame3d = {};
+let _perfReportTick = 0;
 function renderFrame3D(dt){
   const f=_frame3d;
   f.dt=dt; f.W=W; f.H=H; f.base=Math.min(W,H); f.CX=CX; f.CY=CY; f.RINGS=RINGS; f.PLAYER_R=PLAYER_R;
@@ -111,6 +113,13 @@ function renderFrame3D(dt){
   try{ Render3D.render(f); }
   catch(e){ gfx3dFailed(e && e.message); }
   if(state==='menu' && (++_menuAnchorTick % 12)===1) syncMenuAnchors();
+  // ~10 sn'de bir: hangi GPU'da hangi seviye/FPS ile oynandığı çökme
+  // raporlarına eklensin (zorlanan cihazları gerçek veriden görmek için).
+  if(window.CrashReport && (++_perfReportTick % 600)===1){
+    const i=Render3D.info();
+    CrashReport.setKey('gpu', i.gpu||'?'); CrashReport.setKey('gfx_quality', i.quality+(i.preference==='auto'?' (auto)':''));
+    CrashReport.setKey('fps', i.fps); CrashReport.setKey('render_dpr', i.dpr);
+  }
   // Ayarlar açıkken otomatik kalite değişirse işaretli seviye güncellensin.
   if(state==='settings' && (++_menuAnchorTick % 30)===0) syncGfxSettings();
 }

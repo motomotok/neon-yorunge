@@ -23,16 +23,40 @@ import { World, DISC_R, TOP_Y } from './world.js';
 import { Entities } from './entities.js';
 import { resolveSlot, loadErrors } from './assets.js';
 
-// Kalite önayarları. 'auto' orta ile başlar, FPS'e göre iner/çıkar.
+// Kalite önayarları. 'auto' cihazın GPU'suna göre seçilen seviyeden başlar
+// (bkz. detectTier), FPS'e göre iner/çıkar. Her seviyede çözünürlük dpr ile
+// minDpr arasında FPS'e göre kendiliğinden ayarlanır (dinamik çözünürlük).
+// Neon parlaması (bloom) oyunun görsel kimliği olduğu için düşükte de açık;
+// sadece daha düşük çözünürlükte hesaplanır. fxLights: pikap kolu ve oyuncu
+// nokta ışıkları — her pikselde ek ışık hesabı demek, zayıf GPU'da kapalı.
 const QUALITY = {
-  low:    {dpr:1.0, bloom:false, bloomScale:0,   msaa:0},
-  medium: {dpr:1.5, bloom:true,  bloomScale:0.5, msaa:0},
-  high:   {dpr:2.0, bloom:true,  bloomScale:1.0, msaa:4},
+  low:    {dpr:1.25, minDpr:0.85, bloom:true, bloomScale:0.25, msaa:0, fxLights:false},
+  medium: {dpr:1.5,  minDpr:1.0,  bloom:true, bloomScale:0.5,  msaa:0, fxLights:true},
+  high:   {dpr:2.0,  minDpr:1.35, bloom:true, bloomScale:1.0,  msaa:4, fxLights:true},
 };
 const ORDER = ['low','medium','high'];
 
 let renderer, scene, camera, composer, bloomPass, renderPass, world, entities;
 let W=1, H=1, base=1, qualityPref='auto', qualityLive='medium', failed=false, onFail=null;
+let dprCur = 1, bloomCut = false, gpuName = '', gpuTier = 'medium';
+
+// Açılış seviyesini GPU adından tahmin eder; yanılırsa FPS takibi düzeltir.
+// Bilinmeyen GPU'lar ortadan başlar.
+function detectTier(gl){
+  try{
+    const ext = gl.getExtension('WEBGL_debug_renderer_info');
+    gpuName = String(ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER) || '');
+  }catch(e){ gpuName = ''; }
+  const s = gpuName.toLowerCase(), mem = navigator.deviceMemory || 0;
+  let m;
+  if(/apple/.test(s)) return 'medium';
+  if((m = s.match(/adreno[^0-9]*(\d{3})/))) return +m[1] >= 640 ? 'medium' : 'low';
+  if((m = s.match(/mali-g(\d+)/))) return (+m[1] >= 68) ? 'medium' : 'low';
+  if(/immortalis|xclipse/.test(s)) return 'medium';
+  if(/mali|powervr|sgx|vivante|tegra|videocore/.test(s)) return 'low';
+  if(mem && mem <= 3) return 'low';
+  return 'medium';
+}
 let camCfg = {tilt:68, fov:38, zoom:1};
 let bgDef = null;
 // Ekran konumu (NDC, -1..1) -> yer düzlemi (base birimi). Tema süsleri
@@ -46,7 +70,7 @@ const view = {aspect:1, tilt:0, ground(nx, ny, y){
   if(!(k > 0)) return null;
   return {x:(o.x + _rd.x*k)/base, z:(o.z + _rd.z*k)/base};
 }};
-const fps = {acc:0, frames:0, lowFor:0, highFor:0, downgraded:false, value:60};
+const fps = {acc:0, frames:0, lowFor:0, highFor:0, downgraded:false, dprDropped:false, value:60};
 // Bloom katmanı yeniden kurulunca / boyut değişince (kalite değişimi, ekran
 // döndürme, uygulamaya geri dönme) iOS'ta yeni doku ilk karede eski/çöp veri
 // taşıyıp tek karelik sarı-yeşil bir "elektrik çarpması" parlaması yapıyordu.
@@ -79,6 +103,7 @@ function init(opts){
   try{
     renderer = new THREE.WebGLRenderer({canvas:opts.canvas, antialias:false, alpha:false, powerPreference:'high-performance'});
   }catch(e){ console.warn('[Render3D] WebGL başlatılamadı', e); return false; }
+  gpuTier = detectTier(renderer.getContext());
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NeutralToneMapping;
   renderer.toneMappingExposure = manifest.exposure || 1.05;
@@ -94,13 +119,13 @@ function init(opts){
   resolveSlot((manifest.background||{}).image).then(d=>{ if(d && d.texture){ bgDef = d; scene.background = d.texture; fitBackground(); } });
 
   renderPass = new RenderPass(scene, camera);
-  applyQuality(qualityPref==='auto' ? 'medium' : qualityPref);
+  applyQuality(qualityPref==='auto' ? gpuTier : qualityPref);
   return true;
 }
 
 function buildComposer(q){
   if(composer){ composer.dispose(); composer = null; bloomPass = null; }
-  if(!q.bloom) return;
+  if(!q.bloom || bloomCut) return;
   const rt = new THREE.WebGLRenderTarget(1, 1, {type:THREE.HalfFloatType, samples:q.msaa});
   composer = new EffectComposer(renderer, rt);
   composer.addPass(renderPass);
@@ -111,18 +136,36 @@ function buildComposer(q){
   composer.addPass(new OutputPass());
 }
 
+function maxDpr(q){ return Math.min(window.devicePixelRatio||1, q.dpr); }
+
+// Işık sayısı değişince tüm shader'lar bir kez yeniden derlenir; bu yüzden
+// yalnız seviye değişiminde çağrılır, kare kare değil.
+function setFxLights(on){
+  if(world && world.armLight) world.armLight.visible = on;
+  if(entities && entities.player && entities.player.light) entities.player.light.visible = on;
+}
+
 function applyQuality(level){
   qualityLive = level;
   const q = QUALITY[level];
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, q.dpr));
+  dprCur = maxDpr(q);
+  bloomCut = false;
+  renderer.setPixelRatio(dprCur);
   buildComposer(q);
+  setFxLights(q.fxLights);
+  resize(W, H, base);
+}
+
+function setDpr(v){
+  dprCur = v;
+  renderer.setPixelRatio(v);
   resize(W, H, base);
 }
 
 function setQuality(pref){
   qualityPref = pref;
-  fps.downgraded = false; fps.lowFor = 0; fps.highFor = 0;
-  if(renderer) applyQuality(pref==='auto' ? 'medium' : pref);
+  fps.downgraded = false; fps.dprDropped = false; fps.lowFor = 0; fps.highFor = 0;
+  if(renderer) applyQuality(pref==='auto' ? gpuTier : pref);
 }
 
 // Ekran sabit arka plan görselini "cover" kırpar (en-boy oranını korur).
@@ -176,16 +219,32 @@ function resize(w, h, b){
   fitBackground();
 }
 
+// Saniyede bir FPS'e bakar. Zorlanırsa önce çözünürlüğü adım adım düşürür
+// (gözle zor fark edilir); taban çözünürlükte hâlâ zorlanırsa 'auto' modda bir
+// alt seviyeye iner, en altta da son çare olarak parlama efektini kapatır.
+// Rahatsa tersine aynı adımlarla yükselir. Elle seçilmiş seviyede de
+// çözünürlük ayarı çalışır, sadece seviye değişmez.
 function trackFps(dtMs){
-  if(qualityPref !== 'auto') return;
   fps.acc += dtMs; fps.frames++;
   if(fps.acc < 1000) return;
   fps.value = fps.frames*1000/fps.acc; fps.acc = 0; fps.frames = 0;
-  const i = ORDER.indexOf(qualityLive);
+  const q = QUALITY[qualityLive], i = ORDER.indexOf(qualityLive);
   if(fps.value < 45){ fps.lowFor++; fps.highFor = 0; } else if(fps.value > 57){ fps.highFor++; fps.lowFor = 0; } else { fps.lowFor = 0; fps.highFor = 0; }
-  if(fps.lowFor >= 2 && i > 0){ fps.downgraded = true; fps.lowFor = 0; applyQuality(ORDER[i-1]); }
-  // Bir kez düşürüldüyse bir daha yükseltme (sürekli gidip gelmesin).
-  else if(fps.highFor >= 5 && i < ORDER.length-1 && !fps.downgraded){ fps.highFor = 0; applyQuality(ORDER[i+1]); }
+
+  if(fps.lowFor >= 2){
+    fps.lowFor = 0;
+    if(dprCur > q.minDpr + 0.01){ fps.dprDropped = true; setDpr(Math.max(q.minDpr, dprCur - 0.15)); return; }
+    if(qualityPref === 'auto' && i > 0){ fps.downgraded = true; applyQuality(ORDER[i-1]); return; }
+    if(qualityLive === 'low' && !bloomCut){ bloomCut = true; buildComposer(q); resize(W, H, base); }
+    return;
+  }
+  // Düşürüp yeniden yükseltirken gidip gelmesin diye daha uzun bekler.
+  if(fps.highFor >= (fps.dprDropped ? 15 : 5)){
+    fps.highFor = 0;
+    if(dprCur < maxDpr(q) - 0.01){ setDpr(Math.min(maxDpr(q), dprCur + 0.1)); return; }
+    // Bir kez seviye düşürüldüyse bir daha yükseltme (sürekli gidip gelmesin).
+    if(qualityPref === 'auto' && i < ORDER.length-1 && !fps.downgraded) applyQuality(ORDER[i+1]);
+  }
 }
 
 let lastTs = 0;
@@ -268,7 +327,8 @@ function menuAnchors(xMin, xMax){
 }
 
 function info(){
-  return {quality:qualityLive, preference:qualityPref, fps:Math.round(fps.value), failed, missingAssets:loadErrors.slice(),
+  return {quality:qualityLive, preference:qualityPref, fps:Math.round(fps.value), dpr:Math.round(dprCur*100)/100,
+    bloom:!!composer, gpu:gpuName, gpuTier, failed, missingAssets:loadErrors.slice(),
     scratchPoints: entities ? entities.scratch.pts.length : 0};
 }
 

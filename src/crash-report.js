@@ -47,6 +47,11 @@ window.CrashReport = {
   setVersion(v) {
     if (Capacitor.isNativePlatform()) FirebaseCrashlytics.setCustomKey({ key: 'game_version', value: String(v), type: 'string' }).catch(() => {});
   },
+  setKey(key, value) {
+    if (!Capacitor.isNativePlatform()) return;
+    const type = typeof value === 'number' ? (Number.isInteger(value) ? 'long' : 'double') : 'string';
+    FirebaseCrashlytics.setCustomKey({ key: String(key), value: type === 'string' ? String(value) : value, type }).catch(() => {});
+  },
   log(msg) {
     if (Capacitor.isNativePlatform()) FirebaseCrashlytics.log({ message: String(msg) }).catch(() => {});
   },
