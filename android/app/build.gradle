@@ -13,7 +13,8 @@ android {
         applicationId "com.motomotok.neonyorunge"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
+        // CI (Codemagic) -PversionCode=N ile her build'de artan numara verir.
+        versionCode (project.findProperty('versionCode') ?: '1').toInteger()
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
