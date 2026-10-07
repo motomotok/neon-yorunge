@@ -1,4 +1,4 @@
-const CACHE = 'beat-orbit-v62';
+const CACHE = 'beat-orbit-v63';
 const ASSETS = [
   './',
   './index.html',
@@ -7,6 +7,7 @@ const ASSETS = [
   './ads.js',
   './native-ads-bundle.js',
   './firebase-bundle.js',
+  './crash-bundle.js',
   './premium.js',
   './season-pass.js',
   './playgames.js',

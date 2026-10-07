@@ -2,6 +2,7 @@
 // Bu dosya her zaman script sırasının EN SONUNDA yer almalı.
 hydrateIcons();
 document.getElementById('versionTag').textContent = 'v'+GAME_VERSION;
+if(window.CrashReport) CrashReport.setVersion(GAME_VERSION);
 // İlk kurulumda (hiç kayıtlı ayar yoksa) cihaz dilini desteklenen 15 dilden
 // biriyle eşleştirmeyi dene — eşleşme yoksa (veya zaten bir kayıt varsa)
 // varsayılan 'tr' korunur, mevcut kullanıcıların dili sessizce değişmez.
