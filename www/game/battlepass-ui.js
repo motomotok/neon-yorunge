@@ -2,19 +2,24 @@
 // kademe listesi (ücretsiz/ücretli claim butonları) ve Sezon Bileti IAP
 // durum senkronizasyonu. Veri modeli data.js'de (ensureSeason, SEASON_TIERS,
 // claimSeasonTier).
+// bkz. shop-ui.js syncPremiumUI: buton yalnız mağaza ürünü döndürünce görünür.
+let _seasonPassLivePrice = null;
 function syncSeasonPassUI(price){
+  if(price) _seasonPassLivePrice = price;
   const txt=document.getElementById('seasonPassStatusText');
   const btn=document.getElementById('seasonPassBuyBtn');
   if(!txt || !btn) return;
   const card=document.getElementById('seasonPassCard'); if(card) card.classList.toggle('active', !!stats.seasonPremium);
+  if(card) card.style.display = (stats.seasonPremium || _seasonPassLivePrice) ? '' : 'none';
   if(stats.seasonPremium){
     txt.innerHTML='<b>'+t('bp_premium')+'</b>'+t('seasonpass_active');
     btn.style.display='none';
   } else {
     txt.innerHTML='<b>'+t('bp_premium')+'</b>'+t('seasonpass_promo');
-    btn.style.display='inline-block';
-    btn.innerHTML=icon('ticket')+' '+t('seasonpass_buy_btn',{price:price || (window.SeasonPass ? SeasonPass.FALLBACK_PRICE_TEXT : '29 TL')});
+    btn.style.display = _seasonPassLivePrice ? 'inline-block' : 'none';
+    btn.innerHTML=icon('ticket')+' '+t('seasonpass_buy_btn',{price:_seasonPassLivePrice || ''});
   }
+  if(typeof syncRestoreBtn==='function') syncRestoreBtn();
 }
 
 // Ödül hattı: ortada numaralı plak düğümleri (ulaşıldıysa yanar, aralarındaki

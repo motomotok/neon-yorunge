@@ -13,7 +13,19 @@ function cloudLinked(providerId) {
   return !!(_cloudProfile && (_cloudProfile.linkedProviders || []).includes(providerId));
 }
 
+// KAPALI: native giriş (@capacitor-firebase/authentication) oturumu Firebase
+// JS SDK'ya aktarılmıyor, bu yüzden Firestore istekleri yetkisiz kalıyor; iOS'ta
+// GoogleSignIn pod'u ve REVERSED_CLIENT_ID URL şeması da eksik. Düzeltilip
+// cihazda test edilene kadar Ayarlar'daki hesap bölümü gizli.
+const ACCOUNT_LINK_ENABLED = false;
+
 async function initCloudSync() {
+  if (!ACCOUNT_LINK_ENABLED) {
+    ['linkRow', 'acctLinkDesc', 'acctDeleteRow'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.style.display = 'none';
+    });
+    return;
+  }
   if (!window.CloudAccount) return;
   try {
     // Daha önce hiç hesap bağlamadıysan burada hiçbir Firebase çağrısı

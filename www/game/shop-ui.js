@@ -30,18 +30,31 @@ function syncPlayGamesUI(){
   if(PlayGames.signedIn){ txt.innerHTML=icon('check')+' '+t('playgames_connected'); btn.textContent=t('playgames_leaderboard_btn'); }
   else { txt.innerHTML=icon('trophy')+' '+PlayGames.serviceName(); btn.textContent=t('playgames_connect'); }
 }
+// Satın alma butonları YALNIZ mağaza ürünü gerçekten döndürdüğünde (canlı
+// fiyat geldiğinde) görünür. Ürün App Store Connect / Play Console'da yoksa
+// buton "var ama hiçbir şey yapmıyor" olur — App Review bunu 2.1'den reddeder.
+let _premiumLivePrice = null;
 function syncPremiumUI(price){
+  if(price) _premiumLivePrice = price;
   const txt=document.getElementById('premiumStatusText');
   const btn=document.getElementById('premiumBuyBtn');
+  const chip=document.getElementById('premiumCard');
   if(!txt || !btn) return;
+  // visibility (display değil): gfx.js menü yerleşimi chip'in konumunu okuyor.
+  if(chip) chip.style.visibility = (stats.premiumNoAds || _premiumLivePrice) ? '' : 'hidden';
   if(stats.premiumNoAds){
     txt.innerHTML=icon('check')+' '+t('premium_active_short');
     btn.style.display='none';
   } else {
     txt.innerHTML=icon('gem')+' '+t('premium_label');
-    btn.style.display='inline-block';
-    btn.textContent=price || (window.Premium ? Premium.FALLBACK_PRICE_TEXT : '49 TL');
+    btn.style.display = _premiumLivePrice ? 'inline-block' : 'none';
+    btn.textContent=_premiumLivePrice || '';
   }
+  syncRestoreBtn();
+}
+function syncRestoreBtn(){
+  const b=document.getElementById('restorePurchasesBtn');
+  if(b) b.style.display = (_premiumLivePrice || (typeof _seasonPassLivePrice!=='undefined' && _seasonPassLivePrice)) ? '' : 'none';
 }
 function showLegalPopup(){ document.getElementById('infoPopupOverlay').style.display='flex'; beep(500,0.05,'sine',0.08); }
 function hideLegalPopup(){ document.getElementById('infoPopupOverlay').style.display='none'; }
@@ -486,7 +499,15 @@ function hidePurchaseConfirm(){
 // register() çağrısındaki onPriceReady callback'i (main.js) burayı doldurur.
 // Mağaza kurulmadan/tarayıcıda hep boş kalır, kartlar fallbackPrice gösterir.
 const _gemLivePrices = {};
-function setGemLivePrice(productId, price){ _gemLivePrices[productId]=price; syncShopIfOpen(); }
+function setGemLivePrice(productId, price){ _gemLivePrices[productId]=price; syncGemTab(); syncShopIfOpen(); }
+// Elmas sekmesi yalnız mağaza en az bir elmas paketini döndürdüyse görünür
+// (bkz. syncPremiumUI'deki App Review notu).
+function syncGemTab(){
+  const tab=document.querySelector('#shopTabs .stab[data-tab="gems"]');
+  const any=Object.keys(_gemLivePrices).length>0;
+  if(tab) tab.style.display = any ? '' : 'none';
+  if(!any && typeof shopTab!=='undefined' && shopTab==='gems') shopTab='themes';
+}
 // Elmasla satın alma onayı — 'gem' gate'ler İÇİN kart tıklaması bunu çağırır;
 // 'coin_or_gem' gate'ler için ise kartın kendi içindeki ayrı "Elmas" rozeti
 // (bkz. renderShopGrid/renderThemeGrid) stopPropagation ile doğrudan bunu
@@ -658,10 +679,9 @@ function renderBoostsShop(){
 // açar (bkz. gem-shop.js). boostCard'larla aynı mantık (satın al, biriktir).
 function renderGemShop(){
   const grid=document.getElementById('shopGrid'); grid.innerHTML='';
-  const products = (window.GemShop && GemShop.PRODUCTS) || [];
+  const products = ((window.GemShop && GemShop.PRODUCTS) || []).filter(p=>_gemLivePrices[p.id]);
   products.forEach(p=>{
-    const live = _gemLivePrices[p.id];
-    const priceText = live || (window.GemShop ? GemShop.fallbackPrice(p.id) : p.fallbackPrice);
+    const priceText = _gemLivePrices[p.id];
     const card=document.createElement('div'); card.className='shopCard gemPackCard';
     card.innerHTML = `<div class="boostIcon">${icon('gem')}</div><div class="cn">${p.amount} ${t('currency_gem_name')}</div><div class="price iapPrice">${priceText}</div>`;
     card.addEventListener('click', ()=>{
@@ -698,10 +718,11 @@ function renderBoostRow(){
 
 async function shareScore(){
   const text=t('share_text',{score});
+  const url='https://paslagame.com.tr/'; // native'de location.href capacitor://localhost olur
   if(navigator.share){
-    try{ await navigator.share({title:'Beat Orbit', text, url:location.href}); }catch(e){}
+    try{ await navigator.share({title:'Beat Orbit', text, url}); }catch(e){}
   } else if(navigator.clipboard){
-    try{ await navigator.clipboard.writeText(text+' '+location.href); queueToast(t('toast_share_copied')); }catch(e){ queueToast(t('toast_share_copy_failed')); }
+    try{ await navigator.clipboard.writeText(text+' '+url); queueToast(t('toast_share_copied')); }catch(e){ queueToast(t('toast_share_copy_failed')); }
   } else queueToast(t('toast_share_unsupported'));
 }
 

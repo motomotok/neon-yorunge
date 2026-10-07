@@ -18,6 +18,8 @@ resetGame(); renderThemeGrid(); goMenu();
 syncGfxMode(); // cfg.gfx==='3d' ise 3D paketi burada tembel yüklenir (bkz. gfx.js)
 Ads.init();
 syncAdButtons();
+// Satın alma butonları mağaza fiyatı gelene kadar gizli başlar (bkz. syncPremiumUI).
+syncPremiumUI(); syncSeasonPassUI(); syncGemTab();
 setInterval(()=>{ if(state!=='play') syncAdButtons(); }, 1000); // "Reklam İzle" butonlarındaki bekleme geri sayımını canlı tutar
 if(window.PlayGames && PlayGames.isNative()){
   PlayGames.signIn().then(()=>{ syncPlayGamesUI(); });
