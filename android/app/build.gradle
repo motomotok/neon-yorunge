@@ -14,7 +14,7 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // CI (Codemagic) -PversionCode=N ile her build'de artan numara verir.
-        versionCode (project.findProperty('versionCode') ?: '1').toInteger()
+        versionCode((project.findProperty('versionCode') ?: '1').toString().toInteger())
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
