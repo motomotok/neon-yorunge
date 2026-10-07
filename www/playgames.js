@@ -25,7 +25,15 @@
       ? window.Capacitor.Plugins.CapacitorGameConnect
       : null;
   }
-  function isNative() { return !!plugin(); }
+  // Android'de Play Games projesi henüz kurulmadıysa (strings.xml'deki
+  // game_services_project_id ve LEADERBOARD_ID_ANDROID hâlâ yer tutucu) hiç
+  // dokunma: yanlış APP_ID ile Games SDK'ya giriş isteği göndermek hata
+  // verir/çökebilir. Kurulunca LEADERBOARD_ID_ANDROID'i doldurmak yeterli.
+  function configured() {
+    const p = window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform();
+    return p !== 'android' || LEADERBOARD_ID_ANDROID !== 'YOUR_LEADERBOARD_ID';
+  }
+  function isNative() { return !!plugin() && configured(); }
 
   // Aynı plugin Android'de Google Play Games'e, iOS'ta Apple Game Center'a
   // bağlanıyor — ayarlardaki "Bağlan" girişinin hangi markayı göstereceğini
@@ -37,7 +45,7 @@
   }
 
   function signIn() {
-    const p = plugin();
+    const p = isNative() ? plugin() : null;
     if (!p) return Promise.resolve(false);
     return p.signIn()
       .then(() => { signedIn = true; return true; })
