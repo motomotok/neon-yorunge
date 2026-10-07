@@ -14,7 +14,7 @@
   "plugins": {
     "AdMob": {
       "requestTrackingAuthorization": false,
-      "initializeForTesting": true
+      "initializeForTesting": false
     }
   }
 }

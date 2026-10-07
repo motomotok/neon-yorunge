@@ -1,9 +1,18 @@
 // "Sezon Bileti" (Battle-Pass premium çizgisi) uygulama içi satın alma köprüsü.
-// premium.js ile aynı desen, tek fark: ürün CONSUMABLE — her ay (sezon
-// değiştiğinde) stats.seasonPremium sıfırlanır ve tekrar satın alınabilmesi
-// gerekir, bu yüzden NON_CONSUMABLE değil CONSUMABLE kullanılıyor.
+// premium.js ile aynı desen. ÖNEMLİ: ürün tipi NON_CONSUMABLE ve ID sezona
+// özel (season_pass_s1, season_pass_s2, ...) — tek, tekrar-satın-alınabilir
+// bir CONSUMABLE kullanmıyoruz çünkü Apple süreli erişim hakkı veren ürünler
+// için bunu kabul etmiyor VE Apple'ın "Satın alımları geri yükle" mekanizması
+// consumable ürünleri hiç döndürmüyor (reinstall'da kalıcı olarak kaybolurdu).
+// Sezon değişince activeSeason().id değişir, yeni sezon otomatik olarak YENİ
+// bir product ID ister — önceki sezonun bileti bu sezonu açmaz, bu da
+// "her sezon tekrar satın alınır" davranışını NON_CONSUMABLE ile doğal olarak
+// korur. Yeni bir sezon eklendiğinde Play Console + App Store Connect'te o
+// sezonun product ID'siyle yeni bir ürün oluşturulması gerekir.
 (function () {
-  const PRODUCT_ID = 'season_pass';
+  function productId() {
+    return 'season_pass_s' + (window.activeSeason ? activeSeason().id : 1);
+  }
   const FALLBACK_PRICE_TEXT = '29 TL';
 
   function isAvailable() {
@@ -32,16 +41,18 @@
   function register(onOwned, onPriceReady) {
     if (!isAvailable()) return;
     const { store, ProductType } = window.CdvPurchase;
-    store.register({ id: PRODUCT_ID, type: ProductType.CONSUMABLE, platform: storePlatform() });
+    const id = productId();
+    store.register({ id, type: ProductType.NON_CONSUMABLE, platform: storePlatform() });
 
     store.when().productUpdated((p) => {
-      if (p.id !== PRODUCT_ID) return;
+      if (p.id !== productId()) return;
       if (p.pricing && p.pricing.price) { onPriceReady && onPriceReady(p.pricing.price); }
     });
-    // Sezon Bileti YALNIZ bu ürünü içeren bir doğrulamada açılır (eskiden
-    // reklamsız paket ya da pena satın alınca da bedavaya açılıyordu).
+    // Sezon Bileti YALNIZ bu sezonun ürününü içeren bir doğrulamada açılır
+    // (productId() her çağrıda TAZE okunur — geçen sezonun bileti bu sezonu
+    // açmaz, bkz. dosya başındaki not).
     window.__iapVerifiedHooks = window.__iapVerifiedHooks || [];
-    window.__iapVerifiedHooks.push((receipt) => { if (receiptHasProduct(receipt, PRODUCT_ID)) onOwned && onOwned(); });
+    window.__iapVerifiedHooks.push((receipt) => { if (receiptHasProduct(receipt, productId())) onOwned && onOwned(); });
     // approved→verify ve verified→finish dinleyicileri store genelindedir;
     // üç IAP dosyası (premium/gem-shop/season-pass) bunları yalnız BİR kez
     // bağlar (eskiden her dosya ayrı bağladığı için her işlem 3 kez doğrulanıyordu).
@@ -59,10 +70,10 @@
   function purchase() {
     if (!isAvailable()) return;
     const { store } = window.CdvPurchase;
-    const product = store.get(PRODUCT_ID);
+    const product = store.get(productId());
     const offer = product && product.getOffer && product.getOffer();
     if (offer) store.order(offer);
   }
 
-  window.SeasonPass = { isNative: isAvailable, register, purchase, FALLBACK_PRICE_TEXT };
+  window.SeasonPass = { isNative: isAvailable, register, purchase, productId, FALLBACK_PRICE_TEXT };
 })();

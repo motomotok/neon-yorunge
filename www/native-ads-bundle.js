@@ -744,13 +744,25 @@
   });
 
   // src/native-ads.js
-  var ADS_TEST_MODE = true;
-  var TEST_INTERSTITIAL_AD_ID = "ca-app-pub-3940256099942544/1033173712";
-  var TEST_REWARDED_AD_ID = "ca-app-pub-3940256099942544/5224354917";
-  var PROD_INTERSTITIAL_AD_ID = "BURAYA_GERCEK_INTERSTITIAL_AD_ID";
-  var PROD_REWARDED_AD_ID = "BURAYA_GERCEK_REWARDED_AD_ID";
-  var INTERSTITIAL_AD_ID = ADS_TEST_MODE ? TEST_INTERSTITIAL_AD_ID : PROD_INTERSTITIAL_AD_ID;
-  var REWARDED_AD_ID = ADS_TEST_MODE ? TEST_REWARDED_AD_ID : PROD_REWARDED_AD_ID;
+  var PROD_AD_IDS = {
+    ios: {
+      interstitial: "ca-app-pub-6695608611504367/3726616221",
+      rewarded: "ca-app-pub-6695608611504367/8675690573"
+    },
+    android: {
+      interstitial: "ca-app-pub-6695608611504367/3231792209",
+      rewarded: "ca-app-pub-6695608611504367/6035330777"
+    }
+  };
+  var TEST_AD_IDS = {
+    interstitial: "ca-app-pub-3940256099942544/1033173712",
+    rewarded: "ca-app-pub-3940256099942544/5224354917"
+  };
+  var PLATFORM = Capacitor.getPlatform();
+  var PROD_IDS = PROD_AD_IDS[PLATFORM] || null;
+  var ADS_TEST_MODE = !PROD_IDS;
+  var INTERSTITIAL_AD_ID = ADS_TEST_MODE ? TEST_AD_IDS.interstitial : PROD_IDS.interstitial;
+  var REWARDED_AD_ID = ADS_TEST_MODE ? TEST_AD_IDS.rewarded : PROD_IDS.rewarded;
   var isNative = () => Capacitor.isNativePlatform();
   var initPromise = null;
   var interstitialReady = false;
@@ -759,7 +771,7 @@
   var MIN_INTERSTITIAL_GAP_MS = 2e4;
   function preloadInterstitial() {
     interstitialReady = false;
-    AdMob.prepareInterstitial({ adId: INTERSTITIAL_AD_ID, isTesting: ADS_TEST_MODE }).then(() => {
+    AdMob.prepareInterstitial({ adId: INTERSTITIAL_AD_ID, isTesting: ADS_TEST_MODE, npa: true }).then(() => {
       interstitialReady = true;
     }).catch(() => {
       interstitialReady = false;
@@ -767,7 +779,7 @@
   }
   function preloadRewarded() {
     rewardedReady = false;
-    AdMob.prepareRewardVideoAd({ adId: REWARDED_AD_ID, isTesting: ADS_TEST_MODE }).then(() => {
+    AdMob.prepareRewardVideoAd({ adId: REWARDED_AD_ID, isTesting: ADS_TEST_MODE, npa: true }).then(() => {
       rewardedReady = true;
     }).catch(() => {
       rewardedReady = false;
@@ -812,7 +824,7 @@
       return;
     }
     try {
-      if (!interstitialReady) await AdMob.prepareInterstitial({ adId: INTERSTITIAL_AD_ID, isTesting: ADS_TEST_MODE });
+      if (!interstitialReady) await AdMob.prepareInterstitial({ adId: INTERSTITIAL_AD_ID, isTesting: ADS_TEST_MODE, npa: true });
       lastInterstitialAt = Date.now();
       await AdMob.showInterstitial();
     } catch (e) {
@@ -851,7 +863,7 @@
       else onCancel && onCancel();
     };
     try {
-      if (!rewardedReady) await AdMob.prepareRewardVideoAd({ adId: REWARDED_AD_ID, isTesting: ADS_TEST_MODE });
+      if (!rewardedReady) await AdMob.prepareRewardVideoAd({ adId: REWARDED_AD_ID, isTesting: ADS_TEST_MODE, npa: true });
       let gotReward = false;
       rewardListener = await AdMob.addListener("onRewardedVideoAdReward", () => {
         gotReward = true;

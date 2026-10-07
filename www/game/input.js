@@ -119,6 +119,15 @@ document.getElementById('playGamesBtn').addEventListener('click', e=>{ e.stopPro
 });
 document.getElementById('linkGoogleBtn').addEventListener('click', e=>{ e.stopPropagation(); if(window.CloudSync) CloudSync.linkGoogle(); });
 document.getElementById('linkAppleBtn').addEventListener('click', e=>{ e.stopPropagation(); if(window.CloudSync) CloudSync.linkApple(); });
+document.getElementById('deleteAccountBtn').addEventListener('click', async e=>{
+  e.stopPropagation();
+  if(!window.CloudSync) return;
+  if(!window.confirm(t('account_delete_confirm'))) return;
+  const btn = e.currentTarget; btn.disabled = true;
+  const ok = await CloudSync.deleteAccount();
+  btn.disabled = false;
+  queueToast(t(ok ? 'account_deleted_toast' : 'account_link_err_toast'));
+});
 document.getElementById('globalLeaderboardBtn').addEventListener('click', e=>{ e.stopPropagation();
   if(!window.PlayGames || !PlayGames.isNative()){ queueToast(t('toast_playgames_native_only')); return; }
   if(PlayGames.signedIn){ PlayGames.showLeaderboard(); return; }

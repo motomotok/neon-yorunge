@@ -28,7 +28,7 @@
 	<string>Main</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
-		<string>armv7</string>
+		<string>arm64</string>
 	</array>
 	<!-- Oyun sabit dikey ekran için tasarlandı (bkz. Android'deki
 	     android:screenOrientation="portrait" ile aynı karar) — iPad dahil
@@ -61,13 +61,10 @@
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 
-	<!-- AdMob App ID — şu an Google'ın RESMİ TEST ID'si kullanılıyor (Android
-	     manifest'teki placeholder ile aynı desen). AdMob hesabında iOS için
-	     ayrı bir uygulama oluşturulunca bu değeri kendi App ID'nizle değiştirin
-	     (bkz. MOBILE_APP.md). Bu anahtar olmadan Google Mobile Ads SDK
+	<!-- AdMob iOS App ID (gerçek). Bu anahtar olmadan Google Mobile Ads SDK
 	     başlatılır başlatılmaz uygulama ÇÖKER. -->
 	<key>GADApplicationIdentifier</key>
-	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<string>ca-app-pub-6695608611504367~3068140676</string>
 
 	<!-- NSUserTrackingUsageDescription BİLEREK yok: ATTrackingManager.
 	     requestTrackingAuthorization() kodun hiçbir yerinde çağrılmıyor

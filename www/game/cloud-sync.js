@@ -16,7 +16,10 @@ function cloudLinked(providerId) {
 async function initCloudSync() {
   if (!window.CloudAccount) return;
   try {
-    await CloudAccount.ensureSignedIn();
+    // Daha önce hiç hesap bağlamadıysan burada hiçbir Firebase çağrısı
+    // yapılmaz — anonim oturum SADECE linkAccount() tetiklendiğinde açılır.
+    const user = await CloudAccount.getExistingUser();
+    if (!user) { syncLinkButtons(); return; }
     const cloud = await CloudAccount.bootstrap();
     _cloudProfile = cloud;
     // Yerel ilerleme ile bulut yedeğini birleştir: her alanda "daha ileride
@@ -54,11 +57,38 @@ async function linkAccount(which) {
   const res = await (which === 'google' ? CloudAccount.linkGoogle() : CloudAccount.linkApple());
   if (btn) btn.disabled = false;
   if (!res.ok) { queueToast(t('account_link_err_toast')); return; }
-  _cloudProfile = _cloudProfile || {};
+  if (res.restoredFromCloud) {
+    // Bu hesap başka bir cihazda zaten bağlıydı — oradaki bulut profilini
+    // (elmas/kozmetikler/sezon bileti) indirip yerelle birleştir.
+    const cloud = await CloudAccount.bootstrap();
+    stats.gems = Math.max(stats.gems || 0, cloud.gems || 0);
+    stats.lifetimeGems = Math.max(stats.lifetimeGems || 0, cloud.lifetimeGems || 0);
+    if (cloud.owned) {
+      stats.owned.themes = Array.from(new Set([...(stats.owned.themes || []), ...(cloud.owned.themes || [])]));
+      stats.owned.skins = Array.from(new Set([...(stats.owned.skins || []), ...(cloud.owned.skins || [])]));
+    }
+    if (cloud.seasonPassActive) stats.seasonPremium = true;
+    saveStats();
+    refreshWallet();
+    _cloudProfile = cloud;
+  } else {
+    _cloudProfile = _cloudProfile || {};
+  }
+  _cloudReady = true;
   _cloudProfile.linkedProviders = res.linkedProviders || _cloudProfile.linkedProviders || [];
   syncLinkButtons();
   pushCloudState();
   queueToast(t('account_linked_toast'));
+}
+
+async function deleteCloudAccount() {
+  if (!window.CloudAccount) return;
+  const res = await CloudAccount.deleteAccount();
+  if (!res.ok) { queueToast(t('account_link_err_toast')); return false; }
+  _cloudProfile = null;
+  _cloudReady = false;
+  syncLinkButtons();
+  return true;
 }
 
 function syncLinkButtons() {
@@ -73,6 +103,9 @@ function syncLinkButtons() {
         ' <span style="color:#6fe08a">' + t('account_linked_badge') + '</span>';
     }
   });
+  const anyLinked = cloudLinked('google.com') || cloudLinked('apple.com');
+  const delRow = document.getElementById('acctDeleteRow');
+  if (delRow) delRow.style.display = anyLinked ? '' : 'none';
 }
 
 window.CloudSync = {
@@ -80,4 +113,5 @@ window.CloudSync = {
   onGameOver() { pushCloudState(); },
   linkGoogle() { linkAccount('google'); },
   linkApple() { linkAccount('apple'); },
+  deleteAccount: deleteCloudAccount,
 };

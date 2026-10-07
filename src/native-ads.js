@@ -5,21 +5,28 @@
 import { Capacitor } from '@capacitor/core';
 import { AdMob } from '@capacitor-community/admob';
 
-// --- TEST ID'leri (Google'ın resmi herkese açık test reklam birimleri) ---
-// AdMob hesabı açılıp gerçek bir uygulama/reklam birimi oluşturulduğunda:
-//   1) ADS_TEST_MODE'u false yap
-//   2) PROD_INTERSTITIAL_AD_ID / PROD_REWARDED_AD_ID değerlerini kendi AdMob
-//      panelinden aldığın gerçek ad unit ID'leriyle değiştir
-//   3) AndroidManifest.xml'deki com.google.android.gms.ads.APPLICATION_ID
-//      değerini gerçek AdMob App ID'siyle değiştir (bkz. MOBILE_APP.md)
-const ADS_TEST_MODE = true;
-const TEST_INTERSTITIAL_AD_ID = 'ca-app-pub-3940256099942544/1033173712';
-const TEST_REWARDED_AD_ID = 'ca-app-pub-3940256099942544/5224354917';
-const PROD_INTERSTITIAL_AD_ID = 'BURAYA_GERCEK_INTERSTITIAL_AD_ID';
-const PROD_REWARDED_AD_ID = 'BURAYA_GERCEK_REWARDED_AD_ID';
+// Gerçek reklam birimi tanımlı olmayan platform (ör. web) otomatik olarak
+// Google'ın test birimleriyle çalışır.
+const PROD_AD_IDS = {
+  ios: {
+    interstitial: 'ca-app-pub-6695608611504367/3726616221',
+    rewarded: 'ca-app-pub-6695608611504367/8675690573',
+  },
+  android: {
+    interstitial: 'ca-app-pub-6695608611504367/3231792209',
+    rewarded: 'ca-app-pub-6695608611504367/6035330777',
+  },
+};
+const TEST_AD_IDS = {
+  interstitial: 'ca-app-pub-3940256099942544/1033173712',
+  rewarded: 'ca-app-pub-3940256099942544/5224354917',
+};
 
-const INTERSTITIAL_AD_ID = ADS_TEST_MODE ? TEST_INTERSTITIAL_AD_ID : PROD_INTERSTITIAL_AD_ID;
-const REWARDED_AD_ID = ADS_TEST_MODE ? TEST_REWARDED_AD_ID : PROD_REWARDED_AD_ID;
+const PLATFORM = Capacitor.getPlatform();
+const PROD_IDS = PROD_AD_IDS[PLATFORM] || null;
+const ADS_TEST_MODE = !PROD_IDS;
+const INTERSTITIAL_AD_ID = ADS_TEST_MODE ? TEST_AD_IDS.interstitial : PROD_IDS.interstitial;
+const REWARDED_AD_ID = ADS_TEST_MODE ? TEST_AD_IDS.rewarded : PROD_IDS.rewarded;
 
 const isNative = () => Capacitor.isNativePlatform();
 
@@ -29,16 +36,21 @@ let rewardedReady = false;
 let lastInterstitialAt = 0;
 const MIN_INTERSTITIAL_GAP_MS = 20000; // AdMob politikası: art arda reklam göstermeyi önle
 
+// ATT izin penceresi (requestTrackingAuthorization) hiçbir yerde çağrılmıyor
+// (bilinçli karar, bkz. Info.plist yorumu) — bu yüzden her reklam isteğine
+// npa:true (Non-Personalized Ads) ekliyoruz. Bu olmadan iOS'ta App Store
+// Connect'in Gizlilik formundaki "Takip yok" beyanıyla fiili reklam isteği
+// davranışı çelişiyordu.
 function preloadInterstitial() {
   interstitialReady = false;
-  AdMob.prepareInterstitial({ adId: INTERSTITIAL_AD_ID, isTesting: ADS_TEST_MODE })
+  AdMob.prepareInterstitial({ adId: INTERSTITIAL_AD_ID, isTesting: ADS_TEST_MODE, npa: true })
     .then(() => { interstitialReady = true; })
     .catch(() => { interstitialReady = false; });
 }
 
 function preloadRewarded() {
   rewardedReady = false;
-  AdMob.prepareRewardVideoAd({ adId: REWARDED_AD_ID, isTesting: ADS_TEST_MODE })
+  AdMob.prepareRewardVideoAd({ adId: REWARDED_AD_ID, isTesting: ADS_TEST_MODE, npa: true })
     .then(() => { rewardedReady = true; })
     .catch(() => { rewardedReady = false; });
 }
@@ -81,7 +93,7 @@ async function showInterstitial(onClose) {
   const now = Date.now();
   if (now - lastInterstitialAt < MIN_INTERSTITIAL_GAP_MS) { onClose && onClose(); return; }
   try {
-    if (!interstitialReady) await AdMob.prepareInterstitial({ adId: INTERSTITIAL_AD_ID, isTesting: ADS_TEST_MODE });
+    if (!interstitialReady) await AdMob.prepareInterstitial({ adId: INTERSTITIAL_AD_ID, isTesting: ADS_TEST_MODE, npa: true });
     lastInterstitialAt = Date.now();
     await AdMob.showInterstitial();
   } catch (e) {
@@ -111,7 +123,7 @@ async function showRewarded(onReward, onCancel) {
     if (rewarded) onReward && onReward(); else onCancel && onCancel();
   };
   try {
-    if (!rewardedReady) await AdMob.prepareRewardVideoAd({ adId: REWARDED_AD_ID, isTesting: ADS_TEST_MODE });
+    if (!rewardedReady) await AdMob.prepareRewardVideoAd({ adId: REWARDED_AD_ID, isTesting: ADS_TEST_MODE, npa: true });
     let gotReward = false;
     rewardListener = await AdMob.addListener('onRewardedVideoAdReward', () => { gotReward = true; });
     dismissListener = await AdMob.addListener('onRewardedVideoAdDismissed', () => finish(gotReward));
