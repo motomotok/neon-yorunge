@@ -7,6 +7,7 @@
 (function () {
   const SIM_AD_SECONDS = 4;
   let rewardedBusy = false;
+  let interstitialBusy = false;
 
   function isNative() {
     return !!(window.NativeAds && window.NativeAds.isNative && window.NativeAds.isNative());
@@ -50,7 +51,12 @@
       if (isNative()) await window.NativeAds.init();
     },
     showInterstitial(onClose) {
-      if (isNative()) { window.NativeAds.showInterstitial(onClose); return; }
+      if (isNative()) {
+        interstitialBusy = true;
+        let closed = false;
+        window.NativeAds.showInterstitial(() => { if (closed) return; closed = true; interstitialBusy = false; onClose && onClose(); });
+        return;
+      }
       // Web/PWA sürümünde interstitial göstermek yerine sessizce geç —
       // GitHub Pages'teki oyunu rahatsız etmeyelim, gerçek reklamlar sadece
       // uygulama içinde çalışır.
@@ -69,6 +75,8 @@
       return true;
     },
     isRewardedBusy() { return rewardedBusy; },
+    // Reklam ekrandayken oyun müziği susar (music.js).
+    isShowing() { return rewardedBusy || interstitialBusy; },
     showPrivacyOptions() {
       if (isNative()) { window.NativeAds.showPrivacyOptions(); return; }
       // Web sürümünde AdMob/UMP yok — reklam onayı yalnızca uygulama içinde geçerli.

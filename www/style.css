@@ -324,6 +324,11 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
 /* 3D Grafik satırı iki sütunu kaplar (kalite kartı altında ayrı). */
 .toggleGrid .toggle.wide{grid-column:1/-1;flex-direction:row;align-items:center;justify-content:space-between;}
 .toggleGrid .toggle.wide .sw{align-self:center;}
+/* Müzik ve 3D Grafik: alt satırda yarım genişlikte yan yana. */
+.toggleGrid .toggle.half{grid-column:span 2;flex-direction:row;align-items:center;gap:8px;padding:9px 10px;}
+.toggleGrid .toggle.half .gicon{width:17px;height:17px;color:var(--star);flex:none;}
+.toggleGrid .toggle.half span{flex:1;font-size:11px;font-weight:700;text-align:left;}
+.toggleGrid .toggle.half .sw{align-self:center;}
 /* Grafik kalitesi kartı */
 .gfxQCard{width:100%;border-radius:12px;padding:9px 10px 8px;margin-top:6px;
   background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02)) padding-box,

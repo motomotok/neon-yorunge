@@ -3,7 +3,7 @@
 // paketlenir (npm run build:ads). Sebep: @capacitor-community/admob bir npm
 // paketi olduğu için tarayıcıda <script> ile doğrudan çalışmaz, bundle gerekir.
 import { Capacitor } from '@capacitor/core';
-import { AdMob } from '@capacitor-community/admob';
+import { AdMob, InterstitialAdPluginEvents } from '@capacitor-community/admob';
 
 // Gerçek reklam birimi tanımlı olmayan platform (ör. web) otomatik olarak
 // Google'ın test birimleriyle çalışır.
@@ -92,13 +92,24 @@ async function showInterstitial(onClose) {
   if (!isNative()) { onClose && onClose(); return; }
   const now = Date.now();
   if (now - lastInterstitialAt < MIN_INTERSTITIAL_GAP_MS) { onClose && onClose(); return; }
+  const handles = [];
   try {
     if (!interstitialReady) await AdMob.prepareInterstitial({ adId: INTERSTITIAL_AD_ID, isTesting: ADS_TEST_MODE, npa: true });
     lastInterstitialAt = Date.now();
+    // showInterstitial() reklam AÇILINCA döner; onClose reklam gerçekten
+    // kapanınca çalışsın (müzik ancak o zaman geri gelir). Olay hiç gelmezse
+    // 2 dk sonra yine de devam edilir.
+    const closed = new Promise((resolve) => {
+      handles.push(AdMob.addListener(InterstitialAdPluginEvents.Dismissed, resolve));
+      handles.push(AdMob.addListener(InterstitialAdPluginEvents.FailedToShow, resolve));
+      setTimeout(resolve, 120000);
+    });
     await AdMob.showInterstitial();
+    await closed;
   } catch (e) {
     // Reklam yüklenemediyse oyunu bloklamadan devam et
   } finally {
+    handles.forEach((h) => Promise.resolve(h).then((x) => x.remove()).catch(() => {}));
     onClose && onClose();
     preloadInterstitial();
   }

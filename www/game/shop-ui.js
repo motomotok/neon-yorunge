@@ -4,6 +4,7 @@
 function syncSettings(){
   document.getElementById('soundSw').classList.toggle('on', cfg.sound);
   const pauseSw=document.getElementById('pauseSoundSw'); if(pauseSw) pauseSw.classList.toggle('on', cfg.sound);
+  document.getElementById('musicSw').classList.toggle('on', !!cfg.music);
   document.getElementById('bigSw').classList.toggle('on', cfg.bigButtons);
   document.getElementById('handSw').classList.toggle('on', cfg.leftHand);
   document.getElementById('cbSw').classList.toggle('on', cfg.colorblind);

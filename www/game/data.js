@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.44.0';
+const GAME_VERSION = '2.45.0';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -461,6 +461,8 @@ let cfg = load('beatOrbitCfg', {sound:true, theme:'neon', skin:'teal', trail:'cl
 // Sonrasında Ayarlar > 3D Grafik'ten 2D'ye dönen oyuncunun seçimi korunur.
 if(!cfg.gfx3dDefaultV1){ cfg.gfx='3d'; cfg.gfx3dDefaultV1=true; }
 cfg.sun='classic'; cfg.ringStyle='classic';
+// Müzik ayarı yeni: sesi kapatmış eski oyuncuya birden müzik çalmasın.
+if(cfg.music===undefined) cfg.music = cfg.sound!==false;
 let stats = load('beatOrbitStats', {
   best:0, stars:0, games:0, maxLevel:1, magnets:0, golds:0, diamonds:0,
   unlocked:[], leaderboard:[], dailyDate:'', dailyDone:false, dailyScore:0, dailyCount:0,

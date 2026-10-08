@@ -823,12 +823,21 @@
       onClose && onClose();
       return;
     }
+    const handles = [];
     try {
       if (!interstitialReady) await AdMob.prepareInterstitial({ adId: INTERSTITIAL_AD_ID, isTesting: ADS_TEST_MODE, npa: true });
       lastInterstitialAt = Date.now();
+      const closed = new Promise((resolve) => {
+        handles.push(AdMob.addListener(InterstitialAdPluginEvents.Dismissed, resolve));
+        handles.push(AdMob.addListener(InterstitialAdPluginEvents.FailedToShow, resolve));
+        setTimeout(resolve, 12e4);
+      });
       await AdMob.showInterstitial();
+      await closed;
     } catch (e) {
     } finally {
+      handles.forEach((h) => Promise.resolve(h).then((x) => x.remove()).catch(() => {
+      }));
       onClose && onClose();
       preloadInterstitial();
     }

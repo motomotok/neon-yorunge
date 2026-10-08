@@ -35,7 +35,8 @@ function vibrate(pattern){ try{ if(navigator.vibrate) navigator.vibrate(pattern)
 const MELODY_SCALE = [220.00, 261.63, 293.66, 329.63, 392.00];
 function melodyFreq(i){
   const oct = Math.floor(Math.max(0,i) / MELODY_SCALE.length);
-  return MELODY_SCALE[((i%MELODY_SCALE.length)+MELODY_SCALE.length)%MELODY_SCALE.length] * Math.pow(2, Math.min(oct,3));
+  const key = (typeof Music!=='undefined') ? Music.keyRatio() : 1; // çalan şarkının tonuna uy
+  return MELODY_SCALE[((i%MELODY_SCALE.length)+MELODY_SCALE.length)%MELODY_SCALE.length] * Math.pow(2, Math.min(oct,3)) * key;
 }
 function playMelodyNote(comboVal, vol){
   beep(melodyFreq(comboVal-1), 0.10, 'sine', vol||0.14, true);
