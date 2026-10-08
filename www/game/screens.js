@@ -265,7 +265,9 @@ function gameOver(reason){
   // oyunlarda sürekli reklam oyuncuyu kaçırıyordu). Sayaç uzun oyunlarındır.
   // elapsed kare cinsinden (60 = 1 sn).
   const longRun = elapsed >= LONG_RUN_FRAMES;
-  if(!stats.premiumNoAds && !tutorialActive){
+  // Bu oyunda zaten reklam izleyip devam ettiyse oyun sonunda ikinci bir
+  // reklam çıkmaz (test geri bildirimi: tek "devam" için art arda 3 reklam).
+  if(!stats.premiumNoAds && !tutorialActive && !session.watchedReviveAd){
     let showAd = false;
     if(longRun){
       if(adGamesLeft===null) adGamesLeft=rollAdInterval();

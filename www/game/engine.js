@@ -1003,7 +1003,7 @@ function acceptRevive(){
   const revive=()=>{
     reviveAdPending=false;
     if(state!=='revive') return;
-    session.revivedUsed=true; hp=Math.max(1,Math.ceil(maxHp/2)); combo=1; player.invulT=INVUL*3;
+    session.revivedUsed=true; session.watchedReviveAd=!stats.premiumNoAds; hp=Math.max(1,Math.ceil(maxHp/2)); combo=1; player.invulT=INVUL*3;
     state='play'; showScreen(null); queueToast(t('revive_continue_toast'));
   };
   if(stats.premiumNoAds){ revive(); return; }
