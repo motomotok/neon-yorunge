@@ -233,7 +233,9 @@ function trackFps(dtMs){
   if(fps.acc < 1000) return;
   fps.value = fps.frames*1000/fps.acc; fps.acc = 0; fps.frames = 0;
   const q = QUALITY[qualityLive], i = ORDER.indexOf(qualityLive);
-  if(fps.value < 45){ fps.lowFor++; fps.highFor = 0; } else if(fps.value > 57){ fps.highFor++; fps.lowFor = 0; } else { fps.lowFor = 0; fps.highFor = 0; }
+  // 50 altı zorlanma sayılır: 45'te 52 FPS 'idare eder' bölgesinde kalıyordu ve
+  // kareler 16/33 ms arasında gidip gelerek titriyordu (Redmi Note 9 ölçümü).
+  if(fps.value < 50){ fps.lowFor++; fps.highFor = 0; } else if(fps.value > 57){ fps.highFor++; fps.lowFor = 0; } else { fps.lowFor = 0; fps.highFor = 0; }
 
   if(fps.lowFor >= 2){
     fps.lowFor = 0;

@@ -639,13 +639,27 @@ function burst(x,y,color,n,spd){
     particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:1,color,r:Math.random()*3+1.5});
   }
 }
-function showFlash(text,dur){ levelFlashT=dur; document.getElementById('levelFlash').textContent=text; }
+// sub: büyük yazının altında küçük ikinci satır; cls: 'drop' gibi görünüm.
+function showFlash(text,dur,sub,cls){
+  levelFlashT=dur;
+  const el=document.getElementById('levelFlash');
+  el.textContent=text; el.className=cls||'';
+  if(sub){ const s=document.createElement('small'); s.textContent=sub; el.appendChild(s); }
+}
+// Melodi kombosu = müzik: her 5 notada şarkıya yeni bir katman girer
+// (bkz. music.js MUSIC_LEVELS). Alt satır oyuncuya bunu ve kazandığı bonusu söyler.
+function musicStageText(octave, bonus){
+  const pts='+'+Math.round(bonus);
+  if(typeof Music==='undefined' || !Music.themeAudible()) return pts;
+  return t('music_up_'+Math.min(octave,4))+' · '+pts;
+}
 
 function checkStreak(ix,iy,mult){
   if(combo>0 && combo%MELODY_SCALE.length===0){
     const octave=combo/MELODY_SCALE.length;
-    addScore(20*octave*mult); timeScale=0.3; timeScaleT=16;
-    showFlash(t('flash_melody',{n:octave}),50); burst(ix,iy,'#ffffff',18,5);
+    const bonus=20*octave*mult;
+    addScore(bonus); timeScale=0.3; timeScaleT=16;
+    showFlash(t('flash_melody',{n:octave}),50,musicStageText(octave,bonus),'melody'); burst(ix,iy,'#ffffff',18,5);
     const root=melodyFreq(combo-1);
     beep(root,0.16,'triangle',0.16,true); beep(root*1.25,0.16,'sine',0.12,true); beep(root*1.5,0.18,'sine',0.10,true);
   }
@@ -930,8 +944,14 @@ function hitHazard(ix,iy,subtype,itm){
     beep(300,0.2,'square',0.14,true); return; }
   let dmg = HAZARD_DAMAGE[subtype]||1;
   if(itm && itm.dmgCap) dmg = Math.min(dmg, itm.dmgCap);
+  const lostCombo=combo;
   hp = Math.max(0, hp-dmg); combo=1; shake=Math.min(20, 8+dmg*1.2); flash=1; session.hits++;
   burst(ix,iy,T.peril,22,5); beep(120,0.4,'sawtooth',0.2,true); beep(80,0.5,'square',0.15,true); vibrate([40,30,40]);
+  // Müzik katmanları söndü: kısa bir uyarı. Ekrandaki melodi yazısını ezer
+  // (çarpınca geçersiz kaldı), boss/seviye duyurularını ezmez.
+  const flashCls=document.getElementById('levelFlash').className;
+  if(hp>0 && lostCombo>=MELODY_SCALE.length && (levelFlashT<=0 || flashCls==='melody') && typeof Music!=='undefined' && Music.themeAudible())
+    showFlash(t('music_drop'),45,t('music_drop_sub'),'drop');
   if(hp<=0){
     // Tutorial'da ölüm senaryonun bir parçası — reklamlı "devam et" ekranı
     // (offerRevive) akışı kesip 6 saniyelik bir bekleme dayatır, bu yüzden

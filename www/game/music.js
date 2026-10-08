@@ -4,8 +4,10 @@
 // Her tema şarkısı iki parça olarak gelir (music/<ad>/drums.m4a + rest.m4a);
 // ikisi aynı anda başlar, "rest" (bas + melodi) bir alçak geçiren filtre ve
 // ses seviyesiyle kombo basamaklarına göre açılır:
-//   kombo 0-1: sadece davul · 2: bas (filtre kapalı) · 4: melodi (kısık)
-//   6: tam şarkı · 10: ekstra parlaklık
+//   kombo 0-4: sadece davul · 5: bas · 10: melodi (kısık) · 15: tam şarkı
+//   20: ekstra parlaklık — eşikler oyundaki "MELODİ xN" (her 5 nota)
+//   anlarıyla çakışır; o yazının altında müziğin ne kazandığı da yazar.
+//   Tasarımın ilk hali 0 davul / 5 bas / 10 melodiydi; 2-4-6 çok kolay bulundu.
 // Yükselişler bir sonraki ölçünün başına hizalanır (ritim hiç kaymaz);
 // çarpınca düşüş anında olur.
 //
@@ -32,7 +34,7 @@ const MUSIC_LEVELS = [
   {rest:1,    lp:20000, shelf:0},
   {rest:1,    lp:20000, shelf:3},
 ];
-function musicLevelFor(c){ return c>=10 ? 4 : c>=6 ? 3 : c>=4 ? 2 : c>=2 ? 1 : 0; }
+function musicLevelFor(c){ return c>=20 ? 4 : c>=15 ? 3 : c>=10 ? 2 : c>=5 ? 1 : 0; }
 
 const Music = (function(){
   let ctx=null, out=null, duck=null;
@@ -180,5 +182,7 @@ const Music = (function(){
       return Math.pow(2, semi/12);
     },
     playing(){ return !!cur; },
+    // Oyunda kombo ile dolan bir tema şarkısı duyuluyor mu (yazılar için).
+    themeAudible(){ return !!(cur && cur.nodes.rest && cfg.music); },
   };
 })();
