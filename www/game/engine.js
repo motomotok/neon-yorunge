@@ -645,9 +645,15 @@ function showFlash(text,dur,sub,cls){
   const el=document.getElementById('levelFlash');
   el.textContent=text; el.className=cls||'';
   if(sub){ const s=document.createElement('small'); s.textContent=sub; el.appendChild(s); }
+  // Müzik anlarında kısa bir "vuruş" büyümesi (yalnız transform: GPU'da, boyama yok).
+  if((cls==='melody'||cls==='drop') && el.animate)
+    el.animate([{transform:'scale(1.3)'},{transform:'scale(1)'}],{duration:320,easing:'cubic-bezier(.34,1.6,.64,1)'});
 }
 // Melodi kombosu = müzik: her 5 notada şarkıya yeni bir katman girer
 // (bkz. music.js MUSIC_LEVELS). Alt satır oyuncuya bunu ve kazandığı bonusu söyler.
+// Tema şarkısı kombo ile çalarken nota toplama "bip"leri susar: şarkıyı
+// zaten nota toplamak dolduruyor, perdeli bip'ler şarkıyla çatışıyordu.
+function musicCarriesNotes(){ return typeof Music!=='undefined' && Music.themeAudible(); }
 function musicStageText(octave, bonus){
   const pts='+'+Math.round(bonus);
   if(typeof Music==='undefined' || !Music.themeAudible()) return pts;
@@ -659,9 +665,11 @@ function checkStreak(ix,iy,mult){
     const octave=combo/MELODY_SCALE.length;
     const bonus=20*octave*mult;
     addScore(bonus); timeScale=0.3; timeScaleT=16;
-    showFlash(t('flash_melody',{n:octave}),50,musicStageText(octave,bonus),'melody'); burst(ix,iy,'#ffffff',18,5);
-    const root=melodyFreq(combo-1);
-    beep(root,0.16,'triangle',0.16,true); beep(root*1.25,0.16,'sine',0.12,true); beep(root*1.5,0.18,'sine',0.10,true);
+    showFlash(t('flash_melody',{n:octave}),110,musicStageText(octave,bonus),'melody'); burst(ix,iy,'#ffffff',18,5);
+    if(!musicCarriesNotes()){
+      const root=melodyFreq(combo-1);
+      beep(root,0.16,'triangle',0.16,true); beep(root*1.25,0.16,'sine',0.12,true); beep(root*1.5,0.18,'sine',0.10,true);
+    }
   }
 }
 
@@ -816,7 +824,7 @@ function update(dt){
       const ix=CX+Math.cos(it.ang)*radiusFor(it.ring), iy=CY+Math.sin(it.ang)*radiusFor(it.ring);
       it.alive=false;
       if(it.type==='diamond'){ combo++; addScore((20+level*4)*mult); session.stars++; session.diamonds++; stats.diamonds++;
-        burst(ix,iy,'#fff4e0',10,3); shake=3; beep(1200,0.1,'triangle',0.15); beep(1600,0.12,'sine',0.12); playMelodyNote(combo,0.12); bumpCombo(); checkStreak(ix,iy,mult); }
+        burst(ix,iy,'#fff4e0',10,3); shake=3; if(!musicCarriesNotes()){ beep(1200,0.1,'triangle',0.15); beep(1600,0.12,'sine',0.12); playMelodyNote(combo,0.12); } bumpCombo(); checkStreak(ix,iy,mult); }
       else if(it.type==='star'){ combo++;
         // Yıldızın tam merkezine ne kadar yakın toplandığına göre küçük bir
         // "hassasiyet" küsuratı eklenir (0-0.99) — skorun her zaman anlamlı
@@ -824,7 +832,7 @@ function update(dt){
         // tüm kazanımlar (altın/elmas/parçacık/takviye) tam sayı kalıyor ama
         // toplam zaten bu küsuratı taşımaya devam ediyor.
         addScore(combo*mult + rnd()*0.99); session.stars++;
-        burst(ix,iy,T.star,6,2.4); shake=1.5; playMelodyNote(combo,0.16); bumpCombo(); checkStreak(ix,iy,mult);
+        burst(ix,iy,T.star,6,2.4); shake=1.5; if(!musicCarriesNotes()) playMelodyNote(combo,0.16); bumpCombo(); checkStreak(ix,iy,mult);
         if(it.tutorialTag && typeof tutorialOnItemResolved==='function') tutorialOnItemResolved(it.tutorialTag); }
       else if(it.type==='coin'){
         // Parçacık Değeri yükseltmesi (kalıcı) tabana sabit ek yapar, Nota
@@ -951,7 +959,7 @@ function hitHazard(ix,iy,subtype,itm){
   // (çarpınca geçersiz kaldı), boss/seviye duyurularını ezmez.
   const flashCls=document.getElementById('levelFlash').className;
   if(hp>0 && lostCombo>=MELODY_SCALE.length && (levelFlashT<=0 || flashCls==='melody') && typeof Music!=='undefined' && Music.themeAudible())
-    showFlash(t('music_drop'),45,t('music_drop_sub'),'drop');
+    showFlash(t('music_drop'),100,t('music_drop_sub'),'drop');
   if(hp<=0){
     // Tutorial'da ölüm senaryonun bir parçası — reklamlı "devam et" ekranı
     // (offerRevive) akışı kesip 6 saniyelik bir bekleme dayatır, bu yüzden
