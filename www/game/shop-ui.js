@@ -5,6 +5,7 @@ function syncSettings(){
   document.getElementById('soundSw').classList.toggle('on', cfg.sound);
   const pauseSw=document.getElementById('pauseSoundSw'); if(pauseSw) pauseSw.classList.toggle('on', cfg.sound);
   document.getElementById('musicSw').classList.toggle('on', !!cfg.music);
+  syncMusicVol();
   document.getElementById('bigSw').classList.toggle('on', cfg.bigButtons);
   document.getElementById('handSw').classList.toggle('on', cfg.leftHand);
   document.getElementById('cbSw').classList.toggle('on', cfg.colorblind);
@@ -14,6 +15,11 @@ function syncSettings(){
   renderSkins();
   syncPremiumUI();
   syncPlayGamesUI();
+}
+// Müzik sesi kaydırıcıları (Ayarlar + Duraklat) aynı değeri gösterir.
+function syncMusicVol(){
+  const v=Math.round((typeof cfg.musicVol==='number' ? cfg.musicVol : MUSIC_VOL_DEFAULT)*100);
+  document.querySelectorAll('.musicVol').forEach(el=>{ if(+el.value!==v) el.value=v; });
 }
 function syncPlayGamesUI(){
   const card=document.getElementById('playGamesCard');

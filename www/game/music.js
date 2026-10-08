@@ -16,7 +16,12 @@
 // bağlamı 32 kHz'de açılır ve en fazla iki şarkı (menü + son tema) çözülmüş
 // tutulur. fx.js'ten SONRA, engine.js'ten önce de olabilir — oyun durumuna
 // yalnızca zamanlayıcı içinde bakılır.
-const MUSIC_VOL = 0.5;
+// Oyuncunun müzik sesi (cfg.musicVol, 0-1) bu tavanla çarpılır. Varsayılan
+// 0.5 → eski sabit seviyenin (0.5) yarısından biraz fazlası: ilk açılışta
+// bağırmasın, yormasın (kullanıcı geri bildirimi).
+const MUSIC_MAX = 0.6;
+const MUSIC_VOL_DEFAULT = 0.5;
+function musicVolume(){ const v = cfg.musicVol; return MUSIC_MAX * (typeof v==='number' ? Math.max(0, Math.min(1, v)) : MUSIC_VOL_DEFAULT); }
 const MUSIC_LOOP_START = 0.3;
 const MUSIC_TRACKS = {
   menu:   {bpm:84.999,  loopLen:56.4709, minorRoot:0, parts:['full']},
@@ -48,7 +53,7 @@ const Music = (function(){
     const C = window.AudioContext || window.webkitAudioContext; if(!C) return null;
     try{ ctx = new C({sampleRate:32000, latencyHint:'playback'}); }
     catch(e){ try{ ctx = new C(); }catch(e2){ return null; } }
-    out = ctx.createGain(); out.gain.value = MUSIC_VOL;
+    out = ctx.createGain(); out.gain.value = musicVolume();
     duck = ctx.createGain(); duck.gain.value = 1;
     duck.connect(out); out.connect(ctx.destination);
     return ctx;
@@ -88,14 +93,21 @@ const Music = (function(){
       s.start(t0, MUSIC_LOOP_START);
       nodes[p] = {s, g};
     });
-    bus.gain.setTargetAtTime(1, t0, 0.25);
+    // Menü müziği kısıktan başlayıp ~3.5 sn'de yavaşça açılır (oyun sonu →
+    // menü geçişi "tak" diye olmasın, uygulama açılınca da bağırmasın).
+    bus.gain.setValueAtTime(0, t0);
+    if(name==='menu') bus.gain.linearRampToValueAtTime(1, t0 + 3.5);
+    else bus.gain.setTargetAtTime(1, t0, 0.35);
     cur = {name, tr, t0, bar: 4*60/tr.bpm, bus, lp, shelf, nodes, level:-1};
   }
   function stop(fade){
     if(!cur) return;
     const c = cur; cur = null;
     const t = ctx.currentTime;
-    c.bus.gain.cancelScheduledValues(t); c.bus.gain.setTargetAtTime(0, t, fade/3);
+    // Menünün yavaş açılışı yarıdaysa o anki seviyeden sönsün (sıfıra zıplamasın).
+    const g = c.bus.gain;
+    if(g.cancelAndHoldAtTime) g.cancelAndHoldAtTime(t); else { const v=g.value; g.cancelScheduledValues(t); g.setValueAtTime(v, t); }
+    g.setTargetAtTime(0, t, fade/3);
     Object.values(c.nodes).forEach(n=>{ try{ n.s.stop(t+fade+0.05); }catch(e){} });
   }
 
@@ -139,7 +151,7 @@ const Music = (function(){
 
     const name = wantedTrack();
     if((!cur || cur.name!==name) && loadingName!==name){
-      if(cur) stop(0.6);
+      if(cur) stop(cur.name==='menu' ? 0.6 : 1.4); // tema şarkısı yavaşça söner
       loadingName = name;
       load(name).then(bufs=>{
         if(loadingName!==name) return;
@@ -182,6 +194,8 @@ const Music = (function(){
       return Math.pow(2, semi/12);
     },
     playing(){ return !!cur; },
+    // Ses kaydırıcısı (ayarlar / duraklat) sürüklenirken anında uygular.
+    setVolume(){ if(out) out.gain.setTargetAtTime(musicVolume(), ctx.currentTime, 0.05); },
     // Oyunda kombo ile dolan bir tema şarkısı duyuluyor mu (yazılar için).
     themeAudible(){ return !!(cur && cur.nodes.rest && cfg.music); },
   };

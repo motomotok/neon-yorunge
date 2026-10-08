@@ -324,6 +324,14 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
 /* 3D Grafik satırı iki sütunu kaplar (kalite kartı altında ayrı). */
 .toggleGrid .toggle.wide{grid-column:1/-1;flex-direction:row;align-items:center;justify-content:space-between;}
 .toggleGrid .toggle.wide .sw{align-self:center;}
+/* Müzik sesi kaydırıcısı (Ayarlar + Duraklat; ikisi aynı ayarı gösterir). */
+.volRow{display:flex;align-items:center;gap:10px;width:100%;margin-top:6px;padding:8px 12px;border-radius:12px;
+  background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.08);
+  font-size:11px;font-weight:700;}
+.volRow .gicon{width:17px;height:17px;color:var(--star);flex:none;}
+.volRow span{flex:none;}
+.musicVol{flex:1;min-width:0;height:24px;margin:0;accent-color:var(--star);cursor:pointer;touch-action:none;}
+#screen-pause .volRow{margin:-4px 0 14px;}
 /* Müzik ve 3D Grafik: alt satırda yarım genişlikte yan yana. */
 .toggleGrid .toggle.half{grid-column:span 2;flex-direction:row;align-items:center;gap:8px;padding:9px 10px;}
 .toggleGrid .toggle.half .gicon{width:17px;height:17px;color:var(--star);flex:none;}

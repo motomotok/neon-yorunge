@@ -66,6 +66,17 @@ document.querySelector('#screen-pause .toggle').addEventListener('click', e=>{
   e.stopPropagation();
   document.getElementById('pauseSoundSw').click();
 });
+// Müzik sesi: sürüklerken anında duyulur, bırakınca kaydedilir. Müzik
+// kapalıyken ses açılırsa müzik de açılır (oyuncunun niyeti belli).
+document.querySelectorAll('.musicVol').forEach(el=>{
+  el.addEventListener('input', ()=>{
+    cfg.musicVol = el.value/100;
+    if(!cfg.music && cfg.musicVol>0){ cfg.music = true; syncSettings(); }
+    syncMusicVol(); if(typeof Music!=='undefined') Music.setVolume();
+  });
+  el.addEventListener('change', ()=>saveCfg());
+  el.addEventListener('click', e=>e.stopPropagation());
+});
 document.getElementById('musicSw').addEventListener('click', ()=>{ cfg.music=!cfg.music; saveCfg(); syncSettings(); beep(600,0.06,'sine',0.1); });
 document.getElementById('gfxSw').addEventListener('click', ()=>{ setGfxMode(cfg.gfx!=='3d'); beep(600,0.06,'sine',0.1); });
 document.getElementById('gfxAutoRow').addEventListener('click', e=>{ e.preventDefault(); e.stopPropagation();

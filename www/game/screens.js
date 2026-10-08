@@ -128,7 +128,8 @@ function startGame(m,d){
 }
 function pauseGame(){ if(state!=='play') return; state='pause'; showScreen('pause');
   document.getElementById('zenFinishBtn').style.display = mode==='zen' ? 'block' : 'none';
-  const pauseSw=document.getElementById('pauseSoundSw'); if(pauseSw) pauseSw.classList.toggle('on', cfg.sound); }
+  const pauseSw=document.getElementById('pauseSoundSw'); if(pauseSw) pauseSw.classList.toggle('on', cfg.sound);
+  syncMusicVol(); }
 // Devam: oyuncu doğrudan bir tehlikenin içine düşmesin diye kısa 3-2-1
 // geri sayım; bu sırada oyun duraklatılmış kalır.
 let _resumeCd=null;
@@ -167,6 +168,7 @@ try{
 
 let adGamesLeft = null;
 const LONG_RUN_FRAMES = 45*60; // 45 sn ve üstü oyun "uzun" sayılır
+const SHORT_RUN_AD_CHANCE = 0.2; // kısa oyunlardan sonra yalnız %20 ihtimalle
 function rollAdInterval(){ return 2 + Math.floor(Math.random()*2); } // 2 ya da 3 oyun
 
 // Bitiş ekranında TEK, dinamik bir "bir sonraki hedef" satırı — en motive
@@ -258,19 +260,20 @@ function gameOver(reason){
   }
   setHud(false); showScreen('over'); syncAdButtons();
   beep(200,0.3,'sine',0.12);
-  // Oyun sonu reklamı yalnız UZUN oyunlardan sonra sayılır (2-3 uzun oyunda
-  // bir). Hemen düşülen kısa denemeler hiç reklam görmez — test geri
-  // bildirimi: kısa oyunlarda sürekli reklam oyuncuyu kaçırıyordu.
+  // Oyun sonu reklamı: uzun oyunlarda (45 sn+) 2-3 oyunda bir; hemen düşülen
+  // kısa denemelerde yalnız %20 ihtimalle (test geri bildirimi: kısa
+  // oyunlarda sürekli reklam oyuncuyu kaçırıyordu). Sayaç uzun oyunlarındır.
   // elapsed kare cinsinden (60 = 1 sn).
   const longRun = elapsed >= LONG_RUN_FRAMES;
-  if(!stats.premiumNoAds && !tutorialActive && longRun){
-    if(adGamesLeft===null) adGamesLeft=rollAdInterval();
-    adGamesLeft--;
-    if(adGamesLeft<=0){
-      adGamesLeft=rollAdInterval();
-      // Oyuncu bu arada "Tekrar"a bastıysa reklam yeni oyunun ortasında açılmasın.
-      setTimeout(()=>{ if(state==='over') Ads.showInterstitial(); }, 700);
-    }
+  if(!stats.premiumNoAds && !tutorialActive){
+    let showAd = false;
+    if(longRun){
+      if(adGamesLeft===null) adGamesLeft=rollAdInterval();
+      adGamesLeft--;
+      if(adGamesLeft<=0){ adGamesLeft=rollAdInterval(); showAd = true; }
+    } else showAd = Math.random() < SHORT_RUN_AD_CHANCE;
+    // Oyuncu bu arada "Tekrar"a bastıysa reklam yeni oyunun ortasında açılmasın.
+    if(showAd) setTimeout(()=>{ if(state==='over') Ads.showInterstitial(); }, 700);
   }
   if(tutorialActive && typeof tutorialOnGameOver==='function') tutorialOnGameOver();
 }
