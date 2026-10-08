@@ -481,8 +481,10 @@ let pendingPurchase = null;
 // istiyor musun?" yerine `message` kullanılır — bu diyalog satın almanın
 // yanı sıra genel "emin misin?" onayları için de (bkz. resetProgression)
 // kullanılabilsin diye.
-function showPurchaseConfirm(iconKey, name, price, onYes, message, priceIcon){
-  pendingPurchase = onYes;
+// onNo: Hayır'a / dışarıya basılınca (Evet'te çağrılmaz).
+let pendingPurchaseNo = null;
+function showPurchaseConfirm(iconKey, name, price, onYes, message, priceIcon, onNo){
+  pendingPurchase = onYes; pendingPurchaseNo = onNo || null;
   document.getElementById('pcIcon').innerHTML = icon(iconKey);
   document.getElementById('pcName').textContent = name;
   document.getElementById('pcMessage').textContent = message || t('purchase_confirm_default');
@@ -491,9 +493,12 @@ function showPurchaseConfirm(iconKey, name, price, onYes, message, priceIcon){
   else { priceEl.style.display='block'; priceEl.innerHTML = icon(priceIcon||'coin')+' '+price; }
   document.getElementById('purchaseConfirmOverlay').style.display = 'flex';
 }
-function hidePurchaseConfirm(){
-  document.getElementById('purchaseConfirmOverlay').style.display = 'none';
-  pendingPurchase = null;
+function hidePurchaseConfirm(declined){
+  const ov=document.getElementById('purchaseConfirmOverlay');
+  ov.style.display = 'none'; ov.style.zIndex = '';
+  const no = pendingPurchaseNo;
+  pendingPurchase = null; pendingPurchaseNo = null;
+  if(declined && no) no();
 }
 
 // Elmas paketlerinin (gerçek para, IAP) canlı fiyatı — gem-shop.js'in

@@ -166,6 +166,7 @@ try{
 }catch(e){}
 
 let adGamesLeft = null;
+const LONG_RUN_FRAMES = 45*60; // 45 sn ve üstü oyun "uzun" sayılır
 function rollAdInterval(){ return 2 + Math.floor(Math.random()*2); } // 2 ya da 3 oyun
 
 // Bitiş ekranında TEK, dinamik bir "bir sonraki hedef" satırı — en motive
@@ -257,7 +258,12 @@ function gameOver(reason){
   }
   setHud(false); showScreen('over'); syncAdButtons();
   beep(200,0.3,'sine',0.12);
-  if(!stats.premiumNoAds && !tutorialActive){
+  // Oyun sonu reklamı yalnız UZUN oyunlardan sonra sayılır (2-3 uzun oyunda
+  // bir). Hemen düşülen kısa denemeler hiç reklam görmez — test geri
+  // bildirimi: kısa oyunlarda sürekli reklam oyuncuyu kaçırıyordu.
+  // elapsed kare cinsinden (60 = 1 sn).
+  const longRun = elapsed >= LONG_RUN_FRAMES;
+  if(!stats.premiumNoAds && !tutorialActive && longRun){
     if(adGamesLeft===null) adGamesLeft=rollAdInterval();
     adGamesLeft--;
     if(adGamesLeft<=0){

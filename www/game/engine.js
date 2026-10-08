@@ -972,11 +972,19 @@ function hitHazard(ix,iy,subtype,itm){
 }
 
 let reviveTimer=null;
+// Reklamsız paketi alan oyuncu reklam izlemeden devam eder: aynı ekran,
+// "Devam Et" butonu ve "devam et ya da bitir" metniyle.
 function reviveSubRender(hpVal, secs){
-  const el=document.getElementById('reviveSub'); if(el) el.innerHTML=t('revive_sub_html',{hp:hpVal, sec:secs});
+  const el=document.getElementById('reviveSub');
+  if(el) el.innerHTML=t(stats.premiumNoAds ? 'revive_sub_premium_html' : 'revive_sub_html',{hp:hpVal, sec:secs});
+}
+function syncReviveButton(){
+  const btn=document.getElementById('reviveWatchBtn'); if(!btn) return;
+  const prem=!!stats.premiumNoAds;
+  btn.innerHTML = icon(prem ? 'play' : 'tv')+' <span>'+t(prem ? 'btn_revive_continue' : 'btn_revive_watch')+'</span>';
 }
 function offerRevive(){
-  state='revive'; showScreen('revive'); reviveAdPending=false;
+  state='revive'; showScreen('revive'); reviveAdPending=false; syncReviveButton();
   const hpVal=Math.max(1,Math.ceil(maxHp/2));
   let secs=6;
   reviveSubRender(hpVal, secs);
@@ -992,13 +1000,15 @@ function acceptRevive(){
   // hâlâ revive ekranında değilse (ör. süre doldu, oyun bitti) hiçbir şey olmaz.
   if(state!=='revive' || reviveAdPending) return;
   clearInterval(reviveTimer);
-  reviveAdPending=true;
-  const started=Ads.showRewarded(()=>{
+  const revive=()=>{
     reviveAdPending=false;
     if(state!=='revive') return;
     session.revivedUsed=true; hp=Math.max(1,Math.ceil(maxHp/2)); combo=1; player.invulT=INVUL*3;
     state='play'; showScreen(null); queueToast(t('revive_continue_toast'));
-  }, ()=>{ reviveAdPending=false; declineRevive(true); });
+  };
+  if(stats.premiumNoAds){ revive(); return; }
+  reviveAdPending=true;
+  const started=Ads.showRewarded(revive, ()=>{ reviveAdPending=false; declineRevive(true); });
   if(started===false){ reviveAdPending=false; declineRevive(true); }
 }
 function declineRevive(fromAd){

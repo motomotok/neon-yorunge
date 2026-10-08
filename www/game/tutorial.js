@@ -2,7 +2,7 @@
 // oynanabilir rehber. Sadece stats.tutorialDone===false iken (yani hayatta
 // ilk kez BAŞLA'ya basıldığında) tetiklenir — bkz. input.js "quickstart".
 //
-// Akış — oynanış: tanışma → sola dokun → sağa dokun → nota → başka
+// Akış — oynanış: tanışma → sola + sağa dokun (tek adım) → nota → başka
 // halkadaki nota → art arda 2 nota (kombo 5 = MELODİ anı) → cızırtıya
 // çarp → kalple toparlan → cızırtıdan kaç. (Eski "ilk kalp" ve "mıknatıs"
 // adımları tutorial'ı kısaltmak için kaldırıldı.)
@@ -24,6 +24,7 @@ let _tutTapOK = false;            // bu adımda dokunmaya izin var mı
 let _tutPending = {};             // etiket -> {type, ring, resolved}
 let _tutDodgeHit = false;
 let _tutGiftGiven = false;
+let _tutSidesDone = {left:false, right:false};
 // Süpernova'nın adı tek yerden (i18n: prestige_name) gelir — ad değişirse metinler kendiliğinden uyar.
 function _tutP(){ return {p:t('prestige_name')}; }
 
@@ -69,13 +70,12 @@ function _tutSayThen(key, fn){ narratorSay(t(key), {onDone:fn}); }
 
 const TUTORIAL_STEPS = {
   intro(){
-    narratorSay(t('tut2_intro'), {cta:t('tut_cta_understood'), onCta:()=>tutorialGoStep('left')});
+    narratorSay(t('tut2_intro'), {cta:t('tut_cta_understood'), onCta:()=>tutorialGoStep('sides')});
   },
-  left(){
-    _tutSayThen('tut2_left', ()=>{ _tutTapOK=true; tutorialShowTapHint('left'); });
-  },
-  right(){
-    _tutSayThen('tut2_right', ()=>{ _tutTapOK=true; tutorialShowTapHint('right'); });
+  // Sola ve sağa dokunma tek adım: iki taraf da (sıra fark etmez) bir kez denenince geçilir.
+  sides(){
+    _tutSidesDone = {left:false, right:false};
+    _tutSayThen('tut2_sides', ()=>{ _tutTapOK=true; tutorialShowTapHint('both'); });
   },
   note1(){
     _tutSayThen('tut2_note1', ()=>tutorialSpawnItem('star','note1'));
@@ -180,8 +180,10 @@ const TUTORIAL_STEPS = {
 
 // --- Diğer dosyalardan çağrılan hook'lar ---
 function tutorialOnTap(goOut){
-  if(tutorialStep==='left' && !goOut) tutorialGoStep('right');
-  else if(tutorialStep==='right' && goOut) tutorialGoStep('note1');
+  if(tutorialStep!=='sides') return;
+  _tutSidesDone[goOut ? 'right' : 'left'] = true;
+  tutorialShowTapHint(_tutSidesDone.left ? (_tutSidesDone.right ? null : 'right') : (_tutSidesDone.right ? 'left' : 'both'));
+  if(_tutSidesDone.left && _tutSidesDone.right) tutorialGoStep('note1');
 }
 function tutorialTapAllowed(){
   return _tutTapOK && !narratorIsTyping();
@@ -261,14 +263,27 @@ function tutorialSkip(){
   tutorialFinish();
   goMenu();
 }
+// "Atla": önce sorulur. Oynanış sürerken soru açıkken oyun donar ('story':
+// update çalışmaz); vazgeçilirse kaldığı yerden devam eder.
+function tutorialAskSkip(){
+  if(!tutorialActive) return;
+  const froze = state==='play';
+  if(froze) state='story';
+  const ov=document.getElementById('purchaseConfirmOverlay');
+  ov.style.zIndex = '60'; // anlatıcı kutusunun ve engelleyicinin üstünde
+  showPurchaseConfirm('book', t('tut_skip_title'), null, ()=>tutorialSkip(),
+    t('tut_skip_confirm',{h:t('howto_title')}), null,
+    ()=>{ if(froze && state==='story') state='play'; });
+}
 
 // --- UI yardımcıları ---
 function tutorialShowTapHint(side){
   const el=document.getElementById('tutorialHint'); if(!el) return;
+  if(!side){ tutorialHideTapHint(); return; }
   el.classList.add('show');
   const l=el.querySelector('.tutTap-left'), r=el.querySelector('.tutTap-right');
-  if(l) l.style.display = side==='left' ? 'flex' : 'none';
-  if(r) r.style.display = side==='right' ? 'flex' : 'none';
+  if(l) l.style.display = (side==='left' || side==='both') ? 'flex' : 'none';
+  if(r) r.style.display = (side==='right' || side==='both') ? 'flex' : 'none';
 }
 function tutorialHideTapHint(){
   const el=document.getElementById('tutorialHint'); if(!el) return;

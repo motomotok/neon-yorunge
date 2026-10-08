@@ -58,7 +58,7 @@ document.getElementById('reviveSkipBtn').addEventListener('click', e=>{ e.stopPr
 document.getElementById('resumeBtn').addEventListener('click', e=>{ e.stopPropagation(); resumeGame(); });
 document.getElementById('zenFinishBtn').addEventListener('click', e=>{ e.stopPropagation(); gameOver('zen'); });
 document.getElementById('pauseBtn').addEventListener('click', e=>{ e.stopPropagation(); pauseGame(); });
-document.getElementById('tutorialSkipBtn').addEventListener('click', e=>{ e.stopPropagation(); if(typeof tutorialSkip==='function') tutorialSkip(); });
+document.getElementById('tutorialSkipBtn').addEventListener('click', e=>{ e.stopPropagation(); if(typeof tutorialAskSkip==='function') tutorialAskSkip(); });
 document.getElementById('soundSw').addEventListener('click', ()=>{ cfg.sound=!cfg.sound; saveCfg(); syncSettings(); if(cfg.sound) beep(700,0.08,'sine',0.12); });
 document.getElementById('pauseSoundSw').addEventListener('click', ()=>{ cfg.sound=!cfg.sound; saveCfg(); syncSettings(); if(cfg.sound) beep(700,0.08,'sine',0.12); });
 document.querySelector('#screen-pause .toggle').addEventListener('click', e=>{
@@ -101,9 +101,9 @@ document.getElementById('coreInfoOverlay').addEventListener('click', e=>{
 document.getElementById('pcYesBtn').addEventListener('click', e=>{ e.stopPropagation();
   const cb=pendingPurchase; hidePurchaseConfirm(); if(cb) cb();
 });
-document.getElementById('pcNoBtn').addEventListener('click', e=>{ e.stopPropagation(); hidePurchaseConfirm(); beep(300,0.06,'sine',0.08); });
+document.getElementById('pcNoBtn').addEventListener('click', e=>{ e.stopPropagation(); hidePurchaseConfirm(true); beep(300,0.06,'sine',0.08); });
 document.getElementById('purchaseConfirmOverlay').addEventListener('click', e=>{
-  if(e.target.id==='purchaseConfirmOverlay') hidePurchaseConfirm();
+  if(e.target.id==='purchaseConfirmOverlay') hidePurchaseConfirm(true);
 });
 document.getElementById('premiumBuyBtn').addEventListener('click', e=>{ e.stopPropagation();
   if(window.Premium && Premium.isNative()){ Premium.purchase(); }
