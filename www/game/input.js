@@ -186,6 +186,7 @@ window.addEventListener('keydown', e=>{
     if(tutorialActive) return;
     if(state==='menu') goMode();
     else if(state==='over') startGame();
+    else if(state==='play') pauseGame();     // SPACE oyunda duraklatır, duraklatmada devam ettirir
     else if(state==='pause') resumeGame();
   } else if(e.code==='KeyP' || e.code==='Escape'){
     if(tutorialActive) return;
