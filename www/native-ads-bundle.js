@@ -769,7 +769,18 @@
   var rewardedReady = false;
   var lastInterstitialAt = 0;
   var MIN_INTERSTITIAL_GAP_MS = 2e4;
+  function whenNotPlaying(fn) {
+    const playing = typeof state !== "undefined" && (state === "play" || state === "story");
+    if (playing) setTimeout(() => whenNotPlaying(fn), 2e3);
+    else fn();
+  }
   function preloadInterstitial() {
+    whenNotPlaying(doPreloadInterstitial);
+  }
+  function preloadRewarded() {
+    whenNotPlaying(doPreloadRewarded);
+  }
+  function doPreloadInterstitial() {
     interstitialReady = false;
     AdMob.prepareInterstitial({ adId: INTERSTITIAL_AD_ID, isTesting: ADS_TEST_MODE, npa: true }).then(() => {
       interstitialReady = true;
@@ -777,7 +788,7 @@
       interstitialReady = false;
     });
   }
-  function preloadRewarded() {
+  function doPreloadRewarded() {
     rewardedReady = false;
     AdMob.prepareRewardVideoAd({ adId: REWARDED_AD_ID, isTesting: ADS_TEST_MODE, npa: true }).then(() => {
       rewardedReady = true;

@@ -41,14 +41,26 @@ const MIN_INTERSTITIAL_GAP_MS = 20000; // AdMob politikası: art arda reklam gö
 // npa:true (Non-Personalized Ads) ekliyoruz. Bu olmadan iOS'ta App Store
 // Connect'in Gizlilik formundaki "Takip yok" beyanıyla fiili reklam isteği
 // davranışı çelişiyordu.
-function preloadInterstitial() {
+// Android'de reklam WebView'ı oyunla AYNI iş parçacığını paylaşır; reklam
+// yüklenirken çalışan betikler (yüzlerce ms) oyun sırasında takılma yapıyordu.
+// Ön yükleme oyun oynanırken ertelenir, menüde/oyun sonunda yapılır.
+function whenNotPlaying(fn) {
+  // `state` engine.js'teki global (klasik script, aynı global kapsam).
+  const playing = typeof state !== 'undefined' && (state === 'play' || state === 'story');
+  if (playing) setTimeout(() => whenNotPlaying(fn), 2000); else fn();
+}
+
+function preloadInterstitial() { whenNotPlaying(doPreloadInterstitial); }
+function preloadRewarded() { whenNotPlaying(doPreloadRewarded); }
+
+function doPreloadInterstitial() {
   interstitialReady = false;
   AdMob.prepareInterstitial({ adId: INTERSTITIAL_AD_ID, isTesting: ADS_TEST_MODE, npa: true })
     .then(() => { interstitialReady = true; })
     .catch(() => { interstitialReady = false; });
 }
 
-function preloadRewarded() {
+function doPreloadRewarded() {
   rewardedReady = false;
   AdMob.prepareRewardVideoAd({ adId: REWARDED_AD_ID, isTesting: ADS_TEST_MODE, npa: true })
     .then(() => { rewardedReady = true; })

@@ -145,14 +145,18 @@ function setFxLights(on){
   if(entities && entities.player && entities.player.light) entities.player.light.visible = on;
 }
 
-function applyQuality(level){
+// fromAuto: FPS takibinin kendi yaptığı düşürme/yükseltme. O durumda ışık
+// sayısı değiştirilmez — değişirse bütün shader'lar yeniden derlenir ve oyun
+// ortasında yarım saniyelik donma olur. Işıklar yalnız açılışta ve oyuncu
+// kaliteyi elle değiştirince ayarlanır.
+function applyQuality(level, fromAuto){
   qualityLive = level;
   const q = QUALITY[level];
   dprCur = maxDpr(q);
   bloomCut = false;
   renderer.setPixelRatio(dprCur);
   buildComposer(q);
-  setFxLights(q.fxLights);
+  if(!fromAuto) setFxLights(q.fxLights);
   resize(W, H, base);
 }
 
@@ -234,7 +238,7 @@ function trackFps(dtMs){
   if(fps.lowFor >= 2){
     fps.lowFor = 0;
     if(dprCur > q.minDpr + 0.01){ fps.dprDropped = true; setDpr(Math.max(q.minDpr, dprCur - 0.15)); return; }
-    if(qualityPref === 'auto' && i > 0){ fps.downgraded = true; applyQuality(ORDER[i-1]); return; }
+    if(qualityPref === 'auto' && i > 0){ fps.downgraded = true; applyQuality(ORDER[i-1], true); return; }
     if(qualityLive === 'low' && !bloomCut){ bloomCut = true; buildComposer(q); resize(W, H, base); }
     return;
   }
@@ -243,7 +247,7 @@ function trackFps(dtMs){
     fps.highFor = 0;
     if(dprCur < maxDpr(q) - 0.01){ setDpr(Math.min(maxDpr(q), dprCur + 0.1)); return; }
     // Bir kez seviye düşürüldüyse bir daha yükseltme (sürekli gidip gelmesin).
-    if(qualityPref === 'auto' && i < ORDER.length-1 && !fps.downgraded) applyQuality(ORDER[i+1]);
+    if(qualityPref === 'auto' && i < ORDER.length-1 && !fps.downgraded) applyQuality(ORDER[i+1], true);
   }
 }
 
@@ -284,6 +288,18 @@ function render(f){
   if(bloomPass) bloomPass.strength = ((world.bloomBase ?? 0.45) + (f.flash||0)*0.15 + (f.bossIntensity||0)*0.3 + (world.elec||0)*0.6) * bloomWarm*bloomWarm;
 
   if(composer) composer.render(); else renderer.render(scene, camera);
+}
+
+// Açılış ekranı dururken bir kez çağrılır: sahne + her öğe tipi + bloom
+// geçişleri tek karede çizilerek tüm shader'lar önceden derlenir.
+function warm(styleKey){
+  if(!renderer || failed) return Promise.resolve();
+  return entities.ready.then(()=>{
+    if(failed) return;
+    const list = entities.warmBegin(styleKey||'');
+    try{ if(composer) composer.render(); else renderer.render(scene, camera); }
+    finally{ entities.warmEnd(list); }
+  }).catch(e=>console.warn('[Render3D] warm', e));
 }
 
 function fail(reason){
@@ -332,4 +348,4 @@ function info(){
     scratchPoints: entities ? entities.scratch.pts.length : 0};
 }
 
-window.Render3D = { supported, init, resize, render, setQuality, info, fail, menuAnchors };
+window.Render3D = { supported, init, warm, resize, render, setQuality, info, fail, menuAnchors };

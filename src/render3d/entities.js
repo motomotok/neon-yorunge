@@ -223,7 +223,7 @@ export class Entities {
     this.pool = new Map();     // havuz anahtarı -> [visual]
     this.live = new Map();     // engine item nesnesi -> visual
     this.frame = 0;
-    this._resolveManifest();
+    this.ready = this._resolveManifest().catch(()=>{});
     this._buildPlayer();
     this.trail = new PointCloud(140, dotTexture());       // pena temas kıvılcımları
     this.scratch = {batch:new RibbonBatch(300), pts:[], sparks:[], sparkAcc:0, flare:0};
@@ -346,6 +346,26 @@ export class Entities {
       root.add(v.glow);
     }
     return v;
+  }
+  // Açılışta her öğe tipinden birer görsel kurulup sahneye konur ki ilk
+  // karede hepsinin çizim kodu (shader) ve dokusu birlikte hazırlansın; yoksa
+  // oyunda bir tip İLK kez belirdiğinde o an derlenip takılma yapıyordu.
+  // Kurulan görseller havuza gider, oyunda yeniden kullanılır.
+  warmBegin(styleKey){
+    const list = ITEM_TYPES.map(type=>{
+      const v = this._acquire(type);
+      if(!v.def && v.mat) setMap(v.mat, this._fallbackTexture(type, styleKey));
+      v.root.position.set(0, -1e4, 0);
+      v.root.traverse(o=>{ o.userData.warmCull = o.frustumCulled; o.frustumCulled = false; });
+      return v;
+    });
+    return list;
+  }
+  warmEnd(list){
+    for(const v of list){
+      v.root.traverse(o=>{ if('warmCull' in o.userData){ o.frustumCulled = o.userData.warmCull; delete o.userData.warmCull; } });
+      this._release(v);
+    }
   }
   _acquire(type){
     const key = this._poolKey(type);

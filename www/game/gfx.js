@@ -40,6 +40,13 @@ function syncGfxMode(){
         hooks:{paintItem:paintItem3D}, onFail:gfx3dFailed,
       });
       if(!ok) throw new Error('init');
+      // Tüm shader'lar şimdi (açılış logosu dururken) derlensin; oyunda ilk
+      // notada/ilk tehlikede takılma olmasın. En fazla 4 sn beklenir.
+      const styleKey=(cfg.theme||'')+'|'+(cfg.colorblind?1:0);
+      return Promise.race([Render3D.warm ? Render3D.warm(styleKey) : null, new Promise(r=>setTimeout(r,4000))]);
+    })
+    .then(()=>{
+      if(_gfx3dState!=='loading') return; // bu arada başarısız olduysa
       _gfx3dState='ready';
       syncGfxMode();
     })

@@ -146,6 +146,14 @@ const Music = (function(){
       }).catch(()=>{ if(loadingName===name) loadingName=null; });
     }
 
+    // Menüdeyken seçili temanın şarkısı önceden çözülür: oyun başlarken
+    // yapılınca büyük bellek ayırması çöp toplamayı tetikleyip ilk saniyelerde
+    // takılma yapıyordu.
+    if(cur && cur.name==='menu' && !loadingName){
+      const th = THEME_MUSIC[cfg.theme] || 'retro';
+      if(!buffers[th]) load(th).catch(()=>{});
+    }
+
     // Duraklat / oyun sonu / dirilme ekranında müzik kısılır.
     const d = (state==='pause') ? 0.3 : (state==='over' || state==='revive') ? 0.45 : 1;
     if(Math.abs(duck.gain.value - d) > 0.01) duck.gain.setTargetAtTime(d, ctx.currentTime, 0.15);

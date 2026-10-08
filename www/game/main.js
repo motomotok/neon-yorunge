@@ -16,8 +16,13 @@ applyLanguage();
 resize(); initStars(); applyTheme(cfg.theme); applyAccessibility(); ensureTodayQuest(); ensureDailyEvent();
 handleDailyReturn();
 resetGame(); renderThemeGrid(); goMenu();
-syncGfxMode(); // cfg.gfx==='3d' ise 3D paketi burada tembel yüklenir (bkz. gfx.js)
-Ads.init();
+// cfg.gfx==='3d' ise 3D paketi burada tembel yüklenir (bkz. gfx.js). Açılış
+// logosunun animasyonu ana iş parçacığında oynuyor; 3D kurulumu/derlemesi onu
+// dondurmasın diye animasyon bitince (~1.9 sn) başlar — logo o sırada durur.
+// Reklam SDK'sı da (kendi betiklerini aynı iş parçacığında çalıştırır) logodan sonra.
+const _splashUp = !!document.getElementById('splash');
+setTimeout(syncGfxMode, _splashUp ? 1900 : 0);
+setTimeout(()=>Ads.init(), _splashUp ? 3200 : 0);
 syncAdButtons();
 // Satın alma butonları mağaza fiyatı gelene kadar gizli başlar (bkz. syncPremiumUI).
 syncPremiumUI(); syncSeasonPassUI(); syncGemTab();

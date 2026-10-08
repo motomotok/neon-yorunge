@@ -180,7 +180,7 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
    kalmamalı). Tıklanınca mağazaya götürür (data-go="shop"). */
 .menuEventChip{display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;
   border-radius:999px;padding:7px 14px;font-size:11.5px;font-weight:700;letter-spacing:.2px;
-  animation:eventChipPulse 2.4s ease-in-out infinite;}
+  position:relative;box-shadow:0 0 6px -2px currentColor;}
 .menuEventChip .ic{display:flex;font-size:14px;line-height:1;}
 .menuEventChip.evDeal{background:rgba(255,210,74,.14);border:1px solid rgba(255,210,74,.4);color:#ffe9a8;}
 .menuEventChip.evNotes{background:rgba(255,207,122,.14);border:1px solid rgba(255,207,122,.4);color:#ffe4b8;}
@@ -228,7 +228,7 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
   box-shadow:0 0 0 1px rgba(255,255,255,.08) inset,
              0 8px 20px -4px rgba(169,123,255,.6),
              0 3px 10px rgba(0,0,0,.35);
-  animation:upgradePulse 2.6s ease-in-out infinite;}
+  position:relative;}
 @keyframes upgradePulse{
   0%,100%{box-shadow:0 0 0 1px rgba(255,255,255,.08) inset,0 8px 20px -4px rgba(169,123,255,.6),0 3px 10px rgba(0,0,0,.35);}
   50%{box-shadow:0 0 0 1px rgba(255,255,255,.12) inset,0 12px 30px -2px rgba(169,123,255,.85),0 3px 10px rgba(0,0,0,.35);}
@@ -606,7 +606,7 @@ body.left-hand .hudTop{flex-direction:row-reverse;}
 /* "Sırada alınabilir" (frontier) düğüm dalın diğer tüm düğümlerinden
    BÜYÜK çiziliyor — o dalda şu an yapılacak TEK anlamlı hamle bu, gözün
    direkt oraya gitmesi için hem boyut hem hafif bir nabız kullanılıyor. */
-.coreNodeBtn.frontier{animation:coreFrontierPulse 1.8s ease-in-out infinite;}
+.coreNodeBtn.frontier{}
 @keyframes coreFrontierPulse{
   0%,100%{box-shadow:0 0 11px rgba(255,77,109,.45);}
   50%{box-shadow:0 0 20px rgba(255,77,109,.75);}
@@ -699,7 +699,7 @@ body.left-hand .hudTop{flex-direction:row-reverse;}
 .loginDayCard.claimed .ldIcon{color:#5efc82;}
 .loginDayCard.locked{opacity:.4;}
 .loginDayCard.today-ready{cursor:pointer;border-color:#ffd24a;background:rgba(255,210,74,.18);
-  box-shadow:0 0 14px rgba(255,210,74,.55);animation:eventChipPulse 1.8s ease-in-out infinite;color:#ffd24a;}
+  box-shadow:0 0 14px rgba(255,210,74,.55);color:#ffd24a;}
 .loginDayCard.today-ready .ldBadge{position:absolute;top:-7px;left:50%;transform:translateX(-50%);
   background:#ffd24a;color:#1a1200;font-size:7.5px;font-weight:800;letter-spacing:.3px;
   padding:2px 6px;border-radius:999px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.4);}
@@ -712,8 +712,7 @@ body.left-hand .hudTop{flex-direction:row-reverse;}
 
 /* Ana menüdeki "Seri" dock butonu — bugünün ödülü henüz alınmadıysa
    altın bir parıltıyla "burada bir şey var" diyor, alınca sönüyor. */
-.menuDockBtn.hasReward{border-color:rgba(255,210,74,.55);box-shadow:0 0 14px -2px rgba(255,210,74,.6);
-  animation:eventChipPulse 1.8s ease-in-out infinite;}
+.menuDockBtn.hasReward{border-color:rgba(255,210,74,.55);box-shadow:0 0 14px -2px rgba(255,210,74,.6);}
 .menuDockBtn.hasReward .gicon{color:#ffd24a;}
 .shopCard .cn{font-family:var(--font-ui);font-size:13px;font-weight:700;text-align:center;letter-spacing:.2px;}
 .shopCard .price{font-size:11.5px;font-weight:800;color:#ffd28a;}
@@ -837,7 +836,7 @@ h1 .gicon,h2 .gicon{color:var(--star);}
 @keyframes lsPop{0%{transform:scale(1);}35%{transform:scale(1.08);}100%{transform:scale(1);}}
 .lsTodayCap{font-family:var(--font-ui);font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#8f97b5;margin-top:6px;}
 .lsRewardName{font-family:var(--font-ui);font-size:16px;font-weight:800;color:#ffe2a8;min-height:1em;text-align:center;}
-.lsClaimBtn{width:auto;min-width:190px;padding-top:11px;padding-bottom:11px;margin-top:2px;animation:lsBtnGlow 1.4s ease-in-out infinite;}
+.lsClaimBtn{width:auto;min-width:190px;padding-top:11px;padding-bottom:11px;margin-top:2px;position:relative;}
 @keyframes lsBtnGlow{0%,100%{box-shadow:0 0 0 0 rgba(255,200,80,.0),0 6px 18px rgba(0,0,0,.35);}50%{box-shadow:0 0 18px 2px rgba(255,200,80,.45),0 6px 18px rgba(0,0,0,.35);}}
 .lsNext{font-family:var(--font-ui);font-size:13px;font-weight:700;color:#7fe8ff;min-height:1em;font-variant-numeric:tabular-nums;}
 .lsSide{width:100%;max-width:420px;display:flex;flex-direction:column;gap:5px;}
@@ -1011,9 +1010,9 @@ h1 .gicon,h2 .gicon{color:var(--star);}
 .nBadge{position:absolute;top:-7px;right:-7px;min-width:19px;height:19px;padding:0 5px;border-radius:10px;
   background:linear-gradient(180deg,#ff5a4a,#e0201a);color:#fff;font:900 10.5px/15px var(--font-ui);text-align:center;
   border:2px solid #1a0a06;box-shadow:0 2px 8px rgba(224,32,26,.6);pointer-events:none;z-index:2;
-  animation:nBadgePulse 1.6s ease-in-out infinite;}
+}
 .nBadge.txt{right:50%;transform:translateX(50%);top:-9px;font-size:9px;letter-spacing:.4px;white-space:nowrap;}
-.nBadge.pop{animation:nBadgePop .35s cubic-bezier(.34,1.6,.64,1), nBadgePulse 1.6s .35s ease-in-out infinite;}
+.nBadge.pop{animation:nBadgePop .35s cubic-bezier(.34,1.6,.64,1);}
 @keyframes nBadgePulse{0%,100%{box-shadow:0 2px 8px rgba(224,32,26,.55);}50%{box-shadow:0 2px 14px rgba(255,70,50,.95);}}
 @keyframes nBadgePop{0%{scale:.3;}100%{scale:1;}}
 .menuDockBtn.hasReward{border-color:rgba(255,90,74,.55);}
@@ -1209,3 +1208,17 @@ h1 .gicon,h2 .gicon{color:var(--star);}
   #screen-settings .theme .themeLabelPreview{width:38px;height:38px;}
   #screen-settings .theme .swatch{display:none;}
 }
+
+/* Nabız parlamaları: box-shadow'u canlandırmak her karede tüm menü katmanını
+   yeniden boyatıyordu (Mali-G52'de menü 14 FPS). Parlama sabit bir ::after
+   katmanında durur, yalnız opaklığı canlanır — bunu GPU boyamadan birleştirir. */
+.menuEventChip::after,.menuUpgradeBtn::after,.menuDockBtn.hasReward::after,.loginDayCard.today-ready::after,
+.coreNodeBtn.frontier::after,.nBadge::after,.lsClaimBtn::after{content:'';position:absolute;inset:0;border-radius:inherit;
+  pointer-events:none;will-change:opacity;animation:glowPulse 2.4s ease-in-out infinite;}
+.menuEventChip::after,.menuDockBtn.hasReward::after,.loginDayCard.today-ready::after{box-shadow:0 0 16px 0 currentColor;}
+.menuDockBtn.hasReward::after,.loginDayCard.today-ready::after{animation-duration:1.8s;}
+.menuUpgradeBtn::after{box-shadow:0 12px 30px -2px rgba(169,123,255,.85);animation-duration:2.6s;}
+.coreNodeBtn.frontier::after{box-shadow:0 0 20px rgba(255,77,109,.75);animation-duration:1.8s;}
+.nBadge::after{inset:-2px;box-shadow:0 2px 14px rgba(255,70,50,.95);animation-duration:1.6s;}
+.lsClaimBtn::after{box-shadow:0 0 18px 2px rgba(255,200,80,.45);animation-duration:1.4s;}
+@keyframes glowPulse{0%,100%{opacity:0}50%{opacity:1}}
