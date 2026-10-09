@@ -15,6 +15,7 @@ def capacitor_pods
   pod 'CapacitorFirebaseAuthentication', :path => '../../node_modules/@capacitor-firebase/authentication'
   pod 'CapacitorFirebaseCrashlytics', :path => '../../node_modules/@capacitor-firebase/crashlytics'
   pod 'CapacitorLocalNotifications', :path => '../../node_modules/@capacitor/local-notifications'
+  pod 'CapawesomeCapacitorAppUpdate', :path => '../../node_modules/@capawesome/capacitor-app-update'
   pod 'OpenforgeCapacitorGameConnect', :path => '../../node_modules/@openforge/capacitor-game-connect'
   pod 'CordovaPlugins', :path => '../capacitor-cordova-ios-plugins'
 end

@@ -18,6 +18,12 @@ function syncSettings(){
   syncPlayGamesUI();
 }
 // Müzik sesi kaydırıcıları (Ayarlar + Duraklat) aynı değeri gösterir.
+// DJ Vinil'in kendisinin sorduğu onay penceresi (bildirim izni, güncelleme).
+function showDjConfirm(message, onYes, labels, onNo){
+  showPurchaseConfirm('music', t('notif_title_dj'), null, onYes, message, null, onNo, labels);
+  const ic = document.getElementById('pcIcon');
+  if(ic) ic.innerHTML = '<img src="img/dj_vinil.png" alt="" style="width:64px;height:64px;border-radius:50%;box-shadow:0 0 0 2px #c9a46a">';
+}
 function syncMusicVol(){
   const v=Math.round((typeof cfg.musicVol==='number' ? cfg.musicVol : MUSIC_VOL_DEFAULT)*100);
   document.querySelectorAll('.musicVol').forEach(el=>{ if(+el.value!==v) el.value=v; });
@@ -491,8 +497,11 @@ let pendingPurchase = null;
 // kullanılabilsin diye.
 // onNo: Hayır'a / dışarıya basılınca (Evet'te çağrılmaz).
 let pendingPurchaseNo = null;
-function showPurchaseConfirm(iconKey, name, price, onYes, message, priceIcon, onNo){
+// labels: {yes, no} — düğme yazıları (varsayılan Evet/Hayır).
+function showPurchaseConfirm(iconKey, name, price, onYes, message, priceIcon, onNo, labels){
   pendingPurchase = onYes; pendingPurchaseNo = onNo || null;
+  document.querySelector('#pcYesBtn span').textContent = labels ? labels.yes : t('btn_yes');
+  document.querySelector('#pcNoBtn span').textContent = labels ? labels.no : t('btn_no');
   document.getElementById('pcIcon').innerHTML = icon(iconKey);
   document.getElementById('pcName').textContent = name;
   document.getElementById('pcMessage').textContent = message || t('purchase_confirm_default');

@@ -64,14 +64,11 @@ async function notifyMaybeAsk(trigger){
   if(trigger==='launch' && a.count > 0) return;
   if(trigger==='streak' && (a.count === 0 || (a.last && daysBetweenStr(a.last, todayStr()) < NOTIFY_ASK_GAP_DAYS))) return;
   stats.notifAsk = {count: a.count + 1, last: todayStr()}; saveStats();
-  showPurchaseConfirm('music', t('notif_title_dj'), null, async ()=>{
+  showDjConfirm(t('notif_ask'), async ()=>{
     const r = await NativeNotify.request();
     if(r === 'granted'){ cfg.notify = true; saveCfg(); queueToast(t('notif_on_toast')); notifyReschedule(); }
     syncNotifySetting();
-  }, t('notif_ask'));
-  // Simge yerine DJ Vinil'in kendisi.
-  const ic = document.getElementById('pcIcon');
-  if(ic) ic.innerHTML = '<img src="img/dj_vinil.png" alt="" style="width:64px;height:64px;border-radius:50%;box-shadow:0 0 0 2px #c9a46a">';
+  });
 }
 
 // Ayarlar > Bildirimler: açmak izin ister (gerekirse), kapatmak bekleyenleri siler.

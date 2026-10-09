@@ -13,6 +13,7 @@ dependencies {
     implementation project(':capacitor-firebase-authentication')
     implementation project(':capacitor-firebase-crashlytics')
     implementation project(':capacitor-local-notifications')
+    implementation project(':capawesome-capacitor-app-update')
     implementation project(':openforge-capacitor-game-connect')
     implementation "com.android.billingclient:billing:9.0.0"
     implementation "androidx.core:core:1.9.0"
