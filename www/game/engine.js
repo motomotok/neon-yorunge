@@ -53,9 +53,19 @@ let lastHeartScore;
 const HEART_CHANCE = 0.06, HEART_SCORE_GAP = 300;
 
 const SLOW_DUR=300, MAGNET_DUR=360, INVUL=47.5, MULT_DUR=360; // INVUL eskiden 95'ti, yarıya indirildi
-// Kombo başına eklenen hız payı — bkz. update()'teki comboSpeedBonus.
-// diffCfg.speedCap'e göre normal zorlukta tavana ~combo 27'de ulaşılır.
-const COMBO_SPEED_STEP = 0.09;
+// Kombo hızı müzikle birlikte basamak basamak artar (bkz. music.js
+// musicLevelFor: 5 bas, 10 melodi, 15 tam şarkı, 20 sahne senin). Eskiden
+// her notada +%6 anında artıyordu: kombo 10'da %54, 15'te %84 hızlanıp
+// müziğin önüne geçiyor, oyuncu cızırtılara kaçınılmaz şekilde çarpıyordu.
+// 20'den sonra her 5 notada +0.06; tavan zorluğa göre (diffCfg.comboMulCap).
+const COMBO_SPEED_TIERS = [1, 1.12, 1.25, 1.38, 1.5];
+const COMBO_SPEED_AFTER20 = 0.06;
+function comboSpeedTarget(c){
+  const lv = (typeof musicLevelFor==='function') ? musicLevelFor(c) : 0;
+  let m = COMBO_SPEED_TIERS[lv];
+  if(c >= 20) m += Math.floor((c-20)/5) * COMBO_SPEED_AFTER20;
+  return Math.min(diffCfg.comboMulCap || 1.85, m);
+}
 const PW = ['shield','slow','magnet','mult'];
 // HUD çipleriyle (bkz. chip() çağrıları aşağıda) aynı ikon setine eşler —
 // oyun dünyasındaki takviye topları da render.js'de bu anahtarlarla,
@@ -63,7 +73,7 @@ const PW = ['shield','slow','magnet','mult'];
 const PW_ICON_TYPE = {shield:'shield', slow:'clock', magnet:'magnet', mult:'coin'};
 
 function resetGame(){
-  player = { ang:-Math.PI/2, targetRing:0, curRadius:radiusFor(0), speed:1.6, speedMulEase:1,
+  player = { ang:-Math.PI/2, targetRing:0, curRadius:radiusFor(0), speed:1.6, speedMulEase:1, comboMulEase:1,
              shieldHits:0, slowT:0, magnetT:0, invulT:0, multT:0 };
   items=[]; particles=[]; score=0;
   // Çekirdek Ağacı'ndaki "Refleks" dalı, her denemeyi biraz daha ileriden
@@ -466,7 +476,7 @@ function spawnItem(atAng, atRing, forceHazard, safe){
 //     halkalarda tam aynı açıda iki öğe (örn. kalkan + canavar) rahatça
 //     üst üste binebiliyordu.
 //  3) Zamanlayıcı SÜREYE bağlıydı, topun dönme hızına değil — top
-//     hızlanınca (bkz. comboSpeedBonus) birim açı başına düşen öğe
+//     hızlanınca (bkz. comboSpeedTarget) birim açı başına düşen öğe
 //     yoğunluğu görünmez şekilde SEYRELİYORDU; ayrıca şans eseri önde
 //     "boş" bir alan varsa bir sonraki spawn'a kadar hiçbir şey olmuyordu.
 //
@@ -691,14 +701,12 @@ function update(dt){
   if(player.slowT>0) targetSpeedMul=0.5;
   player.speedMulEase += (targetSpeedMul-player.speedMulEase)*Math.min(1,0.1*dt);
   const speedMul = player.speedMulEase;
-  // Hız artışı artık SÜREYE/SKORA değil KOMBOYA bağlı: oyunun başında
-  // (kombo düşükken) top rahat kontrol edilir, ama kombo yükseldikçe —
-  // yani daha çok puan kazandıkça — hızlanır. Bu, yüksek komboyu hem
-  // ödüllü hem riskli kılar: o puanı istiyorsan hıza ayak uydurman gerekir.
-  // Bir tehlikeye çarpıp kombo 1'e dönünce hız da hemen normale döner.
-  // Zen modda devre dışı (zaten tehlike/kayıp yok).
-  const comboSpeedBonus = zen ? 0 : Math.min(diffCfg.speedCap, Math.max(0,combo-1)*COMBO_SPEED_STEP);
-  player.speed = 1.5 + comboSpeedBonus;
+  // Hız KOMBOYA bağlı ama müzikle aynı basamaklarda artar (bkz.
+  // comboSpeedTarget). Değişimler ~1 sn'de yumuşakça olur: ne toplama anında
+  // sıçrar ne de çarpınca bir karede yarıya düşer. Zen modda sabit.
+  const comboTarget = zen ? 1 : comboSpeedTarget(combo);
+  player.comboMulEase += (comboTarget - player.comboMulEase) * Math.min(1, 0.05*dt);
+  player.speed = 1.5 * player.comboMulEase;
   // Boss dalgası sırasında oyuncu hızından bağımsız, sabit ve yavaş bir
   // açısal hızla ilerlenir — dalga en az ~6-7 saniye sürsün diye (bkz.
   // BOSS_SLOW_RATE, startBossWave()).
