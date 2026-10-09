@@ -6,6 +6,7 @@ function syncSettings(){
   const pauseSw=document.getElementById('pauseSoundSw'); if(pauseSw) pauseSw.classList.toggle('on', cfg.sound);
   document.getElementById('musicSw').classList.toggle('on', !!cfg.music);
   syncMusicVol();
+  syncNotifySetting();
   document.getElementById('bigSw').classList.toggle('on', cfg.bigButtons);
   document.getElementById('handSw').classList.toggle('on', cfg.leftHand);
   document.getElementById('cbSw').classList.toggle('on', cfg.colorblind);
@@ -371,6 +372,7 @@ function updateLoginNext(){
 }
 function claimLoginFromScreen(){
   const result=claimLoginReward(); if(!result) return;
+  setTimeout(()=>notifyMaybeAsk('streak'), 1400); // nadiren: DJ Vinil bildirim iznini tekrar sorar
   const wrap=document.getElementById('lsDiscWrap');
   wrap.classList.add('claiming');
   queueToast(icon('gift')+' '+loginRewardDesc(result.reward));

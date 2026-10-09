@@ -101,6 +101,7 @@ function goUpgrades(){ state='upgrades'; setHud(false); showScreen('upgrades'); 
 }
 
 function startGame(m,d){
+  notifyRecordPlayHour();
   m = m || mode;
   if(AC && AC.state!=='running') acResume();
   // Zorluk seçimi kaldırıldı: her mod tek, dengeli (normal) zorlukta oynanır.

@@ -23,6 +23,9 @@ resetGame(); renderThemeGrid(); goMenu();
 const _splashUp = !!document.getElementById('splash');
 setTimeout(syncGfxMode, _splashUp ? 1900 : 0);
 setTimeout(()=>Ads.init(), _splashUp ? 3200 : 0);
+// Bildirimler: eski planı iptal edip yeniden kur (oyuncu şu an burada);
+// izin hiç sorulmadıysa DJ Vinil menüde bir kez sorar.
+setTimeout(()=>{ notifyReschedule(); if(state==='menu') notifyMaybeAsk('launch'); }, _splashUp ? 4800 : 1500);
 syncAdButtons();
 // Satın alma butonları mağaza fiyatı gelene kadar gizli başlar (bkz. syncPremiumUI).
 syncPremiumUI(); syncSeasonPassUI(); syncGemTab();
