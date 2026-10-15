@@ -487,7 +487,7 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
 #hpBarWrap{width:64px;height:7px;border-radius:4px;background:rgba(255,255,255,.14);
   overflow:hidden;margin-top:4px;box-shadow:0 0 0 1px rgba(255,255,255,.06) inset;}
 #hpBarFill{height:100%;width:100%;border-radius:4px;background:linear-gradient(90deg,#ff8a3d,var(--peril));
-  filter:drop-shadow(0 0 6px rgba(255,80,110,.5));transition:width .25s ease;}
+  transform-origin:0 50%;transition:transform .25s ease;}
 #hpText{font-size:11px;font-weight:700;letter-spacing:.5px;color:var(--peril);margin-top:2px;}
 .howtoIcon{width:20px;height:20px;vertical-align:middle;flex:none;}
 /* Nasıl Oynanır'da cızırtı satırı: ad + altında ne yaptığına dair kısa açıklama. */
@@ -500,7 +500,13 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
 .pwchip{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.15);border-radius:999px;
   padding:5px 11px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;}
 .pwbar{width:38px;height:5px;border-radius:3px;background:rgba(255,255,255,.18);overflow:hidden;}
-.pwbar i{display:block;height:100%;background:var(--star);}
+.pwbar i{display:block;height:100%;background:var(--star);transform-origin:0 50%;}
+/* Oyun içi yazılar (skor, kombo, can, güç çipleri, flaş) kendi küçük
+   katmanlarında: metin değişince yalnız o kutu yeniden çizilir. Eskiden kök
+   katmanda oldukları için her değişimde tüm sayfa yeniden boyanıyordu
+   (Redmi Note 9'da tek seferde 75-95 ms → oyundaki takılmaların asıl sebebi). */
+#scoreHud,#combo,#levelHud,#waveRow,#goalHint,#hpText,#hpBarWrap,#pw,#walletChip,#timerHud,#levelFlash,#hint,#pauseBtn{
+  will-change:transform;}
 #pauseBtn{position:absolute;top:calc(env(safe-area-inset-top) + 78px);right:18px;pointer-events:auto;
   width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.18);
   background:rgba(0,0,0,.35);color:#eaf2ff;font-size:17px;cursor:pointer;display:flex;

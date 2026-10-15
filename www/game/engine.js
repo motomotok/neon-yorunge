@@ -1083,7 +1083,7 @@ function updateHud(){
   // Can artık sabit kalp sayısı değil, değişken bir HP bar (bkz. §4 plan) —
   // "3 can" yerine "3-17 arası HP", tehlike tipine göre değişen hasar alıyor.
   const hpPct = mode==='zen' ? 100 : Math.max(0, Math.round(hp/maxHp*100));
-  if(_hud.hp!==hpPct){ document.getElementById('hpBarFill').style.width=hpPct+'%'; _hud.hp=hpPct; }
+  if(_hud.hp!==hpPct){ document.getElementById('hpBarFill').style.transform='scaleX('+(hpPct/100)+')'; _hud.hp=hpPct; }
   const hpText = mode==='zen' ? '∞' : hp+'/'+maxHp;
   if(_hud.hpText!==hpText){ document.getElementById('hpText').textContent=hpText; _hud.hpText=hpText; }
   const isTime = mode==='time';
@@ -1115,12 +1115,14 @@ function updateHud(){
     pwEl.innerHTML=html; _hud.pw=key; _hud.pwBars=[...pwEl.querySelectorAll('.pwbar i')]; _hud.pwW=[];
   }
   timed.forEach(([,frac],i)=>{
+    // width yerine scaleX: genişlik değişimi her karede yerleşim + yeniden
+    // boyama demekti; transform yalnız kompozitörde çalışır.
     const w=Math.round(Math.max(0,Math.min(1,frac))*100);
-    if(_hud.pwW[i]!==w && _hud.pwBars[i]){ _hud.pwBars[i].style.width=w+'%'; _hud.pwW[i]=w; }
+    if(_hud.pwW[i]!==w && _hud.pwBars[i]){ _hud.pwBars[i].style.transform='scaleX('+(w/100)+')'; _hud.pwW[i]=w; }
   });
   const flashOpacity = levelFlashT>0 ? Math.min(1, levelFlashT/20) : 0;
   if(_hud.flash!==flashOpacity){ document.getElementById('levelFlash').style.opacity=flashOpacity; _hud.flash=flashOpacity; }
   const wallet = stats.notes||0;
   if(_hud.wallet!==wallet){ document.getElementById('walletHud').textContent=wallet; _hud.wallet=wallet; }
 }
-function chip(iconKey){ return `<div class="pwchip">${icon(iconKey)}<div class="pwbar"><i style="width:0%"></i></div></div>`; }
+function chip(iconKey){ return `<div class="pwchip">${icon(iconKey)}<div class="pwbar"><i style="transform:scaleX(0)"></i></div></div>`; }
