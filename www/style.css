@@ -185,8 +185,19 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
 .menuEventChip.evDeal{background:rgba(255,210,74,.14);border:1px solid rgba(255,210,74,.4);color:#ffe9a8;}
 .menuEventChip.evNotes{background:rgba(255,207,122,.14);border:1px solid rgba(255,207,122,.4);color:#ffe4b8;}
 .menuEventChip.evXp{background:rgba(169,123,255,.16);border:1px solid rgba(169,123,255,.45);color:#dcd0ff;}
-.menuEventChip.evSet{background:rgba(47,230,196,.12);border:1px solid rgba(47,230,196,.45);color:#c9fff3;margin-top:6px;white-space:nowrap;}
-.menuEventChip .ic .gicon{width:14px;height:14px;}
+/* Günün Seti: BAŞLA'nın üstünde altın rozet-buton. Parıltı yalnız ::after
+   opaklığıyla (box-shadow animasyonu menüde kare düşürüyordu). */
+.menuSetBtn{position:relative;display:flex;align-items:center;gap:10px;cursor:pointer;white-space:nowrap;
+  padding:8px 20px 8px 14px;border-radius:999px;border:1px solid #fff2b0;
+  background:linear-gradient(135deg,#fff0a8,#ffcf4a 45%,#e0a020);color:#3a2600;
+  font-family:var(--font-ui);box-shadow:0 4px 18px rgba(255,190,60,.45),0 1px 0 rgba(255,255,255,.6) inset;}
+.menuSetBtn::after{content:'';position:absolute;inset:-4px;border-radius:999px;pointer-events:none;
+  box-shadow:0 0 22px 4px rgba(255,210,74,.65);opacity:0;animation:glowPulse 2.4s ease-in-out infinite;}
+.menuSetBtn:active{transform:scale(.96);}
+.menuSetBtn>.gicon{width:24px;height:24px;flex:none;}
+.menuSetBtn .msTxt{display:flex;flex-direction:column;align-items:flex-start;line-height:1.1;}
+.menuSetBtn b{font-size:15px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;}
+.menuSetBtn small{font-size:11.5px;font-weight:700;opacity:.8;}
 
 /* Günün Seti (bkz. game/dailyset.js) */
 .dsTimer{font-size:12.5px;font-weight:700;letter-spacing:.3px;padding:5px 12px;border-radius:999px;

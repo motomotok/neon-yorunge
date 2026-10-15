@@ -327,7 +327,7 @@ function syncDsetChip(){
   const d=dsetEnsureDay();
   const b=dsetBuildBoard(d, dsetCachedReal(d.day), dsetDayFrac(d.day));
   el.style.display='';
-  document.getElementById('menuSetText').textContent = b.me ? t('dset_chip_rank',{rank:b.me.rank}) : t('dset_chip_new');
+  document.getElementById('menuSetText').textContent = b.me ? t('dset_your_rank',{rank:b.me.rank}) : t('dset_chip_sub');
 }
 // Mod ekranındaki kartın alt yazısı.
 function dsetModeStatus(){
