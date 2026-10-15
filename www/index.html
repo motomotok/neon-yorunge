@@ -117,6 +117,9 @@
       <div class="menuEventChip" id="menuEventChip" data-go="shop" style="display:none">
         <span class="ic" id="menuEventIcon"></span> <span id="menuEventText"></span>
       </div>
+      <div class="menuEventChip evSet" id="menuSetChip" data-go="dset" style="display:none">
+        <span class="ic"><i class="gicon" data-icon="trophy"></i></span> <span id="menuSetText"></span>
+      </div>
     </div>
 
     <div class="menuFooter">
@@ -438,12 +441,35 @@
     <div class="sub" id="nextGoalLine" style="margin:6px 0 0;min-height:1em"></div>
     <div class="col">
       <button class="btn" id="retryBtn"><i class="gicon" data-icon="replay"></i> <span data-i18n="btn_retry">TEKRAR</span></button>
+      <button class="btn alt" id="dsetOverBtn" style="display:none"><i class="gicon" data-icon="trophy"></i> <span data-i18n="dset_over_btn">Sıralama</span></button>
       <button class="btn alt" data-go="upgrades"><i class="gicon" data-icon="lightning"></i> <span data-i18n="menu_upgrades">YETENEKLER</span></button>
       <button class="btn alt small" id="watchAdCoinsBtn"><i class="gicon" data-icon="filmreel"></i> Reklam İzle (+150 <i class="gicon" data-icon="coin"></i>)</button>
       <div class="row2">
         <button class="btn alt small" id="shareBtn"><i class="gicon" data-icon="share"></i> <span data-i18n="btn_share">Paylaş</span></button>
         <button class="btn alt small" data-go="menu" data-i18n="btn_main_menu">ANA MENÜ</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Günün Seti: günlük yarışma (bkz. game/dailyset.js). Üstte 1-2-3 kürsüsü,
+       altta oyuncunun kartı ve sıralamanın geri kalanı. -->
+  <div class="screen fullpin" id="screen-dset">
+    <div class="screenHead">
+      <h2><i class="gicon" data-icon="trophy"></i> <span data-i18n="dset_title">Günün Seti</span></h2>
+      <div class="dsTimer" id="dsTimer"></div>
+    </div>
+    <div class="screenBody">
+      <div class="dsPodium" id="dsPodium"></div>
+      <div class="dsYou" id="dsYou"></div>
+      <div class="dsList" id="dsList"></div>
+      <div class="dsRewards" id="dsRewards"></div>
+      <div class="dsNickRow"><span data-i18n="dset_nick">Takma adın</span> <b id="dsNick"></b>
+        <button class="iconBtn" id="dsNickBtn" aria-label="🎲">🎲</button></div>
+      <div class="dsPrivacy" data-i18n="dset_privacy"></div>
+    </div>
+    <div class="screenFoot">
+      <button class="btn" id="dsPlayBtn"><i class="gicon" data-icon="play"></i> <span data-i18n="dset_play">OYNA</span></button>
+      <button class="btn alt small" data-go="menu"><i class="gicon" data-icon="back"></i> <span data-i18n="btn_back">Geri</span></button>
     </div>
   </div>
 
@@ -559,6 +585,7 @@
 <script src="game/battlepass-ui.js"></script>
 <script src="game/notify.js"></script>
 <script src="game/update.js"></script>
+<script src="game/dailyset.js"></script>
 <script src="game/upgrades-ui.js"></script>
 <script src="game/narrator.js"></script>
 <script src="game/tutorial.js"></script>

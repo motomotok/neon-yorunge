@@ -27,10 +27,14 @@ setTimeout(()=>Ads.init(), _splashUp ? 3200 : 0);
 // izin hiç sorulmadıysa DJ Vinil menüde bir kez sorar.
 // Önce güncelleme kontrolü: yeni sürüm varsa DJ Vinil onu söyler ve aynı
 // açılışta ikinci bir soru (bildirim izni) sorulmaz.
+// Sonra dünkü Günün Seti ödülü (DJ Vinil söyler), en son bildirim izni.
 setTimeout(async ()=>{
   const askedUpdate = await updateMaybePrompt();
   notifyReschedule();
-  if(!askedUpdate && state==='menu') notifyMaybeAsk('launch');
+  let asked = askedUpdate;
+  if(!asked && state==='menu') asked = await dsetClaimPending().catch(()=>false);
+  _menuBootDone = true;
+  if(!asked && state==='menu') notifyMaybeAsk('launch');
 }, _splashUp ? 4800 : 1500);
 syncAdButtons();
 // Satın alma butonları mağaza fiyatı gelene kadar gizli başlar (bkz. syncPremiumUI).

@@ -82,8 +82,13 @@ function goMenu(){ state='menu'; setHud(false); showScreen('menu');
     streakEl.textContent=txt;
   }
   refreshWallet();
+  syncDsetChip();
+  // Uygulama açıkken gece yarısı geçtiyse dünkü setin ödülü menüye dönünce
+  // verilir (açılıştaki ilk kontrol main.js'te, güncelleme sorusundan sonra).
+  if(_menuBootDone && stats.dsetPending) setTimeout(()=>{ if(state==='menu') dsetClaimPending(); }, 600);
   if(tutorialActive && typeof tutorialOnNav==='function') tutorialOnNav('menu');
 }
+let _menuBootDone=false;
 function goHowto(){ state='howto'; setHud(false); showScreen('howto'); renderHowtoIcons(); }
 function goSettings(){ state='settings'; setHud(false); showScreen('settings'); syncSettings(); }
 function goStats(){ state='stats'; setHud(false); showScreen('stats'); syncStats(); }
@@ -107,19 +112,19 @@ function startGame(m,d){
   // Zorluk seçimi kaldırıldı: her mod tek, dengeli (normal) zorlukta oynanır.
   mode=m; diffKey='normal';
   diffCfg = DIFF[diffKey];
+  // Günün Seti (bkz. dailyset.js): sınırsız deneme, herkes için aynı tohum.
+  // Takviyeler bu modda kullanılmaz (yarış eşit başlasın); kalıcı yetenekler geçerli.
+  let dsetDay=null;
   if(mode==='daily'){
-    const td=todayStr();
-    if(stats.dailyDate===td && stats.dailyDone){ queueToast(t('toast_daily_done')); goMode(); return; }
-    // Günün tek denemesi başlarken harcanır: yarıda bırakıp (Ana Menü /
-    // uygulamayı kapatma) tekrar denemek mümkün olmasın.
-    stats.dailyDate=td; stats.dailyDone=true; stats.dailyScore=0; saveStats();
-    rngFn = mulberry32(dateSeed());
+    dsetDay = dsetEnsureDay().day;
+    rngFn = mulberry32(dsetSeed(dsetDay));
   } else rngFn = Math.random;
-  if(pendingBoost && (stats.boosts[pendingBoost]||0)>0){
+  if(mode!=='daily' && pendingBoost && (stats.boosts[pendingBoost]||0)>0){
     stats.boosts[pendingBoost]--; saveStats(); activeBoost=pendingBoost;
   }
   pendingBoost=null;
   resetGame(); state='play'; setHud(true); showScreen(null); showTutorialHint();
+  if(dsetDay) session.dsetDay = dsetDay;
   beep(440,0.1,'sine',0.12);
   // En az bir kalıcı yükseltme alınmışsa, deneme başında kısa bir "güç
   // özeti" — oyuncu kasarak kazandığı gücü her denemede hissetsin.
@@ -217,7 +222,11 @@ function gameOver(reason){
   if(ranked) stats.best=Math.max(stats.best, runScore);
   stats.stars += session.stars; stats.games++; if(ranked) stats.maxLevel=Math.max(stats.maxLevel, level);
   if(ranked) addToLeaderboard(runScore);
-  if(mode==='daily'){ stats.dailyDate=todayStr(); stats.dailyDone=true; stats.dailyScore=runScore; stats.dailyCount=(stats.dailyCount||0)+1; }
+  let dsetRes=null;
+  if(mode==='daily'){
+    stats.dailyDate=todayStr(); stats.dailyScore=runScore; stats.dailyCount=(stats.dailyCount||0)+1;
+    dsetRes = dsetRecordRun(session.dsetDay || dsetDayKey(), runScore);
+  }
   ensureTodayQuest();
   const q=currentQuest();
   if(ranked && !stats.questDone && q.check(session,{elapsedSec, level})){
@@ -252,7 +261,8 @@ function gameOver(reason){
   const melodyText = melodyOctave>0 ? t('melody_octave',{n:melodyOctave}) : '';
   document.getElementById('overStats').textContent=t('over_stats_line',{n:stats.games, reason:reasonText, best:(ranked ? stats.best : (stats.zenBest||0)).toFixed(2), level, melody:melodyText});
   document.getElementById('recordBadge').innerHTML = newRecord ? `<span class="badge">${icon('trophy')} ${t('new_record_badge')}</span>` : '';
-  document.getElementById('nextGoalLine').textContent = nextGoalLineText(runScore, newRecord);
+  document.getElementById('nextGoalLine').textContent = mode==='daily' ? dsetOverText(dsetRes) : nextGoalLineText(runScore, newRecord);
+  document.getElementById('dsetOverBtn').style.display = mode==='daily' ? '' : 'none';
   if(mode==='zen'){
     document.getElementById('coinsEarned').innerHTML = `${icon('moon')} ${t('zen_no_stardust')}`;
   } else {

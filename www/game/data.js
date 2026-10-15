@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.53.0';
+const GAME_VERSION = '2.54.0';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -480,6 +480,8 @@ let stats = load('beatOrbitStats', {
   cores:0, lifetimeCores:0, totalPrestiges:0, bestAtPrestige:0, gamesAtPrestige:0,
   coreUnlocked:['core_root'],
   gems:0, lifetimeGems:0,
+  // Günün Seti (bkz. dailyset.js)
+  dset:null, dsetPending:null, dsetHist:[], dsetName:'', dsetCache:null, dsetRealSeen:0, dsetCrownDay:'', installId:'',
 });
 // Kayıt yükleme: iç içe nesneler (owned, upgrades, boosts…) de varsayılanlarla
 // birleştirilir (eski kayıtlarda yeni eklenen anahtar eksik kalmasın). Kayıt

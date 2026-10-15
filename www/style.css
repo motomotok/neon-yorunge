@@ -185,6 +185,49 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
 .menuEventChip.evDeal{background:rgba(255,210,74,.14);border:1px solid rgba(255,210,74,.4);color:#ffe9a8;}
 .menuEventChip.evNotes{background:rgba(255,207,122,.14);border:1px solid rgba(255,207,122,.4);color:#ffe4b8;}
 .menuEventChip.evXp{background:rgba(169,123,255,.16);border:1px solid rgba(169,123,255,.45);color:#dcd0ff;}
+.menuEventChip.evSet{background:rgba(47,230,196,.12);border:1px solid rgba(47,230,196,.45);color:#c9fff3;margin-top:6px;white-space:nowrap;}
+.menuEventChip .ic .gicon{width:14px;height:14px;}
+
+/* Günün Seti (bkz. game/dailyset.js) */
+.dsTimer{font-size:12.5px;font-weight:700;letter-spacing:.3px;padding:5px 12px;border-radius:999px;
+  background:rgba(255,255,255,.06);border:1px solid var(--glass-brd-soft);display:flex;align-items:center;gap:6px;}
+.dsTimer .gicon{width:13px;height:13px;}
+.dsPodium{display:flex;align-items:flex-end;justify-content:center;gap:8px;width:100%;margin-top:4px;flex:none;}
+.dsStand{flex:1;max-width:118px;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px;}
+.dsMedal{font-size:24px;line-height:1.1;}
+.dsStand.p1 .dsMedal{font-size:30px;}
+.dsName{font-weight:700;font-size:13px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.dsPts{font-family:var(--font-display);font-size:11.5px;color:var(--star);min-height:1.3em;}
+.dsBlock{width:100%;margin-top:3px;border-radius:12px 12px 4px 4px;display:flex;justify-content:center;padding-top:6px;
+  font-family:var(--font-display);font-weight:900;font-size:22px;color:rgba(40,20,0,.5);}
+.dsStand.p1 .dsBlock{height:84px;background:linear-gradient(180deg,#ffe9a0,#d9a521);}
+.dsStand.p2 .dsBlock{height:60px;background:linear-gradient(180deg,#eef2f7,#9aa6b5);}
+.dsStand.p3 .dsBlock{height:44px;background:linear-gradient(180deg,#ffc8a0,#b86a35);}
+.dsStand.me .dsName{color:var(--player);}
+.dsStand.me .dsBlock{outline:2px solid var(--player);outline-offset:2px;}
+.dsYou{width:100%;flex:none;border-radius:16px;padding:10px 14px;text-align:left;
+  background:rgba(47,230,196,.09);border:1px solid rgba(47,230,196,.4);}
+.dsYouTop{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:15px;}
+.dsYouPts{margin-left:auto;font-family:var(--font-display);font-size:16px;color:var(--star);}
+.dsYouSub{font-size:12px;opacity:.75;margin-top:2px;}
+.dsYouTip{font-size:12.5px;font-weight:700;color:#c9fff3;margin-top:3px;}
+.dsCrown{font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px;background:linear-gradient(90deg,var(--gold),#fff2b0);color:#3a2b00;}
+.dsList{width:100%;display:flex;flex-direction:column;gap:5px;flex:none;}
+.dsRow{display:grid;grid-template-columns:30px 1fr auto;align-items:center;gap:8px;padding:7px 12px;border-radius:12px;
+  background:rgba(255,255,255,.04);border:1px solid transparent;font-size:14px;}
+.dsRow.me{background:rgba(47,230,196,.12);border-color:rgba(47,230,196,.45);}
+.dsRow .rk{font-family:var(--font-display);font-size:12px;opacity:.7;}
+.dsRow .nm{text-align:left;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.dsRow.me .nm{color:var(--player);}
+.dsRow .pt{font-family:var(--font-display);font-size:12.5px;color:var(--star);}
+.dsRewards{width:100%;flex:none;border-radius:14px;padding:8px 12px;background:rgba(255,255,255,.035);font-size:12.5px;}
+.dsRwHead{font-weight:800;display:flex;align-items:center;gap:6px;margin-bottom:3px;}
+.dsRwHead .gicon{width:14px;height:14px;}
+.dsRw{display:flex;justify-content:space-between;gap:10px;padding:2px 0;opacity:.85;text-align:right;}
+.dsRw span:first-child{text-align:left;flex:none;}
+.dsNickRow{display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;flex:none;}
+.dsNickRow b{color:var(--player);}
+.dsPrivacy{font-size:10.5px;opacity:.5;max-width:320px;line-height:1.35;flex:none;}
 @keyframes eventChipPulse{
   0%,100%{box-shadow:0 0 6px -2px currentColor;}
   50%{box-shadow:0 0 16px 0px currentColor;}

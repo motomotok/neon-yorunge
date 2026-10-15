@@ -3,6 +3,8 @@
 let pendingMode='classic';
 document.querySelectorAll('.modeCard').forEach(el=>{
   el.addEventListener('click', ()=>{
+    // Günün Seti kendi ekranında (sıralama + OYNA) açılır.
+    if(el.dataset.mode==='daily'){ beep(500,0.06,'sine',0.1); goDset(); return; }
     pendingMode=el.dataset.mode;
     document.querySelectorAll('.modeCard').forEach(x=>x.classList.toggle('sel', x===el));
     beep(500,0.06,'sine',0.1); refreshDailyStatus();
@@ -47,8 +49,12 @@ document.querySelectorAll('[data-go]').forEach(b=>{
     else if(g==='loginstreak') goLoginStreak();
     else if(g==='upgrades') goUpgrades();
     else if(g==='language') goLanguage();
+    else if(g==='dset') goDset();
   });
 });
+document.getElementById('dsPlayBtn').addEventListener('click', e=>{ e.stopPropagation(); startGame('daily'); });
+document.getElementById('dsetOverBtn').addEventListener('click', e=>{ e.stopPropagation(); goDset(); });
+document.getElementById('dsNickBtn').addEventListener('click', e=>{ e.stopPropagation(); dsetRerollName(); beep(600,0.05,'sine',0.08); });
 document.getElementById('retryBtn').addEventListener('click', e=>{ e.stopPropagation(); startGame(); });
 document.getElementById('shareBtn').addEventListener('click', e=>{ e.stopPropagation(); shareScore(); });
 document.getElementById('watchAdCoinsBtn').addEventListener('click', e=>{ e.stopPropagation(); watchAdForCoins(); });

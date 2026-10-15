@@ -25,6 +25,7 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
+import './leaderboard.js'; // Günün Seti skor tablosu (window.DailySetCloud)
 
 const firebaseConfig = {
   apiKey: "AIzaSyDo3EeLjVneHCimdQszQQAiYo0CuSxFqBg",

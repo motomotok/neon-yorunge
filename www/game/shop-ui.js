@@ -198,9 +198,7 @@ function renderLeaderboard(){
   el.innerHTML = stats.leaderboard.map((e,i)=>`<div class="lbRow${i===0?' top':''}"><span class="lbRank">${i+1}</span><span class="lbDisc"></span><span class="lbMeta">${e.date} · ${modeLabel(e.mode)}</span><span class="lbScore">${e.score.toFixed(2)}</span></div>`).join('');
 }
 function refreshDailyStatus(){
-  const td=todayStr();
-  const done = stats.dailyDate===td && stats.dailyDone;
-  document.getElementById('dailyStatus').textContent = done ? t('mode_daily_played',{score:stats.dailyScore.toFixed(2)}) : t('mode_daily_desc');
+  document.getElementById('dailyStatus').textContent = dsetModeStatus();
 }
 
 function refreshWallet(){
