@@ -5,6 +5,8 @@
 //   synthbeats      → Synth Beats      (neon çizgiler, ekolayzer halkası)
 //   urbansounds     → Urban Sounds     (altın zincir halkalar, neon şehir)
 //   cosmicsoundwave → Cosmic Soundwave (galaksi sarmalı, gezegenler)
+//   hellsanthem, lofichillhop, crystalrune, steamfunk, candydrip,
+//   cybercircuit → sonradan eklenen Gemini konseptleri (aşağıda)
 // Tüm ölçüler "base" biriminde (bkz. world.js), sahne world.root altına eklenir.
 import * as THREE from 'three';
 import { glowTexture } from './textures.js';
@@ -1217,7 +1219,877 @@ function buildLofi(world){
   };
 }
 
-const BUILDERS = {neon:buildRetro, synthbeats:buildSynth, urbansounds:buildUrban, cosmicsoundwave:buildCosmic, hellsanthem:buildHell, lofichillhop:buildLofi};
+// ================ Dört yeni tema (2026-10-16 konsept sayfası) ================
+// Kristal Rünler, Steam Funk, Candy Drip, Cyber Circuit. Hell/Lo-Fi ile aynı
+// yapı: plakla dönen yüzey katmanları (spin grubu), kenar süsü, ekran
+// düzleminde süzülen parçacıklar ve plak dışında hareketli süsler. Dokular
+// tema açılırken bir kez çizilir; kareler yalnız konum/ölçek/opaklık değiştirir.
+
+// Plakla dönen katmanları tek grupta toplar; tema kapanırken hepsini temizler.
+function spinGroup(world){ const g = new THREE.Group(); world.recordSpin.add(g); return g; }
+function spinLayer(spin, world, map, opts, y){ const m = discLayer(world, map, opts, y); spin.add(m); return m; }
+function spinDispose(world, spin){
+  world.recordSpin.remove(spin);
+  spin.traverse(x=>{ if(x.geometry) x.geometry.dispose(); if(x.material){ if(x.material.map) x.material.map.dispose(); x.material.dispose(); } });
+}
+// Plak üstünde, plakla dönen düz küçük parça (kıvılcım, dişli, veri ışığı).
+function spinPlane(spin, w, h, mat, a, d, y){
+  const g = new THREE.PlaneGeometry(w, h); g.rotateX(-Math.PI/2);
+  const m = new THREE.Mesh(g, mat);
+  m.position.set(Math.cos(a)*d, TOP_Y + y, Math.sin(a)*d); m.renderOrder = -1; spin.add(m);
+  return m;
+}
+// Ekran düzleminde süzülen parçacık katmanı (Hell közleri / Lo-Fi yağmuru gibi).
+function airInstances(group, n, mat){
+  const air = new THREE.Group(); group.add(air);
+  const mesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1), mat, n);
+  mesh.frustumCulled = false; air.add(mesh);
+  return {air, mesh};
+}
+function sparkleTexture(){
+  const c = canvas(64), g = c.getContext('2d'), gr = g.createRadialGradient(32,32,0,32,32,32);
+  gr.addColorStop(0,'rgba(255,255,255,1)'); gr.addColorStop(0.25,'rgba(255,255,255,.3)'); gr.addColorStop(1,'rgba(255,255,255,0)');
+  g.fillStyle = gr; g.fillRect(0,0,64,64);
+  g.fillStyle = 'rgba(255,255,255,.95)'; g.beginPath(); g.moveTo(32,0);
+  g.quadraticCurveTo(34,30,64,32); g.quadraticCurveTo(34,34,32,64); g.quadraticCurveTo(30,34,0,32); g.quadraticCurveTo(30,30,32,0); g.fill();
+  return tex(c);
+}
+
+// ---------------- Kristal Rünler ----------------
+// Lacivert buzlu plak, merkezden yayılan yarı saydam kristaller, kenarda
+// altın rün kuşağı (notada parlar), plaktan taşan buz sivrileri; buz
+// mağarası arka planı, kutup ışıkları, süzülen kar.
+function runeGlyph(g, k, H, W){
+  g.beginPath(); g.moveTo(0, -H); g.lineTo(0, H);
+  if(k === 0){ g.moveTo(0,-H); g.lineTo(W,-H*0.4); g.moveTo(0,-H*0.2); g.lineTo(W,H*0.3); }
+  else if(k === 1){ g.moveTo(-W,-H*0.5); g.lineTo(W,H*0.5); }
+  else if(k === 2){ g.moveTo(-W,-H*0.7); g.lineTo(0,-H*0.2); g.lineTo(W,-H*0.7); }
+  else if(k === 3){ g.moveTo(0,-H); g.lineTo(W,-H*0.5); g.lineTo(0,0); }
+  else if(k === 4){ g.moveTo(0,-H*0.4); g.lineTo(W,-H); g.moveTo(0,H*0.1); g.lineTo(W,-H*0.5); }
+  else { g.moveTo(0,H*0.2); g.lineTo(W,-H*0.2); g.lineTo(W,H); }
+  g.stroke();
+}
+function drawRunes(g, C, R, n, h, r){
+  g.lineCap = 'round'; g.lineJoin = 'round'; g.lineWidth = h*0.14;
+  for(let i=0;i<n;i++){
+    const a = i/n*Math.PI*2, k = Math.floor(r()*6);
+    g.save(); g.translate(C + Math.cos(a)*R, C + Math.sin(a)*R); g.rotate(a + Math.PI/2);
+    runeGlyph(g, k, h/2, h*0.32); g.restore();
+  }
+}
+function crystalSurface(){
+  const S = 1024, c = canvas(S), g = c.getContext('2d'), r = seeded(61), C = S/2;
+  const base = g.createRadialGradient(C,C,0,C,C,C);
+  base.addColorStop(0,'#1d3266'); base.addColorStop(0.6,'#101e45'); base.addColorStop(1,'#080e26');
+  g.fillStyle = base; g.fillRect(0,0,S,S);
+  for(let rr=C*0.85; rr>C*0.3; rr -= 3 + r()*5){ g.strokeStyle = `rgba(160,205,255,${0.03 + r()*0.05})`; g.lineWidth = 1; g.beginPath(); g.arc(C,C,rr,0,Math.PI*2); g.stroke(); }
+  for(let i=0;i<1600;i++){ const a = r()*Math.PI*2, d = C*Math.sqrt(r())*0.86; g.fillStyle = `rgba(210,240,255,${0.04 + r()*0.14})`; g.fillRect(C + Math.cos(a)*d, C + Math.sin(a)*d, 1.6, 1.6); }
+  // Rün kuşağı (oyun halkalarının dışında)
+  g.strokeStyle = '#24170b'; g.lineWidth = C*0.12; g.beginPath(); g.arc(C,C,C*0.93,0,Math.PI*2); g.stroke();
+  g.strokeStyle = '#d98a2e';
+  for(const [rad, w] of [[C*0.872, 3], [C*0.988, 5]]){ g.lineWidth = w; g.beginPath(); g.arc(C,C,rad,0,Math.PI*2); g.stroke(); }
+  g.strokeStyle = '#a8682a'; drawRunes(g, C, C*0.93, 40, C*0.075, seeded(77));
+  return tex(c);
+}
+// Aynı rünler, parlak ve hâleli: ADD katman olarak notada parlar.
+function crystalRuneGlow(){
+  const S = 1024, c = canvas(S), g = c.getContext('2d'), C = S/2;
+  g.shadowColor = '#ffa030'; g.shadowBlur = 14; g.strokeStyle = '#ffd08a';
+  drawRunes(g, C, C*0.93, 40, C*0.075, seeded(77));
+  return tex(c);
+}
+function crystalShardsTexture(){
+  const S = 1024, c = canvas(S), g = c.getContext('2d'), r = seeded(5), C = S/2, N = 12;
+  for(let i=0;i<N;i++){
+    const a = i/N*Math.PI*2 + (r()-0.5)*0.18, L = C*(i%2 ? 0.32 + r()*0.12 : 0.48 + r()*0.12);
+    const w = C*(i%2 ? 0.045 : 0.06), x0 = C*0.28, x1 = x0 + L, tip = w*1.8;
+    g.save(); g.translate(C,C); g.rotate(a);
+    const shape = ()=>{ g.beginPath(); g.moveTo(x0,-w); g.lineTo(x1-tip,-w); g.lineTo(x1,0); g.lineTo(x1-tip,w); g.lineTo(x0,w); g.closePath(); };
+    const gr = g.createLinearGradient(x0,0,x1,0);
+    gr.addColorStop(0,'rgba(70,170,230,.28)'); gr.addColorStop(0.7,'rgba(130,230,255,.38)'); gr.addColorStop(1,'rgba(225,255,255,.6)');
+    g.fillStyle = gr; shape(); g.fill();
+    g.fillStyle = 'rgba(235,255,255,.15)'; g.beginPath(); g.moveTo(x0,-w); g.lineTo(x1-tip,-w); g.lineTo(x1,0); g.lineTo(x0,0); g.closePath(); g.fill();
+    g.strokeStyle = 'rgba(205,250,255,.75)'; g.lineWidth = 2.5; shape(); g.stroke();
+    g.strokeStyle = 'rgba(255,255,255,.4)'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(x0,0); g.lineTo(x1,0); g.stroke();
+    g.restore();
+  }
+  return tex(c);
+}
+// Plak kenarından dışarı taşan buz sivrisi (yukarı bakan, ucu üstte).
+function iceSpikeTexture(){
+  const W = 64, H = 256, c = canvas(W, H), g = c.getContext('2d');
+  const body = g.createLinearGradient(0,0,W,0);
+  body.addColorStop(0,'rgba(60,150,220,.8)'); body.addColorStop(0.45,'rgba(170,240,255,.92)'); body.addColorStop(0.55,'rgba(235,255,255,.96)'); body.addColorStop(1,'rgba(50,130,210,.8)');
+  g.fillStyle = body; g.beginPath(); g.moveTo(W*0.14,H); g.lineTo(W*0.14,H*0.3); g.lineTo(W/2,0); g.lineTo(W*0.86,H*0.3); g.lineTo(W*0.86,H); g.closePath(); g.fill();
+  g.strokeStyle = 'rgba(255,255,255,.85)'; g.lineWidth = 2; g.stroke();
+  g.strokeStyle = 'rgba(255,255,255,.5)'; g.beginPath(); g.moveTo(W/2,2); g.lineTo(W/2,H); g.stroke();
+  return tex(c);
+}
+function crystalBackground(){
+  const S = 1024, c = canvas(S), g = c.getContext('2d'), r = seeded(33);
+  const bg = g.createRadialGradient(S/2,S*0.5,0,S/2,S*0.5,S*0.72);
+  bg.addColorStop(0,'#143a62'); bg.addColorStop(0.5,'#0a1d38'); bg.addColorStop(1,'#03070f');
+  g.fillStyle = bg; g.fillRect(0,0,S,S);
+  // Kutup ışıkları: üst üste binen yumuşak dalgalı şeritler.
+  g.globalCompositeOperation = 'lighter';
+  for(let k=0;k<3;k++){
+    const y0 = S*(0.1 + k*0.075), col = k === 1 ? '120,140,255' : '80,255,200';
+    for(let w=96; w>8; w-=12){
+      g.strokeStyle = `rgba(${col},0.02)`; g.lineWidth = w; g.beginPath();
+      for(let x=-20; x<=S+20; x+=16){ const y = y0 + Math.sin(x*0.006 + k*2)*S*0.04 + Math.sin(x*0.017 + k)*S*0.012; if(x === -20) g.moveTo(x, y); else g.lineTo(x, y); }
+      g.stroke();
+    }
+  }
+  for(let i=0;i<320;i++){ const s = r() < 0.08 ? 2.5 : 1.2; g.fillStyle = `rgba(200,235,255,${0.2 + r()*0.6})`; g.fillRect(r()*S, r()*S, s, s); }
+  g.globalCompositeOperation = 'source-over';
+  return tex(c);
+}
+// Kaya üstünde kristal kümesi (plak dışı süs).
+function crystalClusterTexture(seed){
+  const W = 256, H = 256, c = canvas(W, H), g = c.getContext('2d'), r = seeded(seed);
+  g.fillStyle = '#1a2436'; g.beginPath(); g.ellipse(W/2,H*0.88,W*0.42,H*0.09,0,0,Math.PI*2); g.fill();
+  g.fillStyle = '#2e3c56'; g.beginPath(); g.ellipse(W/2,H*0.855,W*0.34,H*0.06,0,0,Math.PI*2); g.fill();
+  const shards = [[-0.6,0.5,0.1],[0.62,0.46,0.1],[-0.28,0.78,0.13],[0.3,0.7,0.12],[0,0.95,0.16]];
+  for(const [ang, len, w] of shards){
+    g.save(); g.translate(W/2 + ang*W*0.32, H*0.86); g.rotate(ang*0.55);
+    const L = len*H*0.76*(0.92 + r()*0.16), ww = w*W*0.5, tip = ww*1.7;
+    const gr = g.createLinearGradient(-ww,0,ww,0);
+    gr.addColorStop(0,'#2a7fc0'); gr.addColorStop(0.48,'#9cf0ff'); gr.addColorStop(0.55,'#eaffff'); gr.addColorStop(1,'#3a9ad6');
+    g.fillStyle = gr; g.beginPath(); g.moveTo(-ww,0); g.lineTo(-ww,-L+tip); g.lineTo(0,-L); g.lineTo(ww,-L+tip); g.lineTo(ww,0); g.closePath(); g.fill();
+    g.strokeStyle = 'rgba(255,255,255,.75)'; g.lineWidth = 2; g.stroke();
+    g.fillStyle = 'rgba(255,255,255,.22)'; g.beginPath(); g.moveTo(-ww,-L+tip); g.lineTo(0,-L); g.lineTo(0,0); g.lineTo(-ww,0); g.closePath(); g.fill();
+    g.restore();
+  }
+  return tex(c);
+}
+// Havada süzülen rün taşı: üstü karlı, oyulmuş rün (parıltı ayrı katmanda).
+function runeStoneShape(g, W, H){
+  g.beginPath(); g.moveTo(W*0.2,H*0.06); g.lineTo(W*0.78,H*0.02); g.lineTo(W*0.94,H*0.3); g.lineTo(W*0.88,H*0.94); g.lineTo(W*0.14,H*0.98); g.lineTo(W*0.05,H*0.4); g.closePath();
+}
+function runeStoneTexture(){
+  const W = 192, H = 256, c = canvas(W, H), g = c.getContext('2d');
+  const body = g.createLinearGradient(0,0,W,H); body.addColorStop(0,'#64707f'); body.addColorStop(1,'#262c38');
+  g.fillStyle = body; runeStoneShape(g, W, H); g.fill();
+  g.strokeStyle = 'rgba(0,0,0,.5)'; g.lineWidth = 4; g.stroke();
+  g.fillStyle = 'rgba(225,245,255,.55)'; g.beginPath(); g.moveTo(W*0.2,H*0.06); g.lineTo(W*0.78,H*0.02); g.lineTo(W*0.86,H*0.15); g.quadraticCurveTo(W*0.5,H*0.21,W*0.11,H*0.22); g.closePath(); g.fill();
+  g.strokeStyle = '#1a1410'; g.lineCap = 'round'; g.lineJoin = 'round'; g.lineWidth = 16;
+  g.save(); g.translate(W/2, H*0.57); runeGlyph(g, 0, H*0.27, W*0.24); g.restore();
+  return tex(c);
+}
+function runeStoneGlowTexture(){
+  const W = 192, H = 256, c = canvas(W, H), g = c.getContext('2d');
+  g.strokeStyle = '#ffc070'; g.shadowColor = '#ff8a20'; g.shadowBlur = 18; g.lineCap = 'round'; g.lineJoin = 'round'; g.lineWidth = 9;
+  g.save(); g.translate(W/2, H*0.57); runeGlyph(g, 0, H*0.27, W*0.24); g.restore();
+  return tex(c);
+}
+function buildCrystal(world){
+  const group = new THREE.Group(), spin = spinGroup(world);
+  spinLayer(spin, world, crystalSurface(), {opacity:1}, 0.0003);
+  spinLayer(spin, world, crystalShardsTexture(), {opacity:0.95}, 0.0006);
+  const runes = spinLayer(spin, world, crystalRuneGlow(), {blending:ADD, opacity:0.5}, 0.0009);
+  // Plağın kenarından taşan buz sivrileri (plakla döner, iki boy).
+  const spMat = basicMat({map:iceSpikeTexture(), opacity:0.92});
+  for(let i=0;i<12;i++){
+    const big = i%2 === 0, len = big ? 0.14 : 0.09, wid = big ? 0.03 : 0.022;
+    const pg = new THREE.PlaneGeometry(wid, len); pg.translate(0, len/2, 0); pg.rotateX(-Math.PI/2);
+    const m = new THREE.Mesh(pg, spMat), a = i/12*Math.PI*2 + 0.26;
+    m.position.set(Math.cos(a)*DISC_R*0.95, TOP_Y-0.004, Math.sin(a)*DISC_R*0.95); m.rotation.y = -a - Math.PI/2; m.renderOrder = -1;
+    spin.add(m);
+  }
+  // Kristaller üstünde ara ara parlayan yıldız pırıltıları.
+  const spkTex = sparkleTexture(), rs = seeded(9);
+  const sparks = Array.from({length:14}, ()=>{
+    const m = spinPlane(spin, 0.032, 0.032, basicMat({map:spkTex, color:'#e2fbff', blending:ADD, opacity:0}), rs()*Math.PI*2, DISC_R*(0.32 + rs()*0.55), 0.003);
+    return {m, ph:rs()*10, sp:0.5 + rs()*0.8};
+  });
+  group.add(glowRim('#ffa640', DISC_R*1.004, 0.005, 0.55));
+  // Süzülen kar
+  const SN = 44, {air, mesh:snow} = airInstances(group, SN, basicMat({map:softDot(), color:'#dff4ff', blending:ADD, opacity:0.8}));
+  const flakes = Array.from({length:SN}, ()=>({x:rnd(-1.4,1.4), y:rnd(-1.8,1.8), s:rnd(0.008,0.02), sp:rnd(0.5,1.1), ph:rnd(0,9)}));
+  const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = new THREE.Vector3(), P = new THREE.Vector3();
+  // Plak dışı: iki kristal kümesi (alt köşeler), havada süzülen rün taşı (sol üst).
+  const glowT = softDot();
+  const clusters = [11, 23].map((seed, i)=>{
+    const o = new THREE.Group(); group.add(o);
+    const glow = new THREE.Mesh(new THREE.PlaneGeometry(0.22, 0.22), basicMat({map:glowT, color:'#4fd8ff', blending:ADD, opacity:0.3}));
+    glow.position.set(0, 0.015, -0.001);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(0.13, 0.13), basicMat({map:crystalClusterTexture(seed)}));
+    if(i) m.scale.x = -1;
+    o.add(glow, m); o.scale.setScalar(1.25);
+    return {o, glow, ph:i*2.1};
+  });
+  const stone = new THREE.Group(), stoneBody = new THREE.Group(); group.add(stone); stone.add(stoneBody); stone.scale.setScalar(1.3);
+  const SW = 0.072, SH = SW*256/192;
+  const stoneHalo = new THREE.Mesh(new THREE.PlaneGeometry(0.17, 0.17), basicMat({map:glowT, color:'#ff9a3a', blending:ADD, opacity:0.2}));
+  stoneHalo.position.z = -0.001;
+  const stoneGlow = new THREE.Mesh(new THREE.PlaneGeometry(SW, SH), basicMat({map:runeStoneGlowTexture(), blending:ADD, opacity:0.6}));
+  stoneGlow.position.z = 0.0005;
+  stoneBody.add(stoneHalo, new THREE.Mesh(new THREE.PlaneGeometry(SW, SH), basicMat({map:runeStoneTexture()})), stoneGlow);
+  let kick = 0;
+  return {
+    group, label:'assets3d/themes/crystalrune/label.jpg', background:crystalBackground(),
+    vinyl:'#3a4f8a', armMetal:'#d9b37a', stars:0.35, nebula:0.05, dust:0, sheen:0.1, bloom:0.4,
+    ringColor:'#9fe8ff', ringBaseColor:'#cfeeff', ringBase:0.18, ringFlash:'#7ff3ff',
+    layout(view){
+      const sl = slots(view);
+      air.position.set(0, -0.12, 0); air.rotation.set(-Math.PI/2, 0, 0);
+      placeAt(clusters[0].o, view, sl.bl[0], sl.bl[1], 0.03, 0.08);
+      placeAt(clusters[1].o, view, sl.br[0], sl.br[1], 0.03, 0.08);
+      placeAt(stone, view, sl.ul[0], sl.ul[1], 0.03, 0.08);
+    },
+    onNote(){ kick = 1; },
+    update(dt, t){
+      kick = Math.max(0, kick - 0.035*dt);
+      runes.material.opacity = 0.4 + Math.sin(t*1.4)*0.12 + kick*0.45;
+      for(const s of sparks){
+        const v = Math.pow(Math.max(0, Math.sin(t*s.sp*2 + s.ph)), 8);
+        s.m.material.opacity = v*0.95; s.m.scale.setScalar(0.5 + v*0.7); s.m.rotation.y = t*0.6 + s.ph;
+      }
+      for(const c of clusters) c.glow.material.opacity = 0.24 + Math.sin(t*1.3 + c.ph)*0.08 + kick*0.25;
+      stoneBody.position.y = Math.sin(t*0.9)*0.006; stoneBody.rotation.z = Math.sin(t*0.6)*0.05;
+      stoneGlow.material.opacity = 0.45 + Math.sin(t*2)*0.15 + kick*0.4;
+      stoneHalo.material.opacity = 0.14 + kick*0.25;
+      for(let i=0;i<SN;i++){
+        const f = flakes[i];
+        f.y -= 0.0009*f.sp*dt; f.x += Math.sin(t*0.7*f.sp + f.ph)*0.0005*dt;
+        if(f.y < -1.85){ f.y = 1.85; f.x = rnd(-1.4, 1.4); }
+        P.set(f.x, f.y, 0.01); S.set(f.s, f.s, 1); M.compose(P, Q, S); snow.setMatrixAt(i, M);
+      }
+      snow.instanceMatrix.needsUpdate = true;
+    },
+    dispose(){ spinDispose(world, spin); },
+  };
+}
+
+// ---------------- Steam Funk ----------------
+// Pirinç/bakır plak, kazınmış dişliler, perçinli kenar kuşağı; plakla dönen
+// ve kendi ekseninde de çevrilen dişliler. Arka planda bakır borular; plak
+// dışında basınç göstergesi (ibre notada kırmızıya fırlar), buhar püskürten
+// vana ve birbirine geçen iki dişli.
+function gearPath(g, x, y, R, n, hole){
+  const Ri = R*0.84; g.beginPath();
+  for(let i=0;i<n;i++){
+    const a0 = i/n*Math.PI*2, da = Math.PI*2/n;
+    [[a0,Ri],[a0+da*0.12,R],[a0+da*0.42,R],[a0+da*0.54,Ri]].forEach(([a, rr], k)=>{ const px = x + Math.cos(a)*rr, py = y + Math.sin(a)*rr; if(i || k) g.lineTo(px, py); else g.moveTo(px, py); });
+  }
+  g.closePath();
+  if(hole){ g.moveTo(x + R*0.3, y); g.arc(x, y, R*0.3, 0, Math.PI*2); }
+}
+function gearTexture(teeth, spokes, light, dark){
+  const S = 256, c = canvas(S), g = c.getContext('2d'), C = S/2;
+  gearPath(g, C, C, C*0.98, teeth);
+  const gr = g.createRadialGradient(C*0.7,C*0.6,C*0.1,C,C,C); gr.addColorStop(0, light); gr.addColorStop(1, dark);
+  g.fillStyle = gr; g.fill(); g.strokeStyle = 'rgba(30,15,5,.85)'; g.lineWidth = 3; g.stroke();
+  // Kollar arasındaki boşluklar
+  g.globalCompositeOperation = 'destination-out';
+  const step = Math.PI*2/spokes;
+  for(let i=0;i<spokes;i++){
+    const a = i*step;
+    g.beginPath(); g.arc(C, C, C*0.66, a + 0.14, a + step - 0.14); g.arc(C, C, C*0.3, a + step - 0.3, a + 0.3, true); g.closePath(); g.fill();
+  }
+  g.globalCompositeOperation = 'source-over';
+  g.strokeStyle = 'rgba(30,15,5,.6)'; g.lineWidth = 3; g.beginPath(); g.arc(C, C, C*0.7, 0, Math.PI*2); g.stroke();
+  g.fillStyle = dark; g.beginPath(); g.arc(C, C, C*0.18, 0, Math.PI*2); g.fill(); g.stroke();
+  g.fillStyle = light; g.beginPath(); g.arc(C, C, C*0.1, 0, Math.PI*2); g.fill();
+  g.fillStyle = '#1a0d05'; g.beginPath(); g.arc(C, C, C*0.045, 0, Math.PI*2); g.fill();
+  return tex(c);
+}
+function steamSurface(){
+  const S = 1024, c = canvas(S), g = c.getContext('2d'), r = seeded(44), C = S/2;
+  const base = g.createRadialGradient(C*0.8,C*0.7,0,C,C,C);
+  base.addColorStop(0,'#a86a30'); base.addColorStop(0.55,'#7a4a1e'); base.addColorStop(1,'#3e230e');
+  g.fillStyle = base; g.fillRect(0,0,S,S);
+  // Fırçalanmış metal halkaları
+  for(let rr=C*0.99; rr>C*0.25; rr -= 2 + r()*3){
+    g.strokeStyle = r() < 0.5 ? `rgba(255,220,160,${0.02 + r()*0.04})` : `rgba(30,15,5,${0.03 + r()*0.05})`;
+    g.lineWidth = 1.5; g.beginPath(); g.arc(C,C,rr,0,Math.PI*2); g.stroke();
+  }
+  // Kazınmış dişliler
+  for(let i=0;i<9;i++){
+    const a = r()*Math.PI*2, d = C*(0.36 + r()*0.44), rad = C*(0.08 + r()*0.12);
+    gearPath(g, C + Math.cos(a)*d, C + Math.sin(a)*d, rad, 10 + Math.floor(r()*8), true);
+    g.strokeStyle = 'rgba(40,20,6,.35)'; g.lineWidth = 4; g.stroke();
+    g.strokeStyle = 'rgba(255,215,150,.12)'; g.lineWidth = 1.5; g.stroke();
+  }
+  // Yeşil bakır pası lekeleri
+  for(let i=0;i<40;i++){
+    const x = r()*S, y = r()*S, rad = 10 + r()*40, gr = g.createRadialGradient(x,y,0,x,y,rad);
+    gr.addColorStop(0,'rgba(70,140,110,.12)'); gr.addColorStop(1,'rgba(70,140,110,0)');
+    g.fillStyle = gr; g.fillRect(x-rad, y-rad, rad*2, rad*2);
+  }
+  // Perçinli dış kuşak
+  g.strokeStyle = '#5a3414'; g.lineWidth = C*0.12; g.beginPath(); g.arc(C,C,C*0.93,0,Math.PI*2); g.stroke();
+  const bs = g.createRadialGradient(C,C,C*0.87,C,C,C*0.99);
+  bs.addColorStop(0,'#6a4018'); bs.addColorStop(0.5,'#d89a4c'); bs.addColorStop(1,'#5a3412');
+  g.strokeStyle = bs; g.lineWidth = C*0.105; g.beginPath(); g.arc(C,C,C*0.93,0,Math.PI*2); g.stroke();
+  for(let i=0;i<12;i++){
+    const a = i/12*Math.PI*2; g.strokeStyle = 'rgba(40,20,6,.7)'; g.lineWidth = 3;
+    g.beginPath(); g.moveTo(C + Math.cos(a)*C*0.877, C + Math.sin(a)*C*0.877); g.lineTo(C + Math.cos(a)*C*0.983, C + Math.sin(a)*C*0.983); g.stroke();
+  }
+  for(let i=0;i<48;i++){
+    const a = (i + 0.5)/48*Math.PI*2;
+    for(const rr of [0.897, 0.963]){
+      const x = C + Math.cos(a)*C*rr, y = C + Math.sin(a)*C*rr;
+      g.fillStyle = '#3a1f0a'; g.beginPath(); g.arc(x+1, y+1, 5, 0, Math.PI*2); g.fill();
+      g.fillStyle = '#e8b878'; g.beginPath(); g.arc(x, y, 4, 0, Math.PI*2); g.fill();
+    }
+  }
+  g.strokeStyle = 'rgba(40,20,6,.6)'; g.lineWidth = 6; g.beginPath(); g.arc(C,C,C*0.33,0,Math.PI*2); g.stroke();
+  return tex(c);
+}
+function steamBackground(){
+  const S = 1024, c = canvas(S), g = c.getContext('2d'), r = seeded(52);
+  const bg = g.createRadialGradient(S/2,S*0.5,0,S/2,S*0.5,S*0.72);
+  bg.addColorStop(0,'#3e2614'); bg.addColorStop(0.55,'#1e1209'); bg.addColorStop(1,'#0a0603');
+  g.fillStyle = bg; g.fillRect(0,0,S,S);
+  for(let i=0;i<7;i++){
+    gearPath(g, r()*S, r()*S, 60 + r()*120, 12 + Math.floor(r()*8), true);
+    g.strokeStyle = 'rgba(150,90,40,.1)'; g.lineWidth = 3; g.stroke();
+  }
+  const pipe = (x0, y0, x1, y1, w)=>{
+    const hor = Math.abs(y1-y0) < Math.abs(x1-x0);
+    const gr = hor ? g.createLinearGradient(0, y0-w/2, 0, y0+w/2) : g.createLinearGradient(x0-w/2, 0, x0+w/2, 0);
+    gr.addColorStop(0,'rgba(50,25,10,.55)'); gr.addColorStop(0.4,'rgba(180,105,48,.38)'); gr.addColorStop(1,'rgba(35,18,8,.55)');
+    g.strokeStyle = gr; g.lineWidth = w; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+    const L = Math.hypot(x1-x0, y1-y0);
+    for(let d=90; d<L; d+=210){
+      const x = x0 + (x1-x0)*d/L, y = y0 + (y1-y0)*d/L;
+      g.fillStyle = 'rgba(120,70,30,.45)';
+      if(hor) g.fillRect(x-6, y-w*0.75, 12, w*1.5); else g.fillRect(x-w*0.75, y-6, w*1.5, 12);
+    }
+  };
+  pipe(0, S*0.1, S, S*0.1, 26); pipe(0, S*0.92, S*0.62, S*0.92, 22); pipe(S*0.07, 0, S*0.07, S, 20); pipe(S*0.94, S*0.28, S*0.94, S, 24);
+  for(let i=0;i<120;i++){ g.fillStyle = `rgba(255,190,110,${0.05 + r()*0.2})`; g.fillRect(r()*S, r()*S, 1.5, 1.5); }
+  return tex(c);
+}
+function gaugeTexture(){
+  const S = 256, c = canvas(S), g = c.getContext('2d'), C = S/2;
+  let gr = g.createLinearGradient(0,0,S,S); gr.addColorStop(0,'#f2c474'); gr.addColorStop(0.5,'#9a6424'); gr.addColorStop(1,'#5a3410');
+  g.fillStyle = gr; g.beginPath(); g.arc(C,C,C*0.96,0,Math.PI*2); g.fill();
+  g.strokeStyle = '#3a1f0a'; g.lineWidth = 3; g.stroke();
+  for(let i=0;i<8;i++){ const a = i/8*Math.PI*2 + 0.39; g.fillStyle = '#4a2a10'; g.beginPath(); g.arc(C + Math.cos(a)*C*0.87, C + Math.sin(a)*C*0.87, 5, 0, Math.PI*2); g.fill(); }
+  gr = g.createRadialGradient(C*0.85,C*0.8,0,C,C,C*0.8); gr.addColorStop(0,'#fbf1d8'); gr.addColorStop(1,'#d2bb92');
+  g.fillStyle = gr; g.beginPath(); g.arc(C,C,C*0.76,0,Math.PI*2); g.fill();
+  // Kadran: 135° → 405° (saat yönünde), son çeyrek kırmızı bölge.
+  g.strokeStyle = 'rgba(200,40,20,.85)'; g.lineWidth = 10; g.beginPath(); g.arc(C,C,C*0.6,Math.PI*1.875,Math.PI*2.25); g.stroke();
+  g.strokeStyle = '#3a2410'; g.lineCap = 'round';
+  for(let k=0;k<=20;k++){
+    const a = Math.PI*0.75 + k/20*Math.PI*1.5, big = k%5 === 0, r0 = C*(big ? 0.54 : 0.62);
+    g.lineWidth = big ? 4 : 2; g.beginPath(); g.moveTo(C + Math.cos(a)*r0, C + Math.sin(a)*r0); g.lineTo(C + Math.cos(a)*C*0.7, C + Math.sin(a)*C*0.7); g.stroke();
+  }
+  g.fillStyle = '#3a2410'; g.font = 'bold 28px Georgia, serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('PSI', C, C*1.42);
+  g.fillStyle = 'rgba(255,255,255,.2)'; g.beginPath(); g.ellipse(C*0.74,C*0.64,C*0.36,C*0.17,-0.6,0,Math.PI*2); g.fill();
+  return tex(c);
+}
+// Dikey bakır boru: flanşlar, kırmızı vana, üstte buhar ağzı.
+function pipeTexture(){
+  const W = 200, H = 256, c = canvas(W, H), g = c.getContext('2d');
+  const cu = (x, w)=>{ const gr = g.createLinearGradient(x-w/2,0,x+w/2,0); gr.addColorStop(0,'#4a2610'); gr.addColorStop(0.35,'#e8a060'); gr.addColorStop(0.55,'#b8693a'); gr.addColorStop(1,'#3a1d0a'); return gr; };
+  g.fillStyle = '#7a4520'; g.fillRect(W*0.2, H*0.47, W*0.3, 12);
+  g.fillStyle = cu(W/2, 52); g.fillRect(W/2-26, H*0.16, 52, H*0.84);
+  g.fillStyle = cu(W/2, 34); g.fillRect(W/2-17, H*0.03, 34, H*0.14);
+  for(const y of [H*0.17, H*0.6, H*0.95]){
+    g.fillStyle = cu(W/2, 76); g.fillRect(W/2-38, y-9, 76, 18);
+    g.fillStyle = '#2a1406'; for(const dx of [-29, 29]){ g.beginPath(); g.arc(W/2+dx, y, 3.5, 0, Math.PI*2); g.fill(); }
+  }
+  g.strokeStyle = '#b8302a'; g.lineWidth = 7; g.beginPath(); g.arc(W*0.2, H*0.49, 24, 0, Math.PI*2); g.stroke();
+  g.lineWidth = 5; g.beginPath(); g.moveTo(W*0.2-24, H*0.49); g.lineTo(W*0.2+24, H*0.49); g.moveTo(W*0.2, H*0.49-24); g.lineTo(W*0.2, H*0.49+24); g.stroke();
+  g.fillStyle = '#e8c070'; g.beginPath(); g.arc(W*0.2, H*0.49, 6, 0, Math.PI*2); g.fill();
+  return tex(c);
+}
+function buildSteam(world){
+  const group = new THREE.Group(), spin = spinGroup(world);
+  spinLayer(spin, world, steamSurface(), {opacity:1}, 0.0003);
+  // Plakla dönen ve kendi ekseninde de çevrilen dişliler (yarı saydam, yüzeye
+  // gömülü gibi; halka çizgileri üstlerinde kalır).
+  const texA = gearTexture(14, 5, '#e0ac5e', '#7a4a1a'), texB = gearTexture(10, 4, '#c98f48', '#5e3612');
+  const gears = [[0.4,0.66,0.13,1],[1.55,0.6,0.1,-1.4],[2.7,0.68,0.15,0.9],[3.85,0.58,0.11,-1.25],[5.05,0.67,0.12,1.1]].map(([a, d, sz, sp], i)=>
+    ({m:spinPlane(spin, sz, sz, basicMat({map:i%2 ? texB : texA, opacity:0.85}), a, DISC_R*d, 0.0008), sp}));
+  group.add(glowRim('#ffb347', DISC_R*1.004, 0.004, 0.4));
+  // Havada yavaşça yükselen buhar
+  const HN = 12, {air, mesh:haze} = airInstances(group, HN, basicMat({map:softDot(), color:'#f0e0c8', opacity:0.07}));
+  const puffs = Array.from({length:HN}, ()=>({x:rnd(-1.3,1.3), y:rnd(-1.8,1.8), s:rnd(0.25,0.45), sp:rnd(0.6,1.1), ph:rnd(0,9)}));
+  const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = new THREE.Vector3(), P = new THREE.Vector3();
+  const glowT = softDot();
+  // Basınç göstergesi (sol üst)
+  const gauge = new THREE.Group(); group.add(gauge); gauge.scale.setScalar(1.25);
+  gauge.add(new THREE.Mesh(new THREE.PlaneGeometry(0.1, 0.1), basicMat({map:gaugeTexture()})));
+  const ng = new THREE.PlaneGeometry(0.0045, 0.036); ng.translate(0, 0.014, 0);
+  const needle = new THREE.Mesh(ng, basicMat({color:'#9a1a10'})); needle.position.z = 0.0006; gauge.add(needle);
+  const cap = new THREE.Mesh(new THREE.CircleGeometry(0.005, 16), basicMat({color:'#c8913f'})); cap.position.z = 0.0008; gauge.add(cap);
+  // Buhar püskürten boru (sol alt)
+  const PW = 0.08, PH = PW*256/200;
+  const pipe = new THREE.Group(); group.add(pipe); pipe.scale.setScalar(1.25);
+  pipe.add(new THREE.Mesh(new THREE.PlaneGeometry(PW, PH), basicMat({map:pipeTexture()})));
+  const mouthY = PH/2 - PH*0.03;
+  const steam = Array.from({length:6}, (_, k)=>{
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(0.05, 0.05), basicMat({map:glowT, color:'#f6efe2', opacity:0}));
+    m.position.set(0, mouthY, 0.001); pipe.add(m); return {m, ph:k/6};
+  });
+  // Birbirine geçen iki dişli (sağ alt)
+  const cog = new THREE.Group(); group.add(cog); cog.scale.setScalar(1.25);
+  const bigG = new THREE.Mesh(new THREE.PlaneGeometry(0.12, 0.12), basicMat({map:gearTexture(16, 6, '#e8b464', '#6a3e14')}));
+  const smallG = new THREE.Mesh(new THREE.PlaneGeometry(0.072, 0.072), basicMat({map:gearTexture(10, 4, '#d09a50', '#5a3410')}));
+  smallG.position.set(0.07, 0.052, 0.0005); cog.add(bigG, smallG);
+  let kick = 0, needleV = 0.35;
+  return {
+    group, label:'assets3d/themes/steamfunk/label.jpg', background:steamBackground(),
+    vinyl:'#8a5a2a', armMetal:'#c8913f', stars:0, nebula:0, dust:0.2, sheen:0.12, bloom:0.35,
+    ringColor:'#ffcf6a', ringBaseColor:'#f6deb0', ringBase:0.22, ringFlash:'#ffb347',
+    layout(view){
+      const sl = slots(view);
+      air.position.set(0, -0.12, 0); air.rotation.set(-Math.PI/2, 0, 0);
+      placeAt(gauge, view, sl.ul[0], sl.ul[1], 0.03, 0.08);
+      placeAt(pipe, view, sl.bl[0], sl.bl[1], 0.03, 0.08);
+      placeAt(cog, view, sl.br[0], sl.br[1], 0.03, 0.08);
+    },
+    onNote(){ kick = 1; },
+    update(dt, t){
+      kick = Math.max(0, kick - 0.03*dt);
+      for(const g of gears) g.m.rotation.y += g.sp*0.008*dt*(1 + kick*1.5);
+      // İbre: rölantide hafif titrer, notada kırmızı bölgeye fırlar.
+      const target = 0.32 + Math.sin(t*0.7)*0.06 + Math.sin(t*5.3)*0.012 + kick*0.55;
+      needleV += (target - needleV)*Math.min(1, 0.12*dt);
+      needle.rotation.z = (0.5 - needleV)*Math.PI*1.5;
+      for(const s of steam){
+        const u = (t*0.45 + s.ph) % 1;
+        s.m.position.set(Math.sin(u*3 + s.ph*6)*0.006 + u*0.01, mouthY + u*0.075, 0.001);
+        s.m.scale.setScalar(0.35 + u*1.1);
+        s.m.material.opacity = Math.sin(Math.PI*u)*(0.4 + kick*0.35);
+      }
+      bigG.rotation.z -= 0.006*dt; smallG.rotation.z += 0.006*1.6*dt;
+      for(let i=0;i<HN;i++){
+        const p = puffs[i];
+        p.y += 0.0005*p.sp*dt; p.x += Math.sin(t*0.3 + p.ph)*0.0003*dt;
+        if(p.y > 1.9){ p.y = -1.9; p.x = rnd(-1.3, 1.3); }
+        P.set(p.x, p.y, 0.01); S.set(p.s, p.s, 1); M.compose(P, Q, S); haze.setMatrixAt(i, M);
+      }
+      haze.instanceMatrix.needsUpdate = true;
+    },
+    dispose(){ spinDispose(world, spin); },
+  };
+}
+
+// ---------------- Candy Drip ----------------
+// Pembe/sarı/turkuaz/turuncu akan şeker katmanları, parlak kenar ışıkları ve
+// renkli şeker serpintisi; plağın çevresinde dönen baston şeker halkası.
+// Plak dışında lolipop, kirazı zıplayan cupcake, süzülen jelibon ayı ve donut.
+const CANDY = ['#ff5fae','#ffd93d','#41d7f0','#ff9f3a','#b77bff','#ffffff'];
+function drawSwirl(g, C, R, cols, n){
+  for(let i=0;i<n;i++){
+    const a0 = i/n*Math.PI*2, a1 = (i+1)/n*Math.PI*2;
+    g.fillStyle = cols[i%cols.length]; g.beginPath(); g.moveTo(C, C);
+    for(let k=0;k<=20;k++){ const q = k/20, a = a0 + q*2.2; g.lineTo(C + Math.cos(a)*R*q, C + Math.sin(a)*R*q); }
+    for(let k=0;k<=6;k++){ const a = a0 + 2.2 + (a1-a0)*k/6; g.lineTo(C + Math.cos(a)*R, C + Math.sin(a)*R); }
+    for(let k=20;k>=0;k--){ const q = k/20, a = a1 + q*2.2; g.lineTo(C + Math.cos(a)*R*q, C + Math.sin(a)*R*q); }
+    g.closePath(); g.fill();
+  }
+}
+function sprinkle(g, x, y, a, len, w, col){
+  g.save(); g.translate(x, y); g.rotate(a); g.fillStyle = col;
+  g.beginPath(); g.moveTo(-len/2 + w/2, -w/2); g.lineTo(len/2 - w/2, -w/2); g.arc(len/2 - w/2, 0, w/2, -Math.PI/2, Math.PI/2); g.lineTo(-len/2 + w/2, w/2); g.arc(-len/2 + w/2, 0, w/2, Math.PI/2, Math.PI*1.5); g.fill();
+  g.restore();
+}
+function dripBand(g, S, y0, col, r){
+  const edge = x=>y0 + Math.sin(x*0.011 + y0)*S*0.02;
+  g.fillStyle = col; g.beginPath(); g.moveTo(-10, -10); g.lineTo(S+10, -10);
+  for(let x=S+10; x>=-10; x-=S/32) g.lineTo(x, edge(x));
+  g.closePath(); g.fill();
+  const drips = [];
+  for(let i=0;i<7;i++){
+    const x = r()*S, w = S*(0.022 + r()*0.03), L = S*(0.05 + r()*0.14), y = edge(x) - 4;
+    g.beginPath(); g.moveTo(x-w, y); g.lineTo(x-w, y+L); g.arc(x, y+L, w, Math.PI, 0, true); g.lineTo(x+w, y); g.closePath(); g.fill();
+    drips.push([x, w, y, L]);
+  }
+  // Parlak şeker kenarı
+  g.strokeStyle = 'rgba(255,255,255,.45)'; g.lineWidth = S*0.006; g.lineCap = 'round';
+  g.beginPath(); for(let x=-10; x<=S+10; x+=S/32){ const y = edge(x) - S*0.014; if(x === -10) g.moveTo(x, y); else g.lineTo(x, y); } g.stroke();
+  for(const [x, w, y, L] of drips){ g.beginPath(); g.moveTo(x - w*0.45, y + S*0.012); g.lineTo(x - w*0.45, y + L); g.stroke(); }
+}
+function candySurface(){
+  const S = 1024, c = canvas(S), g = c.getContext('2d'), r = seeded(19);
+  g.fillStyle = '#41d7f0'; g.fillRect(0,0,S,S);
+  dripBand(g, S, S*0.76, '#ffd93d', r);
+  dripBand(g, S, S*0.52, '#ff5fae', r);
+  dripBand(g, S, S*0.27, '#ff9f3a', r);
+  for(let i=0;i<150;i++) sprinkle(g, r()*S, r()*S, r()*Math.PI, 18 + r()*8, 6, CANDY[Math.floor(r()*CANDY.length)]);
+  // Notalar seçilebilsin diye hafif koyulaştırma + kenar gölgesi.
+  g.fillStyle = 'rgba(50,0,60,.3)'; g.fillRect(0,0,S,S);
+  const v = g.createRadialGradient(S/2,S/2,S*0.3,S/2,S/2,S/2);
+  v.addColorStop(0,'rgba(40,0,40,0)'); v.addColorStop(1,'rgba(40,0,40,.4)');
+  g.fillStyle = v; g.fillRect(0,0,S,S);
+  return tex(c);
+}
+function candyBackground(){
+  const S = 1024, c = canvas(S), g = c.getContext('2d'), r = seeded(27);
+  const bg = g.createRadialGradient(S/2,S*0.45,0,S/2,S*0.5,S*0.72);
+  bg.addColorStop(0,'#45205e'); bg.addColorStop(0.55,'#221034'); bg.addColorStop(1,'#0d0616');
+  g.fillStyle = bg; g.fillRect(0,0,S,S);
+  for(let i=0;i<22;i++){
+    const x = r()*S, y = r()*S, rad = 30 + r()*110, col = ['255,95,174','65,215,240','255,217,61','183,123,255'][i%4];
+    const gr = g.createRadialGradient(x,y,0,x,y,rad); gr.addColorStop(0,`rgba(${col},.12)`); gr.addColorStop(1,`rgba(${col},0)`);
+    g.fillStyle = gr; g.beginPath(); g.arc(x,y,rad,0,Math.PI*2); g.fill();
+  }
+  g.globalAlpha = 0.35;
+  for(let i=0;i<90;i++) sprinkle(g, r()*S, r()*S, r()*Math.PI, 14, 5, CANDY[Math.floor(r()*CANDY.length)]);
+  g.globalAlpha = 1;
+  return tex(c);
+}
+function caneTexture(){
+  const W = 128, H = 32, c = canvas(W, H), g = c.getContext('2d');
+  g.fillStyle = '#fff6f8'; g.fillRect(0,0,W,H);
+  g.fillStyle = '#ff3d7a';
+  for(const x0 of [-W/2, 0, W/2, W]){ g.beginPath(); g.moveTo(x0, H); g.lineTo(x0 + W*0.2, H); g.lineTo(x0 + W*0.2 + H, 0); g.lineTo(x0 + H, 0); g.closePath(); g.fill(); }
+  const sh = g.createLinearGradient(0,0,0,H);
+  sh.addColorStop(0,'rgba(80,0,30,.3)'); sh.addColorStop(0.4,'rgba(255,255,255,.35)'); sh.addColorStop(1,'rgba(80,0,30,.35)');
+  g.fillStyle = sh; g.fillRect(0,0,W,H);
+  return tex(c, true);
+}
+function sprinkleTexture(){
+  const c = canvas(32, 8), g = c.getContext('2d');
+  sprinkle(g, 16, 4, 0, 30, 7, '#ffffff');
+  return tex(c);
+}
+function lollipopTexture(){
+  const S = 256, c = canvas(S), g = c.getContext('2d'), C = S/2;
+  g.save(); g.beginPath(); g.arc(C,C,C*0.94,0,Math.PI*2); g.clip();
+  drawSwirl(g, C, C*0.96, ['#ff5fae','#ffffff','#41d7f0','#ffffff','#ffd93d','#ffffff'], 6);
+  g.restore();
+  g.strokeStyle = 'rgba(160,20,90,.6)'; g.lineWidth = 5; g.beginPath(); g.arc(C,C,C*0.94,0,Math.PI*2); g.stroke();
+  return tex(c);
+}
+function cupcakeTexture(){
+  const W = 256, H = 256, c = canvas(W, H), g = c.getContext('2d'), r = seeded(3);
+  // Kağıt kalıp (pileli)
+  g.save(); g.beginPath(); g.moveTo(W*0.25,H*0.96); g.lineTo(W*0.75,H*0.96); g.lineTo(W*0.86,H*0.56); g.lineTo(W*0.14,H*0.56); g.closePath(); g.clip();
+  g.fillStyle = '#5fd0e8'; g.fillRect(0,0,W,H);
+  g.fillStyle = '#35a8c6'; for(let i=0;i<9;i++){ const x = W*(0.16 + i*0.085); g.beginPath(); g.moveTo(x, H*0.56); g.lineTo(x + W*0.03, H*0.56); g.lineTo(W/2 + (x - W/2)*0.7 + W*0.02, H*0.96); g.lineTo(W/2 + (x - W/2)*0.7, H*0.96); g.closePath(); g.fill(); }
+  g.restore();
+  // Krema katları
+  const tiers = [[0.53,0.4,0.1],[0.43,0.33,0.09],[0.34,0.24,0.08],[0.26,0.12,0.06]];
+  for(const [y, rx, ry] of tiers){
+    g.fillStyle = '#ff7cc0'; g.beginPath(); g.ellipse(W/2, H*y, W*rx, H*ry, 0, 0, Math.PI*2); g.fill();
+    g.fillStyle = 'rgba(255,255,255,.35)'; g.beginPath(); g.ellipse(W/2 - W*rx*0.25, H*y - H*ry*0.35, W*rx*0.55, H*ry*0.35, 0, 0, Math.PI*2); g.fill();
+  }
+  for(let i=0;i<22;i++){ const a = r()*Math.PI*2, d = r(); sprinkle(g, W/2 + Math.cos(a)*W*0.3*d, H*0.42 + Math.sin(a)*H*0.1*d, r()*Math.PI, 14, 5, CANDY[i%5]); }
+  return tex(c);
+}
+function cherryTexture(){
+  const S = 64, c = canvas(S), g = c.getContext('2d');
+  g.strokeStyle = '#3a8a2a'; g.lineWidth = 3; g.beginPath(); g.moveTo(S*0.5, S*0.4); g.quadraticCurveTo(S*0.55, S*0.1, S*0.8, S*0.04); g.stroke();
+  const gr = g.createRadialGradient(S*0.42,S*0.55,2,S*0.5,S*0.64,S*0.3); gr.addColorStop(0,'#ff6a7a'); gr.addColorStop(1,'#b0101e');
+  g.fillStyle = gr; g.beginPath(); g.arc(S*0.5, S*0.64, S*0.28, 0, Math.PI*2); g.fill();
+  g.fillStyle = 'rgba(255,255,255,.7)'; g.beginPath(); g.ellipse(S*0.4, S*0.54, 5, 3, -0.6, 0, Math.PI*2); g.fill();
+  return tex(c);
+}
+function gummyTexture(){
+  const W = 160, H = 200, c = canvas(W, H), g = c.getContext('2d');
+  const body = ()=>{
+    g.beginPath();
+    g.arc(W*0.3, H*0.12, W*0.1, 0, Math.PI*2); g.moveTo(W*0.8, H*0.12); g.arc(W*0.7, H*0.12, W*0.1, 0, Math.PI*2);
+    g.moveTo(W*0.75, H*0.27); g.arc(W/2, H*0.27, W*0.25, 0, Math.PI*2);
+    g.moveTo(W*0.8, H*0.62); g.ellipse(W/2, H*0.62, W*0.3, H*0.27, 0, 0, Math.PI*2);
+    g.moveTo(W*0.3, H*0.5); g.ellipse(W*0.2, H*0.5, W*0.11, H*0.09, -0.5, 0, Math.PI*2);
+    g.moveTo(W*0.9, H*0.5); g.ellipse(W*0.8, H*0.5, W*0.11, H*0.09, 0.5, 0, Math.PI*2);
+    g.moveTo(W*0.4, H*0.88); g.ellipse(W*0.3, H*0.88, W*0.13, H*0.09, 0, 0, Math.PI*2);
+    g.moveTo(W*0.83, H*0.88); g.ellipse(W*0.7, H*0.88, W*0.13, H*0.09, 0, 0, Math.PI*2);
+  };
+  g.fillStyle = 'rgba(255,55,95,.88)'; body(); g.fill();
+  g.strokeStyle = 'rgba(150,0,40,.5)'; g.lineWidth = 3; body(); g.stroke();
+  g.fillStyle = 'rgba(255,255,255,.35)';
+  g.beginPath(); g.ellipse(W*0.4, H*0.2, W*0.08, H*0.04, -0.5, 0, Math.PI*2); g.fill();
+  g.beginPath(); g.ellipse(W*0.36, H*0.52, W*0.07, H*0.12, -0.2, 0, Math.PI*2); g.fill();
+  g.fillStyle = 'rgba(110,0,30,.55)';
+  for(const x of [0.41, 0.59]){ g.beginPath(); g.arc(W*x, H*0.25, 4, 0, Math.PI*2); g.fill(); }
+  g.beginPath(); g.ellipse(W/2, H*0.32, 6, 4, 0, 0, Math.PI*2); g.fill();
+  return tex(c);
+}
+function donutTexture(){
+  const S = 256, c = canvas(S), g = c.getContext('2d'), C = S/2, r = seeded(8);
+  let gr = g.createRadialGradient(C*0.9,C*0.85,C*0.2,C,C,C);
+  gr.addColorStop(0,'#f2c07a'); gr.addColorStop(1,'#b8742e');
+  g.fillStyle = gr; g.beginPath(); g.arc(C,C,C*0.95,0,Math.PI*2); g.fill();
+  g.fillStyle = '#ff7cc0'; g.beginPath();
+  for(let i=0;i<=48;i++){ const a = i/48*Math.PI*2, rr = C*(0.78 + Math.sin(i*1.7)*0.05 + (i%6 === 0 ? 0.07 : 0)); if(i) g.lineTo(C + Math.cos(a)*rr, C + Math.sin(a)*rr); else g.moveTo(C + Math.cos(a)*rr, C + Math.sin(a)*rr); }
+  g.closePath(); g.fill();
+  g.fillStyle = 'rgba(255,255,255,.3)'; g.beginPath(); g.ellipse(C*0.7, C*0.6, C*0.32, C*0.12, -0.7, 0, Math.PI*2); g.fill();
+  for(let i=0;i<34;i++){ const a = r()*Math.PI*2, d = C*(0.42 + r()*0.32); sprinkle(g, C + Math.cos(a)*d, C + Math.sin(a)*d, r()*Math.PI, 18, 6, CANDY[i%5]); }
+  g.globalCompositeOperation = 'destination-out'; g.beginPath(); g.arc(C,C,C*0.3,0,Math.PI*2); g.fill();
+  g.globalCompositeOperation = 'source-over';
+  g.strokeStyle = 'rgba(120,60,20,.45)'; g.lineWidth = 4; g.beginPath(); g.arc(C,C,C*0.3,0,Math.PI*2); g.stroke();
+  return tex(c);
+}
+function buildCandy(world){
+  const group = new THREE.Group(), spin = spinGroup(world);
+  spinLayer(spin, world, candySurface(), {opacity:1}, 0.0003);
+  // Plağın çevresinde kayan baston şeker halkası.
+  const cane = caneTexture();
+  const hoop = new THREE.Mesh(ringStrip(DISC_R*1.03, DISC_R*0.055, 200, 30, TOP_Y-0.0006), basicMat({map:cane}));
+  hoop.renderOrder = -1; group.add(hoop);
+  // Havada dönerek düşen şeker serpintisi
+  const SPN = 36, {air, mesh:spr} = airInstances(group, SPN, basicMat({map:sprinkleTexture(), opacity:0.85}));
+  const cols = CANDY.map(c=>new THREE.Color(c)), Z = new THREE.Vector3(0, 0, 1);
+  const bits = Array.from({length:SPN}, (_, i)=>{ spr.setColorAt(i, cols[i%cols.length]); return {x:rnd(-1.4,1.4), y:rnd(-1.8,1.8), a:rnd(0,6.28), va:rnd(-0.04,0.04), sp:rnd(0.6,1.2)}; });
+  const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = new THREE.Vector3(), P = new THREE.Vector3();
+  const glowT = softDot();
+  // Lolipop (sol alt)
+  const lolly = new THREE.Group(), lollyBody = new THREE.Group(); group.add(lolly); lolly.add(lollyBody); lolly.scale.setScalar(1.3);
+  const stick = new THREE.Mesh(new THREE.PlaneGeometry(0.007, 0.075), basicMat({color:'#f4ece6'})); stick.position.y = -0.04;
+  const swirl = new THREE.Mesh(new THREE.PlaneGeometry(0.075, 0.075), basicMat({map:lollipopTexture()})); swirl.position.set(0, 0.005, 0.0005);
+  const gloss = new THREE.Mesh(new THREE.PlaneGeometry(0.03, 0.02), basicMat({map:glowT, color:'#ffffff', opacity:0.55})); gloss.position.set(-0.014, 0.02, 0.001); gloss.rotation.z = 0.6;
+  lollyBody.add(stick, swirl, gloss);
+  // Cupcake + zıplayan kiraz (sağ alt)
+  const cup = new THREE.Group(); group.add(cup); cup.scale.setScalar(1.3);
+  cup.add(new THREE.Mesh(new THREE.PlaneGeometry(0.095, 0.095), basicMat({map:cupcakeTexture()})));
+  const cherry = new THREE.Mesh(new THREE.PlaneGeometry(0.026, 0.026), basicMat({map:cherryTexture()})); cup.add(cherry);
+  const cherryY = 0.095*0.26 + 0.004;
+  // Süzülen jelibon ayı (sol üst)
+  const bear = new THREE.Group(), bearBody = new THREE.Group(); group.add(bear); bear.add(bearBody); bear.scale.setScalar(1.25);
+  const bearGlow = new THREE.Mesh(new THREE.PlaneGeometry(0.14, 0.14), basicMat({map:glowT, color:'#ff5f8a', blending:ADD, opacity:0.18})); bearGlow.position.z = -0.001;
+  bearBody.add(bearGlow, new THREE.Mesh(new THREE.PlaneGeometry(0.064, 0.08), basicMat({map:gummyTexture()})));
+  // Donut (alt orta)
+  const donut = new THREE.Group(); group.add(donut); donut.scale.setScalar(1.25);
+  const donutM = new THREE.Mesh(new THREE.PlaneGeometry(0.08, 0.08), basicMat({map:donutTexture()})); donut.add(donutM);
+  let kick = 0, hop = 0;
+  return {
+    group, label:'assets3d/themes/candydrip/label.jpg', background:candyBackground(),
+    vinyl:'#ff8ac8', armMetal:'#f7b6d8', stars:0, nebula:0, dust:0, sheen:0.16, bloom:0.22,
+    ringColor:'#ffffff', ringBaseColor:'#ffffff', ringBase:0.3, ringFlash:'#ff4fd8',
+    layout(view){
+      const sl = slots(view);
+      air.position.set(0, -0.12, 0); air.rotation.set(-Math.PI/2, 0, 0);
+      placeAt(lolly, view, sl.bl[0], sl.bl[1], 0.03, 0.08);
+      placeAt(cup, view, sl.br[0], sl.br[1], 0.03, 0.08);
+      placeAt(bear, view, sl.ul[0], sl.ul[1], 0.03, 0.08);
+      placeAt(donut, view, 0, sl.bc[1], 0.02, 0.06);
+    },
+    onNote(){ kick = 1; hop = 1; },
+    update(dt, t){
+      kick = Math.max(0, kick - 0.04*dt);
+      hop = Math.max(0, hop - 0.05*dt);
+      cane.offset.x = (t*0.02) % 1;
+      swirl.rotation.z = -t*0.8;
+      lollyBody.rotation.z = Math.sin(t*0.7)*0.06;
+      cherry.position.set(0, cherryY + Math.sin(hop*Math.PI)*0.018 + Math.abs(Math.sin(t*2.2))*0.002, 0.001);
+      cherry.rotation.z = Math.sin(hop*Math.PI*2)*0.3;
+      bearBody.position.y = Math.sin(t*1.1)*0.007; bearBody.rotation.z = Math.sin(t*0.8)*0.12;
+      bearGlow.material.opacity = 0.14 + kick*0.25;
+      donutM.rotation.z = Math.sin(t*0.5)*0.15;
+      for(let i=0;i<SPN;i++){
+        const b = bits[i];
+        b.y -= 0.0011*b.sp*dt; b.a += b.va*dt; b.x += Math.sin(t*0.6 + i)*0.0003*dt;
+        if(b.y < -1.85){ b.y = 1.85; b.x = rnd(-1.4, 1.4); }
+        P.set(b.x, b.y, 0.01); Q.setFromAxisAngle(Z, b.a); S.set(0.024, 0.006, 1); M.compose(P, Q, S); spr.setMatrixAt(i, M);
+      }
+      spr.instanceMatrix.needsUpdate = true;
+    },
+    dispose(){ spinDispose(world, spin); },
+  };
+}
+
+// ---------------- Cyber Circuit ----------------
+// Lacivert devre kartı: turkuaz/mavi/pembe yollar, çipler, ve aynı yolların
+// notada parlayan ışıklı kopyası; yollar boyunca dışa akan veri ışıkları;
+// pembe neon kenar. Arka planda altıgen ızgara, havada dijital yağmur; plak
+// dışında hologram çip, LED'leri yanıp sönen sunucu kulesi, dönen hologram halka.
+const CYBER = ['#2ee6ff','#3f7bff','#ff3df0','#9b5bff','#2ee6ff'];
+function cyberCircuitTextures(){
+  const S = 1024, r = seeded(88), C = S/2, G = 16;
+  const base = canvas(S), g = base.getContext('2d'), glow = canvas(S), h = glow.getContext('2d');
+  const bg = g.createRadialGradient(C,C,0,C,C,C);
+  bg.addColorStop(0,'#16124a'); bg.addColorStop(0.6,'#0d0b30'); bg.addColorStop(1,'#07061c');
+  g.fillStyle = bg; g.fillRect(0,0,S,S);
+  g.strokeStyle = 'rgba(90,120,255,.06)'; g.lineWidth = 1;
+  for(let x=0;x<S;x+=32){ g.beginPath(); g.moveTo(x,0); g.lineTo(x,S); g.moveTo(0,x); g.lineTo(S,x); g.stroke(); }
+  const DX = [1,1,0,-1,-1,-1,0,1], DY = [0,1,1,1,0,-1,-1,-1], routes = [];
+  for(let i=0;i<70;i++){
+    let x = Math.round(r()*S/G)*G, y = Math.round(r()*S/G)*G, dir = Math.floor(r()*8);
+    const pts = [[x, y]], n = 3 + Math.floor(r()*6);
+    for(let k=0;k<n;k++){
+      if(r() < 0.5) dir = (dir + (r() < 0.5 ? 1 : 7)) % 8;
+      const L = G*(2 + Math.floor(r()*6)); x += DX[dir]*L; y += DY[dir]*L; pts.push([x, y]);
+    }
+    routes.push({pts, col:CYBER[Math.floor(r()*CYBER.length)], w:r() < 0.3 ? 4 : 2.2});
+  }
+  const draw = (ctx, alpha, k, halo)=>{
+    ctx.lineJoin = 'round'; ctx.globalAlpha = alpha;
+    for(const rt of routes){
+      if(halo){ ctx.shadowColor = rt.col; ctx.shadowBlur = 10; }
+      ctx.strokeStyle = ctx.fillStyle = rt.col; ctx.lineWidth = rt.w*k;
+      ctx.beginPath(); rt.pts.forEach(([x, y], i)=>i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke();
+      const [ex, ey] = rt.pts[rt.pts.length-1], [sx, sy] = rt.pts[0];
+      ctx.beginPath(); ctx.arc(ex, ey, rt.w*1.8, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(sx, sy, rt.w*1.5, 0, Math.PI*2); ctx.stroke();
+    }
+    ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+  };
+  draw(g, 0.34, 1, false);
+  for(let i=0;i<14;i++){
+    const w = G*(2 + Math.floor(r()*4)), hh = G*(2 + Math.floor(r()*3)), x = Math.round(r()*S/G)*G, y = Math.round(r()*S/G)*G;
+    g.fillStyle = '#1a1746'; g.fillRect(x, y, w, hh);
+    g.strokeStyle = 'rgba(120,160,255,.5)'; g.lineWidth = 1.5; g.strokeRect(x, y, w, hh);
+    g.strokeStyle = 'rgba(180,200,255,.35)'; g.lineWidth = 2; g.beginPath();
+    for(let p=x+5; p<x+w-3; p+=7){ g.moveTo(p, y-5); g.lineTo(p, y); g.moveTo(p, y+hh); g.lineTo(p, y+hh+5); }
+    g.stroke();
+    if(r() < 0.6){ h.fillStyle = CYBER[Math.floor(r()*CYBER.length)]; h.globalAlpha = 0.5; h.fillRect(x+4, y+4, w*0.3, hh*0.3); h.globalAlpha = 1; }
+  }
+  draw(h, 0.9, 0.8, true);
+  return {base:tex(base), glow:tex(glow)};
+}
+function cyberBackground(){
+  const S = 1024, c = canvas(S), g = c.getContext('2d'), r = seeded(66);
+  const bg = g.createRadialGradient(S/2,S*0.45,0,S/2,S*0.5,S*0.72);
+  bg.addColorStop(0,'#1a0f4a'); bg.addColorStop(0.5,'#0a0624'); bg.addColorStop(1,'#030208');
+  g.fillStyle = bg; g.fillRect(0,0,S,S);
+  g.strokeStyle = 'rgba(80,200,255,.06)'; g.lineWidth = 1.5;
+  const R = 34, hw = R*Math.sqrt(3);
+  for(let row=0; row*R*1.5 < S+R; row++){
+    for(let col=0; col*hw < S+hw; col++){
+      const cx = col*hw + (row%2 ? hw/2 : 0), cy = row*R*1.5;
+      g.beginPath(); for(let k=0;k<6;k++){ const a = Math.PI/6 + k*Math.PI/3; const x = cx + Math.cos(a)*R, y = cy + Math.sin(a)*R; if(k) g.lineTo(x, y); else g.moveTo(x, y); } g.closePath(); g.stroke();
+    }
+  }
+  for(let i=0;i<60;i++){
+    const x = r()*S, y = r()*S, rad = 6 + r()*16, col = r() < 0.5 ? '46,230,255' : '255,61,240';
+    const gr = g.createRadialGradient(x,y,0,x,y,rad); gr.addColorStop(0,`rgba(${col},.5)`); gr.addColorStop(1,`rgba(${col},0)`);
+    g.fillStyle = gr; g.fillRect(x-rad, y-rad, rad*2, rad*2);
+  }
+  const hz = g.createLinearGradient(0, S*0.7, 0, S);
+  hz.addColorStop(0,'rgba(255,61,240,0)'); hz.addColorStop(1,'rgba(255,61,240,.14)');
+  g.fillStyle = hz; g.fillRect(0, S*0.7, S, S*0.3);
+  return tex(c);
+}
+// Dijital yağmur sütunu: alta doğru parlaklaşan karakterler (baş en altta).
+function glyphColumnTexture(){
+  const W = 32, H = 512, c = canvas(W, H), g = c.getContext('2d'), r = seeded(14), ch = '01ABCDEF<>/#$%';
+  g.font = 'bold 22px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  for(let i=0;i<20;i++){ const a = Math.pow(i/19, 1.6); g.fillStyle = `rgba(255,255,255,${0.08 + a*0.92})`; g.fillText(ch[Math.floor(r()*ch.length)], W/2, 12 + i*25); }
+  return tex(c);
+}
+function chipTexture(){
+  const S = 256, c = canvas(S), g = c.getContext('2d'), C = S/2;
+  g.strokeStyle = '#7fe9ff'; g.lineWidth = 6;
+  g.beginPath();
+  for(let i=0;i<7;i++){ const p = S*0.25 + i*S*0.083; g.moveTo(p, S*0.06); g.lineTo(p, S*0.2); g.moveTo(p, S*0.8); g.lineTo(p, S*0.94); g.moveTo(S*0.06, p); g.lineTo(S*0.2, p); g.moveTo(S*0.8, p); g.lineTo(S*0.94, p); }
+  g.stroke();
+  g.fillStyle = '#141235'; g.fillRect(S*0.18, S*0.18, S*0.64, S*0.64);
+  g.strokeStyle = '#2ee6ff'; g.lineWidth = 4; g.strokeRect(S*0.18, S*0.18, S*0.64, S*0.64);
+  g.strokeStyle = 'rgba(155,91,255,.8)'; g.lineWidth = 3; g.strokeRect(S*0.3, S*0.3, S*0.4, S*0.4);
+  g.strokeStyle = 'rgba(46,230,255,.5)'; g.lineWidth = 2; g.beginPath();
+  for(const [x0, y0, x1, y1] of [[0.3,0.4,0.22,0.4],[0.7,0.45,0.78,0.45],[0.45,0.3,0.45,0.22],[0.55,0.7,0.55,0.78],[0.3,0.6,0.24,0.66]]){ g.moveTo(S*x0, S*y0); g.lineTo(S*x1, S*y1); }
+  g.stroke();
+  const gr = g.createRadialGradient(C,C,0,C,C,S*0.16); gr.addColorStop(0,'#ffd0fb'); gr.addColorStop(0.4,'#ff3df0'); gr.addColorStop(1,'rgba(255,61,240,0)');
+  g.fillStyle = gr; g.fillRect(S*0.3, S*0.3, S*0.4, S*0.4);
+  return tex(c);
+}
+function rackTexture(){
+  const W = 160, H = 256, c = canvas(W, H), g = c.getContext('2d');
+  const gr = g.createLinearGradient(0,0,W,0); gr.addColorStop(0,'#0e0c26'); gr.addColorStop(0.5,'#1c1946'); gr.addColorStop(1,'#0b0a20');
+  g.fillStyle = gr; g.fillRect(W*0.08, H*0.02, W*0.84, H*0.96);
+  g.strokeStyle = 'rgba(46,230,255,.7)'; g.lineWidth = 3; g.strokeRect(W*0.08, H*0.02, W*0.84, H*0.96);
+  for(let i=0;i<8;i++){
+    const y = H*(0.07 + i*0.113);
+    g.fillStyle = '#25225a'; g.fillRect(W*0.14, y, W*0.72, H*0.08);
+    g.strokeStyle = 'rgba(120,160,255,.35)'; g.lineWidth = 1.5; g.beginPath();
+    for(let x=W*0.2; x<W*0.6; x+=6){ g.moveTo(x, y + H*0.018); g.lineTo(x, y + H*0.062); }
+    g.stroke();
+  }
+  return tex(c);
+}
+function holoRingTexture(segs, gap){
+  const S = 256, c = canvas(S), g = c.getContext('2d'), C = S/2;
+  g.strokeStyle = '#ffffff'; g.lineCap = 'butt';
+  g.lineWidth = 10; for(let i=0;i<segs;i++){ const a = i/segs*Math.PI*2; g.beginPath(); g.arc(C,C,C*0.86,a,a + Math.PI*2/segs*(1-gap)); g.stroke(); }
+  g.lineWidth = 2; g.globalAlpha = 0.6; g.beginPath(); g.arc(C,C,C*0.72,0,Math.PI*2); g.stroke();
+  for(let i=0;i<36;i++){ const a = i/36*Math.PI*2; g.beginPath(); g.moveTo(C + Math.cos(a)*C*0.74, C + Math.sin(a)*C*0.74); g.lineTo(C + Math.cos(a)*C*(i%3 ? 0.78 : 0.82), C + Math.sin(a)*C*(i%3 ? 0.78 : 0.82)); g.stroke(); }
+  return tex(c);
+}
+function buildCyber(world){
+  const group = new THREE.Group(), spin = spinGroup(world);
+  const tx = cyberCircuitTextures();
+  spinLayer(spin, world, tx.base, {opacity:1}, 0.0003);
+  const lit = spinLayer(spin, world, tx.glow, {blending:ADD, opacity:0.55}, 0.0006);
+  // Yollar boyunca merkezden dışa akan veri ışıkları.
+  const dotT = softDot(), rs = seeded(4);
+  const pulses = Array.from({length:14}, (_, i)=>{
+    const p = {a:rs()*Math.PI*2, u:rs(), sp:0.7 + rs()*0.7};
+    p.m = spinPlane(spin, 0.022, 0.022, basicMat({map:dotT, color:i%2 ? '#ff3df0' : '#2ee6ff', blending:ADD, opacity:0}), p.a, DISC_R*0.5, 0.0035);
+    return p;
+  });
+  group.add(glowRim('#ff3df0', DISC_R*1.006, 0.007, 0.85), glowRim('#2ee6ff', DISC_R*1.03, 0.0025, 0.45));
+  // Dijital yağmur
+  const RN = 24, {air, mesh:rain} = airInstances(group, RN, basicMat({map:glyphColumnTexture(), blending:ADD, opacity:0.35}));
+  const rcols = ['#2ee6ff','#ff3df0','#3f7bff'].map(c=>new THREE.Color(c));
+  const drops = Array.from({length:RN}, (_, i)=>{ rain.setColorAt(i, rcols[i%3]); return {x:rnd(-1.4,1.4), y:rnd(-1.8,1.8), sp:rnd(0.8,1.6), l:rnd(0.18,0.32)}; });
+  const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = new THREE.Vector3(), P = new THREE.Vector3();
+  const glowT = softDot();
+  // Hologram çip + tarama çizgisi (sol alt)
+  const chip = new THREE.Group(), chipBody = new THREE.Group(); group.add(chip); chip.add(chipBody); chip.scale.setScalar(1.3);
+  const chipGlow = new THREE.Mesh(new THREE.PlaneGeometry(0.17, 0.17), basicMat({map:glowT, color:'#2ee6ff', blending:ADD, opacity:0.25})); chipGlow.position.z = -0.001;
+  const scan = new THREE.Mesh(new THREE.PlaneGeometry(0.09, 0.004), basicMat({map:glowT, color:'#7ff3ff', blending:ADD, opacity:0.8})); scan.position.z = 0.001;
+  chipBody.add(chipGlow, new THREE.Mesh(new THREE.PlaneGeometry(0.085, 0.085), basicMat({map:chipTexture(), opacity:0.95})), scan);
+  // Sunucu kulesi + LED'ler (sağ alt)
+  const RW = 0.06, RH = RW*256/160;
+  const rack = new THREE.Group(); group.add(rack); rack.scale.setScalar(1.3);
+  rack.add(new THREE.Mesh(new THREE.PlaneGeometry(RW, RH), basicMat({map:rackTexture()})));
+  const leds = Array.from({length:16}, (_, i)=>{
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(0.0042, 0.0042), basicMat({color:CYBER[i%4], blending:ADD, opacity:0.3}));
+    const row = i >> 1; m.position.set(RW*(0.22 + (i&1)*0.1), RH/2 - RH*(0.07 + row*0.113 + 0.04), 0.0005); rack.add(m);
+    return {m, on:false, next:0};
+  });
+  // Dönen hologram halka (sol üst)
+  const holo = new THREE.Group(); group.add(holo); holo.scale.setScalar(1.25);
+  const ringA = new THREE.Mesh(new THREE.PlaneGeometry(0.11, 0.11), basicMat({map:holoRingTexture(6, 0.25), color:'#2ee6ff', blending:ADD, opacity:0.75}));
+  const ringB = new THREE.Mesh(new THREE.PlaneGeometry(0.075, 0.075), basicMat({map:holoRingTexture(3, 0.4), color:'#ff3df0', blending:ADD, opacity:0.75}));
+  const core = new THREE.Mesh(new THREE.PlaneGeometry(0.05, 0.05), basicMat({map:glowT, color:'#b9f6ff', blending:ADD, opacity:0.6}));
+  ringB.position.z = 0.0005; core.position.z = 0.001; holo.add(ringA, ringB, core);
+  let kick = 0;
+  return {
+    group, label:'assets3d/themes/cybercircuit/label.jpg', background:cyberBackground(),
+    vinyl:'#1a1440', armMetal:'#9aa6c8', stars:0.2, nebula:0.06, dust:0, sheen:0.08, bloom:0.5,
+    ringColor:'#2ee6ff', ringBaseColor:'#8fe9ff', ringBase:0.2, ringFlash:'#ff3df0',
+    layout(view){
+      const sl = slots(view);
+      air.position.set(0, -0.12, 0); air.rotation.set(-Math.PI/2, 0, 0);
+      placeAt(chip, view, sl.bl[0], sl.bl[1], 0.03, 0.08);
+      placeAt(rack, view, sl.br[0], sl.br[1], 0.03, 0.08);
+      placeAt(holo, view, sl.ul[0], sl.ul[1], 0.03, 0.08);
+    },
+    onNote(){ kick = 1; },
+    update(dt, t){
+      kick = Math.max(0, kick - 0.035*dt);
+      lit.material.opacity = 0.32 + beatAt(t)*0.18 + kick*0.45;
+      for(const p of pulses){
+        p.u += 0.004*p.sp*dt*(1 + kick*2);
+        if(p.u > 1){ p.u = 0; p.a = Math.random()*Math.PI*2; }
+        const d = DISC_R*(0.32 + p.u*0.64);
+        p.m.position.set(Math.cos(p.a)*d, p.m.position.y, Math.sin(p.a)*d);
+        p.m.material.opacity = Math.sin(Math.PI*p.u)*0.9;
+      }
+      chipBody.position.y = Math.sin(t*1.2)*0.005;
+      scan.position.y = Math.sin(t*1.6)*0.038; scan.material.opacity = 0.5 + kick*0.5;
+      chipGlow.material.opacity = 0.2 + Math.sin(t*2)*0.05 + kick*0.3;
+      for(const l of leds){
+        if(t > l.next){ l.on = Math.random() < 0.55; l.next = t + rnd(0.08, 0.5); }
+        l.m.material.opacity = kick > 0.6 ? 1 : (l.on ? 0.95 : 0.2);
+      }
+      ringA.rotation.z = t*0.5; ringB.rotation.z = -t*0.9;
+      core.material.opacity = 0.45 + Math.sin(t*3)*0.12 + kick*0.4;
+      holo.children[0].material.opacity = 0.6 + kick*0.35;
+      for(let i=0;i<RN;i++){
+        const d = drops[i];
+        d.y -= 0.0045*d.sp*dt;
+        if(d.y < -1.95){ d.y = 1.95; d.x = rnd(-1.4, 1.4); }
+        P.set(d.x, d.y, 0.01); S.set(0.016, d.l, 1); M.compose(P, Q, S); rain.setMatrixAt(i, M);
+      }
+      rain.instanceMatrix.needsUpdate = true;
+    },
+    dispose(){ spinDispose(world, spin); },
+  };
+}
+
+const BUILDERS = {neon:buildRetro, synthbeats:buildSynth, urbansounds:buildUrban, cosmicsoundwave:buildCosmic, hellsanthem:buildHell, lofichillhop:buildLofi,
+  crystalrune:buildCrystal, steamfunk:buildSteam, candydrip:buildCandy, cybercircuit:buildCyber};
 
 export function buildThemeScene(key, world){
   const b = BUILDERS[key] || BUILDERS.neon;
