@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.54.2';
+const GAME_VERSION = '2.55.0';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -19,6 +19,9 @@ const THEMES = {
   // Kozmik Ses Dalgası BİLEREK sadece Elmas — en üst temalı dünya, notayla
   // asla açılmıyor (premium para biriminin "sadece elmasla" ucu burası).
   cosmicsoundwave:{nameKey:'theme_cosmicsoundwave', star:'#7fe8ff', gold:'#ffe9a8', peril:'#ff8a3d', player:'#2fe6c4', sun:'#6a8fff', bg0:'#03040f', bg1:'#0a0f2e', sf:'#8fb0ff', gate:{type:'gem', price:70}},
+  // Kullanıcının Gemini konseptlerinden (2026-10-16): orman gecesi ve cehennem.
+  tribalpulse:    {nameKey:'theme_tribalpulse',     star:'#b9e08a', gold:'#ffe9a8', peril:'#ff5a3c', player:'#ffd24a', sun:'#e2583a', bg0:'#0e0704', bg1:'#24130a', sf:'#c8ff6a', gate:{type:'coin_or_gem', price:4800, gemPrice:50}},
+  hellsanthem:    {nameKey:'theme_hellsanthem',     star:'#ffb066', gold:'#ffd28a', peril:'#ff3a1a', player:'#ffcf4a', sun:'#ff5a1a', bg0:'#0d0303', bg1:'#2a0806', sf:'#ff9a5a', gate:{type:'gem', price:80}},
 };
 let T = THEMES.neon;
 // Her temanın plak etiketi (konsept görsellerinden kesildi). 3D modda

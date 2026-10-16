@@ -30,7 +30,8 @@ const MUSIC_TRACKS = {
   urban:  {bpm:89.995,  loopLen:53.3362, minorRoot:5, parts:['drums','rest']},
   kozmik: {bpm:104.009, loopLen:55.3796, minorRoot:7, parts:['drums','rest']},
 };
-const THEME_MUSIC = {neon:'retro', synthbeats:'synth', urbansounds:'urban', cosmicsoundwave:'kozmik'};
+// Yeni temaların kendi şarkısı henüz yok; en yakın havadaki parçayı çalarlar.
+const THEME_MUSIC = {neon:'retro', synthbeats:'synth', urbansounds:'urban', cosmicsoundwave:'kozmik', tribalpulse:'retro', hellsanthem:'urban'};
 // Kombo basamağı → "rest" parçasının sesi, filtre frekansı, tiz parlaklığı (dB).
 const MUSIC_LEVELS = [
   {rest:0,    lp:20000, shelf:0},

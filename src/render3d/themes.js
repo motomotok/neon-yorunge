@@ -669,7 +669,321 @@ function buildCosmic(world){
   };
 }
 
-const BUILDERS = {neon:buildRetro, synthbeats:buildSynth, urbansounds:buildUrban, cosmicsoundwave:buildCosmic};
+// ---------------- Ortak: tohumlu rastgele, plak üstü katman ----------------
+// Desenler her açılışta aynı çıksın diye tohumlu (mulberry32).
+function seeded(seed){
+  return ()=>{ seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+}
+// Plağın tamamını kaplayan, plakla dönen düz katman (dokular bir kez çizilir).
+function discLayer(world, map, opts, y){
+  const g = new THREE.CircleGeometry(DISC_R*0.996, 128); g.rotateX(-Math.PI/2);
+  const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial(Object.assign({map, transparent:true, depthWrite:false}, opts)));
+  m.position.y = TOP_Y + y;
+  world.recordSpin.add(m);
+  return m;
+}
+
+// ---------------- Hell's Anthem ----------------
+// Kırık taş plakalar: Voronoi hücreleri (ızgara hızlandırmalı, açılışta bir
+// kez ~15 ms). Döner: her pikselin kenar mesafesi ve hücre kimliği.
+function stoneCells(S){
+  const r = seeded(666), G = 7, cell = S/G, seeds = [];
+  for(let j=0;j<G;j++) for(let i=0;i<G;i++) seeds.push([(i + 0.15 + r()*0.7)*cell, (j + 0.15 + r()*0.7)*cell, r()]);
+  const edge = new Float32Array(S*S), id = new Float32Array(S*S);
+  for(let y=0;y<S;y++){
+    const gy = Math.floor(y/cell);
+    for(let x=0;x<S;x++){
+      // Hafif bükülme: kenarlar cetvel gibi düz durmasın
+      const wx = x + Math.sin(y*0.021)*9 + Math.sin(y*0.067)*3, wy = y + Math.sin(x*0.019)*9 + Math.cos(x*0.071)*3;
+      const gx = Math.floor(x/cell);
+      let d1 = 1e9, d2 = 1e9, best = 0;
+      for(let j=gy-1;j<=gy+1;j++) for(let i=gx-1;i<=gx+1;i++){
+        if(i<0||j<0||i>=G||j>=G) continue;
+        const s = seeds[j*G+i], dx = wx-s[0], dy = wy-s[1], d = dx*dx+dy*dy;
+        if(d < d1){ d2 = d1; d1 = d; best = s[2]; } else if(d < d2) d2 = d;
+      }
+      edge[y*S+x] = Math.sqrt(d2) - Math.sqrt(d1); id[y*S+x] = best;
+    }
+  }
+  return {edge, id};
+}
+// Kara kaya yüzeyi (opak): plaka başına ton farkı, pürüz, kenarda kızıllık.
+// Lav (toplamalı): yalnız çatlakların içi parlar. İkisi aynı hücrelerden.
+function hellSurfaceTextures(){
+  const S = 512, {edge, id} = stoneCells(S), r = seeded(13);
+  const rc = canvas(S), lc = canvas(S), rg = rc.getContext('2d'), lg = lc.getContext('2d');
+  const rd = rg.createImageData(S, S), ld = lg.createImageData(S, S);
+  for(let y=0;y<S;y++) for(let x=0;x<S;x++){
+    const k = y*S+x, e = edge[k], rr = Math.hypot(x-S/2, y-S/2)/(S/2);
+    const inLabel = rr < 0.27;
+    const crack = inLabel ? 0 : Math.max(0, 1 - e/2.6), heat = inLabel ? 0 : Math.max(0, 1 - e/9);
+    const grain = r()*18;
+    let v = 38 + id[k]*30 + grain - Math.min(1, rr)*14;          // plaka tonu
+    v *= 1 - Math.max(0, 1 - e/5)*0.75;                          // kenara doğru kararır
+    rd.data[k*4] = v + heat*55; rd.data[k*4+1] = v*0.92 + heat*8; rd.data[k*4+2] = v*0.88; rd.data[k*4+3] = 255;
+    const a = Math.min(1, crack*1.1 + heat*0.35);
+    ld.data[k*4] = 255; ld.data[k*4+1] = 70 + crack*170; ld.data[k*4+2] = 10 + crack*crack*110; ld.data[k*4+3] = a*255;
+  }
+  rg.putImageData(rd, 0, 0); lg.putImageData(ld, 0, 0);
+  return {rock:tex(rc), lava:tex(lc)};
+}
+// Alev şeridi: u = çevre (tekrarlı), v = 0 iç kenar → 1 dış kenar.
+function flameTexture(){
+  const W = 512, H = 128, c = canvas(W, H), g = c.getContext('2d'), r = seeded(7);
+  for(let i=0;i<70;i++){
+    const x = r()*W, h = H*(0.35 + r()*0.6), w = 10 + r()*26;
+    for(const dx of [-W, 0, W]){
+      const gr = g.createLinearGradient(0, 0, 0, h);
+      gr.addColorStop(0,'rgba(255,200,90,.9)'); gr.addColorStop(0.35,'rgba(255,110,20,.6)'); gr.addColorStop(1,'rgba(200,30,0,0)');
+      g.fillStyle = gr; g.beginPath();
+      g.moveTo(x+dx-w, 0); g.quadraticCurveTo(x+dx-w*0.4, h*0.6, x+dx+(r()-0.5)*w, h); g.quadraticCurveTo(x+dx+w*0.4, h*0.6, x+dx+w, 0);
+      g.closePath(); g.fill();
+    }
+  }
+  return tex(c, true);
+}
+// Paslı diken (yukarıdan): uzun sivri üçgen, ortasından ışık alan sırt.
+function spikeTexture(){
+  const W = 64, H = 256, c = canvas(W, H), g = c.getContext('2d');
+  const body = g.createLinearGradient(0,0,W,0);
+  body.addColorStop(0,'#2a140a'); body.addColorStop(0.45,'#8a4a26'); body.addColorStop(0.55,'#c27a44'); body.addColorStop(1,'#1e0f08');
+  g.fillStyle = body; g.beginPath(); g.moveTo(W*0.1, H); g.lineTo(W/2, 0); g.lineTo(W*0.9, H); g.closePath(); g.fill();
+  const tip = g.createLinearGradient(0,0,0,H);
+  tip.addColorStop(0,'rgba(0,0,0,0)'); tip.addColorStop(0.75,'rgba(0,0,0,0)'); tip.addColorStop(1,'rgba(255,90,20,.55)');
+  g.fillStyle = tip; g.beginPath(); g.moveTo(W*0.1, H); g.lineTo(W/2, 0); g.lineTo(W*0.9, H); g.closePath(); g.fill();
+  return tex(c);
+}
+// Şimşek: parlak çekirdekli zikzak + dal, mavi-beyaz hâle.
+function boltTexture(seed){
+  const W = 512, H = 128, c = canvas(W, H), g = c.getContext('2d'), r = seeded(seed);
+  const path = (x0, y0, x1, n, amp)=>{ const p = [[x0, y0]]; for(let i=1;i<=n;i++){ p.push([x0 + (x1-x0)*i/n, y0 + (r()-0.5)*amp]); } return p; };
+  const main = path(0, H/2, W, 22, 46), br = path(main[9][0], main[9][1], main[9][0] + 150, 8, 40).map(([x,y],i)=>[x, y + i*4]);
+  for(const [lw, col] of [[14,'rgba(90,150,255,.18)'],[6,'rgba(150,200,255,.5)'],[2.2,'rgba(255,255,255,1)']]){
+    g.strokeStyle = col; g.lineCap = 'round'; g.lineJoin = 'round';
+    for(const [p, k] of [[main, 1],[br, 0.6]]){
+      g.lineWidth = lw*k; g.beginPath(); p.forEach(([x,y],i)=>i ? g.lineTo(x,y) : g.moveTo(x,y)); g.stroke();
+    }
+  }
+  return tex(c);
+}
+function hellBackground(){
+  const S = 1024, c = canvas(S), g = c.getContext('2d'), r = seeded(21);
+  const bg = g.createRadialGradient(S/2, S*0.55, 0, S/2, S*0.55, S*0.7);
+  bg.addColorStop(0,'#4a0f05'); bg.addColorStop(0.45,'#1c0604'); bg.addColorStop(1,'#060202');
+  g.fillStyle = bg; g.fillRect(0,0,S,S);
+  for(let i=0;i<26;i++){
+    const x = r()*S, y = r()*S, rad = 80 + r()*220;
+    const gr = g.createRadialGradient(x,y,0,x,y,rad);
+    gr.addColorStop(0, `rgba(${30+r()*30},${12+r()*10},${10},${0.25})`); gr.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle = gr; g.beginPath(); g.arc(x,y,rad,0,Math.PI*2); g.fill();
+  }
+  for(let i=0;i<260;i++){
+    const x = r()*S, y = r()*S, s = r()<0.1 ? 3 : 1.5;
+    g.fillStyle = `rgba(255,${120+r()*100},${40},${0.25 + r()*0.6})`; g.fillRect(x, y, s, s);
+  }
+  return tex(c);
+}
+function buildHell(world){
+  const group = new THREE.Group();
+  const surf = hellSurfaceTextures();
+  const rock = discLayer(world, surf.rock, {opacity:1}, 0.0003);
+  const lava = discLayer(world, surf.lava, {blending:ADD, opacity:0.9}, 0.0006);
+  // Kenarda yanan alev halkası (iki şerit ters yönde akar) + kızıl kenar.
+  // flipY kapalı: alevin dibi (doku üstü) şeridin iç kenarına, plağa otursun.
+  const fTex = flameTexture(), fTex2 = flameTexture(); fTex.flipY = fTex2.flipY = false; fTex2.repeat.x = -1;
+  const fire = new THREE.Mesh(ringStrip(DISC_R*1.075, DISC_R*0.17, 200, 5, TOP_Y-0.001), basicMat({map:fTex, blending:ADD, opacity:0.8}));
+  const fire2 = new THREE.Mesh(ringStrip(DISC_R*1.06, DISC_R*0.13, 200, 4, TOP_Y-0.0008), basicMat({map:fTex2, blending:ADD, opacity:0.55}));
+  group.add(fire, fire2, glowRim('#ff4a12', DISC_R*1.004, 0.005, 0.7));
+  // Diş gibi paslı dikenler: plakla döner, iki boy dönüşümlü.
+  const sTex = softDot();
+  const spikes = new THREE.Group(), spMat = basicMat({map:spikeTexture(), opacity:1});
+  const SN = 20;
+  for(let i=0;i<SN;i++){
+    const big = i%2 === 0, len = big ? 0.2 : 0.13, wid = big ? 0.034 : 0.026;
+    const pg = new THREE.PlaneGeometry(wid, len); pg.translate(0, len/2, 0); pg.rotateX(-Math.PI/2);
+    const m = new THREE.Mesh(pg, spMat);
+    const a = i/SN*Math.PI*2 + 0.08;
+    m.position.set(Math.cos(a)*DISC_R*0.97, TOP_Y-0.004, Math.sin(a)*DISC_R*0.97);
+    m.rotation.y = -a - Math.PI/2;
+    spikes.add(m);
+  }
+  world.recordSpin.add(spikes);
+  // Yükselen közler (plağın altındaki "hava" katmanında, ekran düzleminde).
+  const air = new THREE.Group(); group.add(air);
+  const EN = 46, embers = new THREE.InstancedMesh(new THREE.PlaneGeometry(1,1), basicMat({map:sTex, blending:ADD, opacity:1}), EN);
+  embers.frustumCulled = false; air.add(embers);
+  const em = Array.from({length:EN}, ()=>({x:rnd(-1.3,1.3), y:rnd(-1.7,1.7), s:rnd(0.006,0.016), sp:rnd(0.6,1.4), ph:rnd(0,9)}));
+  const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = new THREE.Vector3(), P = new THREE.Vector3(), C = new THREE.Color(), hot = new THREE.Color('#ff7a2a');
+  // Şimşekler: plağın üstünden çakıp söner (her 5 notada + ara ara kendiliğinden).
+  const bolts = [boltTexture(3), boltTexture(11)].map(map=>{
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 0.25), basicMat({map, blending:ADD, opacity:0, depthTest:false}));
+    m.rotation.x = -Math.PI/2; m.renderOrder = 5; group.add(m); return {m, t:-1};
+  });
+  let notes = 0, kick = 0, nextBolt = 6;
+  const strike = t=>{
+    const b = bolts.find(b=>b.t < 0) || bolts[0];
+    const a = Math.random()*Math.PI*2, len = rnd(0.5, 0.8);
+    b.m.scale.set(len, 1, rnd(0.8, 1.2));
+    b.m.position.set(Math.cos(a)*rnd(0.05, 0.2), TOP_Y + 0.03, Math.sin(a)*rnd(0.05, 0.2));
+    b.m.rotation.z = rnd(0, Math.PI*2);
+    b.t = t;
+  };
+  return {
+    group, label:'assets3d/themes/hellsanthem/label.jpg', background:hellBackground(),
+    vinyl:'#2a2522', armMetal:'#6a5c55', stars:0, nebula:0, dust:0, sheen:0.03, bloom:0.55,
+    ringColor:'#ffb066', ringBaseColor:'#e0a272', ringBase:0.22, ringFlash:'#ff6a1a',
+    layout(){ air.position.set(0, -0.12, 0); air.rotation.set(-Math.PI/2, 0, 0); },
+    onNote(){ kick = 1; notes++; if(notes % 5 === 0) nextBolt = 0; },
+    update(dt, t, f){
+      kick = Math.max(0, kick - 0.03*dt);
+      lava.material.opacity = 0.7 + 0.2*Math.sin(t*2.2) + kick*0.3;
+      fTex.offset.x = (t*0.03)%1; fTex2.offset.x = (-t*0.045)%1;
+      fire.material.opacity = 0.72 + Math.sin(t*9)*0.06 + Math.sin(t*23)*0.04;
+      for(let i=0;i<EN;i++){
+        const e = em[i];
+        e.y += 0.0012*e.sp*dt; e.x += Math.sin(t*0.8*e.sp + e.ph)*0.0004*dt;
+        if(e.y > 1.75){ e.y = -1.75; e.x = rnd(-1.3, 1.3); }
+        P.set(e.x, e.y, 0.01); S.set(e.s, e.s, 1); M.compose(P, Q, S); embers.setMatrixAt(i, M);
+        embers.setColorAt(i, C.copy(hot).multiplyScalar(0.5 + 0.5*Math.sin(t*4*e.sp + e.ph)));
+      }
+      embers.instanceMatrix.needsUpdate = true; embers.instanceColor.needsUpdate = true;
+      if(f.inGame && t > nextBolt){ strike(t); nextBolt = t + rnd(7, 14); }
+      for(const b of bolts){
+        if(b.t < 0) continue;
+        const e = t - b.t;
+        if(e > 0.38){ b.t = -1; b.m.material.opacity = 0; continue; }
+        b.m.material.opacity = (e < 0.06 || (e > 0.12 && e < 0.2) ? 1 : 0.25) * (1 - e/0.38);
+      }
+    },
+    dispose(){
+      for(const o of [rock, lava, spikes]){ world.recordSpin.remove(o); o.traverse(x=>{ if(x.geometry) x.geometry.dispose(); if(x.material){ if(x.material.map) x.material.map.dispose(); x.material.dispose(); } }); }
+    },
+  };
+}
+
+// ---------------- Tribal Pulse ----------------
+// Ahşap plak: koyu ceviz halkaları + oyun halkalarının arasında yeşil kabile
+// desen bantları (dışta oklar, aralarda kare spiraller ve baklavalar).
+function woodTexture(){
+  const S = 1024, c = canvas(S), g = c.getContext('2d'), r = seeded(5), C = S/2;
+  g.fillStyle = '#3b1d12'; g.fillRect(0,0,S,S);
+  for(let rr=C; rr>8; rr -= 3 + r()*5){
+    const v = r();
+    g.strokeStyle = v < 0.5 ? `rgba(20,8,4,${0.25 + r()*0.3})` : `rgba(110,60,34,${0.12 + r()*0.18})`;
+    g.lineWidth = 1 + r()*2.5; g.beginPath(); g.arc(C + (r()-0.5)*3, C + (r()-0.5)*3, rr, 0, Math.PI*2); g.stroke();
+  }
+  for(let i=0;i<2600;i++){ g.fillStyle = `rgba(0,0,0,${r()*0.12})`; g.fillRect(r()*S, r()*S, 1 + r()*3, 1); }
+  return tex(c);
+}
+function tribalPattern(){
+  const S = 1024, c = canvas(S), g = c.getContext('2d'), C = S/2, R = S/2;
+  g.strokeStyle = '#8fd14a'; g.fillStyle = '#8fd14a'; g.lineCap = 'round'; g.lineJoin = 'round';
+  const around = (rad, n, draw)=>{ for(let i=0;i<n;i++){ const a = i/n*Math.PI*2; g.save(); g.translate(C + Math.cos(a)*rad, C + Math.sin(a)*rad); g.rotate(a + Math.PI/2); draw(i); g.restore(); } };
+  const band = (r0, r1)=>{ g.lineWidth = 2.5; for(const rr of [r0, r1]){ g.beginPath(); g.arc(C, C, rr, 0, Math.PI*2); g.stroke(); } };
+  // Dış bant: oklar (chevron)
+  band(R*0.895, R*0.965);
+  around(R*0.93, 64, ()=>{ g.lineWidth = 4; g.beginPath(); g.moveTo(-9, -9); g.lineTo(0, 0); g.lineTo(-9, 9); g.stroke(); });
+  // Orta bant: kare spiraller
+  band(R*0.705, R*0.8);
+  around(R*0.7525, 40, i=>{ g.lineWidth = 3; const s = 16; g.strokeRect(-s, -s, s*2, s*2); if(i%2){ g.strokeRect(-s*0.45, -s*0.45, s*0.9, s*0.9); } else { g.beginPath(); g.moveTo(-s*0.6, 0); g.lineTo(0, -s*0.6); g.lineTo(s*0.6, 0); g.lineTo(0, s*0.6); g.closePath(); g.stroke(); } });
+  // İç bant: baklavalar + noktalar
+  band(R*0.49, R*0.575);
+  around(R*0.5325, 30, i=>{ g.lineWidth = 3; g.beginPath(); g.moveTo(0, -15); g.lineTo(13, 0); g.lineTo(0, 15); g.lineTo(-13, 0); g.closePath(); g.stroke(); g.beginPath(); g.arc(0, 0, 3.5, 0, Math.PI*2); g.fill(); });
+  return tex(c);
+}
+// Oymalı tiki totem (yukarıdan ışıklı kontur, kehribar).
+function totemTexture(){
+  const W = 160, H = 260, c = canvas(W, H), g = c.getContext('2d');
+  g.fillStyle = '#2a170d'; g.strokeStyle = '#ffb347'; g.lineWidth = 4; g.lineJoin = 'round';
+  g.beginPath(); g.moveTo(30, H-8); g.lineTo(26, 40); g.quadraticCurveTo(W/2, 4, W-26, 40); g.lineTo(W-30, H-8); g.closePath(); g.fill(); g.stroke();
+  g.lineWidth = 5;
+  g.beginPath(); g.moveTo(44, 78); g.lineTo(70, 92); g.lineTo(44, 100); g.stroke();
+  g.beginPath(); g.moveTo(W-44, 78); g.lineTo(W-70, 92); g.lineTo(W-44, 100); g.stroke();
+  g.beginPath(); g.moveTo(W/2, 104); g.lineTo(W/2-10, 140); g.lineTo(W/2+10, 140); g.stroke();
+  g.strokeRect(48, 160, W-96, 34); for(let x=56; x<W-48; x+=12){ g.beginPath(); g.moveTo(x, 160); g.lineTo(x, 194); g.stroke(); }
+  g.beginPath(); g.moveTo(40, 218); g.lineTo(W-40, 218); g.stroke();
+  return tex(c);
+}
+function forestBackground(){
+  const S = 1024, c = canvas(S), g = c.getContext('2d'), r = seeded(9);
+  const bg = g.createLinearGradient(0,0,0,S);
+  bg.addColorStop(0,'#120a06'); bg.addColorStop(0.5,'#21110a'); bg.addColorStop(1,'#0a0503');
+  g.fillStyle = bg; g.fillRect(0,0,S,S);
+  const haze = g.createRadialGradient(S/2, S*0.35, 0, S/2, S*0.35, S*0.55);
+  haze.addColorStop(0,'rgba(140,80,30,.35)'); haze.addColorStop(1,'rgba(0,0,0,0)');
+  g.fillStyle = haze; g.fillRect(0,0,S,S);
+  // Ağaç siluetleri (dikey ekranda kenarlarda kalsınlar diye orta-yanlara)
+  const tree = (x, w, lean)=>{
+    g.fillStyle = 'rgba(8,4,2,.85)';
+    g.beginPath(); g.moveTo(x-w, S); g.quadraticCurveTo(x-w*0.6+lean, S*0.5, x+lean*2, -10); g.lineTo(x+lean*2+w*0.5, -10); g.quadraticCurveTo(x+w*0.6+lean, S*0.5, x+w, S); g.fill();
+    g.strokeStyle = 'rgba(8,4,2,.8)'; g.lineCap = 'round';
+    for(let k=0;k<5;k++){ const y = S*(0.1 + r()*0.5), d = r()<0.5 ? -1 : 1; g.lineWidth = 3 + r()*5; g.beginPath(); g.moveTo(x+lean, y); g.quadraticCurveTo(x + d*60, y - 40, x + d*(110 + r()*80), y - 90 - r()*60); g.stroke(); }
+  };
+  tree(S*0.27, 26, -8); tree(S*0.73, 30, 10); tree(S*0.14, 40, 5); tree(S*0.88, 38, -6);
+  // Alçak çalılar ve parlayan mantarlar
+  for(let i=0;i<40;i++){ const x = r()*S, y = S*(0.86 + r()*0.14), rad = 30 + r()*60; g.fillStyle = 'rgba(14,9,4,.9)'; g.beginPath(); g.ellipse(x, y, rad, rad*0.5, 0, 0, Math.PI*2); g.fill(); }
+  for(let i=0;i<14;i++){ const x = r()*S, y = S*(0.88 + r()*0.1), gr = g.createRadialGradient(x,y,0,x,y,14); gr.addColorStop(0,'rgba(255,190,90,.5)'); gr.addColorStop(1,'rgba(255,150,60,0)'); g.fillStyle = gr; g.beginPath(); g.arc(x,y,14,0,Math.PI*2); g.fill(); }
+  return tex(c);
+}
+function buildTribal(world){
+  const group = new THREE.Group();
+  const wood = discLayer(world, woodTexture(), {opacity:1}, 0.0003);
+  const patTex = tribalPattern();
+  const pattern = discLayer(world, patTex, {opacity:0.5, color:'#9fdc5a'}, 0.0005);
+  const patGlow = discLayer(world, patTex, {blending:ADD, opacity:0, color:'#7dff4a'}, 0.0007);
+  // Ahşap kenar: ceviz şerit + sıcak ince hâle.
+  const rimC = canvas(8, 64), rg = rimC.getContext('2d'), rgr = rg.createLinearGradient(0,0,0,64);
+  rgr.addColorStop(0,'#2a140a'); rgr.addColorStop(0.5,'#8a4f2a'); rgr.addColorStop(1,'#3a1d10');
+  rg.fillStyle = rgr; rg.fillRect(0,0,8,64);
+  const rim = new THREE.Mesh(ringStrip(DISC_R*1.012, DISC_R*0.04, 200, 1, TOP_Y+0.0004), basicMat({map:tex(rimC), opacity:1}));
+  group.add(rim, glowRim('#ffb060', DISC_R*1.035, 0.012, 0.12));
+  // Kehribar ışıklı iki totem (sol alt, sağ alt) — notada parlarlar.
+  const tTex = totemTexture();
+  const totems = [0, 1].map(()=>{
+    const o = new THREE.Group(), m = new THREE.Mesh(new THREE.PlaneGeometry(0.07, 0.07*260/160), basicMat({map:tTex, opacity:0.95}));
+    const glow = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.2), basicMat({map:softDot(), color:'#ff9a3a', blending:ADD, opacity:0.18}));
+    glow.position.z = -0.001; o.add(glow, m); group.add(o); return {o, m, glow};
+  });
+  // Ateşböcekleri: süzülüp yanıp sönen sarı-yeşil noktalar.
+  const air = new THREE.Group(); group.add(air);
+  const FN = 34, flies = new THREE.InstancedMesh(new THREE.PlaneGeometry(1,1), basicMat({map:softDot(), blending:ADD, opacity:1}), FN);
+  flies.frustumCulled = false; air.add(flies);
+  const fl = Array.from({length:FN}, ()=>({x:rnd(-1.3,1.3), y:rnd(-1.7,1.7), s:rnd(0.008,0.016), sp:rnd(0.4,1), ph:rnd(0,9)}));
+  const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = new THREE.Vector3(), P = new THREE.Vector3(), C = new THREE.Color(), fc = new THREE.Color('#c8ff6a');
+  let kick = 0;
+  return {
+    group, label:'assets3d/themes/tribalpulse/label.jpg', background:forestBackground(),
+    vinyl:'#4a2a1a', armMetal:'#e6dac0', stars:0, nebula:0, dust:0, sheen:0.05, bloom:0.35,
+    ringColor:'#b9e08a', ringBaseColor:'#e6c99c', ringBase:0.15, ringFlash:'#7dff4a',
+    layout(view){
+      const sl = slots(view);
+      air.position.set(0, -0.12, 0); air.rotation.set(-Math.PI/2, 0, 0);
+      placeAt(totems[0].o, view, sl.bl[0], sl.bl[1], 0.03, 0.08);
+      placeAt(totems[1].o, view, sl.br[0], sl.br[1], 0.03, 0.08);
+    },
+    onNote(){ kick = 1; },
+    update(dt, t){
+      kick = Math.max(0, kick - 0.035*dt);
+      const beat = beatAt(t);
+      patGlow.material.opacity = beat*0.08 + kick*0.55;
+      totems.forEach((tm, i)=>{ tm.glow.material.opacity = 0.14 + 0.06*Math.sin(t*1.3 + i*2) + kick*0.3; });
+      for(let i=0;i<FN;i++){
+        const e = fl[i];
+        e.x += Math.sin(t*0.4*e.sp + e.ph)*0.0006*dt; e.y += Math.cos(t*0.3*e.sp + e.ph*1.7)*0.0005*dt;
+        if(e.x > 1.35) e.x = -1.35; if(e.x < -1.35) e.x = 1.35; if(e.y > 1.75) e.y = -1.75; if(e.y < -1.75) e.y = 1.75;
+        P.set(e.x, e.y, 0.01); S.set(e.s, e.s, 1); M.compose(P, Q, S); flies.setMatrixAt(i, M);
+        const blink = Math.max(0, Math.sin(t*1.6*e.sp + e.ph)); flies.setColorAt(i, C.copy(fc).multiplyScalar(blink*blink));
+      }
+      flies.instanceMatrix.needsUpdate = true; flies.instanceColor.needsUpdate = true;
+    },
+    dispose(){
+      for(const o of [wood, pattern, patGlow]){ world.recordSpin.remove(o); o.geometry.dispose(); if(o.material.map) o.material.map.dispose(); o.material.dispose(); }
+    },
+  };
+}
+
+const BUILDERS = {neon:buildRetro, synthbeats:buildSynth, urbansounds:buildUrban, cosmicsoundwave:buildCosmic, hellsanthem:buildHell, tribalpulse:buildTribal};
 
 export function buildThemeScene(key, world){
   const b = BUILDERS[key] || BUILDERS.neon;
