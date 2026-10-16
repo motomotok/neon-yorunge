@@ -265,6 +265,10 @@ function render(f){
   else trackFps(dtMs);
   const t = now*0.001, dt = f.dt || 1;
   if(f.W !== W || f.H !== H) resize(f.W, f.H, f.base);
+  // Tema önce değişmeli: setTheme eski arka plan dokusunu siler; o karede
+  // sahne hâlâ eski dokuyu gösterirse three onu yeniden yükler ve bir daha
+  // hiç silinmez (her tema değişiminde ~5 MB GPU sızıntısı).
+  world.setTheme(f.themeKey, f.theme);
   if(!bgDef){
     // Tema arka planı (ör. Urban'da neon şehir, Cosmic'te uzay) yoksa düz tema rengi.
     const tb = world.themeBackground;
@@ -274,7 +278,6 @@ function render(f){
       scene.background.set(f.theme.bg0);
     }
   }
-  world.setTheme(f.themeKey, f.theme);
   world.setRingStyle(f.ringStyle);
   world.update(dt, t, f);
   f.recordAngle = world.recordSpin.rotation.y;
@@ -347,7 +350,8 @@ function menuAnchors(xMin, xMax){
 function info(){
   return {quality:qualityLive, preference:qualityPref, fps:Math.round(fps.value), dpr:Math.round(dprCur*100)/100,
     bloom:!!composer, gpu:gpuName, gpuTier, failed, missingAssets:loadErrors.slice(),
-    scratchPoints: entities ? entities.scratch.pts.length : 0};
+    scratchPoints: entities ? entities.scratch.pts.length : 0,
+    gpuMem: renderer ? Object.assign({}, renderer.info.memory) : null, themeMs: world && world.themeScene ? world.themeScene.buildMs : null};
 }
 
 window.Render3D = { supported, init, warm, resize, render, setQuality, info, fail, menuAnchors };

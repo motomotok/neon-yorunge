@@ -1062,6 +1062,7 @@ function buildHell(world){
       }
     },
     dispose(){
+      batA.dispose(); batB.dispose();   // kanat kareleri materyalde dönüşümlü; biri traverse'e hiç denk gelmez
       for(const o of [rock, lava, spikes]){ world.recordSpin.remove(o); o.traverse(x=>{ if(x.geometry) x.geometry.dispose(); if(x.material){ if(x.material.map) x.material.map.dispose(); x.material.dispose(); } }); }
     },
   };
@@ -2093,7 +2094,9 @@ const BUILDERS = {neon:buildRetro, synthbeats:buildSynth, urbansounds:buildUrban
 
 export function buildThemeScene(key, world){
   const b = BUILDERS[key] || BUILDERS.neon;
+  const t0 = performance.now();
   const sc = b(world);
+  sc.buildMs = Math.round(performance.now() - t0);   // tanı: Render3D.info().themeMs
   sc.key = key;
   sc.labelPromise = sc.label ? loadTexture(sc.label) : Promise.resolve(null);
   return sc;
