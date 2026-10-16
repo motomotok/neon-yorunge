@@ -689,6 +689,152 @@ function discLayer(world, map, opts, y){
   return m;
 }
 
+// ---------------- Hell's Anthem ve Lo-Fi: plak dışı süsler ----------------
+// Diğer temalardaki gibi (VU metre, Satürn, neon tabela) plağın dışındaki boş
+// alanlara konur: kameraya dönük düz görseller, bir kez çizilir, yalnız
+// konum/ölçek/opaklıkla canlandırılır.
+
+// Demir mangal: üç ayaklı kase, kenarında kor parıltısı.
+function brazierTexture(){
+  const W = 256, H = 200, c = canvas(W, H), g = c.getContext('2d');
+  g.strokeStyle = '#1c1512'; g.lineWidth = 9; g.lineCap = 'round';
+  for(const [x0, x1] of [[70, 40], [128, 128], [186, 216]]){ g.beginPath(); g.moveTo(x0, 92); g.lineTo(x1, 192); g.stroke(); }
+  const bowl = g.createLinearGradient(0, 40, 0, 110);
+  bowl.addColorStop(0, '#3a2c26'); bowl.addColorStop(1, '#120c0a');
+  g.fillStyle = bowl; g.beginPath(); g.moveTo(28, 52); g.quadraticCurveTo(128, 150, 228, 52); g.closePath(); g.fill();
+  const coal = g.createRadialGradient(128, 50, 4, 128, 50, 100);
+  coal.addColorStop(0, '#ffd27a'); coal.addColorStop(0.35, '#ff6a1a'); coal.addColorStop(1, '#5a1004');
+  g.fillStyle = coal; g.beginPath(); g.ellipse(128, 52, 100, 15, 0, 0, Math.PI*2); g.fill();
+  g.strokeStyle = '#6a4a3a'; g.lineWidth = 4; g.beginPath(); g.ellipse(128, 52, 101, 16, 0, 0, Math.PI*2); g.stroke();
+  return tex(c);
+}
+// Tek alev dili (toplamalı): dibi beyaz-sarı, ucu kızıl ve saydam.
+function flameSpriteTexture(){
+  const W = 128, H = 192, c = canvas(W, H), g = c.getContext('2d');
+  const gr = g.createLinearGradient(0, H, 0, 0);
+  gr.addColorStop(0, 'rgba(255,240,190,1)'); gr.addColorStop(0.35, 'rgba(255,150,40,.9)'); gr.addColorStop(0.75, 'rgba(220,40,0,.5)'); gr.addColorStop(1, 'rgba(120,0,0,0)');
+  g.fillStyle = gr; g.beginPath();
+  g.moveTo(W*0.5, 0); g.bezierCurveTo(W*0.62, H*0.3, W*0.98, H*0.55, W*0.82, H*0.88); g.quadraticCurveTo(W*0.5, H*1.02, W*0.18, H*0.88);
+  g.bezierCurveTo(W*0.02, H*0.55, W*0.38, H*0.3, W*0.5, 0); g.fill();
+  return tex(c);
+}
+// Yerdeki lav yarığı (toplamalı): zikzak, ortası beyaz-sarı.
+function fissureTexture(){
+  const W = 512, H = 96, c = canvas(W, H), g = c.getContext('2d'), r = seeded(99);
+  const pts = []; for(let i=0;i<=24;i++) pts.push([i/24*W, H/2 + (r()-0.5)*36*Math.sin(i/24*Math.PI)]);
+  for(const [lw, col] of [[26,'rgba(255,60,0,.18)'],[11,'rgba(255,110,20,.6)'],[3.5,'rgba(255,230,150,1)']]){
+    g.strokeStyle = col; g.lineWidth = lw; g.lineCap = 'round'; g.lineJoin = 'round';
+    g.beginPath(); pts.forEach(([x,y],i)=>{ const k = Math.sin(i/24*Math.PI); g.lineWidth = lw*(0.25 + k*0.75); if(i) g.lineTo(x,y); else g.moveTo(x,y); }); g.stroke();
+  }
+  return tex(c);
+}
+// Yarasa silueti: kanat yukarı (frame 0) / aşağı (frame 1).
+function batTexture(frame){
+  const W = 128, H = 64, c = canvas(W, H), g = c.getContext('2d');
+  g.fillStyle = '#0b0606'; g.strokeStyle = 'rgba(255,90,30,.35)'; g.lineWidth = 1.5;
+  const wy = frame ? 46 : 10, mid = 32;
+  g.beginPath();
+  g.moveTo(64, mid - 4); g.quadraticCurveTo(40, wy, 4, wy + (frame ? -8 : 12)); g.quadraticCurveTo(20, mid + 2, 30, mid + 8);
+  g.quadraticCurveTo(40, mid + 2, 48, mid + 10); g.quadraticCurveTo(56, mid + 4, 64, mid + 10);
+  g.quadraticCurveTo(72, mid + 4, 80, mid + 10); g.quadraticCurveTo(88, mid + 2, 98, mid + 8);
+  g.quadraticCurveTo(108, mid + 2, 124, wy + (frame ? -8 : 12)); g.quadraticCurveTo(88, wy, 64, mid - 4);
+  g.fill(); g.stroke();
+  g.beginPath(); g.ellipse(64, mid + 2, 7, 9, 0, 0, Math.PI*2); g.fill();
+  return tex(c);
+}
+
+// Lo-Fi: yağmurlu gece penceresi (ahşap çerçeve, içeriden sıcak yansıma).
+function windowTexture(){
+  const W = 256, H = 320, c = canvas(W, H), g = c.getContext('2d'), r = seeded(31);
+  const glass = g.createLinearGradient(0, 0, 0, H);
+  glass.addColorStop(0, '#1d2a3a'); glass.addColorStop(1, '#2e3346');
+  g.fillStyle = glass; g.fillRect(16, 16, W-32, H-32);
+  for(let i=0;i<14;i++){ const x = 30 + r()*(W-60), y = 40 + r()*(H*0.45); g.fillStyle = `rgba(255,${200 + r()*40},${120 + r()*60},${0.25 + r()*0.4})`; g.fillRect(x, y, 3 + r()*4, 4 + r()*5); }   // uzak şehir ışıkları
+  const warm = g.createRadialGradient(W*0.7, H*0.85, 0, W*0.7, H*0.85, W*0.7);
+  warm.addColorStop(0, 'rgba(255,190,120,.25)'); warm.addColorStop(1, 'rgba(255,190,120,0)');
+  g.fillStyle = warm; g.fillRect(0, 0, W, H);
+  g.strokeStyle = '#6a4630'; g.lineWidth = 16; g.strokeRect(8, 8, W-16, H-16);
+  g.lineWidth = 9; g.beginPath(); g.moveTo(W/2, 12); g.lineTo(W/2, H-12); g.moveTo(12, H*0.48); g.lineTo(W-12, H*0.48); g.stroke();
+  g.fillStyle = '#7a5238'; g.fillRect(0, H-20, W, 20);   // pencere pervazı
+  return tex(c);
+}
+// Camdan süzülen damlalar (tekrarlı, aşağı kaydırılır).
+function windowRainTexture(){
+  const W = 128, H = 256, c = canvas(W, H), g = c.getContext('2d'), r = seeded(8);
+  for(let i=0;i<26;i++){
+    const x = r()*W, y = r()*H, l = 10 + r()*30;
+    const gr = g.createLinearGradient(0, y - l, 0, y); gr.addColorStop(0, 'rgba(200,230,255,0)'); gr.addColorStop(1, 'rgba(220,240,255,.7)');
+    g.strokeStyle = gr; g.lineWidth = 1.5; g.beginPath(); g.moveTo(x, y - l); g.lineTo(x, y); g.stroke();
+    g.fillStyle = 'rgba(230,245,255,.8)'; g.beginPath(); g.arc(x, y, 1.8, 0, Math.PI*2); g.fill();
+  }
+  const t = tex(c, true); t.wrapT = THREE.RepeatWrapping; return t;
+}
+// Saksıda monstera.
+function plantTexture(){
+  const W = 256, H = 320, c = canvas(W, H), g = c.getContext('2d');
+  const leaf = (x, y, a, s, col)=>{
+    g.save(); g.translate(x, y); g.rotate(a); g.fillStyle = col;
+    g.beginPath(); g.moveTo(0, 0); g.bezierCurveTo(s*0.9, -s*0.3, s*0.8, -s*1.2, 0, -s*1.35); g.bezierCurveTo(-s*0.8, -s*1.2, -s*0.9, -s*0.3, 0, 0); g.fill();
+    g.strokeStyle = 'rgba(20,40,20,.8)'; g.lineWidth = 3;
+    for(const k of [0.35, 0.65, 0.95]){ g.beginPath(); g.moveTo(s*0.75, -s*k); g.lineTo(s*0.25, -s*(k+0.05)); g.moveTo(-s*0.75, -s*k); g.lineTo(-s*0.25, -s*(k+0.05)); g.stroke(); }
+    g.beginPath(); g.moveTo(0, 0); g.lineTo(0, -s*1.3); g.stroke();
+    g.restore();
+  };
+  leaf(128, 210, -0.9, 70, '#3f6a3a'); leaf(128, 210, 0.85, 72, '#4c7a42'); leaf(128, 200, -0.25, 82, '#5a8a4c'); leaf(128, 205, 0.3, 68, '#46743f');
+  const pot = g.createLinearGradient(80, 0, 176, 0); pot.addColorStop(0, '#9a5a3a'); pot.addColorStop(0.5, '#c27a52'); pot.addColorStop(1, '#8a4e30');
+  g.fillStyle = pot; g.beginPath(); g.moveTo(76, 210); g.lineTo(180, 210); g.lineTo(166, 312); g.lineTo(90, 312); g.closePath(); g.fill();
+  g.fillStyle = '#b06a46'; g.fillRect(70, 204, 116, 16);
+  return tex(c);
+}
+// Kahve kupası (hafif yukarıdan): krem seramik, koyu kahve yüzeyi.
+function mugTexture(){
+  const W = 256, H = 220, c = canvas(W, H), g = c.getContext('2d');
+  g.strokeStyle = '#e8dccb'; g.lineWidth = 18; g.beginPath(); g.ellipse(196, 120, 34, 44, 0, -1.2, 1.2); g.stroke();   // kulp
+  const body = g.createLinearGradient(40, 0, 200, 0); body.addColorStop(0, '#cfc2b0'); body.addColorStop(0.45, '#f6ecdf'); body.addColorStop(1, '#bfb19e');
+  g.fillStyle = body; g.beginPath(); g.moveTo(40, 60); g.lineTo(44, 190); g.quadraticCurveTo(122, 218, 200, 190); g.lineTo(204, 60); g.closePath(); g.fill();
+  g.fillStyle = '#efe5d6'; g.beginPath(); g.ellipse(122, 60, 82, 22, 0, 0, Math.PI*2); g.fill();
+  const coffee = g.createRadialGradient(110, 56, 4, 122, 60, 74); coffee.addColorStop(0, '#7a4a2c'); coffee.addColorStop(1, '#3a2014');
+  g.fillStyle = coffee; g.beginPath(); g.ellipse(122, 61, 72, 17, 0, 0, Math.PI*2); g.fill();
+  g.fillStyle = 'rgba(255,240,220,.35)'; g.beginPath(); g.ellipse(100, 58, 20, 5, -0.2, 0, Math.PI*2); g.fill();   // köpük ışığı
+  g.fillStyle = '#e9a0a6'; g.beginPath(); g.arc(122, 130, 13, 0, Math.PI*2); g.fill();   // kupadaki küçük kalp
+  g.beginPath(); g.moveTo(109, 132); g.lineTo(122, 150); g.lineTo(135, 132); g.fill();
+  return tex(c);
+}
+// Buhar kıvrımı (yumuşak, saydam).
+function steamTexture(){
+  const W = 64, H = 192, c = canvas(W, H), g = c.getContext('2d');
+  for(let k=0;k<3;k++){
+    g.strokeStyle = `rgba(255,255,255,${0.10 + k*0.06})`; g.lineWidth = 14 - k*4; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(W/2, H); g.bezierCurveTo(W*0.1, H*0.7, W*0.9, H*0.45, W/2, H*0.25); g.quadraticCurveTo(W*0.2, H*0.12, W*0.5, 0); g.stroke();
+  }
+  return tex(c);
+}
+// Kıvrılıp uyuyan kedi (turuncu tekir).
+function catTexture(){
+  const W = 256, H = 160, c = canvas(W, H), g = c.getContext('2d');
+  const fur = g.createRadialGradient(110, 80, 10, 120, 92, 110); fur.addColorStop(0, '#e2a066'); fur.addColorStop(1, '#a8622e');
+  g.fillStyle = fur;
+  g.beginPath(); g.ellipse(122, 98, 92, 52, 0, 0, Math.PI*2); g.fill();                  // gövde
+  g.beginPath(); g.ellipse(64, 86, 40, 34, -0.2, 0, Math.PI*2); g.fill();                // baş
+  g.beginPath(); g.moveTo(36, 66); g.lineTo(40, 36); g.lineTo(60, 58); g.fill();         // kulaklar
+  g.beginPath(); g.moveTo(70, 56); g.lineTo(86, 32); g.lineTo(94, 62); g.fill();
+  g.strokeStyle = '#a8622e'; g.lineWidth = 22; g.lineCap = 'round';                      // kuyruk sarılı
+  g.beginPath(); g.moveTo(200, 120); g.quadraticCurveTo(170, 158, 100, 140); g.stroke();
+  g.strokeStyle = 'rgba(110,55,20,.55)'; g.lineWidth = 6;                                // tekir çizgileri
+  for(const x of [120, 145, 170]){ g.beginPath(); g.moveTo(x, 52); g.quadraticCurveTo(x + 10, 80, x - 4, 108); g.stroke(); }
+  g.strokeStyle = '#3a2010'; g.lineWidth = 3;                                            // kapalı gözler
+  g.beginPath(); g.arc(52, 86, 7, 0.2, Math.PI - 0.2); g.stroke();
+  g.beginPath(); g.arc(76, 82, 7, 0.2, Math.PI - 0.2); g.stroke();
+  g.fillStyle = '#e88a8a'; g.beginPath(); g.arc(64, 98, 3.5, 0, Math.PI*2); g.fill();
+  return tex(c);
+}
+function zTexture(){
+  const c = canvas(64), g = c.getContext('2d');
+  g.fillStyle = '#ffffff'; g.font = 'bold 46px Georgia, serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText('z', 32, 34);
+  return tex(c);
+}
+
 // ---------------- Hell's Anthem ----------------
 // Kırık taş plakalar: Voronoi hücreleri (ızgara hızlandırmalı, açılışta bir
 // kez ~15 ms). Döner: her pikselin kenar mesafesi ve hücre kimliği.
@@ -822,6 +968,27 @@ function buildHell(world){
   embers.frustumCulled = false; air.add(embers);
   const em = Array.from({length:EN}, ()=>({x:rnd(-1.3,1.3), y:rnd(-1.7,1.7), s:rnd(0.006,0.016), sp:rnd(0.6,1.4), ph:rnd(0,9)}));
   const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = new THREE.Vector3(), P = new THREE.Vector3(), C = new THREE.Color(), hot = new THREE.Color('#ff7a2a');
+  // Plak dışı: iki demir mangal (titreyen alev), yerde lav yarığı, gökte yarasalar.
+  const flameTex = flameSpriteTexture(), brTex = brazierTexture(), glowDot = softDot();
+  const braziers = [0, 1].map(i=>{
+    const o = new THREE.Group(); group.add(o);
+    const BW = 0.085, BH = BW*200/256, coalY = BH*0.24;
+    const glow = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.2), basicMat({map:glowDot, color:'#ff6a1a', blending:ADD, opacity:0.35}));
+    glow.position.set(0, coalY + 0.02, -0.001);
+    const bowl = new THREE.Mesh(new THREE.PlaneGeometry(BW, BH), basicMat({map:brTex}));
+    const fl = [0, 1].map(k=>{
+      const fg = new THREE.PlaneGeometry(k ? 0.034 : 0.05, k ? 0.055 : 0.078); fg.translate(0, k ? 0.0275 : 0.039, 0);
+      const m = new THREE.Mesh(fg, basicMat({map:flameTex, blending:ADD, opacity:k ? 1 : 0.85}));
+      m.position.set(k ? 0.004 : -0.002, coalY, 0.001 + k*0.0005); return m;
+    });
+    o.add(glow, bowl, ...fl); o.scale.setScalar(1.2);
+    return {o, fl, glow, ph:i*1.7};
+  });
+  const fissure = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.094), basicMat({map:fissureTexture(), blending:ADD, opacity:0.7}));
+  const fissureG = new THREE.Group(); fissureG.add(fissure); group.add(fissureG);
+  const batA = batTexture(0), batB = batTexture(1), sky = new THREE.Group(); group.add(sky);
+  const bats = [0, 1, 2].map(()=>{ const m = new THREE.Mesh(new THREE.PlaneGeometry(0.045, 0.0225), basicMat({map:batA, opacity:0})); sky.add(m); return {m, on:false}; });
+  let nextBats = 4;
   // Şimşekler: plağın üstünden çakıp söner (her 5 notada + ara ara kendiliğinden).
   const bolts = [boltTexture(3), boltTexture(11)].map(map=>{
     const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 0.25), basicMat({map, blending:ADD, opacity:0, depthTest:false}));
@@ -840,7 +1007,14 @@ function buildHell(world){
     group, label:'assets3d/themes/hellsanthem/label.jpg', background:hellBackground(),
     vinyl:'#2a2522', armMetal:'#6a5c55', stars:0, nebula:0, dust:0, sheen:0.03, bloom:0.55,
     ringColor:'#ffb066', ringBaseColor:'#e0a272', ringBase:0.22, ringFlash:'#ff6a1a',
-    layout(){ air.position.set(0, -0.12, 0); air.rotation.set(-Math.PI/2, 0, 0); },
+    layout(view){
+      const sl = slots(view);
+      air.position.set(0, -0.12, 0); air.rotation.set(-Math.PI/2, 0, 0);
+      placeAt(braziers[0].o, view, sl.bl[0], sl.bl[1], 0.03, 0.08);
+      placeAt(braziers[1].o, view, sl.br[0], sl.br[1], 0.03, 0.08);
+      placeAt(fissureG, view, 0, sl.bc[1], -0.02, 0.06);
+      placeAt(sky, view, 0, sl.sky, -0.1, -1); sky.visible = true;
+    },
     onNote(){ kick = 1; notes++; if(notes % 5 === 0) nextBolt = 0; },
     update(dt, t, f){
       kick = Math.max(0, kick - 0.03*dt);
@@ -856,6 +1030,28 @@ function buildHell(world){
       }
       embers.instanceMatrix.needsUpdate = true; embers.instanceColor.needsUpdate = true;
       if(f.inGame && t > nextBolt){ strike(t); nextBolt = t + rnd(7, 14); }
+      for(const b of braziers){
+        const q = t*1.0 + b.ph;
+        b.fl[0].scale.set(1 + Math.sin(q*11)*0.07, 1 + Math.sin(q*13.7)*0.12 + Math.sin(q*5.3)*0.08, 1);
+        b.fl[1].scale.set(1 + Math.sin(q*17)*0.1, 1 + Math.sin(q*19.3)*0.16, 1);
+        b.fl[0].rotation.z = Math.sin(q*3.1)*0.06; b.fl[1].rotation.z = Math.sin(q*4.7)*0.09;
+        b.glow.material.opacity = 0.3 + Math.sin(q*9)*0.06 + kick*0.15;
+      }
+      fissure.material.opacity = 0.55 + Math.sin(t*1.7)*0.2 + kick*0.25;
+      // Yarasalar: arada bir sürü halinde gökyüzünden geçer, kanat çırpar.
+      if(t > nextBats && bats.every(b=>!b.on)){
+        const d = Math.random() < 0.5 ? 1 : -1;
+        bats.forEach((b, i)=>{ b.on = true; b.d = d; b.x = -1.3*d - i*0.09*d; b.y = rnd(-0.05, 0.05); b.ph = rnd(0, 6); b.sp = rnd(0.9, 1.15); b.m.scale.x = d; });
+        nextBats = t + rnd(12, 22);
+      }
+      for(const b of bats){
+        if(!b.on){ b.m.material.opacity = 0; continue; }
+        b.x += b.d*0.0042*b.sp*dt;
+        b.m.position.set(b.x, b.y + Math.sin(t*3 + b.ph)*0.012, 0);
+        b.m.material.map = (Math.floor(t*9 + b.ph) % 2) ? batB : batA;
+        b.m.material.opacity = 0.9;
+        if(Math.abs(b.x) > 1.4 && Math.sign(b.x) === b.d) b.on = false;
+      }
       for(const b of bolts){
         if(b.t < 0) continue;
         const e = t - b.t;
@@ -953,13 +1149,58 @@ function buildLofi(world){
   const drops = Array.from({length:RN}, ()=>({x:rnd(-1.4,1.4), y:rnd(-1.8,1.8), sp:rnd(0.9,1.5), l:rnd(0.05,0.11)}));
   const M = new THREE.Matrix4(), Q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1), 0.12), S = new THREE.Vector3(), P = new THREE.Vector3();
   let kick = 0;
+  // Plak dışı: yağmurlu pencere (sol üst), saksı bitkisi (sol alt), buharı
+  // tüten kahve kupası (sağ alt), uyuyan kedi (alt orta).
+  const win = new THREE.Group(); group.add(win); win.scale.setScalar(1.2);
+  const WW = 0.12, WH = WW*320/256;
+  win.add(new THREE.Mesh(new THREE.PlaneGeometry(WW, WH), basicMat({map:windowTexture()})));
+  const wrTex = windowRainTexture();
+  const wrain = new THREE.Mesh(new THREE.PlaneGeometry(WW*0.86, WH*0.8), basicMat({map:wrTex, opacity:0.75}));
+  wrain.position.set(0, 0.004, 0.0005); win.add(wrain);
+  const plant = new THREE.Group(); group.add(plant); plant.scale.setScalar(1.3);
+  const PLW = 0.1, PLH = PLW*320/256, plg = new THREE.PlaneGeometry(PLW, PLH); plg.translate(0, PLH/2, 0);
+  const plantM = new THREE.Mesh(plg, basicMat({map:plantTexture()})); plantM.position.y = -PLH/2; plant.add(plantM);
+  const mug = new THREE.Group(); group.add(mug); mug.scale.setScalar(1.3);
+  const MW = 0.085, MH = MW*220/256;
+  mug.add(new THREE.Mesh(new THREE.PlaneGeometry(MW, MH), basicMat({map:mugTexture()})));
+  const stTex = steamTexture();
+  const steam = [0, 1, 2].map(k=>{
+    const sg = new THREE.PlaneGeometry(0.02, 0.06); sg.translate(0, 0.03, 0);
+    const m = new THREE.Mesh(sg, basicMat({map:stTex, opacity:0})); m.position.set((k-1)*0.012 - 0.004, MH*0.22, 0.001); mug.add(m);
+    return {m, ph:k/3};
+  });
+  const cat = new THREE.Group(); group.add(cat); cat.scale.setScalar(1.35);
+  const CW = 0.11, CH = CW*160/256, cg = new THREE.PlaneGeometry(CW, CH); cg.translate(0, CH/2, 0);
+  const catM = new THREE.Mesh(cg, basicMat({map:catTexture()})); catM.position.y = -CH/2; cat.add(catM);
+  const zTex = zTexture();
+  const zs = [0, 1].map(k=>{ const m = new THREE.Mesh(new THREE.PlaneGeometry(0.016, 0.016), basicMat({map:zTex, color:'#fff3ea', opacity:0})); cat.add(m); return {m, ph:k*0.5}; });
   return {
     group, label:'assets3d/themes/lofichillhop/label.jpg', background:lofiBackground(),
     vinyl:'#9d8fae', armMetal:'#c9a46a', stars:0, nebula:0, dust:0.15, sheen:0.08, bloom:0.25, noSpindle:true,
     ringColor:'#8fe3d8', ringBaseColor:'#fff3ea', ringBase:0.2, ringFlash:'#5fe8d6',
-    layout(){ air.position.set(0, -0.12, 0); air.rotation.set(-Math.PI/2, 0, 0); },
+    layout(view){
+      const sl = slots(view);
+      air.position.set(0, -0.12, 0); air.rotation.set(-Math.PI/2, 0, 0);
+      placeAt(win, view, sl.ul[0], sl.ul[1], 0.03, 0.08);
+      placeAt(plant, view, sl.bl[0], sl.bl[1], 0.03, 0.08);
+      placeAt(mug, view, sl.br[0], sl.br[1], 0.03, 0.08);
+      placeAt(cat, view, 0, sl.bc[1], 0.02, 0.06);
+    },
     onNote(){ kick = 1; },
-    update(dt){
+    update(dt, t){
+      wrTex.offset.y = (-t*0.05) % 1;
+      plantM.rotation.z = Math.sin(t*0.55)*0.035 + Math.sin(t*1.3)*0.01;
+      for(const s of steam){
+        const u = ((t*0.32 + s.ph) % 1);
+        s.m.position.y = MH*0.22 + u*0.03; s.m.scale.set(1 + u*0.6, 1 + u*0.3, 1);
+        s.m.material.opacity = Math.sin(Math.PI*u)*0.5;
+      }
+      catM.scale.y = 1 + Math.sin(t*1.7)*0.025;
+      for(const z of zs){
+        const u = ((t*0.22 + z.ph) % 1);
+        z.m.position.set(-CW*0.3 + u*0.02, CH*0.1 + u*0.05, 0.001); z.m.scale.setScalar(0.6 + u*0.8);
+        z.m.material.opacity = Math.sin(Math.PI*u)*0.7;
+      }
       kick = Math.max(0, kick - 0.04*dt);
       polMat.color.setScalar(0.92 + kick*0.08);
       for(let i=0;i<RN;i++){
