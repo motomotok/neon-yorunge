@@ -597,6 +597,7 @@ function buildCosmic(world){
   const gg = new THREE.CircleGeometry(DISC_R*0.98, 96); gg.rotateX(-Math.PI/2);
   const galaxy = new THREE.Mesh(gg, new THREE.MeshBasicMaterial({map:gTex, transparent:true, opacity:0.26, depthWrite:false, blending:ADD}));
   galaxy.position.y = TOP_Y + 0.0007;
+  galaxy.renderOrder = -2;
   group.add(galaxy);
   const rim = glowRim('#5ad1ff', DISC_R*1.012, 0.0035, 0.45);
   group.add(rim);
@@ -680,6 +681,10 @@ function discLayer(world, map, opts, y){
   const g = new THREE.CircleGeometry(DISC_R*0.996, 128); g.rotateX(-Math.PI/2);
   const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial(Object.assign({map, transparent:true, depthWrite:false}, opts)));
   m.position.y = TOP_Y + y;
+  // Pena/notalar derinliği yok sayan sprite'lar ve uzaklığa göre sıralanır:
+  // pena plağın uzak (üst) yarısındayken plak katmanı ondan SONRA çizilip
+  // üstünü örtüyordu. Plak katmanları her zaman önce çizilsin.
+  m.renderOrder = -2;
   world.recordSpin.add(m);
   return m;
 }
@@ -795,6 +800,7 @@ function buildHell(world){
   const fire = new THREE.Mesh(ringStrip(DISC_R*1.075, DISC_R*0.17, 200, 5, TOP_Y-0.001), basicMat({map:fTex, blending:ADD, opacity:0.8}));
   const fire2 = new THREE.Mesh(ringStrip(DISC_R*1.06, DISC_R*0.13, 200, 4, TOP_Y-0.0008), basicMat({map:fTex2, blending:ADD, opacity:0.55}));
   group.add(fire, fire2, glowRim('#ff4a12', DISC_R*1.004, 0.005, 0.7));
+  fire.renderOrder = fire2.renderOrder = -1;
   // Diş gibi paslı dikenler: plakla döner, iki boy dönüşümlü.
   const sTex = softDot();
   const spikes = new THREE.Group(), spMat = basicMat({map:spikeTexture(), opacity:1});
@@ -806,6 +812,7 @@ function buildHell(world){
     const a = i/SN*Math.PI*2 + 0.08;
     m.position.set(Math.cos(a)*DISC_R*0.97, TOP_Y-0.004, Math.sin(a)*DISC_R*0.97);
     m.rotation.y = -a - Math.PI/2;
+    m.renderOrder = -1;
     spikes.add(m);
   }
   world.recordSpin.add(spikes);
