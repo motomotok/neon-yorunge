@@ -207,6 +207,14 @@ function ringSpriteTexture(color, dashed){
   g.beginPath(); g.arc(64,64,52,0,Math.PI*2); g.stroke();
   const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t;
 }
+// Penanın altında plağa düşen konum halkası: koyu dış kenar + beyaz çizgi,
+// her renkte zeminde seçilir.
+function locatorTexture(){
+  const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+  g.strokeStyle = 'rgba(0,0,0,.55)'; g.lineWidth = 12; g.beginPath(); g.arc(64,64,50,0,Math.PI*2); g.stroke();
+  g.strokeStyle = 'rgba(255,255,255,.95)'; g.lineWidth = 5; g.beginPath(); g.arc(64,64,50,0,Math.PI*2); g.stroke();
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
 function flatPlane(tex, opacity, additive){
   const g = new THREE.PlaneGeometry(1,1); g.rotateX(-Math.PI/2);
   return new THREE.Mesh(g, new THREE.MeshBasicMaterial({map:tex, transparent:true, opacity, depthWrite:false,
@@ -541,12 +549,39 @@ export class Entities {
     p.shield = new THREE.Sprite(new THREE.SpriteMaterial({map:ringSpriteTexture('#5efc82', false), transparent:true,
       depthWrite:false, depthTest:false, blending:THREE.AdditiveBlending}));
     p.shield.scale.setScalar(4.0);
+    // Okunabilirlik: yoğun/parlak temalarda (Siber, Kristal, Candy) pena
+    // zemine karışıyordu. Arkasına koyu yumuşak bir hâle, çevresine beyaz bir
+    // kontur; pena + süsleri notaların/canavarların da ÜSTÜNDE çizilir.
+    p.halo = new THREE.Sprite(new THREE.SpriteMaterial({map:shadowTexture(), transparent:true, opacity:0.6,
+      depthWrite:false, depthTest:false}));
+    p.halo.scale.setScalar(4.4);
+    p.outlineMat = new THREE.SpriteMaterial({transparent:true, depthWrite:false, depthTest:false});
+    p.outline = new THREE.Sprite(p.outlineMat);
+    p.locator = flatPlane(locatorTexture(), 0.8, false); p.locator.position.y = 0.04; p.locator.renderOrder = 9;
+    p.halo.renderOrder = 10; p.glow.renderOrder = 11; p.outline.renderOrder = 12; p.sprite.renderOrder = 13; p.shield.renderOrder = 14;
     p.magnet = flatPlane(ringSpriteTexture('#ff7ae0', true), 0.6, true); p.magnet.scale.setScalar(6.4);
     p.magnet.position.y = 0.06;
     p.light = new THREE.PointLight(0xffffff, 1.8, 100, 0);   // 3.2'ten düşürüldü: pirinç kolu yeşile boyuyordu
-    p.root.add(p.shadow, p.glow, p.sprite, p.shield, p.magnet, p.light);
+    p.root.add(p.shadow, p.locator, p.halo, p.glow, p.outline, p.sprite, p.shield, p.magnet, p.light);
     this.group.add(p.root);
     this.penaTex = new Map();
+    this.penaOutline = new Map();
+  }
+
+  // Pena görselinin beyaz, biraz kalın silueti (kontur). Görsel yüklenene
+  // kadar null döner, sonraki karelerde yeniden denenir.
+  _penaOutlineTexture(key, img){
+    let tex = this.penaOutline.get(key);
+    if(tex) return tex;
+    if(!img || !img.complete || !img.naturalWidth) return null;
+    const w = img.naturalWidth, h = img.naturalHeight, k = Math.max(3, Math.round(w*0.04));
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const g = c.getContext('2d');
+    for(let i=0;i<16;i++){ const a = i/16*Math.PI*2; g.drawImage(img, Math.cos(a)*k, Math.sin(a)*k, w, h); }
+    g.globalCompositeOperation = 'source-in'; g.fillStyle = '#ffffff'; g.fillRect(0, 0, w, h);
+    tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+    this.penaOutline.set(key, tex);
+    return tex;
   }
 
   _penaTexture(skinId, img){
@@ -591,14 +626,25 @@ export class Entities {
       else setMap(p.mat, this._penaTexture(f.skin, f.skinImg));
       p.sprite.visible = !!p.mat.map;
       p.sprite.position.y = h;
-      p.sprite.scale.setScalar(2.7*((def && def.opts.size)||1));
+      p.sprite.scale.setScalar(3.0*((def && def.opts.size)||1));   // 2.7'den: yoğun temalarda daha kolay seçilsin (çarpışma değişmedi)
+      const oTex = def ? (def.kind==='image' ? this._penaOutlineTexture('m:'+(f.skin||''), def.texture.image) : null)
+                       : this._penaOutlineTexture(f.skin, f.skinImg);
+      setMap(p.outlineMat, oTex);
+      p.outline.visible = p.sprite.visible && !!oTex;
+      p.outline.position.y = h; p.outline.scale.copy(p.sprite.scale);
       // Halka değiştirirken hareket yönüne hafif yatış.
       const lean = Math.max(-1, Math.min(1, (radiusTarget(f)-pr)/(R*4)));
-      p.mat.rotation = -lean*0.35 + (f.inGame ? Math.sin(t*39)*0.04 : 0);
+      p.mat.rotation = p.outlineMat.rotation = -lean*0.35 + (f.inGame ? Math.sin(t*39)*0.04 : 0);
     }
     const blink = pl.invulT>0 && (Math.floor(pl.invulT/4)%2===0);
     const alpha = blink ? 0 : 1;
     p.mat.opacity = alpha;
+    p.outlineMat.opacity = 0.95*alpha;
+    p.halo.position.y = h*0.9; p.halo.material.opacity = 0.6*alpha;
+    // Konum halkası: oyunda hafifçe nabız gibi atar (menüde gizli).
+    p.locator.visible = !!f.inGame;
+    if(f.inGame){ const q = Math.sin(t*4); p.locator.scale.setScalar(3.3 + q*0.15); p.locator.material.opacity = (0.6 + q*0.15)*(blink ? 0.4 : 1); }
+    if(p.model) p.outline.visible = false;
     if(p.model) p.model.visible = p.model.visible && !blink;
     p.glow.position.y = 0.35; p.glow.scale.setScalar(3.6); p.glow.material.color.copy(linColor(f.playerColor)); p.glow.material.opacity = 0.4*alpha;
     p.light.color.copy(linColor(f.playerColor)); p.light.position.y = h*0.9; p.light.distance = R*14;
