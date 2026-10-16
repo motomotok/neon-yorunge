@@ -869,128 +869,114 @@ function buildHell(world){
   };
 }
 
-// ---------------- Tribal Pulse ----------------
-// Ahşap plak: koyu ceviz halkaları + oyun halkalarının arasında yeşil kabile
-// desen bantları (dışta oklar, aralarda kare spiraller ve baklavalar).
-function woodTexture(){
-  const S = 1024, c = canvas(S), g = c.getContext('2d'), r = seeded(5), C = S/2;
-  g.fillStyle = '#3b1d12'; g.fillRect(0,0,S,S);
-  for(let rr=C; rr>8; rr -= 3 + r()*5){
-    const v = r();
-    g.strokeStyle = v < 0.5 ? `rgba(20,8,4,${0.25 + r()*0.3})` : `rgba(110,60,34,${0.12 + r()*0.18})`;
-    g.lineWidth = 1 + r()*2.5; g.beginPath(); g.arc(C + (r()-0.5)*3, C + (r()-0.5)*3, rr, 0, Math.PI*2); g.stroke();
+// ---------------- Lo-Fi Chillhop ----------------
+// Kullanıcının Lo-Fi konsepti: pembe → lila → turkuaz buzlu plak, kahve
+// fincanı lekeleri ve yağmur damlaları; ortada plakla dönen polaroid; sıcak
+// kahverengi oda, süzülen hafif yağmur. Sakin, göz yormayan palet.
+function lofiSurface(){
+  const S = 1024, c = canvas(S), g = c.getContext('2d'), r = seeded(42), C = S/2;
+  const base = g.createLinearGradient(0, 0, S, S*0.7);
+  base.addColorStop(0, '#b97f86'); base.addColorStop(0.5, '#9d8fae'); base.addColorStop(1, '#78aaa6');
+  g.fillStyle = base; g.fillRect(0,0,S,S);
+  // Buzlu doku: ince gren
+  for(let i=0;i<9000;i++){ const v = r() < 0.5 ? 255 : 0; g.fillStyle = `rgba(${v},${v},${v},${0.03 + r()*0.04})`; g.fillRect(r()*S, r()*S, 2, 2); }
+  // Soluk oluklar
+  for(let rr=C*0.98; rr>C*0.3; rr -= 4 + r()*6){
+    g.strokeStyle = `rgba(255,255,255,${0.03 + r()*0.05})`; g.lineWidth = 1;
+    g.beginPath(); g.arc(C, C, rr, 0, Math.PI*2); g.stroke();
   }
-  for(let i=0;i<2600;i++){ g.fillStyle = `rgba(0,0,0,${r()*0.12})`; g.fillRect(r()*S, r()*S, 1 + r()*3, 1); }
-  return tex(c);
-}
-function tribalPattern(){
-  const S = 1024, c = canvas(S), g = c.getContext('2d'), C = S/2, R = S/2;
-  g.strokeStyle = '#8fd14a'; g.fillStyle = '#8fd14a'; g.lineCap = 'round'; g.lineJoin = 'round';
-  const around = (rad, n, draw)=>{ for(let i=0;i<n;i++){ const a = i/n*Math.PI*2; g.save(); g.translate(C + Math.cos(a)*rad, C + Math.sin(a)*rad); g.rotate(a + Math.PI/2); draw(i); g.restore(); } };
-  const band = (r0, r1)=>{ g.lineWidth = 2.5; for(const rr of [r0, r1]){ g.beginPath(); g.arc(C, C, rr, 0, Math.PI*2); g.stroke(); } };
-  // Dış bant: oklar (chevron)
-  band(R*0.895, R*0.965);
-  around(R*0.93, 64, ()=>{ g.lineWidth = 4; g.beginPath(); g.moveTo(-9, -9); g.lineTo(0, 0); g.lineTo(-9, 9); g.stroke(); });
-  // Orta bant: kare spiraller
-  band(R*0.705, R*0.8);
-  around(R*0.7525, 40, i=>{ g.lineWidth = 3; const s = 16; g.strokeRect(-s, -s, s*2, s*2); if(i%2){ g.strokeRect(-s*0.45, -s*0.45, s*0.9, s*0.9); } else { g.beginPath(); g.moveTo(-s*0.6, 0); g.lineTo(0, -s*0.6); g.lineTo(s*0.6, 0); g.lineTo(0, s*0.6); g.closePath(); g.stroke(); } });
-  // İç bant: baklavalar + noktalar
-  band(R*0.49, R*0.575);
-  around(R*0.5325, 30, i=>{ g.lineWidth = 3; g.beginPath(); g.moveTo(0, -15); g.lineTo(13, 0); g.lineTo(0, 15); g.lineTo(-13, 0); g.closePath(); g.stroke(); g.beginPath(); g.arc(0, 0, 3.5, 0, Math.PI*2); g.fill(); });
-  return tex(c);
-}
-// Oymalı tiki totem (yukarıdan ışıklı kontur, kehribar).
-function totemTexture(){
-  const W = 160, H = 260, c = canvas(W, H), g = c.getContext('2d');
-  g.fillStyle = '#2a170d'; g.strokeStyle = '#ffb347'; g.lineWidth = 4; g.lineJoin = 'round';
-  g.beginPath(); g.moveTo(30, H-8); g.lineTo(26, 40); g.quadraticCurveTo(W/2, 4, W-26, 40); g.lineTo(W-30, H-8); g.closePath(); g.fill(); g.stroke();
-  g.lineWidth = 5;
-  g.beginPath(); g.moveTo(44, 78); g.lineTo(70, 92); g.lineTo(44, 100); g.stroke();
-  g.beginPath(); g.moveTo(W-44, 78); g.lineTo(W-70, 92); g.lineTo(W-44, 100); g.stroke();
-  g.beginPath(); g.moveTo(W/2, 104); g.lineTo(W/2-10, 140); g.lineTo(W/2+10, 140); g.stroke();
-  g.strokeRect(48, 160, W-96, 34); for(let x=56; x<W-48; x+=12){ g.beginPath(); g.moveTo(x, 160); g.lineTo(x, 194); g.stroke(); }
-  g.beginPath(); g.moveTo(40, 218); g.lineTo(W-40, 218); g.stroke();
-  return tex(c);
-}
-function forestBackground(){
-  const S = 1024, c = canvas(S), g = c.getContext('2d'), r = seeded(9);
-  const bg = g.createLinearGradient(0,0,0,S);
-  bg.addColorStop(0,'#120a06'); bg.addColorStop(0.5,'#21110a'); bg.addColorStop(1,'#0a0503');
-  g.fillStyle = bg; g.fillRect(0,0,S,S);
-  const haze = g.createRadialGradient(S/2, S*0.35, 0, S/2, S*0.35, S*0.55);
-  haze.addColorStop(0,'rgba(140,80,30,.35)'); haze.addColorStop(1,'rgba(0,0,0,0)');
-  g.fillStyle = haze; g.fillRect(0,0,S,S);
-  // Ağaç siluetleri (dikey ekranda kenarlarda kalsınlar diye orta-yanlara)
-  const tree = (x, w, lean)=>{
-    g.fillStyle = 'rgba(8,4,2,.85)';
-    g.beginPath(); g.moveTo(x-w, S); g.quadraticCurveTo(x-w*0.6+lean, S*0.5, x+lean*2, -10); g.lineTo(x+lean*2+w*0.5, -10); g.quadraticCurveTo(x+w*0.6+lean, S*0.5, x+w, S); g.fill();
-    g.strokeStyle = 'rgba(8,4,2,.8)'; g.lineCap = 'round';
-    for(let k=0;k<5;k++){ const y = S*(0.1 + r()*0.5), d = r()<0.5 ? -1 : 1; g.lineWidth = 3 + r()*5; g.beginPath(); g.moveTo(x+lean, y); g.quadraticCurveTo(x + d*60, y - 40, x + d*(110 + r()*80), y - 90 - r()*60); g.stroke(); }
+  // Kahve fincanı lekeleri (düzensiz halka)
+  const stain = (x, y, rad)=>{
+    for(let k=0;k<3;k++){
+      g.strokeStyle = `rgba(110,62,36,${0.18 + r()*0.12})`; g.lineWidth = 5 + r()*7;
+      g.beginPath();
+      for(let i=0;i<=40;i++){ const a = i/40*Math.PI*2, q = rad*(0.92 + r()*0.16) + k*3; const px = x + Math.cos(a)*q, py = y + Math.sin(a)*q; if(i) g.lineTo(px, py); else g.moveTo(px, py); }
+      g.stroke();
+    }
+    const fill = g.createRadialGradient(x, y, 0, x, y, rad);
+    fill.addColorStop(0, 'rgba(120,70,40,.05)'); fill.addColorStop(1, 'rgba(120,70,40,.16)');
+    g.fillStyle = fill; g.beginPath(); g.arc(x, y, rad, 0, Math.PI*2); g.fill();
   };
-  tree(S*0.27, 26, -8); tree(S*0.73, 30, 10); tree(S*0.14, 40, 5); tree(S*0.88, 38, -6);
-  // Alçak çalılar ve parlayan mantarlar
-  for(let i=0;i<40;i++){ const x = r()*S, y = S*(0.86 + r()*0.14), rad = 30 + r()*60; g.fillStyle = 'rgba(14,9,4,.9)'; g.beginPath(); g.ellipse(x, y, rad, rad*0.5, 0, 0, Math.PI*2); g.fill(); }
-  for(let i=0;i<14;i++){ const x = r()*S, y = S*(0.88 + r()*0.1), gr = g.createRadialGradient(x,y,0,x,y,14); gr.addColorStop(0,'rgba(255,190,90,.5)'); gr.addColorStop(1,'rgba(255,150,60,0)'); g.fillStyle = gr; g.beginPath(); g.arc(x,y,14,0,Math.PI*2); g.fill(); }
+  stain(C + 260, C - 330, 62); stain(C - 300, C + 280, 74); stain(C - 340, C - 60, 48); stain(C + 210, C + 330, 34);
+  // Yağmur damlaları: turkuaz yansımalı küçük damlalar
+  for(let i=0;i<80;i++){
+    const a = r()*Math.PI*2, d = C*(0.32 + r()*0.62), x = C + Math.cos(a)*d, y = C + Math.sin(a)*d, s = 4 + r()*5;
+    g.fillStyle = 'rgba(40,70,80,.25)'; g.beginPath(); g.ellipse(x+1.5, y+2, s*0.7, s, 0, 0, Math.PI*2); g.fill();
+    g.fillStyle = 'rgba(190,240,235,.55)'; g.beginPath(); g.ellipse(x, y, s*0.6, s*0.9, 0, 0, Math.PI*2); g.fill();
+    g.fillStyle = 'rgba(255,255,255,.8)'; g.fillRect(x - s*0.25, y - s*0.5, 1.6, 2.4);
+  }
+  // Kenara doğru hafif kararma
+  const v = g.createRadialGradient(C, C, C*0.5, C, C, C);
+  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(40,20,30,.35)');
+  g.fillStyle = v; g.fillRect(0,0,S,S);
   return tex(c);
 }
-function buildTribal(world){
+function lofiBackground(){
+  const S = 1024, c = canvas(S), g = c.getContext('2d'), r = seeded(17);
+  const bg = g.createRadialGradient(S*0.5, S*0.42, 0, S*0.5, S*0.5, S*0.72);
+  bg.addColorStop(0, '#4a3329'); bg.addColorStop(0.55, '#2a1c17'); bg.addColorStop(1, '#120b09');
+  g.fillStyle = bg; g.fillRect(0,0,S,S);
+  for(let i=0;i<18;i++){
+    const x = r()*S, y = r()*S, rad = 30 + r()*90, col = r() < 0.5 ? '255,190,140' : '160,220,210';
+    const gr = g.createRadialGradient(x,y,0,x,y,rad); gr.addColorStop(0, `rgba(${col},.07)`); gr.addColorStop(1, `rgba(${col},0)`);
+    g.fillStyle = gr; g.beginPath(); g.arc(x,y,rad,0,Math.PI*2); g.fill();
+  }
+  return tex(c);
+}
+// Yağmur çizgisi: yukarıdan aşağı belirginleşen ince şerit.
+function rainTexture(){
+  const c = canvas(8, 128), g = c.getContext('2d'), gr = g.createLinearGradient(0,0,0,128);
+  gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(1, 'rgba(255,255,255,1)');
+  g.fillStyle = gr; g.fillRect(3, 0, 2, 128);
+  return tex(c);
+}
+function buildLofi(world){
   const group = new THREE.Group();
-  const wood = discLayer(world, woodTexture(), {opacity:1}, 0.0003);
-  const patTex = tribalPattern();
-  const pattern = discLayer(world, patTex, {opacity:0.5, color:'#9fdc5a'}, 0.0005);
-  const patGlow = discLayer(world, patTex, {blending:ADD, opacity:0, color:'#7dff4a'}, 0.0007);
-  // Ahşap kenar: ceviz şerit + sıcak ince hâle.
-  const rimC = canvas(8, 64), rg = rimC.getContext('2d'), rgr = rg.createLinearGradient(0,0,0,64);
-  rgr.addColorStop(0,'#2a140a'); rgr.addColorStop(0.5,'#8a4f2a'); rgr.addColorStop(1,'#3a1d10');
-  rg.fillStyle = rgr; rg.fillRect(0,0,8,64);
-  const rim = new THREE.Mesh(ringStrip(DISC_R*1.012, DISC_R*0.04, 200, 1, TOP_Y+0.0004), basicMat({map:tex(rimC), opacity:1}));
-  group.add(rim, glowRim('#ffb060', DISC_R*1.035, 0.012, 0.12));
-  // Kehribar ışıklı iki totem (sol alt, sağ alt) — notada parlarlar.
-  const tTex = totemTexture();
-  const totems = [0, 1].map(()=>{
-    const o = new THREE.Group(), m = new THREE.Mesh(new THREE.PlaneGeometry(0.07, 0.07*260/160), basicMat({map:tTex, opacity:0.95}));
-    const glow = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.2), basicMat({map:softDot(), color:'#ff9a3a', blending:ADD, opacity:0.18}));
-    glow.position.z = -0.001; o.add(glow, m); group.add(o); return {o, m, glow};
-  });
-  // Ateşböcekleri: süzülüp yanıp sönen sarı-yeşil noktalar.
+  const surf = discLayer(world, lofiSurface(), {opacity:1}, 0.0003);
+  // Polaroid: plakla döner, hafif eğik, altında yumuşak gölge. Etiket dairesini
+  // tamamen örter (yarı genişliği etiket yarıçapından büyük).
+  const PW = 0.27, PH = PW*600/512;
+  const pg = new THREE.PlaneGeometry(PW, PH); pg.rotateX(-Math.PI/2);
+  const polMat = new THREE.MeshBasicMaterial({color:'#ece4da', transparent:true, depthWrite:false});
+  const polaroid = new THREE.Mesh(pg, polMat);
+  polaroid.position.y = TOP_Y + 0.0022; polaroid.rotation.y = 0.2; polaroid.renderOrder = -1;
+  const shg = new THREE.PlaneGeometry(PW*1.08, PH*1.06); shg.rotateX(-Math.PI/2);
+  const shadow = new THREE.Mesh(shg, new THREE.MeshBasicMaterial({map:softDot(), color:'#000000', transparent:true, opacity:0.45, depthWrite:false}));
+  shadow.position.set(0.006, TOP_Y + 0.0018, 0.008); shadow.rotation.y = 0.2; shadow.renderOrder = -1;
+  world.recordSpin.add(shadow, polaroid);
+  loadTexture('assets3d/themes/lofichillhop/polaroid.jpg').then(t=>{ if(t && polaroid.parent){ polMat.map = t; polMat.needsUpdate = true; } });
+  group.add(glowRim('#f2c6b4', DISC_R*1.006, 0.004, 0.35));
+  // Odada süzülen hafif yağmur (plağın altındaki ekran düzleminde).
   const air = new THREE.Group(); group.add(air);
-  const FN = 34, flies = new THREE.InstancedMesh(new THREE.PlaneGeometry(1,1), basicMat({map:softDot(), blending:ADD, opacity:1}), FN);
-  flies.frustumCulled = false; air.add(flies);
-  const fl = Array.from({length:FN}, ()=>({x:rnd(-1.3,1.3), y:rnd(-1.7,1.7), s:rnd(0.008,0.016), sp:rnd(0.4,1), ph:rnd(0,9)}));
-  const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = new THREE.Vector3(), P = new THREE.Vector3(), C = new THREE.Color(), fc = new THREE.Color('#c8ff6a');
+  const RN = 40, rain = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1), basicMat({map:rainTexture(), color:'#bfe6e2', blending:ADD, opacity:0.22}), RN);
+  rain.frustumCulled = false; air.add(rain);
+  const drops = Array.from({length:RN}, ()=>({x:rnd(-1.4,1.4), y:rnd(-1.8,1.8), sp:rnd(0.9,1.5), l:rnd(0.05,0.11)}));
+  const M = new THREE.Matrix4(), Q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1), 0.12), S = new THREE.Vector3(), P = new THREE.Vector3();
   let kick = 0;
   return {
-    group, label:'assets3d/themes/tribalpulse/label.jpg', background:forestBackground(),
-    vinyl:'#4a2a1a', armMetal:'#e6dac0', stars:0, nebula:0, dust:0, sheen:0.05, bloom:0.35,
-    ringColor:'#b9e08a', ringBaseColor:'#e6c99c', ringBase:0.15, ringFlash:'#7dff4a',
-    layout(view){
-      const sl = slots(view);
-      air.position.set(0, -0.12, 0); air.rotation.set(-Math.PI/2, 0, 0);
-      placeAt(totems[0].o, view, sl.bl[0], sl.bl[1], 0.03, 0.08);
-      placeAt(totems[1].o, view, sl.br[0], sl.br[1], 0.03, 0.08);
-    },
+    group, label:'assets3d/themes/lofichillhop/label.jpg', background:lofiBackground(),
+    vinyl:'#9d8fae', armMetal:'#c9a46a', stars:0, nebula:0, dust:0.15, sheen:0.08, bloom:0.25, noSpindle:true,
+    ringColor:'#8fe3d8', ringBaseColor:'#fff3ea', ringBase:0.2, ringFlash:'#5fe8d6',
+    layout(){ air.position.set(0, -0.12, 0); air.rotation.set(-Math.PI/2, 0, 0); },
     onNote(){ kick = 1; },
-    update(dt, t){
-      kick = Math.max(0, kick - 0.035*dt);
-      const beat = beatAt(t);
-      patGlow.material.opacity = beat*0.08 + kick*0.55;
-      totems.forEach((tm, i)=>{ tm.glow.material.opacity = 0.14 + 0.06*Math.sin(t*1.3 + i*2) + kick*0.3; });
-      for(let i=0;i<FN;i++){
-        const e = fl[i];
-        e.x += Math.sin(t*0.4*e.sp + e.ph)*0.0006*dt; e.y += Math.cos(t*0.3*e.sp + e.ph*1.7)*0.0005*dt;
-        if(e.x > 1.35) e.x = -1.35; if(e.x < -1.35) e.x = 1.35; if(e.y > 1.75) e.y = -1.75; if(e.y < -1.75) e.y = 1.75;
-        P.set(e.x, e.y, 0.01); S.set(e.s, e.s, 1); M.compose(P, Q, S); flies.setMatrixAt(i, M);
-        const blink = Math.max(0, Math.sin(t*1.6*e.sp + e.ph)); flies.setColorAt(i, C.copy(fc).multiplyScalar(blink*blink));
+    update(dt){
+      kick = Math.max(0, kick - 0.04*dt);
+      polMat.color.setScalar(0.92 + kick*0.08);
+      for(let i=0;i<RN;i++){
+        const d = drops[i];
+        d.y -= 0.006*d.sp*dt; d.x -= 0.0007*d.sp*dt;
+        if(d.y < -1.85){ d.y = 1.85; d.x = rnd(-1.4, 1.4); }
+        P.set(d.x, d.y, 0.01); S.set(0.0035, d.l, 1); M.compose(P, Q, S); rain.setMatrixAt(i, M);
       }
-      flies.instanceMatrix.needsUpdate = true; flies.instanceColor.needsUpdate = true;
+      rain.instanceMatrix.needsUpdate = true;
     },
     dispose(){
-      for(const o of [wood, pattern, patGlow]){ world.recordSpin.remove(o); o.geometry.dispose(); if(o.material.map) o.material.map.dispose(); o.material.dispose(); }
+      for(const o of [surf, polaroid, shadow]){ world.recordSpin.remove(o); o.geometry.dispose(); if(o.material.map) o.material.map.dispose(); o.material.dispose(); }
     },
   };
 }
 
-const BUILDERS = {neon:buildRetro, synthbeats:buildSynth, urbansounds:buildUrban, cosmicsoundwave:buildCosmic, hellsanthem:buildHell, tribalpulse:buildTribal};
+const BUILDERS = {neon:buildRetro, synthbeats:buildSynth, urbansounds:buildUrban, cosmicsoundwave:buildCosmic, hellsanthem:buildHell, lofichillhop:buildLofi};
 
 export function buildThemeScene(key, world){
   const b = BUILDERS[key] || BUILDERS.neon;

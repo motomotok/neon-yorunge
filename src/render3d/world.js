@@ -169,6 +169,7 @@ export class World {
       new THREE.MeshStandardMaterial({color:0xd8dde6, metalness:1, roughness:0.2}));
     spindle.position.y = TOP_Y + 0.015;
     this.root.add(spindle);
+    this.spindle = spindle;   // etiketin üstünü örten temalar (Lo-Fi polaroidi) gizler
   }
 
   _buildRings(){
@@ -526,6 +527,7 @@ export class World {
     this.dustMat.opacity = sc.dust ?? 0.3; this.dust.visible = (sc.dust ?? 0.3) > 0;
     this.sheen.material.opacity = sc.sheen ?? 0.12;
     this.strobe.visible = !!sc.strobe;
+    this.spindle.visible = !sc.noSpindle;
     this.bloomBase = sc.bloom ?? 0.45;
     if(!this.customLabel){
       // Görsel yüklenene kadar (ya da yüklenemezse) prosedürel etiket.

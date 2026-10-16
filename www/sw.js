@@ -1,4 +1,4 @@
-const CACHE = 'beat-orbit-v80';
+const CACHE = 'beat-orbit-v81';
 const ASSETS = [
   './',
   './index.html',
@@ -20,7 +20,8 @@ const ASSETS = [
   './assets3d/themes/synthbeats/label.jpg',
   './assets3d/themes/urbansounds/label.jpg',
   './assets3d/themes/cosmicsoundwave/label.jpg',
-  './assets3d/themes/tribalpulse/label.jpg',
+  './assets3d/themes/lofichillhop/label.jpg',
+  './assets3d/themes/lofichillhop/polaroid.jpg',
   './assets3d/themes/hellsanthem/label.jpg',
   './privacy.html',
   './licenses.html',

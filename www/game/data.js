@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.55.1';
+const GAME_VERSION = '2.55.2';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -19,8 +19,8 @@ const THEMES = {
   // Kozmik Ses Dalgası BİLEREK sadece Elmas — en üst temalı dünya, notayla
   // asla açılmıyor (premium para biriminin "sadece elmasla" ucu burası).
   cosmicsoundwave:{nameKey:'theme_cosmicsoundwave', star:'#7fe8ff', gold:'#ffe9a8', peril:'#ff8a3d', player:'#2fe6c4', sun:'#6a8fff', bg0:'#03040f', bg1:'#0a0f2e', sf:'#8fb0ff', gate:{type:'gem', price:70}},
-  // Kullanıcının Gemini konseptlerinden (2026-10-16): orman gecesi ve cehennem.
-  tribalpulse:    {nameKey:'theme_tribalpulse',     star:'#b9e08a', gold:'#ffe9a8', peril:'#ff5a3c', player:'#ffd24a', sun:'#e2583a', bg0:'#0e0704', bg1:'#24130a', sf:'#c8ff6a', gate:{type:'coin_or_gem', price:4800, gemPrice:50}},
+  // Kullanıcının Gemini konseptlerinden (2026-10-16): lo-fi oda ve cehennem.
+  lofichillhop:   {nameKey:'theme_lofichillhop',    star:'#8fe3d8', gold:'#ffe1c8', peril:'#ff6a5a', player:'#5fe8d6', sun:'#e9b39c', bg0:'#120b09', bg1:'#2a1c17', sf:'#f2c6b4', gate:{type:'coin_or_gem', price:4800, gemPrice:50}},
   hellsanthem:    {nameKey:'theme_hellsanthem',     star:'#ffb066', gold:'#ffd28a', peril:'#ff3a1a', player:'#ffcf4a', sun:'#ff5a1a', bg0:'#0d0303', bg1:'#2a0806', sf:'#ff9a5a', gate:{type:'gem', price:80}},
 };
 let T = THEMES.neon;
@@ -486,6 +486,13 @@ let stats = load('beatOrbitStats', {
   // Günün Seti (bkz. dailyset.js)
   dset:null, dsetPending:null, dsetHist:[], dsetName:'', dsetCache:null, dsetRealSeen:0, dsetCrownDay:'', installId:'',
 });
+// Tribal Pulse teması (16 Ekim, birkaç saat yalnız webde) Lo-Fi Chillhop ile
+// değiştirildi: alan/kuşanan oyuncu karşılığında Lo-Fi'yi alır.
+if((stats.owned.themes||[]).includes('tribalpulse')){
+  stats.owned.themes = stats.owned.themes.filter(k=>k!=='tribalpulse');
+  if(!stats.owned.themes.includes('lofichillhop')) stats.owned.themes.push('lofichillhop');
+}
+if(cfg.theme==='tribalpulse') cfg.theme='lofichillhop';
 // Kayıt yükleme: iç içe nesneler (owned, upgrades, boosts…) de varsayılanlarla
 // birleştirilir (eski kayıtlarda yeni eklenen anahtar eksik kalmasın). Kayıt
 // bozuksa (JSON hatası) ham veri '<anahtar>_bak' altına yedeklenir; ilk
