@@ -507,7 +507,9 @@ export class World {
     }
     this.label.scale.setScalar(art ? 1.28 : 1);
     this.labelGlow.material.opacity = art ? 0 : 0.35;
-    if(old && old !== t && old.userData.generated && art) old.dispose();
+    // Önceki temanın etiket görseli GPU'da kalmasın (önbellekteki görsel
+    // tekrar seçilirse three onu yeniden yükler).
+    if(old && old !== t && (art || old.userData.generated)) old.dispose();
   }
 
   setTheme(key, T){

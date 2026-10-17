@@ -278,6 +278,12 @@ export class Entities {
   _fallbackTexture(type, styleKey){
     const paintType = type==='hazardTwinDecoy' ? 'hazardTwin' : type;
     const key = paintType+'|'+styleKey;
+    // Tema/renk körü modu değişince eski stilin dokuları bir daha kullanılmaz:
+    // GPU'dan silinir (eskiden her ziyaret edilen tema ~15 doku bırakıyordu).
+    if(this._fbStyle !== styleKey){
+      for(const [k, old] of this.fallbackTex){ if(!k.endsWith('|'+styleKey)){ old.tex.dispose(); this.fallbackTex.delete(k); } }
+      this._fbStyle = styleKey;
+    }
     let e = this.fallbackTex.get(key);
     if(!e){
       const c = document.createElement('canvas'); c.width = c.height = FALLBACK_PX;

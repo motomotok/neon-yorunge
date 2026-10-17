@@ -30,7 +30,22 @@ function drawShootingStars(){
 }
 
 let last=0;
+// 3D sahne, opak arka planlı ekranların (mağaza, ayarlar, duraklat, oyun
+// sonu...) arkasında tamamen görünmezken çizilmez. Ana menüde (#overlay.live
+// saydam) ve oyunda çizim sürer. Geçiş animasyonu (0.3 sn) bitene kadar
+// beklenir ki solma sırasında arka plan donmasın.
+const _ovEl=document.getElementById('overlay');
+let _ovCoverSince=0;
+function sceneCovered(ts){
+  const covers = _ovEl && !_ovEl.classList.contains('hidden') && !_ovEl.classList.contains('live');
+  if(!covers){ _ovCoverSince=0; return false; }
+  if(!_ovCoverSince) _ovCoverSince=ts;
+  return ts-_ovCoverSince > 400;
+}
 function loop(ts){
+  // 90 Hz üstü ekranlarda (120/144 Hz Android) her kare çizilirse GPU iki kat
+  // çalışır; ~10 ms'den kısa aralıkla gelen kareler atlanır (120 Hz -> 60 FPS).
+  if(last && ts-last < 10){ requestAnimationFrame(loop); return; }
   const rawMs = last ? ts-last : 16.6667; last=ts;
   const dt=Math.min(40, rawMs)/16.6667 || 1;          // görsel efektler için
   const simDt=Math.min(100, rawMs)/16.6667 || 1;      // oyun mantığı (bkz. stepGame)
@@ -42,7 +57,7 @@ function loop(ts){
     if(state==='play') stepGame(simDt);
     else if(MENU_STATES[state]) updateIdleOrb(dt);
     updateParticles(dt);
-    renderFrame3D(dt);
+    if(!sceneCovered(ts)) renderFrame3D(dt);
     drawScreenOverlays();
   } else {
     updateShootingStars(dt);
