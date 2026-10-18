@@ -207,8 +207,16 @@ function refreshWallet(){
     const el=document.getElementById(id); if(el) el.textContent=v;
   });
   const g = stats.gems||0;
+  // Elmas satışı mağazada yokken (ürünler gelmedi / sözleşme bekliyor) ve
+  // oyuncunun hiç elması yokken "0 elmas" göstergesi gizli kalır — elde
+  // edilemeyen bir para birimi kafa karıştırmasın.
+  let gemsOnSale=false; try{ gemsOnSale=Object.keys(_gemLivePrices).length>0; }catch(e){}   // const: dosya yüklenirken henüz tanımsız olabilir
+  const showGems = g>0 || gemsOnSale;
   ['shopGemWallet','menuGemWallet'].forEach(id=>{
-    const el=document.getElementById(id); if(el) el.textContent=g;
+    const el=document.getElementById(id); if(!el) return;
+    el.textContent=g;
+    const box=el.closest('.walletBig') || el.parentElement;
+    if(box) box.style.display = showGems ? '' : 'none';
   });
 }
 
@@ -528,6 +536,7 @@ function syncGemTab(){
   const any=Object.keys(_gemLivePrices).length>0;
   if(tab) tab.style.display = any ? '' : 'none';
   if(!any && typeof shopTab!=='undefined' && shopTab==='gems') shopTab='themes';
+  refreshWallet();
 }
 // Elmasla satın alma onayı — 'gem' gate'ler İÇİN kart tıklaması bunu çağırır;
 // 'coin_or_gem' gate'ler için ise kartın kendi içindeki ayrı "Elmas" rozeti
