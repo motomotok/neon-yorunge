@@ -70,6 +70,9 @@
       let done = false;
       const ok = () => { if (done) return; done = true; rewardedBusy = false; onReward && onReward(); };
       const no = (reason) => { if (done) return; done = true; rewardedBusy = false; onCancel && onCancel(reason || 'dismissed'); };
+      // Emniyet: yerel taraftan hiç cevap gelmezse (olay kaybolursa) buton
+      // sonsuza kadar "Yükleniyor…" kalmasın — 90 sn sonra serbest bırakılır.
+      if (isNative()) setTimeout(() => no('unavailable'), 90000);
       if (isNative()) window.NativeAds.showRewarded(ok, no);
       else showSimAd(ok, no);
       return true;
