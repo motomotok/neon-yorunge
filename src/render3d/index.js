@@ -30,9 +30,9 @@ import { resolveSlot, loadErrors } from './assets.js';
 // sadece daha düşük çözünürlükte hesaplanır. fxLights: pikap kolu ve oyuncu
 // nokta ışıkları — her pikselde ek ışık hesabı demek, zayıf GPU'da kapalı.
 const QUALITY = {
-  low:    {dpr:1.25, minDpr:0.85, bloom:true, bloomScale:0.25, msaa:0, fxLights:false},
-  medium: {dpr:1.5,  minDpr:1.0,  bloom:true, bloomScale:0.5,  msaa:0, fxLights:true},
-  high:   {dpr:2.0,  minDpr:1.35, bloom:true, bloomScale:1.0,  msaa:4, fxLights:true},
+  low:    {dpr:1.25, minDpr:0.85, maxPx:0.8e6,  bloom:true, bloomScale:0.25, msaa:0, fxLights:false},
+  medium: {dpr:1.5,  minDpr:1.0,  maxPx:1.25e6, bloom:true, bloomScale:0.5,  msaa:0, fxLights:true},
+  high:   {dpr:2.0,  minDpr:1.35, maxPx:2.2e6,  bloom:true, bloomScale:1.0,  msaa:4, fxLights:true},
 };
 const ORDER = ['low','medium','high'];
 
@@ -136,7 +136,15 @@ function buildComposer(q){
   composer.addPass(new OutputPass());
 }
 
-function maxDpr(q){ return Math.min(window.devicePixelRatio||1, q.dpr); }
+// Piksel bütçesi: tablette (iPad) ekran telefonun ~2.5 katı; aynı dpr ile
+// kare başına çizilen piksel de o kadar artıyor ve cihaz ısınıyordu. Çizim
+// çözünürlüğü seviyenin toplam piksel bütçesini aşmayacak şekilde sınırlanır
+// (telefonlarda bütçe zaten aşılmadığı için değişiklik yok).
+function maxDpr(q){
+  const budget = (W>1 && H>1) ? Math.sqrt(q.maxPx/(W*H)) : Infinity;
+  return Math.max(0.75, Math.min(window.devicePixelRatio||1, q.dpr, budget));
+}
+function minDpr(q){ return Math.min(q.minDpr, maxDpr(q)); }
 
 // Işık sayısı değişince tüm shader'lar bir kez yeniden derlenir; bu yüzden
 // yalnız seviye değişiminde çağrılır, kare kare değil.
@@ -187,6 +195,8 @@ function fitBackground(){
 function resize(w, h, b){
   W = w; H = h; base = b || Math.min(w,h);
   if(!renderer) return;
+  const cap = maxDpr(QUALITY[qualityLive]);
+  if(dprCur > cap + 0.01){ dprCur = cap; renderer.setPixelRatio(cap); }
   renderer.setSize(W, H, false);
   camera.aspect = W/H;
   camera.fov = camCfg.fov;
@@ -239,7 +249,7 @@ function trackFps(dtMs){
 
   if(fps.lowFor >= 2){
     fps.lowFor = 0;
-    if(dprCur > q.minDpr + 0.01){ fps.dprDropped = true; setDpr(Math.max(q.minDpr, dprCur - 0.15)); return; }
+    if(dprCur > minDpr(q) + 0.01){ fps.dprDropped = true; setDpr(Math.max(minDpr(q), dprCur - 0.15)); return; }
     if(qualityPref === 'auto' && i > 0){ fps.downgraded = true; applyQuality(ORDER[i-1], true); return; }
     if(qualityLive === 'low' && !bloomCut){ bloomCut = true; buildComposer(q); resize(W, H, base); }
     return;
@@ -262,6 +272,7 @@ function render(f){
   // Uzun ara (arka plandan dönüş, kontrol merkezi): FPS ölçümü yanıltmasın,
   // bloom da yumuşakça geri gelsin.
   if(gap > 250){ fps.acc = 0; fps.frames = 0; fps.lowFor = 0; fps.highFor = 0; bloomWarm = 0; }
+  else if(f.inMenu){ fps.acc = 0; fps.frames = 0; fps.lowFor = 0; fps.highFor = 0; }   // menü bilerek yarı hızda (bkz. render.js)
   else trackFps(dtMs);
   const t = now*0.001, dt = f.dt || 1;
   if(f.W !== W || f.H !== H) resize(f.W, f.H, f.base);
