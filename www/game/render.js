@@ -35,7 +35,7 @@ let last=0;
 // saydam) ve oyunda çizim sürer. Geçiş animasyonu (0.3 sn) bitene kadar
 // beklenir ki solma sırasında arka plan donmasın.
 const _ovEl=document.getElementById('overlay');
-let _ovCoverSince=0;
+let _ovCoverSince=0, _menuSkip=false, _menuDt=0;
 function sceneCovered(ts){
   const covers = _ovEl && !_ovEl.classList.contains('hidden') && !_ovEl.classList.contains('live');
   if(!covers){ _ovCoverSince=0; return false; }
@@ -57,7 +57,12 @@ function loop(ts){
     if(state==='play') stepGame(simDt);
     else if(MENU_STATES[state]) updateIdleOrb(dt);
     updateParticles(dt);
-    if(!sceneCovered(ts)) renderFrame3D(dt);
+    // Menülerde plak yalnızca yavaşça döner: 3D sahne yarı hızda (~30 FPS)
+    // çizilir, GPU yükü yarıya iner (tablette ısınma). Atlanan karenin
+    // süresi bir sonrakine eklenir, animasyon hızı değişmez.
+    if(MENU_STATES[state]){ _menuSkip=!_menuSkip; if(_menuSkip){ _menuDt+=dt; } }
+    else _menuSkip=false;
+    if(!_menuSkip && !sceneCovered(ts)){ renderFrame3D(dt+_menuDt); _menuDt=0; }
     drawScreenOverlays();
   } else {
     updateShootingStars(dt);
