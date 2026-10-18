@@ -69,7 +69,7 @@
       rewardedBusy = true;
       let done = false;
       const ok = () => { if (done) return; done = true; rewardedBusy = false; onReward && onReward(); };
-      const no = () => { if (done) return; done = true; rewardedBusy = false; onCancel && onCancel(); };
+      const no = (reason) => { if (done) return; done = true; rewardedBusy = false; onCancel && onCancel(reason || 'dismissed'); };
       if (isNative()) window.NativeAds.showRewarded(ok, no);
       else showSimAd(ok, no);
       return true;
@@ -78,7 +78,12 @@
     // Reklam ekrandayken oyun müziği susar (music.js).
     isShowing() { return rewardedBusy || interstitialBusy; },
     showPrivacyOptions() {
-      if (isNative()) { window.NativeAds.showPrivacyOptions(); return; }
+      if (isNative()) {
+        Promise.resolve(window.NativeAds.showPrivacyOptions()).then((shown) => {
+          if (!shown && window.queueToast && window.t) queueToast(t('adconsent_not_required'));
+        });
+        return;
+      }
       // Web sürümünde AdMob/UMP yok — reklam onayı yalnızca uygulama içinde geçerli.
       if (window.queueToast) queueToast('Reklam onay ayarları yalnızca uygulama sürümünde kullanılabilir.');
     },
