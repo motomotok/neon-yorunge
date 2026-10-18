@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.56.3';
+const GAME_VERSION = '2.56.4';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -788,16 +788,26 @@ function watchAdForCoins(){
     return;
   }
   if(adRewardsLeftToday()<=0){ queueToast(t('toast_ad_cap_reached')); beep(200,0.1,'square',0.1); return; }
-  Ads.showRewarded(()=>{
+  if(Ads.isRewardedBusy && Ads.isRewardedBusy()) return;
+  const grant=(toastKey)=>{
     // Sınırlar ödül anında da kontrol edilir (bekleme/günlük hak).
     if(adRewardsLeftToday()<=0 || adCooldownRemainingMs()>0) return;
     stats.adRewardsToday=(stats.adRewardsToday||0)+1;
     stats.lastAdRewardAt=gameNowMs();
     addNotes(REWARD_AD_COINS); saveStats();
-    queueToast(t('toast_ad_watched',{n:REWARD_AD_COINS}));
+    queueToast(t(toastKey,{n:REWARD_AD_COINS}));
     beep(700,0.1,'sine',0.13); beep(1000,0.1,'triangle',0.12);
     syncAdButtons();
-  }, ()=>{});
+  };
+  // Dokununca hemen tepki: reklam yüklenirken buton "Yükleniyor…" olur.
+  queueToast(t('toast_ad_loading')); syncAdButtons();
+  Ads.showRewarded(()=>grant('toast_ad_watched'), (reason)=>{
+    // Reklam bulunamadıysa (yeni uygulamalarda AdMob sık sık dolum vermez)
+    // oyuncu cezalandırılmaz: ödül yine verilir.
+    if(reason==='unavailable') grant('toast_ad_unavailable_reward');
+    syncAdButtons();
+  });
+  syncAdButtons();
 }
 // Mağaza ve oyun-sonu ekranlarındaki "Reklam İzle" butonlarını bekleme
 // süresi/günlük hak durumuna göre günceller — main.js'de her saniye
@@ -806,7 +816,8 @@ function syncAdButtons(){
   const cooldown = adCooldownRemainingMs();
   const left = adRewardsLeftToday();
   let html, disabled;
-  if(left<=0){ html=t('ad_cap_btn'); disabled=true; }
+  if(window.Ads && Ads.isRewardedBusy && Ads.isRewardedBusy()){ html=icon('clock')+' '+t('ad_loading_btn'); disabled=true; }
+  else if(left<=0){ html=t('ad_cap_btn'); disabled=true; }
   else if(cooldown>0){
     const secs=Math.ceil(cooldown/1000);
     html=icon('clock')+' '+t('ad_wait_btn',{n:secs}); disabled=true;

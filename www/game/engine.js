@@ -1016,7 +1016,8 @@ function acceptRevive(){
   };
   if(stats.premiumNoAds){ revive(); return; }
   reviveAdPending=true;
-  const started=Ads.showRewarded(revive, ()=>{ reviveAdPending=false; declineRevive(true); });
+  // Reklam bulunamazsa (dolum yok/yüklenemedi) diriltme yine verilir.
+  const started=Ads.showRewarded(revive, (reason)=>{ if(reason==='unavailable'){ revive(); return; } reviveAdPending=false; declineRevive(true); });
   if(started===false){ reviveAdPending=false; declineRevive(true); }
 }
 function declineRevive(fromAd){

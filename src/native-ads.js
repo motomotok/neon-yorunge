@@ -81,13 +81,16 @@ async function requestAndShowConsentIfNeeded() {
 
 // Google'ın "EU User Consent Policy" kuralı gereği kullanıcı, onayını
 // istediği an değiştirebilmeli (Ayarlar → "Reklam Onayını Yönet").
+// Form gösterildiyse true döner; bölgede onay gerekmiyorsa (ör. ABD) ya da
+// form yüklenemezse false — çağıran oyuncuya bilgi verir, buton sessiz kalmaz.
 async function showPrivacyOptions() {
-  if (!isNative()) return;
+  if (!isNative()) return false;
   try {
     await AdMob.resetConsentInfo();
     const info = await AdMob.requestConsentInfo();
-    if (info.isConsentFormAvailable) await AdMob.showConsentForm();
+    if (info.isConsentFormAvailable) { await AdMob.showConsentForm(); return true; }
   } catch (e) {}
+  return false;
 }
 
 function init() {
@@ -140,19 +143,29 @@ async function showRewarded(onReward, onCancel) {
     try { dismissListener && dismissListener.remove(); } catch (e) {}
     rewardListener = dismissListener = null;
   };
-  const finish = (rewarded) => {
+  // reason: 'dismissed' (oyuncu reklamı ödülden önce kapattı) ya da
+  // 'unavailable' (reklam yüklenemedi / dolum yok / zaman aşımı). Yeni
+  // uygulamalarda AdMob sık sık reklam döndürmüyor; oyun bu durumda
+  // ödülü yine verir (bkz. data.js watchAdForCoins) — buton "hiçbir şey
+  // yapmıyor" görünmesin (App Review 2.1(a) reddi buydu).
+  const finish = (rewarded, reason) => {
     if (settled) return; settled = true;
     cleanup(); rewardedShowing = false; preloadRewarded();
-    if (rewarded) onReward && onReward(); else onCancel && onCancel();
+    if (rewarded) onReward && onReward(); else onCancel && onCancel(reason || 'dismissed');
   };
   try {
-    if (!rewardedReady) await AdMob.prepareRewardVideoAd({ adId: REWARDED_AD_ID, isTesting: ADS_TEST_MODE, npa: true });
+    if (!rewardedReady) {
+      await Promise.race([
+        AdMob.prepareRewardVideoAd({ adId: REWARDED_AD_ID, isTesting: ADS_TEST_MODE, npa: true }),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000)),
+      ]);
+    }
     let gotReward = false;
     rewardListener = await AdMob.addListener('onRewardedVideoAdReward', () => { gotReward = true; });
     dismissListener = await AdMob.addListener('onRewardedVideoAdDismissed', () => finish(gotReward));
     await AdMob.showRewardVideoAd();
   } catch (e) {
-    finish(false);
+    finish(false, 'unavailable');
   }
 }
 
