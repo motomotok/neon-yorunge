@@ -1371,11 +1371,11 @@ function showIntroCard(k){
   card.querySelector('.icName').textContent=t('it_'+k+'_n');
   card.querySelector('.icDesc').textContent=t('it_'+k+'_d');
   drawItemIcon(card.querySelector('canvas'), k);
-  void card.offsetWidth; card.classList.add('show');
+  void card.offsetWidth; card.classList.add('show'); document.body.classList.add('introOn');
   beep(fam==='bad' ? 330 : 760, 0.07, 'triangle', 0.08);
   clearTimeout(_introHideT); _introHideT=setTimeout(hideIntroCard, 2900);
 }
-function hideIntroCard(){ clearTimeout(_introHideT); const c=document.getElementById('introCard'); if(c) c.classList.remove('show'); }
+function hideIntroCard(){ clearTimeout(_introHideT); const c=document.getElementById('introCard'); if(c) c.classList.remove('show'); document.body.classList.remove('introOn'); }
 // Bir öğe tipinin oyundaki görünümünü küçük bir canvas'a çizer (tanıtım kartı,
 // Nasıl Oynanır) — her yerde birebir aynı görsel dil.
 function drawItemIcon(cnv, type){

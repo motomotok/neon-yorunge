@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.59.0';
+const GAME_VERSION = '2.60.0';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -370,19 +370,29 @@ function togglePerk(id){
 }
 // ---- Isı Mühürleri (zorluk karşılığı puan) ------------------------------
 // Süpernova yetenekleri oyunu kolaylaştırır; mühürler bilerek ZORLAŞTIRIR ve
-// karşılığında kazanılan TÜM puanı çarpar: "ısıyı aç, rekoru zorla". Süpernova
-// sayısıyla açılır, Süpernova ekranının Isı sekmesinden takılıp çıkarılır.
+// karşılığında kazanılan TÜM puanı çarpar: "ısıyı aç, rekoru zorla". Her mühür
+// bir kez ÇEKİRDEKLE alınır (Çekirdek yalnız Recycle ile kazanılır: daha çok
+// puan kasmak için recycle yapmanın bir sebebi daha), sonra Isı sekmesinden
+// istenildiği gibi takılıp çıkarılır.
 // Yalnız Klasik ve Zaman modunda geçerli (Günün Seti herkes için eşit yarış,
 // Zen puansız). Etkiler engine.js'te session.heat ile okunur.
 const HEAT_SEALS = [
-  {id:'reverseFlow', icon:'rewind',    unlock:1,  bonus:0.15},  // Risk balonları ~3 kat sık
-  {id:'glassHeart',  icon:'heart',     unlock:2,  bonus:0.30},  // en fazla 3 can
-  {id:'fastRecord',  icon:'lightning', unlock:4,  bonus:0.20},  // plak %15 hızlı döner
-  {id:'earlyBoss',   icon:'flame',     unlock:6,  bonus:0.20},  // bosslar %30 daha erken
-  {id:'noShield',    icon:'shield',    unlock:10, bonus:0.15},  // kalkan düşmez
+  {id:'reverseFlow', icon:'rewind',    cost:4,  bonus:0.15},  // Risk balonları ~3 kat sık
+  {id:'glassHeart',  icon:'heart',     cost:6,  bonus:0.30},  // en fazla 3 can
+  {id:'fastRecord',  icon:'lightning', cost:6,  bonus:0.20},  // plak %15 hızlı döner
+  {id:'earlyBoss',   icon:'flame',     cost:8,  bonus:0.20},  // bosslar %30 daha erken
+  {id:'noShield',    icon:'shield',    cost:10, bonus:0.15},  // kalkan düşmez
 ];
 function heatModeAllowed(m){ return m==='classic' || m==='time'; }
-function sealUnlocked(s){ return (stats.totalPrestiges||0) >= s.unlock; }
+function sealUnlocked(s){ return (stats.sealsOwned||[]).includes(s.id); }
+function buySeal(id){
+  const s=HEAT_SEALS.find(x=>x.id===id);
+  if(!s || sealUnlocked(s) || (stats.cores||0)<s.cost) return false;
+  stats.cores-=s.cost;
+  stats.sealsOwned=[...(stats.sealsOwned||[]), id];
+  stats.heatSeals=[...(stats.heatSeals||[]).filter(x=>x!==id), id];   // alınınca hemen takılı
+  saveStats(); return true;
+}
 function sealSelected(id){ const s=HEAT_SEALS.find(x=>x.id===id); return !!s && sealUnlocked(s) && (stats.heatSeals||[]).includes(id); }
 function toggleSeal(id){
   const s=HEAT_SEALS.find(x=>x.id===id); if(!s || !sealUnlocked(s)) return false;
@@ -557,13 +567,15 @@ let stats = load('beatOrbitStats', {
   cores:0, lifetimeCores:0, totalPrestiges:0, bestAtPrestige:0, gamesAtPrestige:0,
   coreUnlocked:['core_root'],
   perksOwned:[], perksEquipped:[], balanceV2:false, balanceV2Refund:null,
-  heatSeals:[], seenIntro:[], risksCleared:0,
+  heatSeals:[], sealsOwned:[], seenIntro:[], risksCleared:0,
   gems:0, lifetimeGems:0,
   // Günün Seti (bkz. dailyset.js)
   dset:null, dsetPending:null, dsetHist:[], dsetName:'', dsetCache:null, dsetRealSeen:0, dsetCrownDay:'', installId:'',
 });
 // Tribal Pulse teması (16 Ekim, birkaç saat yalnız webde) Lo-Fi Chillhop ile
 // değiştirildi: alan/kuşanan oyuncu karşılığında Lo-Fi'yi alır.
+// 2.60: mühürler artık Çekirdekle alınıyor. 2.59'da takılmış olanlar bedava sahip sayılır.
+if((stats.heatSeals||[]).length && !(stats.sealsOwned||[]).length) stats.sealsOwned=[...stats.heatSeals];
 if((stats.owned.themes||[]).includes('tribalpulse')){
   stats.owned.themes = stats.owned.themes.filter(k=>k!=='tribalpulse');
   if(!stats.owned.themes.includes('lofichillhop')) stats.owned.themes.push('lofichillhop');

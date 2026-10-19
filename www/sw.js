@@ -1,4 +1,4 @@
-const CACHE = 'beat-orbit-v99';
+const CACHE = 'beat-orbit-v100';
 const ASSETS = [
   './',
   './index.html',
@@ -83,8 +83,12 @@ self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   // Video parça parça (Range) istenir; önbelleğe/SW'ye karışmasın (Safari)
   if (e.request.headers.has('range') || /\.(mp4|webm)$/.test(e.request.url)) return;
+  // Kendi dosyalarımız tarayıcının HTTP önbelleğini atlayıp sunucuya sorulur
+  // (GitHub Pages 10 dk önbellek veriyor: yayından hemen sonra yeni index.html
+  // ile eski engine.js birlikte yüklenip yeni özellikler çalışmayabiliyordu).
+  const own = new URL(e.request.url).origin === self.location.origin;
   e.respondWith(
-    fetch(e.request).then(res => {
+    (own ? fetch(e.request.url, {cache:'no-cache', credentials:'same-origin'}) : fetch(e.request)).then(res => {
       // Yalnız başarılı, kendi sitemizden gelen yanıtlar önbelleğe girer (hata
       // sayfaları / dış kaynaklar birikmesin).
       if (res.ok && res.type === 'basic') {

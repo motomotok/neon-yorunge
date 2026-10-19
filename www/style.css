@@ -1307,18 +1307,20 @@ h1 .gicon,h2 .gicon{color:var(--star);}
 .perkCard.notOwned .boostIcon{opacity:.55;}
 .perkCard .price.core{color:#7fe8ff;}
 .menuUpgradeTag.supernova{color:#7fe8ff;font-weight:700;}
-/* 4 sekme (Kademe · Çekirdek · Süpernova · Isı): tek satır. Sığmazsa yatay
-   kaydırılır; kenar boşluğu "auto" ile sığdığında ortalı, taşınca baştan başlar. */
-#upgradesTabs{flex-wrap:nowrap;gap:4px;justify-content:flex-start;overflow-x:auto;scrollbar-width:none;padding:2px 0;}
-#upgradesTabs::-webkit-scrollbar{display:none;}
-#upgradesTabs .stab{padding:7px 9px;font-size:12px;white-space:nowrap;flex:none;}
-#upgradesTabs .stab:first-child{margin-left:auto;}
-#upgradesTabs .stab:last-child{margin-right:auto;}
-@media (max-width:400px){
-  #upgradesTabs .stab{padding:7px 8px;font-size:11.5px;}
-  #upgradesTabs .stab .gicon{display:none;}
-  #upgradesTabs .stab.heatTab .gicon{display:inline-block;margin-right:3px;}
-}
+/* 4 sekme 2x2 ızgara; her biri kendi renginde ki tıklanabilir oldukları belli
+   olsun: Kademe altın, Çekirdek camgöbeği, Süpernova mor, Isı turuncu. */
+#upgradesTabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%;max-width:380px;margin:0 auto;}
+#upgradesTabs .stab{--tc:255,201,74;padding:8px 6px;font-size:12.5px;white-space:nowrap;text-align:center;opacity:1;
+  border-radius:12px;border:1.5px solid rgba(var(--tc),.45);background:rgba(var(--tc),.08);color:rgb(var(--tc));
+  display:flex;align-items:center;justify-content:center;gap:2px;overflow:hidden;text-overflow:ellipsis;}
+#upgradesTabs .stab[data-uptab="core"]{--tc:127,232,255;}
+#upgradesTabs .stab[data-uptab="perk"]{--tc:206,140,255;}
+#upgradesTabs .stab[data-uptab="heat"]{--tc:255,138,61;}
+#upgradesTabs .stab .gicon{color:inherit;}
+#upgradesTabs .stab.sel{background:rgba(var(--tc),.24);border-color:rgb(var(--tc));color:#fff;
+  box-shadow:0 0 14px -2px rgba(var(--tc),.65),inset 0 0 0 1px rgba(var(--tc),.5);}
+#upgradesTabs .stab.sel .gicon{color:rgb(var(--tc));}
+
 #perkWrap .perkHead .muted{font-size:12px;font-weight:600;}
 
 /* Yetenek yuvaları (upgrades-ui.js renderPerkSlots) */
@@ -1406,10 +1408,10 @@ h1 .gicon,h2 .gicon{color:var(--star);}
 #tutorialHint.rev .tutLabel{background:rgba(110,40,160,.8);}
 #tutorialHint.rev .tutArrow{filter:drop-shadow(0 0 6px rgba(196,107,255,.95));}
 /* İlk görüş tanıtım kartı: altta, oyun alanını kapatmadan. Aile rengi = etiket. */
-#introCard{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 92px);z-index:11;pointer-events:none;
+#introCard{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 176px);z-index:11;pointer-events:none;
   display:flex;align-items:center;gap:10px;width:min(88vw,360px);padding:8px 14px 8px 8px;border-radius:16px;
   background:rgba(14,10,24,.9);border:1px solid rgba(255,255,255,.16);box-shadow:0 10px 28px rgba(0,0,0,.5);
-  opacity:0;transform:translate(-50%,16px) scale(.96);transition:opacity .22s ease,transform .28s cubic-bezier(.34,1.5,.64,1);will-change:transform,opacity;}
+  opacity:0;transform:translate(-50%,-14px) scale(.96);transition:opacity .22s ease,transform .28s cubic-bezier(.34,1.5,.64,1);will-change:transform,opacity;}
 #introCard.show{opacity:1;transform:translate(-50%,0) scale(1);}
 #introCard canvas{width:48px;height:48px;flex:none;}
 #introCard .icText{display:flex;flex-direction:column;min-width:0;gap:1px;}
@@ -1437,7 +1439,6 @@ h1 .gicon,h2 .gicon{color:var(--star);}
 .heatCard .price.on{color:#ff9a4a;}
 .heatCard .price.lockp{color:#8f97b5;}
 .heatNote{font-size:10.5px;opacity:.6;margin-top:6px;text-align:center;}
-.heatTab .gicon{color:#ff8a3d;}
 .badge.heat{background:rgba(255,100,40,.18);border-color:rgba(255,120,50,.55);color:#ffb070;}
 .lbHeat{color:#ff9a4a;font-weight:800;}
 .lbHeat svg{width:10px;height:10px;vertical-align:-1px;}
@@ -1446,3 +1447,6 @@ h1 .gicon,h2 .gicon{color:var(--star);}
 .htSideTitle.risk{color:#d49bff;}
 .htVal.risk{color:#d49bff;}
 .htRiskNote{font-size:11px;opacity:.65;margin:6px 4px 0;line-height:1.4;}
+/* 2.60: tanıtım kartı üstteyken flaş yazısı kartın altına kayar (çakışmasın) */
+body.introOn #levelFlash{padding-top:calc(env(safe-area-inset-top) + 252px);}
+.heatCard .sealBonus{color:#ff9a4a;font-weight:800;}
