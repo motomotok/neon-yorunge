@@ -259,11 +259,20 @@ function trackFps(dtMs){
     fps.highFor = 0;
     if(dprCur < maxDpr(q) - 0.01){ setDpr(Math.min(maxDpr(q), dprCur + 0.1)); return; }
     // Bir kez seviye düşürüldüyse bir daha yükseltme (sürekli gidip gelmesin).
-    if(qualityPref === 'auto' && i < ORDER.length-1 && !fps.downgraded) applyQuality(ORDER[i+1], true);
+    // Otomatik mod cihazın başlangıç seviyesinin (GPU sınıfı) ÜSTÜNE çıkmaz:
+    // 60 FPS'i rahat tutan cihaz (iPhone/iPad) eskiden 'yüksek'e (2x çözünürlük,
+    // tam bloom, 4x MSAA) tırmanıp tüm boşluğu harcıyor ve oyun boyunca tam
+    // güçte çalışıp ısınıyordu. Yüksek kalite isteyen Ayarlar'dan seçebilir.
+    if(qualityPref === 'auto' && i < ORDER.indexOf(gpuTier) && !fps.downgraded) applyQuality(ORDER[i+1], true);
   }
 }
 
 let lastTs = 0;
+let singlePassTick = 0;
+function forceSinglePass(o){
+  const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : null;
+  if(ms) for(const m of ms){ if(m.transparent && m.side === THREE.DoubleSide && !m.forceSinglePass) m.forceSinglePass = true; }
+}
 function render(f){
   if(!renderer || failed) return;
   const now = performance.now();
@@ -290,6 +299,12 @@ function render(f){
     }
   }
   world.setRingStyle(f.ringStyle);
+  // three.js yarı saydam + çift yüzlü malzemeyi İKİ geçişte çizer (arka, sonra
+  // ön yüz) ve her geçişte malzemeyi "değişti" sayıp shader parametrelerini
+  // baştan hesaplar: kare başına çizim çağrısı ve CPU işi ikiye katlanıyordu
+  // (telefonu ısıtan ana nedenlerden). Düz süslerde iki geçiş görüntüye bir şey
+  // katmaz; tek geçişe zorlanır. Modeller/yeni nesneler için ara ara taranır.
+  if((++singlePassTick % 60) === 1) scene.traverse(forceSinglePass);
   world.update(dt, t, f);
   f.recordAngle = world.recordSpin.rotation.y;
   entities.update(dt, t, f);

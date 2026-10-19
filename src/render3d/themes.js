@@ -11,6 +11,7 @@
 import * as THREE from 'three';
 import { glowTexture } from './textures.js';
 import { loadTexture } from './assets.js';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 const DISC_R = 0.44, TOP_Y = 0.012, RING_K = [0.19, 0.285, 0.38];
 const ADD = THREE.AdditiveBlending;
@@ -41,7 +42,7 @@ function ringStrip(r, w, segs, uRepeat, y){
 }
 function glowRim(color, r, w, opacity){
   const m = new THREE.Mesh(ringStrip(r, w, 160, 1, TOP_Y+0.002),
-    new THREE.MeshBasicMaterial({color, transparent:true, opacity, depthWrite:false, blending:ADD, side:THREE.DoubleSide}));
+    new THREE.MeshBasicMaterial({color, transparent:true, opacity, depthWrite:false, blending:ADD, side:THREE.DoubleSide, forceSinglePass:true}));
   return m;
 }
 
@@ -71,7 +72,7 @@ function placeAt(o, view, nx, ny, y, clear){
   if(view.camPos){ o.up.copy(view.camUp); o.lookAt(view.camPos); } else o.rotation.set(-view.tilt, 0, 0);
   return o.visible;
 }
-function basicMat(o){ return new THREE.MeshBasicMaterial(Object.assign({transparent:true, depthWrite:false, side:THREE.DoubleSide}, o)); }
+function basicMat(o){ return new THREE.MeshBasicMaterial(Object.assign({transparent:true, depthWrite:false, side:THREE.DoubleSide, forceSinglePass:true}, o)); }
 // Yumuşak nokta dokusu (temaya ait; paylaşılan glowTexture tema
 // temizlenirken silinmesin diye ayrı üretilir).
 function softDot(){
@@ -257,9 +258,9 @@ function buildSynth(world){
   g.fillStyle = gr; g.fillRect(0,0,512,4);
   const rimTex = tex(c, true);
   const rim = new THREE.Mesh(ringStrip(DISC_R*1.012, 0.006, 200, 1, TOP_Y+0.002),
-    new THREE.MeshBasicMaterial({map:rimTex, transparent:true, opacity:0.42, depthWrite:false, blending:ADD, side:THREE.DoubleSide}));
+    new THREE.MeshBasicMaterial({map:rimTex, transparent:true, opacity:0.42, depthWrite:false, blending:ADD, side:THREE.DoubleSide, forceSinglePass:true}));
   const rimHalo = new THREE.Mesh(ringStrip(DISC_R*1.012, 0.04, 200, 1, TOP_Y+0.0018),
-    new THREE.MeshBasicMaterial({map:rimTex, transparent:true, opacity:0.25, depthWrite:false, blending:ADD, side:THREE.DoubleSide}));
+    new THREE.MeshBasicMaterial({map:rimTex, transparent:true, opacity:0.25, depthWrite:false, blending:ADD, side:THREE.DoubleSide, forceSinglePass:true}));
   group.add(rim, rimHalo);
   // Plağın çevresinde müziğe göre zıplayan ekolayzer çubukları.
   const BARS = 180;
@@ -951,18 +952,7 @@ function buildHell(world){
   fire.renderOrder = fire2.renderOrder = -1;
   // Diş gibi paslı dikenler: plakla döner, iki boy dönüşümlü.
   const sTex = softDot();
-  const spikes = new THREE.Group(), spMat = basicMat({map:spikeTexture(), opacity:1});
-  const SN = 20;
-  for(let i=0;i<SN;i++){
-    const big = i%2 === 0, len = big ? 0.2 : 0.13, wid = big ? 0.034 : 0.026;
-    const pg = new THREE.PlaneGeometry(wid, len); pg.translate(0, len/2, 0); pg.rotateX(-Math.PI/2);
-    const m = new THREE.Mesh(pg, spMat);
-    const a = i/SN*Math.PI*2 + 0.08;
-    m.position.set(Math.cos(a)*DISC_R*0.97, TOP_Y-0.004, Math.sin(a)*DISC_R*0.97);
-    m.rotation.y = -a - Math.PI/2;
-    m.renderOrder = -1;
-    spikes.add(m);
-  }
+  const spikes = rimSpikes(basicMat({map:spikeTexture(), opacity:1}), 20, 0.08, DISC_R*0.97, i=>i%2 === 0 ? [0.034, 0.2] : [0.026, 0.13]);
   world.recordSpin.add(spikes);
   // Yükselen közler (plağın altındaki "hava" katmanında, ekran düzleminde).
   const air = new THREE.Group(); group.add(air);
@@ -1240,6 +1230,30 @@ function spinPlane(spin, w, h, mat, a, d, y){
   m.position.set(Math.cos(a)*d, TOP_Y + y, Math.sin(a)*d); m.renderOrder = -1; spin.add(m);
   return m;
 }
+// Plak kenarına dizilen sivriler (diken, buz): hepsi aynı malzemede olduğu
+// için TEK geometride birleştirilir — 12-20 ayrı çizim yerine 1.
+function rimSpikes(mat, n, a0, rad, size){
+  const parts = [];
+  for(let i=0;i<n;i++){
+    const [wid, len] = size(i), a = i/n*Math.PI*2 + a0;
+    const g = new THREE.PlaneGeometry(wid, len); g.translate(0, len/2, 0); g.rotateX(-Math.PI/2);
+    g.rotateY(-a - Math.PI/2); g.translate(Math.cos(a)*rad, TOP_Y-0.004, Math.sin(a)*rad);
+    parts.push(g);
+  }
+  const m = new THREE.Mesh(mergeGeometries(parts), mat); parts.forEach(g=>g.dispose());
+  m.renderOrder = -1;
+  return m;
+}
+// Plakla dönen, tek tek parlayıp sönen küçük ışıklar (kıvılcım, veri ışığı):
+// tek InstancedMesh. ADD karışımda örnek rengi = renk × parlaklık (opaklık yerine).
+function spinSparks(spin, n, size, mat){
+  const g = new THREE.PlaneGeometry(size, size); g.rotateX(-Math.PI/2);
+  const m = new THREE.InstancedMesh(g, mat, n); m.frustumCulled = false; m.renderOrder = -1;
+  const black = new THREE.Color(0, 0, 0);
+  for(let i=0;i<n;i++) m.setColorAt(i, black);
+  spin.add(m);
+  return m;
+}
 // Ekran düzleminde süzülen parçacık katmanı (Hell közleri / Lo-Fi yağmuru gibi).
 function airInstances(group, n, mat){
   const air = new THREE.Group(); group.add(air);
@@ -1389,25 +1403,16 @@ function buildCrystal(world){
   spinLayer(spin, world, crystalShardsTexture(), {opacity:0.95}, 0.0006);
   const runes = spinLayer(spin, world, crystalRuneGlow(), {blending:ADD, opacity:0.5}, 0.0009);
   // Plağın kenarından taşan buz sivrileri (plakla döner, iki boy).
-  const spMat = basicMat({map:iceSpikeTexture(), opacity:0.92});
-  for(let i=0;i<12;i++){
-    const big = i%2 === 0, len = big ? 0.14 : 0.09, wid = big ? 0.03 : 0.022;
-    const pg = new THREE.PlaneGeometry(wid, len); pg.translate(0, len/2, 0); pg.rotateX(-Math.PI/2);
-    const m = new THREE.Mesh(pg, spMat), a = i/12*Math.PI*2 + 0.26;
-    m.position.set(Math.cos(a)*DISC_R*0.95, TOP_Y-0.004, Math.sin(a)*DISC_R*0.95); m.rotation.y = -a - Math.PI/2; m.renderOrder = -1;
-    spin.add(m);
-  }
+  spin.add(rimSpikes(basicMat({map:iceSpikeTexture(), opacity:0.92}), 12, 0.26, DISC_R*0.95, i=>i%2 === 0 ? [0.03, 0.14] : [0.022, 0.09]));
   // Kristaller üstünde ara ara parlayan yıldız pırıltıları.
-  const spkTex = sparkleTexture(), rs = seeded(9);
-  const sparks = Array.from({length:14}, ()=>{
-    const m = spinPlane(spin, 0.032, 0.032, basicMat({map:spkTex, color:'#e2fbff', blending:ADD, opacity:0}), rs()*Math.PI*2, DISC_R*(0.32 + rs()*0.55), 0.003);
-    return {m, ph:rs()*10, sp:0.5 + rs()*0.8};
-  });
+  const rs = seeded(9), sparkCol = new THREE.Color('#e2fbff'), SY = new THREE.Vector3(0, 1, 0);
+  const sparkMesh = spinSparks(spin, 14, 0.032, basicMat({map:sparkleTexture(), blending:ADD}));
+  const sparks = Array.from({length:14}, ()=>{ const a = rs()*Math.PI*2, d = DISC_R*(0.32 + rs()*0.55); return {x:Math.cos(a)*d, z:Math.sin(a)*d, ph:rs()*10, sp:0.5 + rs()*0.8}; });
   group.add(glowRim('#ffa640', DISC_R*1.004, 0.005, 0.55));
   // Süzülen kar
   const SN = 44, {air, mesh:snow} = airInstances(group, SN, basicMat({map:softDot(), color:'#dff4ff', blending:ADD, opacity:0.8}));
   const flakes = Array.from({length:SN}, ()=>({x:rnd(-1.4,1.4), y:rnd(-1.8,1.8), s:rnd(0.008,0.02), sp:rnd(0.5,1.1), ph:rnd(0,9)}));
-  const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = new THREE.Vector3(), P = new THREE.Vector3();
+  const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = new THREE.Vector3(), P = new THREE.Vector3(), C = new THREE.Color();
   // Plak dışı: iki kristal kümesi (alt köşeler), havada süzülen rün taşı (sol üst).
   const glowT = softDot();
   const clusters = [11, 23].map((seed, i)=>{
@@ -1442,10 +1447,14 @@ function buildCrystal(world){
     update(dt, t){
       kick = Math.max(0, kick - 0.035*dt);
       runes.material.opacity = 0.4 + Math.sin(t*1.4)*0.12 + kick*0.45;
-      for(const s of sparks){
+      sparks.forEach((s, i)=>{
         const v = Math.pow(Math.max(0, Math.sin(t*s.sp*2 + s.ph)), 8);
-        s.m.material.opacity = v*0.95; s.m.scale.setScalar(0.5 + v*0.7); s.m.rotation.y = t*0.6 + s.ph;
-      }
+        P.set(s.x, TOP_Y + 0.003, s.z); Q.setFromAxisAngle(SY, t*0.6 + s.ph); S.setScalar(0.5 + v*0.7);
+        M.compose(P, Q, S); sparkMesh.setMatrixAt(i, M);
+        sparkMesh.setColorAt(i, C.copy(sparkCol).multiplyScalar(v*0.95));
+      });
+      sparkMesh.instanceMatrix.needsUpdate = true; sparkMesh.instanceColor.needsUpdate = true;
+      Q.identity();
       for(const c of clusters) c.glow.material.opacity = 0.24 + Math.sin(t*1.3 + c.ph)*0.08 + kick*0.25;
       stoneBody.position.y = Math.sin(t*0.9)*0.006; stoneBody.rotation.z = Math.sin(t*0.6)*0.05;
       stoneGlow.material.opacity = 0.45 + Math.sin(t*2)*0.15 + kick*0.4;
@@ -2012,17 +2021,15 @@ function buildCyber(world){
   const lit = spinLayer(spin, world, tx.glow, {blending:ADD, opacity:0.55}, 0.0006);
   // Yollar boyunca merkezden dışa akan veri ışıkları.
   const dotT = softDot(), rs = seeded(4);
-  const pulses = Array.from({length:14}, (_, i)=>{
-    const p = {a:rs()*Math.PI*2, u:rs(), sp:0.7 + rs()*0.7};
-    p.m = spinPlane(spin, 0.022, 0.022, basicMat({map:dotT, color:i%2 ? '#ff3df0' : '#2ee6ff', blending:ADD, opacity:0}), p.a, DISC_R*0.5, 0.0035);
-    return p;
-  });
+  const pulseMesh = spinSparks(spin, 14, 0.022, basicMat({map:dotT, blending:ADD}));
+  const pulseCol = [new THREE.Color('#2ee6ff'), new THREE.Color('#ff3df0')];
+  const pulses = Array.from({length:14}, ()=>({a:rs()*Math.PI*2, u:rs(), sp:0.7 + rs()*0.7}));
   group.add(glowRim('#ff3df0', DISC_R*1.006, 0.007, 0.85), glowRim('#2ee6ff', DISC_R*1.03, 0.0025, 0.45));
   // Dijital yağmur
   const RN = 24, {air, mesh:rain} = airInstances(group, RN, basicMat({map:glyphColumnTexture(), blending:ADD, opacity:0.35}));
   const rcols = ['#2ee6ff','#ff3df0','#3f7bff'].map(c=>new THREE.Color(c));
   const drops = Array.from({length:RN}, (_, i)=>{ rain.setColorAt(i, rcols[i%3]); return {x:rnd(-1.4,1.4), y:rnd(-1.8,1.8), sp:rnd(0.8,1.6), l:rnd(0.18,0.32)}; });
-  const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = new THREE.Vector3(), P = new THREE.Vector3();
+  const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = new THREE.Vector3(), P = new THREE.Vector3(), C = new THREE.Color();
   const glowT = softDot();
   // Hologram çip + tarama çizgisi (sol alt)
   const chip = new THREE.Group(), chipBody = new THREE.Group(); group.add(chip); chip.add(chipBody); chip.scale.setScalar(1.3);
@@ -2033,10 +2040,13 @@ function buildCyber(world){
   const RW = 0.06, RH = RW*256/160;
   const rack = new THREE.Group(); group.add(rack); rack.scale.setScalar(1.3);
   rack.add(new THREE.Mesh(new THREE.PlaneGeometry(RW, RH), basicMat({map:rackTexture()})));
+  // 16 LED tek InstancedMesh (ADD: örnek rengi = renk × parlaklık).
+  const ledMesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.0042, 0.0042), basicMat({blending:ADD}), 16);
+  ledMesh.frustumCulled = false; rack.add(ledMesh);
   const leds = Array.from({length:16}, (_, i)=>{
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(0.0042, 0.0042), basicMat({color:CYBER[i%4], blending:ADD, opacity:0.3}));
-    const row = i >> 1; m.position.set(RW*(0.22 + (i&1)*0.1), RH/2 - RH*(0.07 + row*0.113 + 0.04), 0.0005); rack.add(m);
-    return {m, on:false, next:0};
+    const row = i >> 1, lm = new THREE.Matrix4().makeTranslation(RW*(0.22 + (i&1)*0.1), RH/2 - RH*(0.07 + row*0.113 + 0.04), 0.0005);
+    ledMesh.setMatrixAt(i, lm); ledMesh.setColorAt(i, new THREE.Color(0, 0, 0));
+    return {col:new THREE.Color(CYBER[i%4]), on:false, next:0};
   });
   // Dönen hologram halka (sol üst)
   const holo = new THREE.Group(); group.add(holo); holo.scale.setScalar(1.25);
@@ -2060,20 +2070,22 @@ function buildCyber(world){
     update(dt, t){
       kick = Math.max(0, kick - 0.035*dt);
       lit.material.opacity = 0.32 + beatAt(t)*0.18 + kick*0.45;
-      for(const p of pulses){
+      pulses.forEach((p, i)=>{
         p.u += 0.004*p.sp*dt*(1 + kick*2);
         if(p.u > 1){ p.u = 0; p.a = Math.random()*Math.PI*2; }
         const d = DISC_R*(0.32 + p.u*0.64);
-        p.m.position.set(Math.cos(p.a)*d, p.m.position.y, Math.sin(p.a)*d);
-        p.m.material.opacity = Math.sin(Math.PI*p.u)*0.9;
-      }
+        P.set(Math.cos(p.a)*d, TOP_Y + 0.0035, Math.sin(p.a)*d); S.setScalar(1); M.compose(P, Q, S); pulseMesh.setMatrixAt(i, M);
+        pulseMesh.setColorAt(i, C.copy(pulseCol[i%2]).multiplyScalar(Math.sin(Math.PI*p.u)*0.9));
+      });
+      pulseMesh.instanceMatrix.needsUpdate = true; pulseMesh.instanceColor.needsUpdate = true;
       chipBody.position.y = Math.sin(t*1.2)*0.005;
       scan.position.y = Math.sin(t*1.6)*0.038; scan.material.opacity = 0.5 + kick*0.5;
       chipGlow.material.opacity = 0.2 + Math.sin(t*2)*0.05 + kick*0.3;
-      for(const l of leds){
+      leds.forEach((l, i)=>{
         if(t > l.next){ l.on = Math.random() < 0.55; l.next = t + rnd(0.08, 0.5); }
-        l.m.material.opacity = kick > 0.6 ? 1 : (l.on ? 0.95 : 0.2);
-      }
+        ledMesh.setColorAt(i, C.copy(l.col).multiplyScalar(kick > 0.6 ? 1 : (l.on ? 0.95 : 0.2)));
+      });
+      ledMesh.instanceColor.needsUpdate = true;
       ringA.rotation.z = t*0.5; ringB.rotation.z = -t*0.9;
       core.material.opacity = 0.45 + Math.sin(t*3)*0.12 + kick*0.4;
       holo.children[0].material.opacity = 0.6 + kick*0.35;

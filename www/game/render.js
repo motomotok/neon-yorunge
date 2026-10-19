@@ -49,7 +49,10 @@ function loop(ts){
   const rawMs = last ? ts-last : 16.6667; last=ts;
   const dt=Math.min(40, rawMs)/16.6667 || 1;          // görsel efektler için
   const simDt=Math.min(100, rawMs)/16.6667 || 1;      // oyun mantığı (bkz. stepGame)
-  ctx.clearRect(0,0,W,H);
+  // 3D modda 2D canvas yalnızca hasar flaşını taşır: flaş yokken silinmez ve
+  // gizlenir (yoksa her karede temizlenen tam ekran saydam bir katman olarak
+  // GPU'da birleştiriliyordu — ısınmanın nedenlerinden).
+  if(!gfx3dActive()) ctx.clearRect(0,0,W,H);
   // 3D modda (bkz. gfx.js) dünya WebGL canvas'ına (#game3d) çizilir; bu 2D
   // canvas onun üstünde saydam kalır ve sadece tam ekran flaşları taşır.
   // Oyun mantığı (update) iki modda da birebir aynı.
@@ -65,6 +68,7 @@ function loop(ts){
     if(!_menuSkip && !sceneCovered(ts)){ renderFrame3D(dt+_menuDt); _menuDt=0; }
     drawScreenOverlays();
   } else {
+    setOverlayCanvasVisible(true);
     updateShootingStars(dt);
     drawBg(dt);
     if(state==='play') stepGame(simDt);
@@ -114,8 +118,16 @@ function drawWorld(){
 }
 // Çarpışma (kırmızı) ve zaman dondurma (buz mavisi) tam ekran flaşları —
 // iki çizim modunun ortak katmanı.
+let _ovDrawn=false;
+function setOverlayCanvasVisible(v){ const s = v ? '' : 'hidden'; if(cv.style.visibility !== s) cv.style.visibility = s; }
 function drawScreenOverlays(){
-  if(flash>0 && GAME_STATES[state]){ ctx.fillStyle=hexA(T.peril, flash*0.4); ctx.fillRect(0,0,W,H); }
+  const on = !!(flash>0 && GAME_STATES[state]);
+  // Klasik modda canvas zaten her karede baştan çizilir; flaş dünyanın üstüne.
+  if(!gfx3dActive()){ if(on){ ctx.fillStyle=hexA(T.peril, flash*0.4); ctx.fillRect(0,0,W,H); } return; }
+  // 3D modda canvas yalnız flaşı taşır: flaş yokken temizlenmez ve gizlenir.
+  if(on || _ovDrawn) ctx.clearRect(0,0,W,H);
+  if(on){ ctx.fillStyle=hexA(T.peril, flash*0.4); ctx.fillRect(0,0,W,H); }
+  _ovDrawn = on; setOverlayCanvasVisible(on);
 }
 
 function drawSun(t){

@@ -451,7 +451,7 @@ export class Entities {
         if(!m){
           const tex = sealTexture().clone(); tex.needsUpdate = true; tex.repeat.x = 14;
           m = new THREE.Mesh(sealArcGeometry(rad, w, Math.PI, 72),
-            new THREE.MeshBasicMaterial({map:tex, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending, side:THREE.DoubleSide}));
+            new THREE.MeshBasicMaterial({map:tex, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending, side:THREE.DoubleSide, forceSinglePass:true}));
           m.userData.key = key; m.renderOrder = 2;
           this.group.add(m); this.seals.set(it, m);
         }
