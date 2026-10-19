@@ -195,7 +195,7 @@ function renderLeaderboard(){
   const el=document.getElementById('lbList');
   if(!stats.leaderboard.length){ el.innerHTML=`<div class="row"><span class="k">${t('no_records')}</span></div>`; return; }
   // Müzik listesi gibi: büyük sıra numarası, minik plak, tarih · mod, skor.
-  el.innerHTML = stats.leaderboard.map((e,i)=>`<div class="lbRow${i===0?' top':''}"><span class="lbRank">${i+1}</span><span class="lbDisc"></span><span class="lbMeta">${e.date} · ${modeLabel(e.mode)}</span><span class="lbScore">${e.score.toFixed(2)}</span></div>`).join('');
+  el.innerHTML = stats.leaderboard.map((e,i)=>`<div class="lbRow${i===0?' top':''}"><span class="lbRank">${i+1}</span><span class="lbDisc"></span><span class="lbMeta">${e.date} · ${modeLabel(e.mode)}${e.heat?` · <span class="lbHeat">${icon('flame')}${e.heat}</span>`:''}</span><span class="lbScore">${e.score.toFixed(2)}</span></div>`).join('');
 }
 function refreshDailyStatus(){
   document.getElementById('dailyStatus').textContent = dsetModeStatus();
@@ -393,90 +393,14 @@ function claimLoginFromScreen(){
   setTimeout(()=>{ wrap.classList.remove('claiming'); renderLoginStreakScreen(); }, 900);
 }
 document.getElementById('lsClaimBtn').addEventListener('click', e=>{ e.stopPropagation(); claimLoginFromScreen(); });
-// Nasıl Oynanır ekranındaki ikonlar artık boş renkli daireler değil,
-// render.js'teki drawItem()'ın çizdiği GERÇEK oyun-içi şekiller (üçgen/
-// kare/beşgen/altıgen/yıldız siluetleri) — ama TAMAMEN AYRI, kendi küçük
-// canvas'larına çiziliyor. Ana oyun render döngüsüne (ctx/render.js) hiç
-// dokunmuyor, bu yüzden gameplay'i bozma riski yok; sadece görsel dilin
-// birebir aynısını küçük ölçekte tekrarlıyor.
-const HOWTO_ICON_SHAPES = {
-  star:        {kind:'itemImg', key:'note'},
-  diamond:     {kind:'itemImg', key:'clef'},
-  particle:    {kind:'itemImg', key:'coin'},
-  heartItem:   {kind:'itemImg', key:'heart'},
-  pwShield:    {kind:'itemImg', key:'shield'},
-  pwSlow:      {kind:'itemImg', key:'slow'},
-  pwMagnet:    {kind:'itemImg', key:'magnet'},
-  pwMult:      {kind:'itemImg', key:'mult'},
-  hazard:      {kind:'img', monster:'glitch_red'},
-  hazardJump:  {kind:'img', monster:'glitch_blue'},
-  hazardBomb:  {kind:'img', monster:'glitch_green'},
-  hazardPull:  {kind:'img', monster:'glitch_yellow'},
-  hazardTwin:  {kind:'img', monster:'glitch_purple'},
-  hazardPulse: {kind:'img', monster:'glitch_orange'},
-  hazardCreep: {kind:'img', monster:'glitch_pink'},
-};
-function drawHowtoIconShape(ctx2, type, size){
-  const cfgS = HOWTO_ICON_SHAPES[type]; if(!cfgS) return;
-  const cx=size/2, cy=size/2, R=size*0.3;
-  ctx2.clearRect(0,0,size,size);
-  if(cfgS.kind==='note'){
-    ctx2.save(); ctx2.translate(cx,cy);
-    ctx2.fillStyle=cfgS.color;
-    ctx2.beginPath(); ctx2.ellipse(0,R*0.05,R*0.95,R*0.72,-0.32,0,7); ctx2.fill();
-    ctx2.strokeStyle=cfgS.color; ctx2.lineWidth=Math.max(1.4,R*0.26); ctx2.lineCap='round';
-    ctx2.beginPath(); ctx2.moveTo(R*0.78,-R*0.15); ctx2.lineTo(R*0.78,-R*2.0); ctx2.stroke();
-    ctx2.restore();
-  } else if(cfgS.kind==='diamond'){
-    // Oyun içiyle aynı sol anahtarı (render.js drawTrebleClef).
-    drawTrebleClef(ctx2, cx, cy, size*0.86, cfgS.color);
-  } else if(cfgS.kind==='coin'){
-    ctx2.fillStyle='#2a1a10'; ctx2.beginPath(); ctx2.arc(cx,cy,R,0,7); ctx2.fill();
-    ctx2.strokeStyle='rgba(255,255,255,.18)'; ctx2.lineWidth=1;
-    ctx2.beginPath(); ctx2.arc(cx,cy,R*0.8,0,7); ctx2.stroke();
-    ctx2.fillStyle='#ffb454'; ctx2.beginPath(); ctx2.arc(cx,cy,R*0.58,0,7); ctx2.fill();
-    ctx2.fillStyle='#c47a1f'; ctx2.beginPath(); ctx2.arc(cx,cy,R*0.3,0,7); ctx2.fill();
-    ctx2.fillStyle='#0a0604'; ctx2.beginPath(); ctx2.arc(cx,cy,R*0.1,0,7); ctx2.fill();
-  } else if(cfgS.kind==='heart'){
-    const r=R*1.15;
-    ctx2.save(); ctx2.translate(cx,cy); ctx2.fillStyle=cfgS.color;
-    ctx2.beginPath();
-    ctx2.moveTo(0,r*0.32);
-    ctx2.bezierCurveTo(0,-r*0.28, -r*1.05,-r*0.28, -r*1.05,r*0.32);
-    ctx2.bezierCurveTo(-r*1.05,r*0.82, -r*0.35,r*1.05, 0,r*1.35);
-    ctx2.bezierCurveTo(r*0.35,r*1.05, r*1.05,r*0.82, r*1.05,r*0.32);
-    ctx2.bezierCurveTo(r*1.05,-r*0.28, 0,-r*0.28, 0,r*0.32);
-    ctx2.closePath(); ctx2.fill();
-    ctx2.restore();
-  } else if(cfgS.kind==='poly'){
-    const rr = (cfgS.big ? R*1.5 : R)*1.12;
-    ctx2.fillStyle=cfgS.color; ctx2.beginPath();
-    for(let i=0;i<cfgS.sides;i++){
-      const a=cfgS.rot+i*Math.PI*2/cfgS.sides;
-      const xx=cx+Math.cos(a)*rr, yy=cy+Math.sin(a)*rr;
-      i?ctx2.lineTo(xx,yy):ctx2.moveTo(xx,yy);
-    }
-    ctx2.closePath(); ctx2.fill();
-  } else if(cfgS.kind==='spike'){
-    const outer=R*cfgS.outer, inner=R*cfgS.inner, pts=cfgS.pts;
-    ctx2.fillStyle=cfgS.color; ctx2.beginPath();
-    for(let i=0;i<pts*2;i++){
-      const rr=i%2?inner:outer; const a=i*Math.PI/pts-Math.PI/2;
-      const xx=cx+Math.cos(a)*rr, yy=cy+Math.sin(a)*rr;
-      i?ctx2.lineTo(xx,yy):ctx2.moveTo(xx,yy);
-    }
-    ctx2.closePath(); ctx2.fill();
-  } else if(cfgS.kind==='img'){
-    const img = MONSTER_IMG[cfgS.monster];
-    if(img && img.complete && img.naturalWidth>0) ctx2.drawImage(img, cx-R*1.6, cy-R*1.6, R*3.2, R*3.2);
-  } else if(cfgS.kind==='itemImg'){
-    const img = ITEM_IMG[cfgS.key];
-    if(imgReady(img)) ctx2.drawImage(img, cx-R*1.5, cy-R*1.5, R*3, R*3);
-  }
-}
+// Nasıl Oynanır ikonları: oyun içindeki çizimin (render.js drawItem) birebir
+// aynısı, kendi küçük canvas'larında (bkz. engine.js drawItemIcon) — cızırtı
+// renkleri, güç baloncukları, risk balonları her yerde tek görsel dil.
+const HOWTO_TYPE = {particle:'coin', heartItem:'heart', pwShield:'shield', pwSlow:'slow', pwMagnet:'magnet', pwMult:'mult'};
 function renderHowtoIcons(){
   document.querySelectorAll('.howtoIcon').forEach(cv=>{
-    drawHowtoIconShape(cv.getContext('2d'), cv.dataset.type, cv.width);
+    if(!cv.dataset.hd){ cv.dataset.hd='1'; cv.width=cv.height=68; }   // keskin görünsün (2x)
+    drawItemIcon(cv, HOWTO_TYPE[cv.dataset.type] || cv.dataset.type);
   });
 }
 // Ana menü rozetleri (Clash Royale tarzı): alınacak bir şey varsa butonun

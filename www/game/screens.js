@@ -47,6 +47,8 @@ function clearPlayOverlays(){
   const lf=document.getElementById('levelFlash'); if(lf) lf.style.opacity=0;
   if(typeof _hud!=='undefined') _hud.flash=0;
   if(typeof cancelResumeCountdown==='function') cancelResumeCountdown();
+  if(typeof hideRiskFx==='function') hideRiskFx();
+  if(typeof hideIntroCard==='function') hideIntroCard();
 }
 
 // Her oyun başlangıcında 5 saniyeliğine sol/sağ dokunma bölgelerini
@@ -142,6 +144,8 @@ function startGame(m,d){
   if(mode!=='zen' && totalPowerLevel()>0){
     queueToast(t('run_start_power',{n:stats.games+1, hp:maxHp}));
   }
+  // Isı mühürleri açıksa oyuncu baştan bilsin (puan çarpanı + zorluk).
+  if(session.heatLevel>0) queueToast(icon('flame')+' '+t('heat_run_toast',{n:session.heatLevel, m:session.heatMult.toFixed(2)}));
 }
 function pauseGame(){ if(state!=='play') return; state='pause'; showScreen('pause');
   document.getElementById('zenFinishBtn').style.display = mode==='zen' ? 'block' : 'none';
@@ -271,7 +275,8 @@ function gameOver(reason){
   const melodyOctave=Math.floor(session.streakMax/MELODY_SCALE.length);
   const melodyText = melodyOctave>0 ? t('melody_octave',{n:melodyOctave}) : '';
   document.getElementById('overStats').textContent=t('over_stats_line',{n:stats.games, reason:reasonText, best:(ranked ? stats.best : (stats.zenBest||0)).toFixed(2), level, melody:melodyText});
-  document.getElementById('recordBadge').innerHTML = newRecord ? `<span class="badge">${icon('trophy')} ${t('new_record_badge')}</span>` : '';
+  document.getElementById('recordBadge').innerHTML = (newRecord ? `<span class="badge">${icon('trophy')} ${t('new_record_badge')}</span>` : '')
+    + (session.heatLevel>0 ? ` <span class="badge heat">${icon('flame')} ${t('heat_badge',{n:session.heatLevel, m:session.heatMult.toFixed(2)})}</span>` : '');
   document.getElementById('nextGoalLine').textContent = mode==='daily' ? dsetOverText(dsetRes) : nextGoalLineText(runScore, newRecord);
   document.getElementById('dsetOverBtn').style.display = mode==='daily' ? '' : 'none';
   if(mode==='zen'){
@@ -303,7 +308,7 @@ function gameOver(reason){
 }
 
 function addToLeaderboard(scoreVal){
-  stats.leaderboard.push({score:scoreVal, date:todayStr(), mode});
+  stats.leaderboard.push({score:scoreVal, date:todayStr(), mode, heat:(session && session.heatLevel)||0});
   stats.leaderboard.sort((a,b)=>b.score-a.score);
   stats.leaderboard = stats.leaderboard.slice(0,5);
   saveStats();

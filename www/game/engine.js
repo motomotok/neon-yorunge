@@ -69,6 +69,7 @@ function comboSpeedTarget(c){
   return Math.min(diffCfg.comboMulCap || 1.85, m);
 }
 const PW = ['shield','slow','magnet','mult'];
+const PW_NOSHIELD = ['slow','magnet','mult'];   // "Kalkansız" ısı mühürü
 // HUD çipleriyle (bkz. chip() çağrıları aşağıda) aynı ikon setine eşler —
 // oyun dünyasındaki takviye topları da render.js'de bu anahtarlarla,
 // sistem emojisi yerine oyunun kendi SVG ikonlarıyla çizilir.
@@ -89,11 +90,20 @@ function resetGame(){
   newRecord=false; timeScale=1; timeScaleT=0;
   bossNextIndex=0; bossActive=false; bossWaveItems=[]; bossReward=0; bossTelegraph=null; bossQueue=[]; bossNextCol=0; bossEnd=0;
   lastHeartScore=-HEART_SCORE_GAP; noteRain=0;
+  // Risk balonları ve ilk-görüş tanıtımları (bkz. aşağıda RISK_*, introCheck).
+  riskCd=RISK_FIRST; introCd=200;
+  session.risk=null; session.risksTaken=0; session.risksCleared=0;
+  if(typeof Music!=='undefined' && Music.setFx) Music.setFx(null);
+  // Isı Mühürleri: yalnız Klasik/Zaman, tutorial dışı (bkz. data.js HEAT_SEALS).
+  const heatList = (!tutorialActive && heatModeAllowed(mode)) ? heatSelected() : [];
+  session.heat = {}; heatList.forEach(s=>{ session.heat[s.id]=true; });
+  session.heatLevel = heatList.length; session.heatMult = heatMultOf(heatList);
+  if(session.heat.glassHeart){ maxHp=Math.min(maxHp,3); hp=maxHp; }
   // Süpernova Yetenekleri (bkz. data.js PERKS): oyun başında bir kez okunur.
   const zenRun = mode==='zen';
   session.secondChance = !zenRun && hasPerk('secondChance');
   session.ringLerp = hasPerk('nimblePick') ? 0.38 : 0.22;
-  if(!zenRun && hasPerk('shieldStart')) player.shieldHits=shieldHitsFor();
+  if(!zenRun && hasPerk('shieldStart') && !session.heat.noShield) player.shieldHits=shieldHitsFor();
   if(activeBoost){
     if(activeBoost==='shieldstart') player.shieldHits=shieldHitsFor();
     else if(activeBoost==='slowstart') player.slowT=SLOW_DUR;
@@ -122,13 +132,15 @@ function updateIdleOrb(dt){ player.ang += 0.006*dt; }
 // Oyun sonunda skora göre verilen nota bonusu (bkz. screens.js gameOver) —
 // HUD'daki "Oyun sonu" tahmini de aynı fonksiyonu kullanır, ikisi hiç ayrışmaz.
 function endScoreBonus(s){ return Math.round(Math.floor(s/12)*weekendMult()*(1+upgradeBonus('coinPct'))); }
-function addScore(n){ score = Math.round((score+n)*100)/100; }
+// Isı Mühürleri (bkz. data.js HEAT_SEALS) bu oyunda kazanılan TÜM puanı çarpar.
+function addScore(n){ score = Math.round((score+n*((session && session.heatMult)||1))*100)/100; }
 function normAng(a){ a%=(Math.PI*2); if(a<0)a+=Math.PI*2; return a; }
 function angDiff(a,b){ let d=b-a; while(d>Math.PI)d-=Math.PI*2; while(d<-Math.PI)d+=Math.PI*2; return d; }
 function radiusFor(r){ return RINGS[r]; }
 function easeOut(t){ return 1-Math.pow(1-t,3); }
 function isHazardType(t){ return t==='hazard'||t==='hazardJump'||t==='hazardBomb'||t==='hazardPull'||t==='hazardTwin'||t==='hazardPulse'||t==='hazardCreep'; }
 function isPower(t){ return t==='shield'||t==='slow'||t==='magnet'||t==='mult'; }
+function isRisk(t){ return t==='riskRewind'||t==='riskDark'; }
 
 // Skor eşiklerinde açılan gelişmiş tehlike tipleri: eşiğe ulaşınca bir anda
 // hep-ya-da-hiç değil, eşikten ne kadar ileri gidersen ihtimali o kadar
@@ -206,14 +218,13 @@ function pickHazardKind(){
   return type;
 }
 const RARE_GLITCH_KEYS = {hazardPull:'yellow', hazardTwin:'purple', hazardPulse:'orange', hazardCreep:'pink'};
-// İlk kez görülen gelişmiş cızırtı: kısa bir "Yeni cızırtı!" bildirimi.
+// İlk kez görülen gelişmiş cızırtıyı kaydeder (keşif ağırlığı için). Oyuncuya
+// tanıtımı artık introCheck() yapar: cızırtı penanın önüne gelince.
 function noteGlitchSeen(type){
   if(!RARE_GLITCH_KEYS[type] || tutorialActive) return;
   stats.seenHazards = stats.seenHazards || [];
   if(stats.seenHazards.includes(type)) return;
   stats.seenHazards.push(type); saveStats();
-  const k=RARE_GLITCH_KEYS[type];
-  queueToast(t('toast_new_glitch',{name:t('glitch_'+k+'_name'), desc:t('glitch_'+k+'_desc')}));
 }
 
 // Skor eşiklerinde bir kerelik "boss dalgası": güneşten patlama efektiyle
@@ -241,7 +252,12 @@ const BOSS_STAGES = [
 // tanım üretir, boss dalgaları asla bitmez.
 const BOSS_INFINITE_STEP = 5000;
 const BOSS_INFINITE_REWARD_STEP = 60;
+// "Erken Boss" ısı mühürü: tüm boss eşikleri %30 daha erken gelir.
 function bossStageFor(index){
+  const def = bossStageBase(index);
+  return (session && session.heat && session.heat.earlyBoss) ? Object.assign({}, def, {score:Math.round(def.score*0.7)}) : def;
+}
+function bossStageBase(index){
   if(index < BOSS_STAGES.length) return BOSS_STAGES[index];
   const extra = index - BOSS_STAGES.length + 1;
   const last = BOSS_STAGES[BOSS_STAGES.length-1];
@@ -450,6 +466,8 @@ function spawnItem(atAng, atRing, forceHazard, safe){
     type = pickHazardKind();
   } else if(heartEligible && rnd()<HEART_CHANCE*(1+coreBonus('heartBoost'))){
     type='heart'; lastHeartScore=score;
+  } else if(riskReady()){
+    type = rnd()<0.5 ? 'riskRewind' : 'riskDark'; riskCd = riskGap();
   } else {
     let r=rnd();
     if(session.luckyCharges>0 && r<hazChance){ session.luckyCharges--; r=hazChance; }
@@ -457,7 +475,7 @@ function spawnItem(atAng, atRing, forceHazard, safe){
     if(r < hazChance){
       type = pickHazardKind();
     } else if(r < hazChance+0.03) type='diamond';
-    else if(r < hazChance+0.08) type=PW[Math.floor(rnd()*PW.length)];
+    else if(r < hazChance+0.08){ const pool = session.heat && session.heat.noShield ? PW_NOSHIELD : PW; type=pool[Math.floor(rnd()*pool.length)]; }
     else if(r < hazChance+0.14) type='coin';
     else type='star';
   }
@@ -638,7 +656,9 @@ function tap(x){
   // halkasına göre yerleştirildiği için) halka değiştirmek öğeyi
   // kaçırmasına yol açar — bu adımlarda dokunma geçici olarak devre dışı.
   if(tutorialActive && typeof tutorialTapAllowed==='function' && !tutorialTapAllowed()) return;
-  const goOut = x >= W/2;
+  let goOut = x >= W/2;
+  // Geri Sar risk balonu: sol ↔ sağ yer değiştirir.
+  if(session && session.risk && session.risk.type==='riskRewind') goOut = !goOut;
   const next = player.targetRing + (goOut ? 1 : -1);
   if(next < 0 || next > NUM_RINGS-1) return;
   const seal = (typeof sealAt==='function') ? sealAt(next, player.ang) : null;
@@ -719,7 +739,7 @@ function update(dt){
   // sıçrar ne de çarpınca bir karede yarıya düşer. Zen modda sabit.
   const comboTarget = zen ? 1 : comboSpeedTarget(combo);
   player.comboMulEase += (comboTarget - player.comboMulEase) * Math.min(1, 0.05*dt);
-  player.speed = 1.5 * player.comboMulEase;
+  player.speed = 1.5 * player.comboMulEase * (session.heat && session.heat.fastRecord ? 1.15 : 1);
   // Boss dalgası sırasında oyuncu hızından bağımsız, sabit ve yavaş bir
   // açısal hızla ilerlenir — dalga en az ~6-7 saniye sürsün diye (bkz.
   // BOSS_SLOW_RATE, startBossWave()).
@@ -736,7 +756,10 @@ function update(dt){
   if(player.magnetT>0) player.magnetT-=dt;
   if(player.invulT>0) player.invulT-=dt;
   if(player.multT>0) player.multT-=dt;
-  const mult = (player.multT>0 ? 2+upgradeBonus('multPower') : 1) * (diffCfg.scoreMult||1);
+  // Risk balonu etkisi sürerken notalar ×2 (bkz. activateRisk).
+  const mult = (player.multT>0 ? 2+upgradeBonus('multPower') : 1) * (diffCfg.scoreMult||1) * (session.risk ? 2 : 1);
+  updateRisk(dt);
+  introCheck(dt);
 
   // Boss dalgası sürerken normal akış duraklar — "stage" temiz kalsın,
   // dalganın öğeleriyle karışıp okunaksızlaşmasın.
@@ -753,6 +776,7 @@ function update(dt){
     if(!it.alive) continue;
     if(!it.expiring && it.pop<1) it.pop=Math.min(1,it.pop+dt*0.14);
     if(it.sealBump>0) it.sealBump=Math.max(0,it.sealBump-dt*0.05);
+    if(it.spot>0) it.spot-=dt;
 
     if(it.type==='hazardJump' && !it.expiring && !it.bossStatic){
       it.jumpT-=dt;
@@ -765,7 +789,7 @@ function update(dt){
         // tek kısıt: bir açıda üç halkanın da kapanmasına yol açmamak.
         const first = it.ring + (rnd()<0.5 ? 1 : -1);
         const opts = [first, 2*it.ring-first].filter(r=>r>=0 && r<NUM_RINGS && !pinchAt(r, it.ang, it));
-        if(opts.length){ it.ring=opts[0]; it.jumpT=JUMP_EVERY+rnd()*25; burst(CX+Math.cos(it.ang)*radiusFor(it.ring), CY+Math.sin(it.ang)*radiusFor(it.ring), '#3b8bff', 6, 2); }
+        if(opts.length){ it.ring=opts[0]; it.jumpT=JUMP_EVERY+rnd()*25; burst(CX+Math.cos(it.ang)*radiusFor(it.ring), CY+Math.sin(it.ang)*radiusFor(it.ring), '#ff8a1f', 6, 2); }
         else it.jumpT=8;
       }
     }
@@ -836,11 +860,12 @@ function update(dt){
     // tam da bu pencereye denk geliyordu. Ayrıca sabit açısal pencere iç
     // halkada dış halkaya göre çok daha dar bir gerçek mesafeye denk
     // geliyordu; piksel mesafesi tüm halkalarda tutarlı bir cömertlik sağlar.
-    const magnetGrab = player.magnetT>0 && !isPower(it.type);
+    // Mıknatıslar risk balonunu ÇEKMEZ: riske girmek oyuncunun kendi kararı.
+    const magnetGrab = player.magnetT>0 && !isPower(it.type) && !isRisk(it.type);
     let grabbed;
     if(magnetGrab){
       grabbed = da<hitWindow && settled; // mıknatıs halka farkı gözetmeden çeker
-    } else if(perkMagnet && settled && !isPower(it.type) && Math.abs(it.ring-curRing)===1 && da<hitWindow*0.8){
+    } else if(perkMagnet && settled && !isPower(it.type) && !isRisk(it.type) && Math.abs(it.ring-curRing)===1 && da<hitWindow*0.8){
       grabbed = true;   // Nota Mıknatısı yeteneği: komşu halkadaki notayı da alır
     } else {
       const px=CX+Math.cos(player.ang)*player.curRadius, py=CY+Math.sin(player.ang)*player.curRadius;
@@ -888,6 +913,7 @@ function update(dt){
         queueToast(icon('heart')+' '+t('toast_heart_gain'));
         if(it.tutorialTag && typeof tutorialOnItemResolved==='function') tutorialOnItemResolved(it.tutorialTag);
       }
+      else if(isRisk(it.type)) activateRisk(it.type,ix,iy);
       else {
         activatePower(it.type,ix,iy);
         if(it.tutorialTag && typeof tutorialOnItemResolved==='function') tutorialOnItemResolved(it.tutorialTag);
@@ -1005,6 +1031,7 @@ function hitHazard(ix,iy,subtype,itm){
   // melodi-kombosu sesi kısma kuralından muaf tutulur (5. parametre).
   if(player.shieldHits>0){ player.shieldHits--; session.shieldSaved=true; burst(px,py,'#5efc82',26,5); shake=9;
     beep(300,0.2,'square',0.14,true); return; }
+  if(session.risk) session.risk.clean=false;
   let dmg = HAZARD_DAMAGE[subtype]||1;
   if(itm && itm.dmgCap) dmg = Math.min(dmg, itm.dmgCap);
   const lostCombo=combo;
@@ -1125,7 +1152,7 @@ function updateHud(){
   // doğrulandı: birden fazla güç-takviyesi chip'i (#pw) aynı anda aktif
   // olunca ikinci satıra taşıp goalHint'in TAM ÜSTÜNE biniyordu — bu
   // yüzden herhangi bir takviye aktifken ipucu geçici olarak gizleniyor.
-  const anyPowerupActive = player.shieldHits>0 || player.slowT>0 || player.magnetT>0 || player.multT>0;
+  const anyPowerupActive = player.shieldHits>0 || player.slowT>0 || player.magnetT>0 || player.multT>0 || !!(session && session.risk);
   let goalText='';
   if(mode!=='zen' && !bossActive && !anyPowerupActive){
     const bossRemain = bossStageFor(bossNextIndex).score - score;
@@ -1160,15 +1187,19 @@ function updateHud(){
   // innerHTML yeniden yazılıyordu → düşük seviye telefonlarda kare düşüşü).
   const durMul = 1+upgradeBonus('boostDur');
   const timed=[];
+  // Risk balonu çipi en başta: mor, süre çubuğu; darbe alınca "temiz geçiş"
+  // kaçtığı için soluklaşır, son 1.5 sn yanıp söner.
+  const rk=session ? session.risk : null;
+  if(rk) timed.push([rk.type==='riskRewind' ? 'rewind' : 'eyeoff', rk.t/rk.dur, 'risk'+(rk.clean?'':' dirty')+(rk.t<90?' ending':'')]);
   if(player.slowT>0) timed.push(['clock', player.slowT/(SLOW_DUR*durMul)]);
   if(player.magnetT>0) timed.push(['magnet', player.magnetT/(MAGNET_DUR*durMul)]);
   if(player.multT>0) timed.push(['coin', player.multT/(MULT_DUR*durMul)]);
-  const key=(player.shieldHits>0 ? 's'+player.shieldHits : '')+'|'+timed.map(x=>x[0]).join(',');
+  const key=(player.shieldHits>0 ? 's'+player.shieldHits : '')+'|'+timed.map(x=>x[0]+(x[2]||'')).join(',');
   const pwEl=document.getElementById('pw');
   if(_hud.pw!==key){
     let html='';
     if(player.shieldHits>0) html+=`<div class="pwchip">${icon('shield')}${player.shieldHits>1?' ×'+player.shieldHits:''}</div>`;
-    for(const [ic] of timed) html+=chip(ic);
+    for(const [ic,,cls] of timed) html+=chip(ic,cls);
     pwEl.innerHTML=html; _hud.pw=key; _hud.pwBars=[...pwEl.querySelectorAll('.pwbar i')]; _hud.pwW=[];
   }
   timed.forEach(([,frac],i)=>{
@@ -1179,6 +1210,14 @@ function updateHud(){
   });
   const flashOpacity = levelFlashT>0 ? Math.min(1, levelFlashT/20) : 0;
   if(_hud.flash!==flashOpacity){ document.getElementById('levelFlash').style.opacity=flashOpacity; _hud.flash=flashOpacity; }
+  // Isı: puan etiketinin yanında küçük alev + çarpan (yalnız mühür takılıysa).
+  const heatTxt = (session && session.heatLevel>0) ? '×'+session.heatMult.toFixed(2) : '';
+  if(_hud.heat!==heatTxt){
+    const el=document.getElementById('heatHud');
+    if(el){ el.innerHTML = heatTxt ? icon('flame')+heatTxt : ''; el.style.display = heatTxt ? '' : 'none'; }
+    _hud.heat=heatTxt;
+  }
+  syncRiskFx();
   const wallet = stats.notes||0;
   if(_hud.wallet!==wallet){ document.getElementById('walletHud').textContent=wallet; _hud.wallet=wallet; }
   // Oyun bitince cüzdanda olacak nota: şimdiki bakiye + skor bonusu (zen'de bonus yok).
@@ -1189,4 +1228,161 @@ function updateHud(){
     _hud.endN=endN;
   }
 }
-function chip(iconKey){ return `<div class="pwchip">${icon(iconKey)}<div class="pwbar"><i style="transform:scaleX(0)"></i></div></div>`; }
+function chip(iconKey,cls){ return `<div class="pwchip${cls?' '+cls:''}">${icon(iconKey)}<div class="pwbar"><i style="transform:scaleX(0)"></i></div></div>`; }
+
+// ---- Risk balonları: Geri Sar / Karartma ---------------------------------
+// Oyuncunun ALMAK ZORUNDA OLMADIĞI mor "risk balonu". Alınırsa RISK_DUR boyunca
+// bir mekanik değişir (Geri Sar: sol ↔ sağ ters; Karartma: yalnız penanın
+// çevresi aydınlık), o sürede notalar ×2 sayar; süre hasarsız biterse
+// "Temiz Geçiş" bonusu. Boss uyarısı başlarsa etki erken ve temiz biter (boss
+// labirentinde ters kontrol adil olmazdı). Zen ve tutorial'da yok.
+const RISK_DUR = 420, RISK_FIRST = 900, RISK_MIN_SCORE = 250, RISK_CLEAN_BONUS = 60;
+let riskCd = RISK_FIRST;
+function riskReady(){
+  if(riskCd>0 || mode==='zen' || tutorialActive || score<RISK_MIN_SCORE) return false;
+  if(session.risk || bossActive || bossTelegraph || noteRain>0) return false;
+  for(const it of items) if(it.alive && isRisk(it.type)) return false;
+  return true;
+}
+// Sonraki balona kadar ~30-45 sn ("Ters Akıntı" mühürüyle 3 kat sık).
+function riskGap(){ return (1800 + rnd()*900) / (session.heat && session.heat.reverseFlow ? 3 : 1); }
+function activateRisk(type,x,y){
+  const k = type==='riskRewind' ? 'rewind' : 'dark';
+  session.risk = {type, k, t:RISK_DUR, dur:RISK_DUR, clean:true, tick:4};
+  session.risksTaken++; hideIntroCard();
+  // Yarım saniyelik ağır çekim: oyuncu yeni kurala alışsın.
+  timeScale = Math.min(timeScale, 0.35); timeScaleT = Math.max(timeScaleT, 30);
+  showFlash(t('risk_'+k+'_flash'), 95, t('risk_'+k+'_sub'), 'risk');
+  burst(x,y,'#c46bff',24,5); burst(x,y,'#ffffff',10,3); shake=Math.max(shake,7); vibrate([20,30,20]);
+  if(k==='rewind'){ beep(1100,0.12,'sawtooth',0.06,true); beep(700,0.16,'sawtooth',0.06,true); beep(380,0.22,'sawtooth',0.06,true); showRewindHint(); }
+  else { beep(240,0.35,'sine',0.14,true); beep(120,0.45,'triangle',0.1,true); }
+  if(typeof Music!=='undefined' && Music.setFx) Music.setFx(k);
+}
+function updateRisk(dt){
+  if(!session.risk){ if(riskCd>0) riskCd-=dt; return; }
+  const r=session.risk;
+  r.t -= dt;
+  // Son 3 saniye: saniyede bir kısa tık (bitiş yaklaşıyor).
+  const sec=Math.ceil(r.t/60);
+  if(sec<r.tick && sec>0){ r.tick=sec; if(sec<=3) beep(1250,0.04,'square',0.05,true); }
+  if(r.t<=0 || bossActive || bossTelegraph) endRisk();
+}
+function endRisk(){
+  const r=session.risk; if(!r) return;
+  session.risk=null;
+  if(typeof Music!=='undefined' && Music.setFx) Music.setFx(null);
+  hideRewindHint();
+  const bossNear = bossActive || bossTelegraph;
+  if(r.clean){
+    const bonus = RISK_CLEAN_BONUS*(diffCfg.scoreMult||1);
+    addScore(bonus); session.risksCleared++; stats.risksCleared=(stats.risksCleared||0)+1;
+    const shown = '+'+Math.round(bonus*(session.heatMult||1));
+    if(bossNear) queueToast(icon('check')+' '+t('risk_clean_flash')+' '+shown);
+    else showFlash(t('risk_clean_flash'), 85, shown+(r.k==='rewind' ? ' · '+t('risk_controls_normal') : ''), 'melody');
+    beep(880,0.1,'sine',0.13); beep(1320,0.14,'triangle',0.11);
+  } else if(!bossNear){
+    showFlash(t(r.k==='rewind' ? 'risk_controls_normal' : 'risk_lights_back'), 55, null, 'risk');
+    beep(520,0.08,'sine',0.08);
+  }
+}
+// Geri Sar başında 2 sn: alt köşelerdeki dokunma ipuçları TERS etiketlerle.
+let _rewindHintT=null;
+function showRewindHint(){
+  const el=document.getElementById('tutorialHint'); if(!el) return;
+  const l=el.querySelector('.tutTap-left .tutLabel'), rr=el.querySelector('.tutTap-right .tutLabel');
+  if(l) l.textContent=t('tut_outer'); if(rr) rr.textContent=t('tut_inner');
+  clearTimeout(tutorialHideTimer); clearTimeout(_rewindHintT);
+  el.classList.add('show','rev');
+  _rewindHintT=setTimeout(hideRewindHint, 2200);
+}
+function hideRewindHint(){
+  clearTimeout(_rewindHintT); _rewindHintT=null;
+  const el=document.getElementById('tutorialHint'); if(!el || !el.classList.contains('rev')) return;
+  el.classList.remove('show','rev');
+  const l=el.querySelector('.tutTap-left .tutLabel'), rr=el.querySelector('.tutTap-right .tutLabel');
+  if(l) l.textContent=t('tut_inner'); if(rr) rr.textContent=t('tut_outer');
+}
+// Ekran katmanları: Karartma'da penayı izleyen "spot ışığı" (büyük, önceden
+// çizilmiş radyal degrade yalnız transform ile kaydırılır — her karede
+// yeniden boyama yok), Geri Sar'da mor kenar titreşimi. Yalnız etki sürerken açık.
+let _rfx=null;
+function syncRiskFx(){
+  if(!_rfx) _rfx={veil:document.getElementById('riskVeil'), edge:document.getElementById('riskEdge'), hint:document.getElementById('hint'), dark:false, edgeOn:false, r:0};
+  const f=_rfx; if(!f.veil) return;
+  const r = GAME_STATES[state] && session ? session.risk : null;
+  const dark = !!(r && r.type==='riskDark'), rew = !!(r && r.type==='riskRewind');
+  if(dark){
+    const base=Math.min(W,H), rad=Math.round(base*0.27);
+    if(f.r!==rad){ f.veil.style.setProperty('--rv', rad+'px'); f.r=rad; }
+    // Işık penanın biraz ÖNÜNE kayar: oyuncu gelene tepki verebilsin (adil karanlık).
+    const LEAD=0.32;
+    const p = (typeof gfx3dActive==='function' && gfx3dActive() && Render3D.playerScreen) ? Render3D.playerScreen(LEAD) : null;
+    const x = p ? p.x : CX+Math.cos(player.ang+LEAD)*player.curRadius, y = p ? p.y : CY+Math.sin(player.ang+LEAD)*player.curRadius;
+    f.veil.style.transform='translate3d('+Math.round(x)+'px,'+Math.round(y)+'px,0)';
+    // Yumuşak giriş (0.4 sn) ve çıkış (0.5 sn).
+    f.veil.style.opacity = String(Math.round(Math.max(0, Math.min(1, (r.dur-r.t)/24, r.t/30))*100)/100);
+  }
+  if(dark!==f.dark){ f.veil.style.display = dark ? 'block' : 'none'; if(!dark) f.veil.style.opacity='0'; f.dark=dark; }
+  if(rew!==f.edgeOn && f.edge){
+    f.edge.classList.toggle('on', rew); f.edgeOn=rew;
+    // Alttaki "SOL → iç halka" çubuğu Geri Sar'da yanlış bilgi verirdi: gizlenir.
+    if(f.hint) f.hint.style.opacity = rew ? '0' : '';
+  }
+}
+function hideRiskFx(){
+  if(session && session.risk){ session.risk=null; if(typeof Music!=='undefined' && Music.setFx) Music.setFx(null); }
+  hideRewindHint(); syncRiskFx();
+}
+
+// ---- İlk görüşte tanıtım --------------------------------------------------
+// Oyuncu bir öğe tipini İLK kez gördüğünde (penanın önüne geldiğinde) kısa
+// bir ağır çekim + altta kart: görseli, ailesi (Topla / Kaçın / Güç / Risk),
+// adı ve tek cümleyle ne yaptığı. Her tip ömür boyu bir kez. Nota, temel
+// cızırtı ve can tutorial'da öğretildiği için tanıtılmaz. Boss labirentindeki
+// sabit duvarlar davranışlarını göstermediği için atlanır.
+const INTRO_FAMILY = {coin:'good', diamond:'good', shield:'power', slow:'power', magnet:'power', mult:'power',
+  hazardJump:'bad', hazardBomb:'bad', hazardPull:'bad', hazardTwin:'bad', hazardPulse:'bad', hazardCreep:'bad',
+  riskRewind:'risk', riskDark:'risk'};
+let introCd=0, _introHideT=null;
+function introCheck(dt){
+  if(introCd>0){ introCd-=dt; return; }
+  if(tutorialActive || bossActive || bossTelegraph) return;
+  const seen = stats.seenIntro || (stats.seenIntro=[]);
+  for(const it of items){
+    if(!it.alive || it.expiring || it.boss || it.pop<0.6) continue;
+    const k = it.type==='hazardTwinDecoy' ? 'hazardTwin' : it.type;
+    if(!INTRO_FAMILY[k] || seen.includes(k)) continue;
+    const fwd = normAng(it.ang-player.ang);
+    if(fwd<0.7 || fwd>2.5) continue;
+    seen.push(k); saveStats();
+    it.spot = 170; introCd = 420;
+    if(k==='hazardTwin') for(const o of items) if(o.alive && o.type==='hazardTwinDecoy' && Math.abs(angDiff(o.ang,it.ang))<0.05) o.spot=170;
+    // Yeni oyuncuya kısa ağır çekim; deneyimli oyuncuyu yavaşlatmadan yalnız kart.
+    if((stats.games||0) < 25){ timeScale=Math.min(timeScale,0.3); timeScaleT=Math.max(timeScaleT,48); }
+    showIntroCard(k);
+    return;
+  }
+}
+function showIntroCard(k){
+  const card=document.getElementById('introCard'); if(!card) return;
+  const fam=INTRO_FAMILY[k]||'good';
+  card.className='fam-'+fam;
+  card.querySelector('.icTag').textContent=t('intro_tag_'+fam);
+  card.querySelector('.icName').textContent=t('it_'+k+'_n');
+  card.querySelector('.icDesc').textContent=t('it_'+k+'_d');
+  drawItemIcon(card.querySelector('canvas'), k);
+  void card.offsetWidth; card.classList.add('show');
+  beep(fam==='bad' ? 330 : 760, 0.07, 'triangle', 0.08);
+  clearTimeout(_introHideT); _introHideT=setTimeout(hideIntroCard, 2900);
+}
+function hideIntroCard(){ clearTimeout(_introHideT); const c=document.getElementById('introCard'); if(c) c.classList.remove('show'); }
+// Bir öğe tipinin oyundaki görünümünü küçük bir canvas'a çizer (tanıtım kartı,
+// Nasıl Oynanır) — her yerde birebir aynı görsel dil.
+function drawItemIcon(cnv, type){
+  if(!cnv) return;
+  const S=cnv.width, g=cnv.getContext('2d');
+  g.clearRect(0,0,S,S);
+  const prev=ctx; ctx=g;
+  try{ const R=S/(2*(type==='hazardBomb' ? 3.6 : 2.7)); drawItem(S/2, S/2, type, R/(PLAYER_R*0.95), 0, null); }
+  finally{ ctx=prev; }
+}

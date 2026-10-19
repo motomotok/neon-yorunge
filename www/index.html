@@ -22,7 +22,7 @@
 
 <div id="hud">
   <div class="hudTop">
-    <div><div class="lbl" data-i18n="hud_score">Puan</div><div class="val" id="scoreHud">0</div>
+    <div><div class="lbl" data-i18n="hud_score">Puan</div><div class="val" id="scoreHud">0</div><div id="heatHud" style="display:none"></div>
       <div id="hpBarWrap"><div id="hpBarFill"></div></div><div id="hpText"></div><div id="goalHint" class="goalHint"></div></div>
     <div class="center">
       <div class="lbl" id="levelLbl" data-i18n="hud_level">Seviye</div><div class="val" id="levelHud">1</div>
@@ -37,6 +37,10 @@
   <div id="walletEndHud"></div>
 </div>
 <div id="levelFlash"></div>
+<!-- Risk balonu katmanları (bkz. engine.js syncRiskFx) ve ilk görüş tanıtım kartı (introCheck). -->
+<div id="riskVeil" aria-hidden="true"></div>
+<div id="riskEdge" aria-hidden="true"></div>
+<div id="introCard"><canvas width="96" height="96"></canvas><div class="icText"><span class="icTag"></span><b class="icName"></b><small class="icDesc"></small></div></div>
 <div class="hint" id="hint" data-i18n="hint_bar">SOL → iç halka &nbsp;·&nbsp; SAĞ → dış halka</div>
 <div id="tutorialHint">
   <div class="tutTap tutTap-left">
@@ -188,13 +192,13 @@
 
       <div class="htSide">
         <div class="htSideHead"><span class="htSideTag b">B</span><span class="htSideLbl" data-i18n="ht_side_b">B YÜZÜ</span><span class="htSideTitle bad" data-i18n="howto_avoid_title">Kaçın</span></div>
-        <div class="htTrack"><span class="htNo">B1</span><canvas class="howtoIcon" width="34" height="34" data-type="hazard"></canvas><span class="htName"><span data-i18n="glitch_red_name"></span><small data-i18n="glitch_red_desc"></small></span><span class="htVal bad">-1</span></div>
-        <div class="htTrack"><span class="htNo">B2</span><canvas class="howtoIcon" width="34" height="34" data-type="hazardJump"></canvas><span class="htName"><span data-i18n="glitch_blue_name"></span><small data-i18n="glitch_blue_desc"></small></span><span class="htVal bad">-1</span></div>
-        <div class="htTrack"><span class="htNo">B3</span><canvas class="howtoIcon" width="34" height="34" data-type="hazardBomb"></canvas><span class="htName"><span data-i18n="glitch_green_name"></span><small data-i18n="glitch_green_desc"></small></span><span class="htVal bad">-2</span></div>
-        <div class="htTrack"><span class="htNo">B4</span><canvas class="howtoIcon" width="34" height="34" data-type="hazardPull"></canvas><span class="htName"><span data-i18n="glitch_yellow_name"></span><small data-i18n="glitch_yellow_desc"></small></span><span class="htVal bad">-3</span></div>
-        <div class="htTrack"><span class="htNo">B5</span><canvas class="howtoIcon" width="34" height="34" data-type="hazardTwin"></canvas><span class="htName"><span data-i18n="glitch_purple_name"></span><small data-i18n="glitch_purple_desc"></small></span><span class="htVal bad">-4</span></div>
-        <div class="htTrack"><span class="htNo">B6</span><canvas class="howtoIcon" width="34" height="34" data-type="hazardPulse"></canvas><span class="htName"><span data-i18n="glitch_orange_name"></span><small data-i18n="glitch_orange_desc"></small></span><span class="htVal bad">-6</span></div>
-        <div class="htTrack"><span class="htNo">B7</span><canvas class="howtoIcon" width="34" height="34" data-type="hazardCreep"></canvas><span class="htName"><span data-i18n="glitch_pink_name"></span><small data-i18n="glitch_pink_desc"></small></span><span class="htVal bad">-10</span></div>
+        <div class="htTrack"><span class="htNo">B1</span><canvas class="howtoIcon" width="34" height="34" data-type="hazard"></canvas><span class="htName"><span data-i18n="it_hazard_n"></span><small data-i18n="it_hazard_d"></small></span><span class="htVal bad">-1</span></div>
+        <div class="htTrack"><span class="htNo">B2</span><canvas class="howtoIcon" width="34" height="34" data-type="hazardJump"></canvas><span class="htName"><span data-i18n="it_hazardJump_n"></span><small data-i18n="it_hazardJump_d"></small></span><span class="htVal bad">-1</span></div>
+        <div class="htTrack"><span class="htNo">B3</span><canvas class="howtoIcon" width="34" height="34" data-type="hazardBomb"></canvas><span class="htName"><span data-i18n="it_hazardBomb_n"></span><small data-i18n="it_hazardBomb_d"></small></span><span class="htVal bad">-1</span></div>
+        <div class="htTrack"><span class="htNo">B4</span><canvas class="howtoIcon" width="34" height="34" data-type="hazardPull"></canvas><span class="htName"><span data-i18n="it_hazardPull_n"></span><small data-i18n="it_hazardPull_d"></small></span><span class="htVal bad">-2</span></div>
+        <div class="htTrack"><span class="htNo">B5</span><canvas class="howtoIcon" width="34" height="34" data-type="hazardTwin"></canvas><span class="htName"><span data-i18n="it_hazardTwin_n"></span><small data-i18n="it_hazardTwin_d"></small></span><span class="htVal bad">-2</span></div>
+        <div class="htTrack"><span class="htNo">B6</span><canvas class="howtoIcon" width="34" height="34" data-type="hazardPulse"></canvas><span class="htName"><span data-i18n="it_hazardPulse_n"></span><small data-i18n="it_hazardPulse_d"></small></span><span class="htVal bad">-3</span></div>
+        <div class="htTrack"><span class="htNo">B7</span><canvas class="howtoIcon" width="34" height="34" data-type="hazardCreep"></canvas><span class="htName"><span data-i18n="it_hazardCreep_n"></span><small data-i18n="it_hazardCreep_d"></small></span><span class="htVal bad">-4</span></div>
       </div>
 
       <div class="htSide">
@@ -203,6 +207,13 @@
         <div class="htTrack"><span class="htNo">★</span><canvas class="howtoIcon" width="34" height="34" data-type="pwSlow"></canvas><span class="htName"><span data-i18n="boost_slow_row"></span></span><span class="htVal pw" data-i18n="boost_slow_v"></span></div>
         <div class="htTrack"><span class="htNo">★</span><canvas class="howtoIcon" width="34" height="34" data-type="pwMagnet"></canvas><span class="htName"><span data-i18n="boost_magnet_row"></span></span><span class="htVal pw" data-i18n="boost_magnet_v"></span></div>
         <div class="htTrack"><span class="htNo">★</span><canvas class="howtoIcon" width="34" height="34" data-type="pwMult"></canvas><span class="htName"><span data-i18n="boost_mult_row"></span></span><span class="htVal pw" data-i18n="boost_mult_v"></span></div>
+      </div>
+
+      <div class="htSide">
+        <div class="htSideHead"><span class="htSideTag r"><i class="gicon" data-icon="rewind"></i></span><span class="htSideLbl" data-i18n="ht_side_risk">RİSK BALONLARI</span><span class="htSideTitle risk" data-i18n="ht_risk_title">Cesaretin varsa</span></div>
+        <div class="htTrack"><span class="htNo">R1</span><canvas class="howtoIcon" width="34" height="34" data-type="riskRewind"></canvas><span class="htName"><span data-i18n="it_riskRewind_n"></span><small data-i18n="it_riskRewind_d"></small></span><span class="htVal risk">×2</span></div>
+        <div class="htTrack"><span class="htNo">R2</span><canvas class="howtoIcon" width="34" height="34" data-type="riskDark"></canvas><span class="htName"><span data-i18n="it_riskDark_n"></span><small data-i18n="it_riskDark_d"></small></span><span class="htVal risk">×2</span></div>
+        <p class="htRiskNote" data-i18n="ht_risk_note"></p>
       </div>
 
       <div class="htSide liner">
@@ -343,6 +354,7 @@
         <div class="stab sel" data-uptab="tier"><i class="gicon" data-icon="lightning"></i> <span data-i18n="uptab_tier">Kademe</span></div>
         <div class="stab" data-uptab="core"><i class="gicon" data-icon="atom"></i> <span data-i18n="uptab_core">Çekirdek Ağacı</span></div>
         <div class="stab" data-uptab="perk"><i class="gicon" data-icon="sparkle"></i> <span data-i18n="uptab_perk">Süpernova</span></div>
+        <div class="stab heatTab" data-uptab="heat"><i class="gicon" data-icon="flame"></i> <span data-i18n="uptab_heat">Isı</span></div>
       </div>
     </div>
     <div class="screenBody">
@@ -356,6 +368,13 @@
         <div class="perkSlots" id="perkSlots"></div>
         <div class="sub perkIntro" data-i18n="perk_intro">Kuralı değiştiren yetenekler.</div>
         <div class="shopGrid" id="perkGrid"></div>
+      </div>
+      <!-- Isı Mühürleri (bkz. data.js HEAT_SEALS, upgrades-ui.js renderHeat) -->
+      <div id="heatWrap" style="display:none">
+        <div class="heatMeter"><i class="gicon" data-icon="flame"></i><span class="hmLvl"><span data-i18n="heat_level_lbl">Isı</span> <b id="heatLevelVal">0</b></span><span class="hmMult"><b id="heatMultVal">×1.00</b> <small data-i18n="heat_mult_lbl">puan</small></span></div>
+        <div class="sub perkIntro" data-i18n="heat_intro"></div>
+        <div class="shopGrid" id="heatGrid"></div>
+        <div class="sub heatNote" data-i18n="heat_modes_note"></div>
       </div>
     </div>
     <div class="screenFoot">

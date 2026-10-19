@@ -810,15 +810,15 @@ body.left-hand .hudTop{flex-direction:row-reverse;}
 /* Yetenekler > Kademe: kartlar yatay ve kompakt (simge solda, metin
    sağda) — 6 kart iPhone'da (Safari çubuklarıyla ~715px) tek ekrana
    kaydırmadan sığar. */
-#upgradesGrid,#perkGrid{grid-template-columns:repeat(2,1fr);gap:8px;}
-#upgradesGrid .shopCard,#perkGrid .shopCard{display:grid;grid-template-columns:34px 1fr;grid-template-rows:auto auto auto;
+#upgradesGrid,#perkGrid,#heatGrid{grid-template-columns:repeat(2,1fr);gap:8px;}
+#upgradesGrid .shopCard,#perkGrid .shopCard,#heatGrid .shopCard{display:grid;grid-template-columns:34px 1fr;grid-template-rows:auto auto auto;
   column-gap:8px;row-gap:2px;align-items:center;text-align:left;padding:9px 10px 9px 8px;}
-#upgradesGrid .shopCard .boostIcon,#perkGrid .shopCard .boostIcon{grid-row:1 / span 3;font-size:24px;align-self:center;justify-self:center;}
-#upgradesGrid .shopCard .cn,#perkGrid .shopCard .cn{font-size:12px;text-align:left;line-height:1.2;}
-#upgradesGrid .shopCard .bdesc,#perkGrid .shopCard .bdesc{font-size:9.5px;line-height:1.3;min-height:0;}
-#upgradesGrid .shopCard .price,#perkGrid .shopCard .price{white-space:nowrap;}
-#upgradesGrid .shopCard .bdesc.upDesc,#perkGrid .shopCard .bdesc.upDesc{color:#cfd5ea;font-weight:600;margin-bottom:2px;}
-#upgradesGrid .shopCard .price,#perkGrid .shopCard .price{font-size:11px;text-align:left;}
+#upgradesGrid .shopCard .boostIcon,#perkGrid .shopCard .boostIcon,#heatGrid .shopCard .boostIcon{grid-row:1 / span 3;font-size:24px;align-self:center;justify-self:center;}
+#upgradesGrid .shopCard .cn,#perkGrid .shopCard .cn,#heatGrid .shopCard .cn{font-size:12px;text-align:left;line-height:1.2;}
+#upgradesGrid .shopCard .bdesc,#perkGrid .shopCard .bdesc,#heatGrid .shopCard .bdesc{font-size:9.5px;line-height:1.3;min-height:0;}
+#upgradesGrid .shopCard .price,#perkGrid .shopCard .price,#heatGrid .shopCard .price{white-space:nowrap;}
+#upgradesGrid .shopCard .bdesc.upDesc,#perkGrid .shopCard .bdesc.upDesc,#heatGrid .shopCard .bdesc.upDesc{color:#cfd5ea;font-weight:600;margin-bottom:2px;}
+#upgradesGrid .shopCard .price,#perkGrid .shopCard .price,#heatGrid .shopCard .price{font-size:11px;text-align:left;}
 #screen-upgrades #upgradesSubText{font-size:12.5px;line-height:1.4;margin:0;}
 @media (max-height:640px){
   #screen-upgrades #upgradesSubText{display:none;}
@@ -1307,8 +1307,18 @@ h1 .gicon,h2 .gicon{color:var(--star);}
 .perkCard.notOwned .boostIcon{opacity:.55;}
 .perkCard .price.core{color:#7fe8ff;}
 .menuUpgradeTag.supernova{color:#7fe8ff;font-weight:700;}
-#upgradesTabs{flex-wrap:nowrap;gap:4px;}
-#upgradesTabs .stab{padding:7px 9px;font-size:12px;white-space:nowrap;}
+/* 4 sekme (Kademe · Çekirdek · Süpernova · Isı): tek satır. Sığmazsa yatay
+   kaydırılır; kenar boşluğu "auto" ile sığdığında ortalı, taşınca baştan başlar. */
+#upgradesTabs{flex-wrap:nowrap;gap:4px;justify-content:flex-start;overflow-x:auto;scrollbar-width:none;padding:2px 0;}
+#upgradesTabs::-webkit-scrollbar{display:none;}
+#upgradesTabs .stab{padding:7px 9px;font-size:12px;white-space:nowrap;flex:none;}
+#upgradesTabs .stab:first-child{margin-left:auto;}
+#upgradesTabs .stab:last-child{margin-right:auto;}
+@media (max-width:400px){
+  #upgradesTabs .stab{padding:7px 8px;font-size:11.5px;}
+  #upgradesTabs .stab .gicon{display:none;}
+  #upgradesTabs .stab.heatTab .gicon{display:inline-block;margin-right:3px;}
+}
 #perkWrap .perkHead .muted{font-size:12px;font-weight:600;}
 
 /* Yetenek yuvaları (upgrades-ui.js renderPerkSlots) */
@@ -1365,3 +1375,74 @@ h1 .gicon,h2 .gicon{color:var(--star);}
 /* Oyun sonu nota tahmini: cüzdan çipinin hemen altında, küçük ve sakin. */
 #walletEndHud{position:absolute;top:calc(env(safe-area-inset-top) + 160px);right:18px;pointer-events:none;
   font-size:10.5px;font-weight:700;color:#e9c991;opacity:.85;white-space:nowrap;text-shadow:0 1px 3px rgba(0,0,0,.6);}
+
+/* ---- 2.59 Netlik + Risk balonları + Isı Mühürleri ---- */
+/* Isı: puanın altında küçük alevli çarpan (yalnız mühür takılıyken). */
+#heatHud{display:inline-flex;align-items:center;gap:2px;margin-top:3px;padding:1px 7px;border-radius:999px;
+  font-size:10.5px;font-weight:800;color:#ffb070;background:rgba(255,100,40,.16);border:1px solid rgba(255,120,50,.45);}
+#heatHud svg{width:11px;height:11px;}
+/* Karartma: penayı izleyen spot ışığı. Dev, önceden çizilmiş degrade yalnız
+   transform ile kaydırılır (her karede yeniden boyama yok). */
+#riskVeil{position:fixed;left:0;top:0;width:340vmax;height:340vmax;margin:-170vmax 0 0 -170vmax;z-index:7;
+  pointer-events:none;display:none;opacity:0;will-change:transform,opacity;
+  background:radial-gradient(circle at center, rgba(4,2,10,0) 0, rgba(4,2,10,0) var(--rv,100px),
+    rgba(4,2,10,.62) calc(var(--rv,100px)*1.45), rgba(4,2,10,.93) calc(var(--rv,100px)*2.1));}
+/* Geri Sar: ekran kenarında mor/camgöbeği "bant" titreşimi. */
+#riskEdge{position:fixed;inset:0;z-index:7;pointer-events:none;opacity:0;transition:opacity .35s;
+  box-shadow:inset 0 0 70px 8px rgba(196,107,255,.55), inset 0 0 16px 2px rgba(79,227,255,.35);}
+#riskEdge.on{opacity:1;animation:riskEdgePulse 1.1s ease-in-out infinite;}
+@keyframes riskEdgePulse{0%,100%{opacity:.7}50%{opacity:1}}
+#levelFlash.risk{color:#efd9ff;text-shadow:0 0 26px #c46bff,0 0 4px #fff;}
+#levelFlash.risk small{color:#f3e2ff;text-shadow:0 0 12px rgba(0,0,0,.85),0 0 16px #c46bff;}
+.pwchip.risk{border-color:rgba(196,107,255,.9);background:rgba(60,20,90,.6);color:#f0dcff;box-shadow:0 0 12px rgba(196,107,255,.45);}
+.pwchip.risk .pwbar i{background:#c46bff;}
+.pwchip.risk.dirty{opacity:.5;filter:grayscale(.6);box-shadow:none;}
+.pwchip.risk.ending{animation:riskChipBlink .32s steps(2) infinite;}
+@keyframes riskChipBlink{50%{opacity:.35}}
+/* Geri Sar başında ters etiketli dokunma ipuçları: mor. */
+#tutorialHint.rev .tutTap{animation:none;}
+#tutorialHint.rev .tutPulse{border-color:rgba(214,160,255,.95);background:rgba(196,107,255,.25);}
+#tutorialHint.rev .tutPulse::after{border-color:rgba(214,160,255,.6);}
+#tutorialHint.rev .tutLabel{background:rgba(110,40,160,.8);}
+#tutorialHint.rev .tutArrow{filter:drop-shadow(0 0 6px rgba(196,107,255,.95));}
+/* İlk görüş tanıtım kartı: altta, oyun alanını kapatmadan. Aile rengi = etiket. */
+#introCard{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 92px);z-index:11;pointer-events:none;
+  display:flex;align-items:center;gap:10px;width:min(88vw,360px);padding:8px 14px 8px 8px;border-radius:16px;
+  background:rgba(14,10,24,.9);border:1px solid rgba(255,255,255,.16);box-shadow:0 10px 28px rgba(0,0,0,.5);
+  opacity:0;transform:translate(-50%,16px) scale(.96);transition:opacity .22s ease,transform .28s cubic-bezier(.34,1.5,.64,1);will-change:transform,opacity;}
+#introCard.show{opacity:1;transform:translate(-50%,0) scale(1);}
+#introCard canvas{width:48px;height:48px;flex:none;}
+#introCard .icText{display:flex;flex-direction:column;min-width:0;gap:1px;}
+#introCard .icTag{font-size:9.5px;font-weight:900;letter-spacing:1.8px;}
+#introCard .icName{font-family:var(--font-display);font-size:15px;line-height:1.15;color:#fff;}
+#introCard .icDesc{font-size:11.5px;font-weight:600;color:#cfd5ea;line-height:1.3;}
+#introCard.fam-good{border-color:rgba(255,201,74,.6);} #introCard.fam-good .icTag{color:#ffc94a;}
+#introCard.fam-bad{border-color:rgba(255,79,94,.65);} #introCard.fam-bad .icTag{color:#ff5a68;}
+#introCard.fam-power{border-color:rgba(127,232,255,.6);} #introCard.fam-power .icTag{color:#7fe8ff;}
+#introCard.fam-risk{border-color:rgba(196,107,255,.75);} #introCard.fam-risk .icTag{color:#d49bff;}
+/* Isı sekmesi */
+.heatMeter{display:flex;align-items:center;justify-content:center;gap:12px;margin:0 auto 6px;padding:7px 16px;border-radius:14px;
+  background:linear-gradient(90deg,rgba(255,90,40,.10),rgba(255,160,60,.16));border:1px solid rgba(255,140,60,.35);width:max-content;max-width:100%;
+  transition:border-color .2s,box-shadow .2s;}
+.heatMeter>.gicon{color:#ff8a3d;font-size:20px;}
+.heatMeter .hmLvl{font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#ffcfa8;}
+.heatMeter b{font-family:var(--font-display);font-size:20px;color:#fff;letter-spacing:0;}
+.heatMeter .hmMult small{font-size:10px;opacity:.7;}
+#heatWrap.hot .heatMeter{border-color:rgba(255,120,50,.9);box-shadow:0 0 18px rgba(255,100,40,.35);}
+#heatWrap.hot .heatMeter>.gicon{animation:heatFlick 1.2s ease-in-out infinite;}
+@keyframes heatFlick{50%{transform:scale(1.18)}}
+.heatCard.equipped{border-color:rgba(255,130,60,.9);box-shadow:inset 0 0 0 1px rgba(255,130,60,.4),0 0 14px rgba(255,100,40,.22);}
+.heatCard.equipped .boostIcon{color:#ff8a3d;}
+.heatCard.locked .boostIcon,.heatCard.locked .cn,.heatCard.locked .bdesc{opacity:.5;}
+.heatCard .price.on{color:#ff9a4a;}
+.heatCard .price.lockp{color:#8f97b5;}
+.heatNote{font-size:10.5px;opacity:.6;margin-top:6px;text-align:center;}
+.heatTab .gicon{color:#ff8a3d;}
+.badge.heat{background:rgba(255,100,40,.18);border-color:rgba(255,120,50,.55);color:#ffb070;}
+.lbHeat{color:#ff9a4a;font-weight:800;}
+.lbHeat svg{width:10px;height:10px;vertical-align:-1px;}
+/* Nasıl Oynanır: risk balonları bölümü */
+.htSideTag.r{background:linear-gradient(135deg,#c46bff,#7a3bd1);color:#fff;}
+.htSideTitle.risk{color:#d49bff;}
+.htVal.risk{color:#d49bff;}
+.htRiskNote{font-size:11px;opacity:.65;margin:6px 4px 0;line-height:1.4;}

@@ -93,7 +93,7 @@ function yarnCore(){
 }
 let _yarnCoreGeo=null;
 
-export const ITEM_TYPES = ['star','gold','diamond','coin','heart','shield','slow','magnet','mult',
+export const ITEM_TYPES = ['star','gold','diamond','coin','heart','shield','slow','magnet','mult','riskRewind','riskDark',
   'hazard','hazardJump','hazardBomb','hazardPull','hazardTwin','hazardTwinDecoy','hazardPulse','hazardCreep'];
 // ---- Sarı cızırtının kilitlediği yarım halka (engine: SEAL_SPAN) ----
 function sealArcGeometry(r, w, span, seg){
@@ -115,10 +115,10 @@ function sealTexture(){
   const c=document.createElement('canvas'); c.width=128; c.height=64;
   const x=c.getContext('2d');
   const gr=x.createLinearGradient(0,0,0,64);
-  gr.addColorStop(0,'rgba(255,233,168,0.95)'); gr.addColorStop(0.12,'rgba(255,106,42,0.35)');
-  gr.addColorStop(0.88,'rgba(255,106,42,0.35)'); gr.addColorStop(1,'rgba(255,233,168,0.95)');
+  gr.addColorStop(0,'rgba(255,214,228,0.95)'); gr.addColorStop(0.12,'rgba(255,47,109,0.35)');
+  gr.addColorStop(0.88,'rgba(255,47,109,0.35)'); gr.addColorStop(1,'rgba(255,214,228,0.95)');
   x.fillStyle=gr; x.fillRect(0,0,128,64);
-  x.fillStyle='rgba(255,210,59,0.95)';
+  x.fillStyle='rgba(255,156,192,0.95)';
   for(let i=-1;i<3;i++){ x.beginPath(); x.moveTo(i*64+8,14); x.lineTo(i*64+40,14); x.lineTo(i*64+72,50); x.lineTo(i*64+40,50); x.closePath(); x.fill(); }
   _sealTex=new THREE.CanvasTexture(c); _sealTex.colorSpace=THREE.SRGBColorSpace;
   _sealTex.wrapS=THREE.RepeatWrapping; return _sealTex;
@@ -392,6 +392,7 @@ export class Entities {
   _release(v){
     this.group.remove(v.root);
     if(v.bossRing) v.bossRing.visible = false;
+    if(v.spotRing) v.spotRing.visible = false;
     if(!this.pool.has(v.key)) this.pool.set(v.key, []);
     this.pool.get(v.key).push(v);
   }
@@ -490,6 +491,10 @@ export class Entities {
       flipX = 1; scale = 1.08;
     } else if(type==='heart'){
       scale = 1+Math.sin(t*5)*0.08;
+    } else if(type==='riskRewind' || type==='riskDark'){
+      // Risk balonu: nabız + ara sıra bozuk sinyal titremesi.
+      scale = 1+Math.sin(t*6+it.ang)*0.05;
+      opacity = Math.random()<0.1 ? 0.65 : 1;
     }
     if(v.yarn){
       // Yumak üç eksende yavaşça döner (her cızırtı farklı fazda).
@@ -531,6 +536,18 @@ export class Entities {
     // Boss öğelerinin etrafındaki dönen altın halka kaldırıldı (kafa karıştırıyordu):
     // boss dalgasındaki cızırtılar da normal cızırtılarla aynı görünür.
     if(v.bossRing) v.bossRing.visible = false;
+    // İlk görüş tanıtımı (engine.js introCheck): öğenin çevresinde beyaz ışık halkası.
+    if(it.spot>0){
+      if(!v.spotRing){
+        v.spotRing = new THREE.Sprite(new THREE.SpriteMaterial({map:this._spotTex || (this._spotTex = ringSpriteTexture('#ffffff', false)),
+          transparent:true, depthWrite:false, depthTest:false, blending:THREE.AdditiveBlending}));
+        v.spotRing.renderOrder = 8; v.root.add(v.spotRing);
+      }
+      v.spotRing.visible = true;
+      v.spotRing.position.y = v.body ? v.body.position.y : HOVER;
+      v.spotRing.scale.setScalar(((type==='hazardBomb') ? 6.6 : 5.2) + Math.sin(t*9)*0.35);
+      v.spotRing.material.opacity = Math.min(1, it.spot/30)*0.95;
+    } else if(v.spotRing) v.spotRing.visible = false;
   }
 
   // ---------------- Oyuncu (pena) ----------------

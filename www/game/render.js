@@ -130,6 +130,15 @@ function drawScreenOverlays(){
   _ovDrawn = on; setOverlayCanvasVisible(on);
 }
 
+// Plağın dönüş açısı: normalde sabit hızla; Geri Sar risk balonu sürerken
+// ters yöne ve hızlıca ("rewind") — yumuşak geçişle.
+let _rec2D=0, _rec2DT=0, _rec2DMul=1;
+function riskRewindOn(){ return !!(GAME_STATES[state] && session && session.risk && session.risk.type==='riskRewind'); }
+function recordRot2D(t){
+  const dt=_rec2DT ? Math.min(0.1, Math.max(0, t-_rec2DT)) : 0; _rec2DT=t;
+  _rec2DMul += ((riskRewindOn() ? -3.2 : 1)-_rec2DMul)*Math.min(1, dt*5);
+  _rec2D += dt*0.8*_rec2DMul; return _rec2D;
+}
 function drawSun(t){
   const sunR=Math.min(W,H)*0.06*(1+Math.sin(t*2)*0.04);
   const style = cfg.sun;
@@ -189,14 +198,14 @@ function drawSun(t){
   } else {
     // Varsayılan: dönen plak — oluklu halkalar + kayan parlama şeridi
     // (dönüşü hissettirir) + tema renginde etiket + iğne deliği.
-    const discR=sunR*2.3;
+    const discR=sunR*2.3, rot=recordRot2D(t);
     ctx.fillStyle='#120a08'; ctx.beginPath(); ctx.arc(CX,CY,discR,0,7); ctx.fill();
     for(let i=0;i<6;i++){
       const rr=discR*(0.42+i*0.095);
       ctx.strokeStyle = i%2===0 ? 'rgba(255,255,255,.07)' : 'rgba(255,255,255,.035)';
       ctx.lineWidth=1.2; ctx.beginPath(); ctx.arc(CX,CY,rr,0,7); ctx.stroke();
     }
-    ctx.save(); ctx.translate(CX,CY); ctx.rotate(t*0.8);
+    ctx.save(); ctx.translate(CX,CY); ctx.rotate(rot);
     const hg=ctx.createLinearGradient(-discR,-discR,discR,discR);
     hg.addColorStop(0,'rgba(255,255,255,0)'); hg.addColorStop(0.5,'rgba(255,255,255,.1)'); hg.addColorStop(1,'rgba(255,255,255,0)');
     ctx.fillStyle=hg; ctx.beginPath(); ctx.arc(0,0,discR,0,7); ctx.fill();
@@ -210,7 +219,7 @@ function drawSun(t){
     if(lim && lim.complete && lim.naturalWidth>0){
       // Temanın plak etiketi (konsept görseli), plakla birlikte döner.
       const lr=sunR*1.05;
-      ctx.save(); ctx.translate(CX,CY); ctx.rotate(t*0.8);
+      ctx.save(); ctx.translate(CX,CY); ctx.rotate(rot);
       ctx.beginPath(); ctx.arc(0,0,lr,0,7); ctx.clip();
       ctx.drawImage(lim,-lr,-lr,lr*2,lr*2);
       ctx.restore();
@@ -221,8 +230,8 @@ function drawSun(t){
   ctx.fillStyle='#0a0604'; ctx.beginPath(); ctx.arc(CX,CY,sunR*0.13,0,7); ctx.fill();
 }
 
-// Sarı cızırtının kilitlediği yarım halka: kalın, tarama desenli sarı-turuncu
-// bant + iki ucunda "kilit" çentikleri. Reddedilen geçişte parlar.
+// Kilit cızırtısının kilitlediği yarım halka: kalın, tarama desenli gül
+// rengi bant + iki ucunda "kilit" çentikleri. Reddedilen geçişte parlar.
 function drawSeals2D(t){
   for(const it of items){
     if(!isSeal(it) && !(it.type==='hazardPull' && !it.bossStatic && it.expiring && it.pop>0)) continue;
@@ -230,17 +239,17 @@ function drawSeals2D(t){
     const al=Math.max(0,Math.min(1,it.pop))*(0.75+Math.sin(t*5)*0.1)+(it.sealBump||0)*0.6;
     const w=PLAYER_R*1.5;
     ctx.save(); ctx.lineCap='butt';
-    ctx.shadowColor='#ffb340'; ctx.shadowBlur=14+(it.sealBump||0)*16;
-    ctx.strokeStyle=hexA('#ff6a2a',0.28*al); ctx.lineWidth=w;
+    ctx.shadowColor='#ff4f8a'; ctx.shadowBlur=14+(it.sealBump||0)*16;
+    ctx.strokeStyle=hexA('#ff2f6d',0.28*al); ctx.lineWidth=w;
     ctx.beginPath(); ctx.arc(CX,CY,r,a0,a1); ctx.stroke();
     ctx.shadowBlur=0;
-    ctx.strokeStyle=hexA('#ffd23b',0.75*al); ctx.lineWidth=w*0.42;
+    ctx.strokeStyle=hexA('#ff9cc0',0.75*al); ctx.lineWidth=w*0.42;
     ctx.setLineDash([w*0.5,w*0.45]); ctx.lineDashOffset=-t*24;
     ctx.beginPath(); ctx.arc(CX,CY,r,a0,a1); ctx.stroke(); ctx.setLineDash([]);
-    ctx.strokeStyle=hexA('#ffe9a8',0.6*al); ctx.lineWidth=1.5;
+    ctx.strokeStyle=hexA('#ffd6e4',0.6*al); ctx.lineWidth=1.5;
     ctx.beginPath(); ctx.arc(CX,CY,r-w/2,a0,a1); ctx.stroke();
     ctx.beginPath(); ctx.arc(CX,CY,r+w/2,a0,a1); ctx.stroke();
-    ctx.lineWidth=3; ctx.strokeStyle=hexA('#ffd23b',0.9*al);
+    ctx.lineWidth=3; ctx.strokeStyle=hexA('#ff9cc0',0.9*al);
     const cx0=Math.cos(a0), sy0=Math.sin(a0);
     ctx.beginPath(); ctx.moveTo(CX+cx0*(r-w*0.6),CY+sy0*(r-w*0.6)); ctx.lineTo(CX+cx0*(r+w*0.6),CY+sy0*(r+w*0.6)); ctx.stroke();
     ctx.restore();
@@ -504,6 +513,14 @@ function drawPwIcon(x,y,key,R){
 function drawItem(x,y,type,sc,t,it){
   if(sc<=0) return;
   const R=(PLAYER_R*0.95)*sc;
+  // İlk görüş tanıtımı (bkz. engine.js introCheck): öğenin çevresinde kısa
+  // süreli, nabız gibi atan beyaz ışık halkası — kart hangi öğeyi anlatıyor.
+  if(it && it.spot>0){
+    const a=Math.min(1,it.spot/30), pr=R*((type==='hazardBomb'?3.2:2.5)+Math.sin(t*9)*0.18);
+    ctx.save(); ctx.globalAlpha=0.9*a; ctx.strokeStyle='#ffffff'; ctx.lineWidth=2.5;
+    ctx.shadowColor='#ffffff'; ctx.shadowBlur=10;
+    ctx.beginPath(); ctx.arc(x,y,pr,0,7); ctx.stroke(); ctx.restore();
+  }
   const isTwinKind = type==='hazardTwin'||type==='hazardTwinDecoy';
   let col;
   if(type==='hazardPulse' && it && it.pulseDanger===false) col='#ffd9b0';
@@ -591,8 +608,18 @@ function drawItem(x,y,type,sc,t,it){
     ctx.fillStyle='#0a0604'; ctx.beginPath(); ctx.arc(0,0,R*0.1,0,7); ctx.fill();
     ctx.restore();
     }
+  } else if(type==='riskRewind' || type==='riskDark'){
+    drawRiskBubble(x,y,R,type,t,it);
+  } else if(isPower(type)){
+    // Güç ailesi (kalkan, yavaşlatma, mıknatıs, ×2): hepsi aynı camsı
+    // baloncuğun içinde — "baloncuk = güç" tek bakışta okunur, kırmızı
+    // mıknatıs da artık bir cızırtıyla karışmaz.
+    const bob = it ? Math.sin(t*2.4 + it.ang*3)*R*0.18 : 0;
+    drawBubble(x, y+bob, R*1.5, POWER_BUBBLE);
+    if(imgReady(ITEM_IMG[type])){ const s=R*1.0; ctx.drawImage(ITEM_IMG[type], x-s, y-s+bob, s*2, s*2); }
+    else { const iconKey = PW_ICON_TYPE[type]; if(iconKey) drawPwIcon(x,y+bob,iconKey,R*0.85); }
   } else if(imgReady(ITEM_IMG[type])){
-    // Can ve takviyeler: görsel; kalp atar, diğerleri hafifçe salınır
+    // Can: görsel, kalp atar (takviyeler yukarıda baloncuk içinde)
     // (it yoksa — 3D doku üretimi — hareket 3D tarafında yapılır).
     const pulse = (type==='heart' && it) ? 1+Math.sin(t*5)*0.08 : 1;
     const bob = (it && type!=='heart') ? Math.sin(t*2.4 + it.ang*3)*R*0.18 : 0;
@@ -625,15 +652,55 @@ function drawItem(x,y,type,sc,t,it){
 // Yaratıklar artık "cızırtı" (plağa değip şarkıyı bozan parazit) görseli;
 // tip renkle ayrılır — kırmızı en zayıf/temel, pembe en tehlikeli. İkiz ve
 // sahte kopyası bilerek aynı renkte (hangisi gerçek? mekaniği).
+// Netlik (2.59): oyuncular "yeşiller/maviler ne, düşman mı?" diye soruyordu.
+// Artık TÜM cızırtılar sıcak tehlike ailesinde: temel/dev/nabız kırmızı
+// (boyut ve nefes alıp vermeyle ayrılır), zıplayan turuncu, kilit gül,
+// ikiz mor, sinsi pembe. Toplanırlar altın, güçler camsı baloncuk, risk mor.
 const HAZARD_IMG_KEY = {
-  hazard:'glitch_red', hazardJump:'glitch_blue', hazardBomb:'glitch_green',
-  hazardPull:'glitch_yellow', hazardTwin:'glitch_purple', hazardTwinDecoy:'glitch_purple',
-  hazardPulse:'glitch_orange', hazardCreep:'glitch_pink',
+  hazard:'glitch_red', hazardJump:'glitch_orange', hazardBomb:'glitch_red',
+  hazardPull:'glitch_rose', hazardTwin:'glitch_purple', hazardTwinDecoy:'glitch_purple',
+  hazardPulse:'glitch_red', hazardCreep:'glitch_pink',
 };
 const HAZARD_COLOR = {
-  hazard:'#ff3b3b', hazardJump:'#3b8bff', hazardBomb:'#3bea6a', hazardPull:'#ffd23b',
-  hazardTwin:'#b04bff', hazardTwinDecoy:'#b04bff', hazardPulse:'#ff8a1f', hazardCreep:'#ff4fd8',
+  hazard:'#ff3b3b', hazardJump:'#ff8a1f', hazardBomb:'#ff3b3b', hazardPull:'#ff4f8a',
+  hazardTwin:'#b04bff', hazardTwinDecoy:'#b04bff', hazardPulse:'#ff3b3b', hazardCreep:'#ff4fd8',
 };
+const POWER_BUBBLE = '#7fe8ff', RISK_COL = '#c46bff';
+// Camsı baloncuk: güç ailesinin ortak çerçevesi (risk balonu da aynı formda, mor).
+function drawBubble(x,y,r,col){
+  const g=ctx.createRadialGradient(x-r*0.35,y-r*0.4,r*0.05,x,y,r);
+  g.addColorStop(0,'rgba(255,255,255,.32)'); g.addColorStop(0.55,hexA(col,.08));
+  g.addColorStop(0.85,hexA(col,.22)); g.addColorStop(1,hexA(col,.55));
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.fill();
+  ctx.lineWidth=Math.max(1.4,r*0.075); ctx.strokeStyle=hexA(col,.92); ctx.stroke();
+  ctx.save(); ctx.lineCap='round'; ctx.strokeStyle='rgba(255,255,255,.8)'; ctx.lineWidth=Math.max(1.2,r*0.08);
+  ctx.beginPath(); ctx.arc(x,y,r*0.74,Math.PI*1.12,Math.PI*1.42); ctx.stroke(); ctx.restore();
+}
+// Risk balonu: mor baloncuk + "bozuk sinyal" renk kayması (pembe/camgöbeği
+// çift kenar) + içinde etkinin ikonu (◀◀ Geri Sar, çizik göz Karartma).
+function drawRiskBubble(x,y,R,type,t,it){
+  const r=R*1.55*(it ? 1+Math.sin(t*6+it.ang)*0.05 : 1);
+  const jx = (it && Math.random()<0.12) ? (Math.random()-0.5)*r*0.14 : 0;
+  ctx.save(); ctx.globalAlpha*=0.6; ctx.lineWidth=Math.max(1.2,r*0.07);
+  ctx.strokeStyle='#ff3fd0'; ctx.beginPath(); ctx.arc(x-r*0.06+jx,y,r,0,7); ctx.stroke();
+  ctx.strokeStyle='#4fe3ff'; ctx.beginPath(); ctx.arc(x+r*0.06-jx,y,r,0,7); ctx.stroke();
+  ctx.restore();
+  drawBubble(x,y,r,RISK_COL);
+  const s=r*0.5;
+  ctx.save(); ctx.translate(x+jx*0.5,y); ctx.fillStyle='#ffffff'; ctx.strokeStyle='#ffffff';
+  ctx.shadowColor=RISK_COL; ctx.shadowBlur=r*0.35; ctx.lineCap='round'; ctx.lineJoin='round';
+  if(type==='riskRewind'){
+    for(const ox of [-0.92,-0.02]){ ctx.beginPath(); ctx.moveTo(ox*s,0); ctx.lineTo((ox+0.94)*s,-0.64*s); ctx.lineTo((ox+0.94)*s,0.64*s); ctx.closePath(); ctx.fill(); }
+  } else {
+    ctx.lineWidth=Math.max(1.4,s*0.16);
+    ctx.beginPath(); ctx.moveTo(-0.95*s,0); ctx.quadraticCurveTo(0,-0.85*s,0.95*s,0); ctx.quadraticCurveTo(0,0.85*s,-0.95*s,0); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0,0,0.26*s,0,7); ctx.fill();
+    ctx.shadowBlur=0; ctx.strokeStyle=RISK_COL; ctx.lineWidth=Math.max(2.4,s*0.3);
+    ctx.beginPath(); ctx.moveTo(-0.72*s,-0.72*s); ctx.lineTo(0.72*s,0.72*s); ctx.stroke();
+    ctx.strokeStyle='#ffffff'; ctx.lineWidth=Math.max(1.4,s*0.15); ctx.stroke();
+  }
+  ctx.restore();
+}
 function drawHazardImage(x,y,size,col,type,rot){
   const img = MONSTER_IMG[HAZARD_IMG_KEY[type]];
   if(img && img.complete && img.naturalWidth>0){

@@ -65,10 +65,11 @@ let coreJustBoughtId=null, coreJustBoughtTimer=null;
 function renderUpgradesTab(){
   document.querySelectorAll('#upgradesTabs .stab').forEach(el=>el.classList.toggle('sel', el.dataset.uptab===upgradesTab));
   const g=document.getElementById('upgradesGrid'), c=document.getElementById('coreTreeWrap');
-  const pw=document.getElementById('perkWrap');
+  const pw=document.getElementById('perkWrap'), hw=document.getElementById('heatWrap');
   if(g) g.style.display = upgradesTab==='tier' ? 'grid' : 'none';
   if(c) c.style.display = upgradesTab==='core' ? 'flex' : 'none';
   if(pw) pw.style.display = upgradesTab==='perk' ? 'block' : 'none';
+  if(hw) hw.style.display = upgradesTab==='heat' ? 'block' : 'none';
   // Ağaç ekranı dikeyde ortalamak istediğimiz için (bkz. style.css
   // #coreTreeWrap flex:1) uzun açıklama metnini gizliyoruz — mekanik zaten
   // ağacın hemen üstündeki kısa satırda ve her düğümün kendi popup'ında.
@@ -76,6 +77,38 @@ function renderUpgradesTab(){
   if(subEl){ subEl.style.display = upgradesTab==='tier' ? '' : 'none'; subEl.textContent = t('upgrades_sub'); }
   if(upgradesTab==='core') renderCoreTree();
   if(upgradesTab==='perk') renderPerks();
+  if(upgradesTab==='heat') renderHeat();
+}
+
+// ---- Isı Mühürleri (bkz. data.js HEAT_SEALS) ----------------------------
+// Açık mühür kartı turuncu yanar; kilitli kart kaçıncı Süpernova'da
+// açılacağını yazar. Üstteki gösterge toplam ısıyı ve puan çarpanını verir.
+function renderHeat(){
+  const grid=document.getElementById('heatGrid'); if(!grid) return;
+  const sel=heatSelected(), mult=heatMultOf(sel), done=stats.totalPrestiges||0;
+  const lv=document.getElementById('heatLevelVal'); if(lv) lv.textContent=sel.length;
+  const mv=document.getElementById('heatMultVal'); if(mv) mv.textContent='×'+mult.toFixed(2);
+  const wrap=document.getElementById('heatWrap'); if(wrap) wrap.classList.toggle('hot', sel.length>0);
+  grid.innerHTML='';
+  HEAT_SEALS.forEach(s=>{
+    const un=sealUnlocked(s), on=sealSelected(s.id);
+    const card=document.createElement('div');
+    card.className='shopCard boostCard heatCard'+(on?' equipped':'')+(un?'':' locked');
+    const pct='+'+Math.round(s.bonus*100)+'%';
+    const status = !un ? `<div class="price lockp">${icon('lock')} ${t('heat_unlock_at',{n:s.unlock})}</div>`
+      : on ? `<div class="price on">${icon('flame')} ${pct} · ${t('heat_on')}</div>`
+           : `<div class="price">${pct} · ${t('heat_off')}</div>`;
+    card.innerHTML=`<div class="boostIcon">${icon(s.icon)}</div>`
+      +`<div class="cn">${t('seal_'+s.id+'_name')}</div>`
+      +`<div class="bdesc upDesc">${t('seal_'+s.id+'_desc')}</div>`+status;
+    card.addEventListener('click', ()=>{
+      if(!un){ queueToast(icon('lock')+' '+t('heat_locked_toast',{n:s.unlock, k:Math.min(done,s.unlock)})); beep(220,0.08,'square',0.08); return; }
+      toggleSeal(s.id);
+      if(!on){ beep(330,0.1,'sawtooth',0.07); beep(660,0.12,'triangle',0.1); } else beep(400,0.08,'sine',0.1);
+      renderHeat();
+    });
+    grid.appendChild(card);
+  });
 }
 
 // ---- Süpernova Yetenekleri (bkz. data.js PERKS) -------------------------
@@ -333,7 +366,7 @@ function attemptPrestige(){
   if(gain<=0){ queueToast(t('prestige_zero_toast')); beep(200,0.1,'square',0.1); return; }
   showPurchaseConfirm('replay', t('reset_progress_btn')+' — +'+gain+' ⚛', null, ()=>{
     const got=performPrestige();
-    renderUpgrades(); renderCoreTree(); updatePrestigePreview(); renderPerks();
+    renderUpgrades(); renderCoreTree(); updatePrestigePreview(); renderPerks(); renderHeat();
     if(tutorialActive && typeof tutorialOnPrestige==='function') tutorialOnPrestige(got);
     beep(300,0.15,'square',0.12); beep(500,0.15,'triangle',0.1);
   }, t('reset_progress_confirm'));

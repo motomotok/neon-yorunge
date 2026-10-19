@@ -373,6 +373,19 @@ function menuAnchors(xMin, xMax){
   return {armBottom:bottom, baseLeft, recordTop:rec.y};
 }
 
+// Penanın ekrandaki konumu (CSS piksel) — Karartma'nın spot ışığı onu izler.
+const _ps = new THREE.Vector3();
+// lead (radyan): yörüngede penanın o kadar önündeki nokta.
+function playerScreen(lead){
+  if(!renderer || failed || !entities || !entities.player || !W) return null;
+  const pr = entities.player.root;
+  if(lead){
+    const a = Math.atan2(pr.position.z, pr.position.x)+lead, r = Math.hypot(pr.position.x, pr.position.z);
+    _ps.set(Math.cos(a)*r, pr.position.y, Math.sin(a)*r); entities.group.localToWorld(_ps);
+  } else pr.getWorldPosition(_ps);
+  _ps.project(camera);
+  return {x:(_ps.x+1)/2*W, y:(1-_ps.y)/2*H};
+}
 function info(){
   return {quality:qualityLive, preference:qualityPref, fps:Math.round(fps.value), dpr:Math.round(dprCur*100)/100,
     bloom:!!composer, gpu:gpuName, gpuTier, failed, missingAssets:loadErrors.slice(),
@@ -380,4 +393,4 @@ function info(){
     gpuMem: renderer ? Object.assign({}, renderer.info.memory) : null, themeMs: world && world.themeScene ? world.themeScene.buildMs : null};
 }
 
-window.Render3D = { supported, init, warm, resize, render, setQuality, info, fail, menuAnchors };
+window.Render3D = { supported, init, warm, resize, render, setQuality, info, fail, menuAnchors, playerScreen };

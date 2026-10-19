@@ -115,6 +115,7 @@ function renderFrame3D(dt){
   f.bossIntensity=(GAME_STATES[state] && bossTelegraph) ? bossTelegraphIntensity(bossTelegraph.t) : 0;
   f.bossPh=(GAME_STATES[state] && bossTelegraph) ? bossTelegraphPhases(bossTelegraph.t) : null;
   f.notes=session ? session.stars : 0;
+  f.rewind=!!(state==='play' && session && session.risk && session.risk.type==='riskRewind');
   f.theme=T; f.themeKey=cfg.theme; f.ringStyle=cfg.ringStyle; f.trail=cfg.trail; f.skin=cfg.skin;
   f.skinImg=penaImg(); f.playerColor=playerColor(); f.colorblind=cfg.colorblind; f.easeOut=easeOut;
   try{ Render3D.render(f); }

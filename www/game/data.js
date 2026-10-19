@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.58.5';
+const GAME_VERSION = '2.59.0';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -109,9 +109,11 @@ SKINS.forEach(sk=>{ if(sk.img){ const im=new Image(); im.src=sk.img; PENA_IMG[sk
 const MONSTER_IMG = {};
 for(let i=1;i<=16;i++){ const im=new Image(); im.src='img/monsters/monster'+i+'.png'; MONSTER_IMG['monster'+i]=im; }
 // "Cızırtı" yaratıkları: kullanıcının pembe şimşek + kırık ses dalgası
-// görselinden üretilen 7 renk (img/monsters/glitch_*.png). Her tehlike tipi
-// bir renk taşır (bkz. render.js HAZARD_IMG_KEY / HAZARD_COLOR).
-['red','blue','green','yellow','purple','orange','pink'].forEach(c=>{ const im=new Image(); im.src='img/monsters/glitch_'+c+'.png'; MONSTER_IMG['glitch_'+c]=im; });
+// görselinden üretilen renkler (img/monsters/glitch_*.png). Netlik (2.59):
+// tüm cızırtılar yalnız SICAK tehlike renklerinde (kırmızı, turuncu, gül,
+// pembe, mor) — mavi/yeşil/sarı "iyi bir şey" gibi okunuyordu. Tipler
+// renkten çok davranış/boyutla ayrılır (bkz. render.js HAZARD_IMG_KEY).
+['red','orange','rose','purple','pink'].forEach(c=>{ const im=new Image(); im.src='img/monsters/glitch_'+c+'.png'; MONSTER_IMG['glitch_'+c]=im; });
 // Toplanabilir öğe görselleri (kullanıcının verdiği): nota ve nota jetonu.
 const ITEM_IMG = {};
 ['note','coin','clef'].forEach(k=>{ const im=new Image(); im.src='img/items/'+k+'.png'; ITEM_IMG[k]=im; });
@@ -366,6 +368,30 @@ function togglePerk(id){
   if(eq.length>=perkSlots()) return false;
   stats.perksEquipped=[...eq, id]; saveStats(); return true;
 }
+// ---- Isı Mühürleri (zorluk karşılığı puan) ------------------------------
+// Süpernova yetenekleri oyunu kolaylaştırır; mühürler bilerek ZORLAŞTIRIR ve
+// karşılığında kazanılan TÜM puanı çarpar: "ısıyı aç, rekoru zorla". Süpernova
+// sayısıyla açılır, Süpernova ekranının Isı sekmesinden takılıp çıkarılır.
+// Yalnız Klasik ve Zaman modunda geçerli (Günün Seti herkes için eşit yarış,
+// Zen puansız). Etkiler engine.js'te session.heat ile okunur.
+const HEAT_SEALS = [
+  {id:'reverseFlow', icon:'rewind',    unlock:1,  bonus:0.15},  // Risk balonları ~3 kat sık
+  {id:'glassHeart',  icon:'heart',     unlock:2,  bonus:0.30},  // en fazla 3 can
+  {id:'fastRecord',  icon:'lightning', unlock:4,  bonus:0.20},  // plak %15 hızlı döner
+  {id:'earlyBoss',   icon:'flame',     unlock:6,  bonus:0.20},  // bosslar %30 daha erken
+  {id:'noShield',    icon:'shield',    unlock:10, bonus:0.15},  // kalkan düşmez
+];
+function heatModeAllowed(m){ return m==='classic' || m==='time'; }
+function sealUnlocked(s){ return (stats.totalPrestiges||0) >= s.unlock; }
+function sealSelected(id){ const s=HEAT_SEALS.find(x=>x.id===id); return !!s && sealUnlocked(s) && (stats.heatSeals||[]).includes(id); }
+function toggleSeal(id){
+  const s=HEAT_SEALS.find(x=>x.id===id); if(!s || !sealUnlocked(s)) return false;
+  const cur=stats.heatSeals||[];
+  stats.heatSeals = cur.includes(id) ? cur.filter(x=>x!==id) : [...cur, id];
+  saveStats(); return true;
+}
+function heatSelected(){ return HEAT_SEALS.filter(s=>sealSelected(s.id)); }
+function heatMultOf(list){ return Math.round((1+list.reduce((a,s)=>a+s.bonus,0))*100)/100; }
 function allTiersMaxed(){ return Object.keys(META_UPGRADES).every(k=>upgradeLevel(k)>=META_UPGRADES[k].tiers.length); }
 
 function coreNode(id){ return CORE_TREE.find(n=>n.id===id); }
@@ -531,6 +557,7 @@ let stats = load('beatOrbitStats', {
   cores:0, lifetimeCores:0, totalPrestiges:0, bestAtPrestige:0, gamesAtPrestige:0,
   coreUnlocked:['core_root'],
   perksOwned:[], perksEquipped:[], balanceV2:false, balanceV2Refund:null,
+  heatSeals:[], seenIntro:[], risksCleared:0,
   gems:0, lifetimeGems:0,
   // Günün Seti (bkz. dailyset.js)
   dset:null, dsetPending:null, dsetHist:[], dsetName:'', dsetCache:null, dsetRealSeen:0, dsetCrownDay:'', installId:'',

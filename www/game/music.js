@@ -44,7 +44,7 @@ const MUSIC_LEVELS = [
 function musicLevelFor(c){ return c>=20 ? 4 : c>=15 ? 3 : c>=10 ? 2 : c>=5 ? 1 : 0; }
 
 const Music = (function(){
-  let ctx=null, out=null, duck=null;
+  let ctx=null, out=null, duck=null, fx=null;
   const buffers = {};         // ad → Promise<{part: AudioBuffer}>
   let cur=null;               // çalan şarkı
   let loadingName=null;
@@ -57,7 +57,9 @@ const Music = (function(){
     catch(e){ try{ ctx = new C(); }catch(e2){ return null; } }
     out = ctx.createGain(); out.gain.value = musicVolume();
     duck = ctx.createGain(); duck.gain.value = 1;
-    duck.connect(out); out.connect(ctx.destination);
+    // Risk balonu etkileri için tüm şarkıya binen filtre (bkz. setFx).
+    fx = ctx.createBiquadFilter(); fx.type='lowpass'; fx.frequency.value=ctx.sampleRate*0.45; fx.Q.value=0.7;
+    duck.connect(fx); fx.connect(out); out.connect(ctx.destination);
     return ctx;
   }
   function resume(){ try{ if(ctx && ctx.state!=='running' && !suspended){ const p=ctx.resume(); if(p && p.catch) p.catch(()=>{}); } }catch(e){} }
@@ -200,5 +202,14 @@ const Music = (function(){
     setVolume(){ if(out) out.gain.setTargetAtTime(musicVolume(), ctx.currentTime, 0.05); },
     // Oyunda kombo ile dolan bir tema şarkısı duyuluyor mu (yazılar için).
     themeAudible(){ return !!(cur && cur.nodes.rest && cfg.music); },
+    // Risk balonu: Karartma şarkıyı boğuklaştırır (duvarın arkasından gibi),
+    // Geri Sar rezonanslı bir "bant" sesi verir; null normale döndürür.
+    setFx(kind){
+      if(!ctx || !fx) return;
+      const now=ctx.currentTime, open=ctx.sampleRate*0.45;
+      const f = kind==='dark' ? 650 : kind==='rewind' ? 1500 : open, q = kind==='rewind' ? 6 : 0.7;
+      fx.frequency.cancelScheduledValues(now); fx.frequency.setTargetAtTime(f, now, kind ? 0.08 : 0.3);
+      fx.Q.cancelScheduledValues(now); fx.Q.setTargetAtTime(q, now, 0.1);
+    },
   };
 })();

@@ -571,7 +571,9 @@ export class World {
     // Plak 33⅓ devirden çok daha yavaş, sakin döner; oyunda hızla birlikte
     // biraz hızlanır (ritim hissi).
     const speed = f.inGame ? 0.35 + (f.player ? f.player.speed*0.12 : 0) : 0.25;
-    this.recordSpin.rotation.y -= speed*dt/60;
+    // Geri Sar risk balonu: plak ters yöne ve hızlı döner (yumuşak geçişle).
+    this.spinMul = (this.spinMul ?? 1) + ((f.rewind ? -3.2 : 1) - (this.spinMul ?? 1))*Math.min(1, 0.08*dt);
+    this.recordSpin.rotation.y -= speed*this.spinMul*dt/60;
     this.stars.rotation.y += 0.0004*dt;
     const beat = 1 + Math.sin(t*2)*0.05;
     this.labelGlow.scale.setScalar(LABEL_R*4*beat);
