@@ -139,14 +139,14 @@ const TUTORIAL_STEPS = {
     narratorSay(t('tut2_over',{b:t('menu_upgrades')}), {pos:'bottom'});
   },
   buyHp(){
-    if(!_tutGiftGiven){ _tutGiftGiven = true; addNotes(240); refreshWallet(); renderUpgrades(); }
+    if(!_tutGiftGiven){ _tutGiftGiven = true; addNotes(tutGift()); refreshWallet(); renderUpgrades(); }
     upgradesTab='tier'; renderUpgradesTab();
     tutorialDisableEl(document.getElementById('resetProgressBtn'));
     const cards=[...document.querySelectorAll('#upgradesGrid .shopCard')];
     const hpCard=cards.find(c=>c.dataset.key==='hp');
     cards.forEach(c=>{ if(c!==hpCard) tutorialDim(c); });
     tutorialSpotlight(hpCard);
-    narratorSay(t('tut2_buyhp',{n:240, h:t('up_hp_name')}), {pos:'bottom'});
+    narratorSay(t('tut2_buyhp',{n:tutGift(), h:t('up_hp_name')}), {pos:'bottom'});
   },
   // Süpernova'yı oyuncu kendisi patlatır (onay penceresi dahil).
   prestige(){
@@ -236,12 +236,14 @@ function tutorialOnUpgradeBought(key){
 function tutorialOnPrestige(gain){
   if(tutorialStep!=='prestige') return;
   // Bir sonraki adımda en az bir düğüm açılabilsin (ilk düğümler 2 Çekirdek).
-  if((stats.cores||0) < 2){ stats.cores = 2; saveStats(); }
+  { const need=coreNode('core_hp_1').cost; if((stats.cores||0) < need){ stats.cores = need; saveStats(); } }
   tutorialGoStep('core', gain);
 }
 function tutorialOnCoreBought(){
   if(tutorialStep==='core') tutorialGoStep('stronger');
 }
+// Hoş geldin hediyesi = Can Kapasitesi 1. kademe fiyatı (fiyat değişirse otomatik izler).
+function tutGift(){ return META_UPGRADES.hp.tiers[0].cost; }
 function tutorialNudge(){ beep(200,0.08,'square',0.1); }
 
 function tutorialFinish(){
@@ -253,8 +255,8 @@ function tutorialFinish(){
     // adımlarında zaten verildiyse (buyHp) tekrar verilmez — atlayan da alır.
     if(!_tutGiftGiven){
       _tutGiftGiven = true;
-      addNotes(240);
-      queueToast(icon('coin')+' '+t('tut2_gift_toast',{n:240}));
+      addNotes(tutGift());
+      queueToast(icon('coin')+' '+t('tut2_gift_toast',{n:tutGift()}));
     }
   }
   saveStats();

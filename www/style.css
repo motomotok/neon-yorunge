@@ -1298,3 +1298,14 @@ h1 .gicon,h2 .gicon{color:var(--star);}
 .nBadge::after{inset:-2px;box-shadow:0 2px 14px rgba(255,70,50,.95);animation-duration:1.6s;}
 .lsClaimBtn::after{box-shadow:0 0 18px 2px rgba(255,200,80,.45);animation-duration:1.4s;}
 @keyframes glowPulse{0%,100%{opacity:0}50%{opacity:1}}
+
+/* Süpernova Yetenekleri (upgrades-ui.js renderPerks) */
+#perkWrap .perkHead{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;font-size:12.5px;font-weight:700;margin:2px 0 4px;}
+#perkWrap .perkIntro{text-align:center;font-size:11px;margin:0 0 8px;}
+.perkCard.equipped{border-color:rgba(127,232,255,.85);box-shadow:inset 0 0 0 1px rgba(127,232,255,.35);}
+.perkCard.notOwned .boostIcon{opacity:.55;}
+.perkCard .price.core{color:#7fe8ff;}
+.menuUpgradeTag.supernova{color:#7fe8ff;font-weight:700;}
+#upgradesTabs{flex-wrap:nowrap;gap:4px;}
+#upgradesTabs .stab{padding:7px 9px;font-size:12px;white-space:nowrap;}
+#perkWrap .perkHead .muted{font-size:12px;font-weight:600;}

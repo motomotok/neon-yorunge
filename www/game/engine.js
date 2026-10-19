@@ -87,6 +87,11 @@ function resetGame(){
   newRecord=false; timeScale=1; timeScaleT=0;
   bossNextIndex=0; bossActive=false; bossWaveItems=[]; bossReward=0; bossTelegraph=null; bossQueue=[]; bossNextCol=0; bossEnd=0;
   lastHeartScore=-HEART_SCORE_GAP;
+  // Süpernova Yetenekleri (bkz. data.js PERKS): oyun başında bir kez okunur.
+  const zenRun = mode==='zen';
+  session.secondChance = !zenRun && hasPerk('secondChance');
+  session.ringLerp = hasPerk('nimblePick') ? 0.38 : 0.22;
+  if(!zenRun && hasPerk('shieldStart')) player.shieldHits=shieldHitsFor();
   if(activeBoost){
     if(activeBoost==='shieldstart') player.shieldHits=shieldHitsFor();
     else if(activeBoost==='slowstart') player.slowT=SLOW_DUR;
@@ -136,8 +141,11 @@ const HAZARD_KINDS = [
 // kademeli artıyor (bkz. hitHazard()). Temel/erken tipler hafif, sinsi
 // (en geç açılan) hazardCreep en ağır — Can Kapasitesi yükseltmesiyle
 // dengelenmesi gereken asıl risk bu.
+// Denge 2 (2026-10-19): can tavanı 7 olduğu için hasar da yeniden ölçeklendi
+// (eskiden 6 ve 10 vuran tipler vardı). En ağırı 4: iki ağır darbe ölüm,
+// kalkan bir tanesini yerse 1-2 canla kalırsın.
 const HAZARD_DAMAGE = {
-  hazard:1, hazardJump:1, hazardBomb:2, hazardPull:3, hazardTwin:4, hazardPulse:6, hazardCreep:10,
+  hazard:1, hazardJump:1, hazardBomb:1, hazardPull:2, hazardTwin:2, hazardPulse:3, hazardCreep:4,
 };
 // ---- Keşif ("teaser") algoritması ----
 // Gelişmiş tipler eşiklerinden önce de ARA SIRA görünür — oyuncu daha 300-500
@@ -435,7 +443,7 @@ function spawnItem(atAng, atRing, forceHazard, safe){
   const heartEligible = !zen && hp<maxHp && (score-lastHeartScore)>=HEART_SCORE_GAP;
   if(forceHazard){
     type = pickHazardKind();
-  } else if(heartEligible && rnd()<HEART_CHANCE){
+  } else if(heartEligible && rnd()<HEART_CHANCE*(1+coreBonus('heartBoost'))){
     type='heart'; lastHeartScore=score;
   } else {
     let r=rnd();
@@ -715,7 +723,7 @@ function update(dt){
   if(bossActive){ bossTravel += angStep*dt*timeScale; spawnBossColumns(); }
 
   const tR=radiusFor(player.targetRing);
-  player.curRadius += (tR-player.curRadius)*Math.min(1,0.22*dt);
+  player.curRadius += (tR-player.curRadius)*Math.min(1,(session.ringLerp||0.22)*dt);
   const settled = Math.abs(player.curRadius-tR) < PLAYER_R*0.8;
   const curRing = player.targetRing;
 
@@ -732,6 +740,7 @@ function update(dt){
   const bossTail = bossActive && bossNextCol>=bossEnd && !bossQueue.length;
   if(!bossActive || bossTail) updateSpawns(dt, bossTail);
 
+  const perkMagnet = hasPerk('noteMagnet');
   for(const it of items){
     if(!it.alive) continue;
     if(!it.expiring && it.pop<1) it.pop=Math.min(1,it.pop+dt*0.14);
@@ -823,6 +832,8 @@ function update(dt){
     let grabbed;
     if(magnetGrab){
       grabbed = da<hitWindow && settled; // mıknatıs halka farkı gözetmeden çeker
+    } else if(perkMagnet && settled && !isPower(it.type) && Math.abs(it.ring-curRing)===1 && da<hitWindow*0.8){
+      grabbed = true;   // Nota Mıknatısı yeteneği: komşu halkadaki notayı da alır
     } else {
       const px=CX+Math.cos(player.ang)*player.curRadius, py=CY+Math.sin(player.ang)*player.curRadius;
       const iix=CX+Math.cos(it.ang)*radiusFor(it.ring), iiy=CY+Math.sin(it.ang)*radiusFor(it.ring);
@@ -890,6 +901,11 @@ function update(dt){
       showFlash(t('flash_wave_cleared'),60);
       queueToast(icon('coin')+' '+t('toast_boss_cleared',{n:finalReward}));
       session.bossesCleared++; stats.bossesCleared=(stats.bossesCleared||0)+1;
+      // Boss Avcısı yeteneği: önüne altın nota yağmuru (3 halkaya yayılmış).
+      if(hasPerk('bossHunter')){
+        for(let i=0;i<6;i++) items.push({ang:normAng(player.ang+0.9+i*0.32), ring:i%NUM_RINGS, type:'gold', alive:true, pop:0, expiring:false, prevFwd:null});
+        queueToast(icon('trophy')+' '+t('perk_boss_rain_toast'));
+      }
       // İlk boss temizlendi: DJ Vinil ileriye dönük bir meydan okuma yazar
       // (bkz. narrator.js). Kutlama efektleri önce görünsün diye kısa gecikme.
       if(!stats.firstBossStory && typeof narratorFirstBossStory==='function') setTimeout(narratorFirstBossStory, 1100);
@@ -961,7 +977,16 @@ function hitHazard(ix,iy,subtype,itm){
   let dmg = HAZARD_DAMAGE[subtype]||1;
   if(itm && itm.dmgCap) dmg = Math.min(dmg, itm.dmgCap);
   const lostCombo=combo;
-  hp = Math.max(0, hp-dmg); combo=1; shake=Math.min(20, 8+dmg*1.2); flash=1; session.hits++;
+  // Kombo Koruması yeteneği: darbe komboyu sıfırlamaz, yarıya indirir.
+  combo = hasPerk('comboGuard') ? Math.max(1, Math.floor(combo/2)) : 1;
+  hp = Math.max(0, hp-dmg); shake=Math.min(20, 8+dmg*1.2); flash=1; session.hits++;
+  // İkinci Şans yeteneği: oyunda bir kez, öldürücü darbeden 1 canla kurtulur.
+  if(hp<=0 && session.secondChance && !tutorialActive){
+    session.secondChance=false; hp=1; player.invulT=INVUL*3;
+    burst(px,py,'#ff5d8f',30,6); beep(520,0.18,'sine',0.14); beep(780,0.2,'triangle',0.12);
+    queueToast(icon('heart')+' '+t('perk_second_chance_toast'));
+    return;
+  }
   burst(ix,iy,T.peril,22,5); beep(120,0.4,'sawtooth',0.2,true); beep(80,0.5,'square',0.15,true); vibrate([40,30,40]);
   // Müzik katmanları söndü: kısa bir uyarı. Ekrandaki melodi yazısını ezer
   // (çarpınca geçersiz kaldı), boss/seviye duyurularını ezmez.

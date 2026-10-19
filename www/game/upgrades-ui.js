@@ -65,14 +65,56 @@ let coreJustBoughtId=null, coreJustBoughtTimer=null;
 function renderUpgradesTab(){
   document.querySelectorAll('#upgradesTabs .stab').forEach(el=>el.classList.toggle('sel', el.dataset.uptab===upgradesTab));
   const g=document.getElementById('upgradesGrid'), c=document.getElementById('coreTreeWrap');
+  const pw=document.getElementById('perkWrap');
   if(g) g.style.display = upgradesTab==='tier' ? 'grid' : 'none';
   if(c) c.style.display = upgradesTab==='core' ? 'flex' : 'none';
+  if(pw) pw.style.display = upgradesTab==='perk' ? 'block' : 'none';
   // Ağaç ekranı dikeyde ortalamak istediğimiz için (bkz. style.css
   // #coreTreeWrap flex:1) uzun açıklama metnini gizliyoruz — mekanik zaten
   // ağacın hemen üstündeki kısa satırda ve her düğümün kendi popup'ında.
   const subEl=document.getElementById('upgradesSubText');
-  if(subEl){ subEl.style.display = upgradesTab==='core' ? 'none' : ''; subEl.textContent = t('upgrades_sub'); }
+  if(subEl){ subEl.style.display = upgradesTab==='tier' ? '' : 'none'; subEl.textContent = t('upgrades_sub'); }
   if(upgradesTab==='core') renderCoreTree();
+  if(upgradesTab==='perk') renderPerks();
+}
+
+// ---- Süpernova Yetenekleri (bkz. data.js PERKS) -------------------------
+// Alınmamış kart: çekirdek fiyatı, dokununca satın alınır. Alınmış kart:
+// dokununca takılır/çıkarılır (yuva sınırı perkSlots()).
+let perkJustId=null, perkJustTimer=null;
+function renderPerks(){
+  const grid=document.getElementById('perkGrid'); if(!grid) return;
+  const eq=stats.perksEquipped||[], slots=perkSlots(), next=nextPerkSlotAt();
+  document.getElementById('perkSlotsLine').innerHTML=icon('sparkle')+' '+t('perk_slots_line',{n:eq.length, max:slots});
+  document.getElementById('perkNextSlot').textContent = next!=null ? ' · '+t('perk_next_slot',{k:next}) : '';
+  grid.innerHTML='';
+  PERKS.forEach(p=>{
+    const owned=perkOwned(p.id), on=perkEquipped(p.id);
+    const card=document.createElement('div');
+    card.className='shopCard boostCard perkCard'+(on?' equipped':'')+(owned?'':' notOwned')+(p.id===perkJustId?' justBought':'');
+    const status = !owned
+      ? `<div class="price core">${icon('atom')} ${p.cost}</div>`
+      : on ? `<div class="price ok">${icon('check')} ${t('perk_equipped')}</div>`
+           : `<div class="price">${t('perk_tap_equip')}</div>`;
+    card.innerHTML=`<div class="boostIcon">${icon(p.icon)}</div>`
+      +`<div class="cn">${t('perk_'+p.id+'_name')}</div>`
+      +`<div class="bdesc upDesc">${t('perk_'+p.id+'_desc')}</div>`+status;
+    card.addEventListener('click', ()=>{
+      if(!owned){
+        if((stats.cores||0)<p.cost){ queueToast(t('core_insufficient_toast')); beep(200,0.1,'square',0.1); return; }
+        if(buyPerk(p.id)){
+          beep(700,0.1,'sine',0.13); beep(1000,0.1,'triangle',0.12);
+          perkJustId=p.id; clearTimeout(perkJustTimer);
+          perkJustTimer=setTimeout(()=>{ perkJustId=null; renderPerks(); }, 2400);
+          updatePrestigePreview(); renderPerks();
+        }
+        return;
+      }
+      if(togglePerk(p.id)){ beep(on?400:800,0.08,'sine',0.1); renderPerks(); }
+      else { queueToast(t('perk_slots_full_toast')); beep(200,0.1,'square',0.1); }
+    });
+    grid.appendChild(card);
+  });
 }
 const CORE_EFFECT_FORMAT = {
   hp:n=>'+'+n+' '+t('unit_hp'),
@@ -81,6 +123,7 @@ const CORE_EFFECT_FORMAT = {
   multPower:n=>'+×'+(Math.round(n*100)/100),
   startCombo:n=>'+'+n+' '+t('unit_combo'),
   hazardSoften:n=>'-'+pctText(n)+' '+t('unit_hazard'),
+  heartBoost:n=>'+'+pctText(n)+' '+t('unit_heart_chance'),
 };
 function coreEffectText(node){
   return Object.keys(node.effects).map(k=>CORE_EFFECT_FORMAT[k](node.effects[k])).join(' · ');
@@ -251,7 +294,7 @@ function attemptPrestige(){
   if(gain<=0){ queueToast(t('prestige_zero_toast')); beep(200,0.1,'square',0.1); return; }
   showPurchaseConfirm('replay', t('reset_progress_btn')+' — +'+gain+' ⚛', null, ()=>{
     const got=performPrestige();
-    renderUpgrades(); renderCoreTree(); updatePrestigePreview();
+    renderUpgrades(); renderCoreTree(); updatePrestigePreview(); renderPerks();
     if(tutorialActive && typeof tutorialOnPrestige==='function') tutorialOnPrestige(got);
     beep(300,0.15,'square',0.12); beep(500,0.15,'triangle',0.1);
   }, t('reset_progress_confirm'));

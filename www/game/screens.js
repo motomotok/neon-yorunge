@@ -61,8 +61,19 @@ function showTutorialHint(){
   tutorialHideTimer=setTimeout(()=>el.classList.remove('show'), 5000);
 }
 
+// Kademeler dolduysa "Yetenekler" butonunun altındaki etiket Süpernova'ya
+// davet eder (recycle'ın zamanı geldiğini oyuncuya açıkça söyler).
+function syncSupernovaTag(){
+  const el=document.querySelector('#screen-menu .menuUpgradeTag'); if(!el) return;
+  const gain = allTiersMaxed() ? coresPreview() : 0;
+  el.classList.toggle('supernova', gain>0);
+  el.textContent = gain>0 ? t('menu_supernova_tag',{n:gain}) : t('menu_upgrade_tag');
+}
 function goMenu(){ state='menu'; setHud(false); showScreen('menu');
-  ensureDailyEvent(); syncEventBanner(); syncLoginStreakDock();
+  ensureDailyEvent(); syncEventBanner(); syncLoginStreakDock(); syncSupernovaTag();
+  // Denge 2 iadesi (bkz. data.js): bir kez söylenir.
+  if(stats.balanceV2Refund){ const r=stats.balanceV2Refund; stats.balanceV2Refund=null; saveStats();
+    setTimeout(()=>queueToast(t('balance_refund_toast',{notes:r.notes||0, cores:r.cores||0})), 1200); }
   document.getElementById('menuBest').textContent=t('menu_best',{n:stats.best.toFixed(2)});
   // Roguelike hissini güçlendiren iki kalıcı gösterge: "karakter seviyesi"
   // (6 yükseltme hattının toplam kademesi) ve deneme sayacı.

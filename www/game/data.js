@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.57.1';
+const GAME_VERSION = '2.58.0';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -199,8 +199,11 @@ function pctText(n){
 }
 const META_UPGRADES = {
   hp: {
+    // Denge 2 (2026-10-19): can artık kıt bir kaynak. Kademe başına +1, 3
+    // kademe (taban 3 -> 6); Çekirdek Ağacı +1 -> MUTLAK TAVAN 7 (MAX_HP).
+    // Eskiden 8×+2 (+Çekirdek) ile 27'ye çıkıp oyuncuyu ölümsüz yapıyordu.
     nameKey:'up_hp_name', icon:'heart', format:n=>'+'+n+' '+t('unit_hp'),
-    tiers: buildTiers(240, 2), // hedef ~12.000, taban 3 -> tavan 19 can
+    tiers: [{cost:600, add:1}, {cost:1500, add:1}, {cost:3500, add:1}],
   },
   coinPct: {
     nameKey:'up_coinpct_name', icon:'sparkle', format:n=>'+'+pctText(n),
@@ -219,7 +222,7 @@ const META_UPGRADES = {
     // vuruş"tu: tek kademeler hiçbir şey vermiyor, kart "0 vuruş" yazıyordu.
     // Artık 4 kademe, her biri +1 vuruş (tavan yine 5).
     nameKey:'up_shieldpower_name', icon:'shield', format:n=>(1+Math.floor(n))+' '+t('unit_hits'),
-    tiers: buildTiers(740, 1, 4), // hedef ~6.000, taban 1 -> tavan 5 vuruş emer
+    tiers: [{cost:900, add:1}, {cost:2400, add:1}], // taban 1 -> tavan 3 vuruş emer (Denge 2)
   },
   multPower: {
     nameKey:'up_multpower_name', icon:'lightning', format:n=>'×'+(Math.round((2+n)*100)/100),
@@ -246,11 +249,12 @@ function buyUpgrade(key){
   saveStats(); refreshWallet();
   return true;
 }
-function maxHpFor(){ return 3 + upgradeBonus('hp'); }
+const MAX_HP = 7;
+function maxHpFor(){ return Math.min(MAX_HP, 3 + upgradeBonus('hp')); }
 // Taban kalkan 1 vuruş emer; Kalkan Gücü her kademede +0.5 "yarım vuruş"
 // ekler (bkz. buildTiers(120,0.5) yukarıda) — floor ile tam vuruşa çevrilir.
 function shieldHitsFor(){ return 1+Math.floor(upgradeBonus('shieldPower')); }
-// Güç Seviyesi: 6 hattın kademe toplamı (0-44) — roguelike'ın "karakter
+// Güç Seviyesi: 6 hattın kademe toplamı (0-37) — roguelike'ın "karakter
 // seviyesi" karşılığı, ana menüde tek bakışta ilerlemeyi gösterir.
 function totalPowerLevel(){
   return Object.keys(META_UPGRADES).reduce((s,k)=>s+upgradeLevel(k), 0);
@@ -280,11 +284,10 @@ function resetProgression(){
 const CORE_TREE = [
   {id:'core_root', nameKey:'core_root_name', icon:'orbit', cost:0, req:[], effects:{}},
 
-  {id:'core_hp_1', nameKey:'core_hp1_name', icon:'shield', cost:2,  req:['core_root'],  effects:{hp:1}},
-  {id:'core_hp_2', nameKey:'core_hp2_name', icon:'shield', cost:3,  req:['core_hp_1'],  effects:{hp:1}},
-  {id:'core_hp_3', nameKey:'core_hp3_name', icon:'shield', cost:5,  req:['core_hp_2'],  effects:{hp:1}},
-  {id:'core_hp_4', nameKey:'core_hp4_name', icon:'shield', cost:8,  req:['core_hp_3'],  effects:{hp:1}},
-  {id:'core_hp_5', nameKey:'core_hp5_name', icon:'shield', cost:13, req:['core_hp_4'],  effects:{hp:2}},
+  // Zırh dalı (Denge 2): tek can düğümü (+1, tavan 7), sonra kalp düşme şansı.
+  {id:'core_hp_1', nameKey:'core_hp1_name', icon:'shield', cost:3,  req:['core_root'],  effects:{hp:1}},
+  {id:'core_hp_2', nameKey:'core_hp2_name', icon:'heart',  cost:5,  req:['core_hp_1'],  effects:{heartBoost:0.3}},
+  {id:'core_hp_3', nameKey:'core_hp3_name', icon:'heart',  cost:8,  req:['core_hp_2'],  effects:{heartBoost:0.3}},
 
   {id:'core_wealth_1', nameKey:'core_wealth1_name', icon:'coin', cost:2,  req:['core_root'],     effects:{coinPct:0.01}},
   {id:'core_wealth_2', nameKey:'core_wealth2_name', icon:'coin', cost:3,  req:['core_wealth_1'], effects:{coinPct:0.01}},
@@ -314,19 +317,57 @@ const CORE_TREE = [
 
   {id:'core_capstone', nameKey:'core_capstone_name', icon:'atom', cost:50,
     req:['core_hp_5','core_wealth_5','core_time_5','core_power_5','core_reflex_3','core_calm_3'],
-    effects:{hp:2, coinPct:0.02, boostDur:0.02, multPower:0.05, startCombo:1, hazardSoften:0.05}},
+    effects:{coinPct:0.02, boostDur:0.02, multPower:0.05, startCombo:1, hazardSoften:0.05}},
 ];
 // Çekirdek Ağacı'ndaki (dallar, tek tek ekranda bu sırayla dizilir) 6 dal —
 // her biri bir üsttekini gerektiren düz bir zincir, hepsi kökten (core_root)
 // çıkar; capstone hepsinin ucunu birleştirir (bkz. upgrades-ui.js).
 const CORE_BRANCHES = [
-  {labelKey:'core_branch_hp',     ids:['core_hp_1','core_hp_2','core_hp_3','core_hp_4','core_hp_5']},
+  {labelKey:'core_branch_hp',     ids:['core_hp_1','core_hp_2','core_hp_3']},
   {labelKey:'core_branch_wealth', ids:['core_wealth_1','core_wealth_2','core_wealth_3','core_wealth_4','core_wealth_5']},
   {labelKey:'core_branch_time',   ids:['core_time_1','core_time_2','core_time_3','core_time_4','core_time_5']},
   {labelKey:'core_branch_power',  ids:['core_power_1','core_power_2','core_power_3','core_power_4','core_power_5']},
   {labelKey:'core_branch_reflex', ids:['core_reflex_1','core_reflex_2','core_reflex_3']},
   {labelKey:'core_branch_calm',   ids:['core_calm_1','core_calm_2','core_calm_3']},
 ];
+// ---- Süpernova Yetenekleri (Denge 2) -----------------------------------
+// Sayı artışı değil, oyunun KURALINI değiştiren benzersiz yetenekler. Sadece
+// Çekirdek ile, bir kez alınır; oyuncu aynı anda yalnız perkSlots() kadarını
+// takar. Yeni yuvalar Süpernova (Recycle) sayısıyla açılır — recycle yapmanın
+// asıl sebebi bu. Etkiler engine.js'te hasPerk() ile okunur.
+const PERKS = [
+  {id:'secondChance', icon:'heart',     cost:8},   // öldürücü darbede bir kez 1 canla kalır
+  {id:'comboGuard',   icon:'flame',     cost:6},   // darbe komboyu sıfırlamaz, yarıya indirir
+  {id:'shieldStart',  icon:'shield',    cost:6},   // her oyuna kalkanla başlar
+  {id:'noteMagnet',   icon:'magnet',    cost:8},   // komşu halkadaki notaları da toplar
+  {id:'bossHunter',   icon:'trophy',    cost:7},   // boss yenince altın nota yağmuru
+  {id:'nimblePick',   icon:'lightning', cost:10},  // halka geçişi çok daha hızlı
+];
+const PERK_SLOT_AT = [0, 3, 8];   // 1., 2., 3. yuva kaç Süpernova'da açılır
+function perkSlots(){ const n=stats.totalPrestiges||0; return PERK_SLOT_AT.filter(x=>n>=x).length; }
+function nextPerkSlotAt(){ const n=stats.totalPrestiges||0; const x=PERK_SLOT_AT.find(v=>v>n); return x==null ? null : x; }
+function perkOwned(id){ return (stats.perksOwned||[]).includes(id); }
+function perkEquipped(id){ return (stats.perksEquipped||[]).includes(id); }
+function hasPerk(id){ return perkOwned(id) && perkEquipped(id); }
+function buyPerk(id){
+  const p=PERKS.find(x=>x.id===id);
+  if(!p || perkOwned(id) || (stats.cores||0)<p.cost) return false;
+  stats.cores-=p.cost;
+  stats.perksOwned=[...(stats.perksOwned||[]), id];
+  // Boş yuva varsa alınan yetenek hemen takılır.
+  if((stats.perksEquipped||[]).length < perkSlots()) stats.perksEquipped=[...(stats.perksEquipped||[]), id];
+  saveStats(); return true;
+}
+// Takar/çıkarır. Yuvalar doluysa false döner (UI uyarı gösterir).
+function togglePerk(id){
+  if(!perkOwned(id)) return false;
+  const eq=stats.perksEquipped||[];
+  if(eq.includes(id)){ stats.perksEquipped=eq.filter(x=>x!==id); saveStats(); return true; }
+  if(eq.length>=perkSlots()) return false;
+  stats.perksEquipped=[...eq, id]; saveStats(); return true;
+}
+function allTiersMaxed(){ return Object.keys(META_UPGRADES).every(k=>upgradeLevel(k)>=META_UPGRADES[k].tiers.length); }
+
 function coreNode(id){ return CORE_TREE.find(n=>n.id===id); }
 function coreNodeOwned(id){ return (stats.coreUnlocked||[]).includes(id); }
 function coreNodeReqMet(node){ return node.req.every(r=>coreNodeOwned(r)); }
@@ -351,7 +392,9 @@ function buyCoreNode(id){
 // "yumuşatma" kalıbı. Skor/oyun sayısı LIFETIME değil, bestAtPrestige/
 // gamesAtPrestige'e göre DELTA hesaplanır — aksi halde tek bir yüksek
 // skorla art arda sıfırlayıp sonsuz çekirdek üretmek mümkün olurdu.
-const CORE_WEIGHTS = {tree:1.8, score:0.085, games:0.05};
+// tree 1.8 -> 2.1 (Denge 2): kademe tavanı 44'ten 37'ye indi; tam dolu bir
+// ağacın verdiği çekirdek eskisiyle aynı kalsın (~12).
+const CORE_WEIGHTS = {tree:2.1, score:0.085, games:0.05};
 function coresPreview(){
   const treeFactor = Math.sqrt(totalPowerLevel());
   const scoreFactor = Math.sqrt(Math.max(0, stats.best - (stats.bestAtPrestige||0)));
@@ -487,6 +530,7 @@ let stats = load('beatOrbitStats', {
   tutorialDone:false,
   cores:0, lifetimeCores:0, totalPrestiges:0, bestAtPrestige:0, gamesAtPrestige:0,
   coreUnlocked:['core_root'],
+  perksOwned:[], perksEquipped:[], balanceV2:false, balanceV2Refund:null,
   gems:0, lifetimeGems:0,
   // Günün Seti (bkz. dailyset.js)
   dset:null, dsetPending:null, dsetHist:[], dsetName:'', dsetCache:null, dsetRealSeen:0, dsetCrownDay:'', installId:'',
@@ -498,6 +542,29 @@ if((stats.owned.themes||[]).includes('tribalpulse')){
   if(!stats.owned.themes.includes('lofichillhop')) stats.owned.themes.push('lofichillhop');
 }
 if(cfg.theme==='tribalpulse') cfg.theme='lofichillhop';
+// Denge 2 (2026-10-19): can 8×+2 -> 3×+1, kalkan 4 -> 2 kademe, Zırh dalı 5 -> 3
+// düğüm. Eski kademeler yeni tavana indirilir; eski fiyatla ödenen fark nota,
+// kaldırılan düğümler çekirdek olarak iade edilir (kimse kayıp yaşamasın).
+// Menüye ilk dönüşte oyuncuya bir kez söylenir (bkz. screens.js goMenu).
+if(!stats.balanceV2){
+  const oldCost=(C0,n)=>{ let s=0; for(let i=1;i<=n;i++) s+=Math.round(C0*Math.pow(1.5,i-1)/10)*10; return s; };
+  const up=stats.upgrades||(stats.upgrades={});
+  let noteRefund=0, coreRefund=0;
+  const fix=(key,C0)=>{
+    const old=up[key]||0; if(!old) return;
+    const keep=Math.min(old, META_UPGRADES[key].tiers.length);
+    const newCost=META_UPGRADES[key].tiers.slice(0,keep).reduce((s,x)=>s+x.cost,0);
+    noteRefund+=Math.max(0, oldCost(C0,old)-newCost); up[key]=keep;
+  };
+  fix('hp',240); fix('shieldPower',740);
+  const owned=stats.coreUnlocked||[];
+  for(const [id,cost] of [['core_hp_4',8],['core_hp_5',13]]) if(owned.includes(id)) coreRefund+=cost;
+  stats.coreUnlocked=owned.filter(id=>id!=='core_hp_4' && id!=='core_hp_5');
+  stats.notes=(stats.notes||0)+noteRefund; stats.cores=(stats.cores||0)+coreRefund;
+  stats.balanceV2=true;
+  if(noteRefund||coreRefund) stats.balanceV2Refund={notes:noteRefund, cores:coreRefund};
+  try{ localStorage.setItem('beatOrbitStats', JSON.stringify(stats)); }catch(e){}
+}
 // Kayıt yükleme: iç içe nesneler (owned, upgrades, boosts…) de varsayılanlarla
 // birleştirilir (eski kayıtlarda yeni eklenen anahtar eksik kalmasın). Kayıt
 // bozuksa (JSON hatası) ham veri '<anahtar>_bak' altına yedeklenir; ilk
