@@ -1309,3 +1309,54 @@ h1 .gicon,h2 .gicon{color:var(--star);}
 #upgradesTabs{flex-wrap:nowrap;gap:4px;}
 #upgradesTabs .stab{padding:7px 9px;font-size:12px;white-space:nowrap;}
 #perkWrap .perkHead .muted{font-size:12px;font-weight:600;}
+
+/* Yetenek yuvaları (upgrades-ui.js renderPerkSlots) */
+#perkWrap .perkSlotsTitle{text-align:center;font-family:var(--font-ui);font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#8fb0d8;margin:2px 0 6px;}
+.perkSlots{display:flex;justify-content:center;gap:10px;margin:0 0 8px;}
+.perkSlot{position:relative;flex:0 1 104px;min-width:0;height:74px;border-radius:14px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px 6px 5px;
+  font:inherit;color:#e8ecff;background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.12);
+  transition:transform .15s ease,border-color .2s ease,background .2s ease;}
+.perkSlot:active{transform:scale(.96);}
+.perkSlot .psIcon{font-size:24px;line-height:1;display:flex;}
+.perkSlot .psName{font-size:10px;font-weight:700;line-height:1.15;text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.perkSlot.filled{border-color:rgba(127,232,255,.85);background:radial-gradient(circle at 50% 35%,rgba(127,232,255,.18),rgba(127,232,255,.03) 70%);
+  box-shadow:inset 0 0 0 1px rgba(127,232,255,.25);}
+.perkSlot.filled .psIcon{color:#bff6ff;filter:drop-shadow(0 0 6px rgba(127,232,255,.6));}
+.perkSlot.empty{border-style:dashed;border-color:rgba(127,232,255,.45);}
+.perkSlot.empty .psIcon{font-size:26px;font-weight:300;color:#7fe8ff;}
+.perkSlot.empty .psName{color:#8fb0d8;font-weight:600;}
+.perkSlot.locked{background:rgba(0,0,0,.25);border-color:rgba(255,255,255,.08);}
+.perkSlot.locked .psIcon,.perkSlot.locked .psName{color:#6c7392;}
+.perkSlot.justFilled{animation:slotPop .45s ease;}
+@keyframes slotPop{0%{transform:scale(.85)}60%{transform:scale(1.08)}100%{transform:scale(1)}}
+/* Bilgi balonu: masaüstünde üstüne gelince, dokunmatikte dokununca (showTip). */
+.perkSlot .slotTip{position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%) translateY(-4px);
+  width:max-content;max-width:180px;padding:7px 10px;border-radius:10px;background:#141a33;border:1px solid rgba(127,232,255,.35);
+  color:#e8ecff;font-size:11px;font-weight:600;line-height:1.35;text-align:center;white-space:normal;
+  opacity:0;pointer-events:none;transition:opacity .15s ease,transform .15s ease;z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.45);}
+.perkSlot .slotTip::after{content:'';position:absolute;bottom:100%;left:50%;margin-left:-6px;border:6px solid transparent;border-bottom-color:#141a33;}
+.perkSlot.showTip .slotTip{opacity:1;transform:translateX(-50%) translateY(0);}
+@media (hover:hover){ .perkSlot:hover .slotTip{opacity:1;transform:translateX(-50%) translateY(0);} }
+#perkGrid.nudge .perkCard:not(.notOwned):not(.equipped){animation:perkNudge .6s ease;}
+@keyframes perkNudge{0%,100%{box-shadow:none}50%{box-shadow:0 0 0 2px rgba(127,232,255,.7)}}
+/* Kenar yuvaların balonu ekran dışına taşmasın: içe doğru hizalanır. */
+.perkSlot:first-child .slotTip{left:0;transform:translateY(-4px);}
+.perkSlot:first-child.showTip .slotTip{transform:translateY(0);}
+.perkSlot:first-child .slotTip::after{left:30px;}
+.perkSlot:last-child .slotTip{left:auto;right:0;transform:translateY(-4px);}
+.perkSlot:last-child.showTip .slotTip{transform:translateY(0);}
+.perkSlot:last-child .slotTip::after{left:auto;right:24px;margin-left:0;}
+@media (hover:hover){
+  .perkSlot:first-child:hover .slotTip,.perkSlot:last-child:hover .slotTip{transform:translateY(0);}
+}
+/* Kısa ekranlar: yuvalar ve açıklama sıkışır, sekme kaydırmadan sığar. */
+@media (max-height:720px){
+  #perkWrap .perkIntro{display:none;}
+  #perkWrap .perkSlotsTitle{margin-bottom:4px;}
+  .perkSlot{height:58px;gap:2px;}
+  .perkSlot .psIcon{font-size:19px;}
+  .perkSlot.empty .psIcon{font-size:21px;}
+  #perkGrid{gap:6px;}
+  #perkGrid .shopCard{padding:7px 9px 7px 7px;}
+}

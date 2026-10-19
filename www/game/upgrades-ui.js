@@ -81,12 +81,47 @@ function renderUpgradesTab(){
 // ---- Süpernova Yetenekleri (bkz. data.js PERKS) -------------------------
 // Alınmamış kart: çekirdek fiyatı, dokununca satın alınır. Alınmış kart:
 // dokununca takılır/çıkarılır (yuva sınırı perkSlots()).
-let perkJustId=null, perkJustTimer=null;
+let perkJustId=null, perkJustTimer=null, perkTipTimer=null;
+// Yuva çubuğu: PERK_SLOT_AT kadar gerçek yuva. Dolu yuva takılı yeteneği
+// gösterir (dokun: çıkar), boş yuva "+" (aşağıdan bir yetenek seç), kilitli
+// yuva kilit — üstüne gelince/dokununca nasıl açılacağı balonla yazar.
+function renderPerkSlots(){
+  const bar=document.getElementById('perkSlots'); if(!bar) return;
+  const eq=stats.perksEquipped||[], open=perkSlots(), done=stats.totalPrestiges||0;
+  bar.innerHTML='';
+  PERK_SLOT_AT.forEach((need, i)=>{
+    const el=document.createElement('button'); el.type='button';
+    const id=eq[i], p=id && PERKS.find(x=>x.id===id);
+    if(i>=open){
+      el.className='perkSlot locked';
+      el.innerHTML=`<span class="psIcon">${icon('lock')}</span><span class="psName">${t('perk_slot_locked')}</span>`
+        +`<span class="slotTip">${t('perk_slot_locked_tip',{k:need, n:Math.min(done,need)})}</span>`;
+      el.addEventListener('click', ()=>{
+        bar.querySelectorAll('.perkSlot.showTip').forEach(x=>{ if(x!==el) x.classList.remove('showTip'); });
+        el.classList.toggle('showTip'); beep(260,0.06,'square',0.07);
+        clearTimeout(perkTipTimer); perkTipTimer=setTimeout(()=>el.classList.remove('showTip'), 2800);
+      });
+    } else if(p){
+      el.className='perkSlot filled'+(id===perkJustId?' justFilled':'');
+      el.innerHTML=`<span class="psIcon">${icon(p.icon)}</span><span class="psName">${t('perk_'+id+'_name')}</span>`
+        +`<span class="slotTip">${t('perk_slot_unequip_tip')}</span>`;
+      el.addEventListener('click', ()=>{ togglePerk(id); beep(400,0.08,'sine',0.1); renderPerks(); });
+    } else {
+      el.className='perkSlot empty';
+      el.innerHTML=`<span class="psIcon">+</span><span class="psName">${t('perk_slot_empty')}</span>`
+        +`<span class="slotTip">${t('perk_slot_empty_tip')}</span>`;
+      el.addEventListener('click', ()=>{
+        el.classList.add('showTip'); beep(500,0.05,'sine',0.08);
+        clearTimeout(perkTipTimer); perkTipTimer=setTimeout(()=>el.classList.remove('showTip'), 2200);
+        const g=document.getElementById('perkGrid'); if(g){ g.classList.remove('nudge'); void g.offsetWidth; g.classList.add('nudge'); }
+      });
+    }
+    bar.appendChild(el);
+  });
+}
 function renderPerks(){
   const grid=document.getElementById('perkGrid'); if(!grid) return;
-  const eq=stats.perksEquipped||[], slots=perkSlots(), next=nextPerkSlotAt();
-  document.getElementById('perkSlotsLine').innerHTML=icon('sparkle')+' '+t('perk_slots_line',{n:eq.length, max:slots});
-  document.getElementById('perkNextSlot').textContent = next!=null ? ' · '+t('perk_next_slot',{k:next}) : '';
+  renderPerkSlots();
   grid.innerHTML='';
   PERKS.forEach(p=>{
     const owned=perkOwned(p.id), on=perkEquipped(p.id);
@@ -110,7 +145,11 @@ function renderPerks(){
         }
         return;
       }
-      if(togglePerk(p.id)){ beep(on?400:800,0.08,'sine',0.1); renderPerks(); }
+      if(togglePerk(p.id)){
+        beep(on?400:800,0.08,'sine',0.1);
+        if(!on){ perkJustId=p.id; clearTimeout(perkJustTimer); perkJustTimer=setTimeout(()=>{ perkJustId=null; renderPerks(); }, 900); }
+        renderPerks();
+      }
       else { queueToast(t('perk_slots_full_toast')); beep(200,0.1,'square',0.1); }
     });
     grid.appendChild(card);
