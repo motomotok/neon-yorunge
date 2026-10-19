@@ -204,8 +204,6 @@ function nextGoalLineText(runScore, newRecord){
     const recordRemain = stats.best - runScore;
     if(recordRemain>0 && recordRemain<=Math.max(50, runScore*0.15)) return t('over_goal_record',{n:Math.ceil(recordRemain)});
   }
-  const bossRemain = bossStageFor(bossNextIndex).score - runScore;
-  if(bossRemain>0) return t('over_goal_boss',{n:Math.ceil(bossRemain)});
   const cheapest = nearestCheapCosmetic();
   if(cheapest){
     const need = cheapest.item.gate.price - (stats.notes||0);

@@ -88,7 +88,7 @@ function resetGame(){
              coins:0, coinPickups:0, luckyCharges:0, noteMult:1, revivedUsed:false, bossesCleared:0};
   timeLeft = mode==='time' ? 60 : null;
   newRecord=false; timeScale=1; timeScaleT=0;
-  bossNextIndex=0; bossActive=false; bossWaveItems=[]; bossReward=0; bossTelegraph=null; bossQueue=[]; bossNextCol=0; bossEnd=0;
+  bossNextIndex=0; bossClock=0; bossActive=false; bossWaveItems=[]; bossReward=0; bossTelegraph=null; bossQueue=[]; bossNextCol=0; bossEnd=0;
   lastHeartScore=-HEART_SCORE_GAP; noteRain=0;
   // Risk balonları ve ilk-görüş tanıtımları (bkz. aşağıda RISK_*, introCheck).
   riskCd=RISK_FIRST; introCd=200;
@@ -252,12 +252,25 @@ const BOSS_STAGES = [
 // tanım üretir, boss dalgaları asla bitmez.
 const BOSS_INFINITE_STEP = 5000;
 const BOSS_INFINITE_REWARD_STEP = 60;
-// "Erken Boss" ısı mühürü: tüm boss eşikleri %30 daha erken gelir.
-function bossStageFor(index){
-  const def = bossStageBase(index);
-  return (session && session.heat && session.heat.earlyBoss) ? Object.assign({}, def, {score:Math.round(def.score*0.7)}) : def;
+// ---- Boss ZAMANLAMASI (2.61) ----
+// Boss'lar artık PUAN eşiğinde değil, OYNANAN SÜREYE göre gelir: ilk boss
+// ~40 sn normal oyundan, sonrakiler bir önceki boss bittikten ~65 sn sonra.
+// Eskiden puana bağlıydı; oyuncu çarpanlarını büyüttükçe (Isı, kombo, ×2,
+// risk balonu) eşiklere çok hızlı varıp boss'ları art arda görüyordu. Artık
+// çarpan PUANI büyütür, boss TEMPOSUNU değil. Sayaç (bossClock) yalnız normal
+// oyunda işler: boss, uyarısı, nota yağmuru ve tutorial sırasında durur;
+// duraklatma/reklam zaten simülasyonu durdurur. Zorluk boss sırasıyla artar
+// (BOSS_STAGES: geçiş penceresi, tur, ödül). "score" alanları artık
+// tetiklemede kullanılmıyor, yalnız tarihçe.
+const BOSS_FIRST_SEC = 40, BOSS_GAP_SEC = 65;
+let bossClock = 0;
+// "Erken Boss" ısı mühürü: bekleme %30 kısa.
+function bossWaitFrames(){
+  const sec = bossNextIndex===0 ? BOSS_FIRST_SEC : BOSS_GAP_SEC;
+  return sec*60*((session && session.heat && session.heat.earlyBoss) ? 0.7 : 1);
 }
-function bossStageBase(index){
+function bossSecondsLeft(){ return Math.max(0, Math.ceil((bossWaitFrames()-bossClock)/60)); }
+function bossStageFor(index){
   if(index < BOSS_STAGES.length) return BOSS_STAGES[index];
   const extra = index - BOSS_STAGES.length + 1;
   const last = BOSS_STAGES[BOSS_STAGES.length-1];
@@ -271,13 +284,8 @@ function bossStageBase(index){
 // Boss dalgası sırasında oyuncunun (mevcut hızından bağımsız) sabit açısal
 // hızı — bir tur ~5 sn; boss 2-3 tur sürer (bkz. spawnBossColumns).
 const BOSS_SLOW_RATE = 0.0204;   // eskiden 0.012 — boss'ta çok yavaşlanıyordu (x1.7)
-// Telegraph, eşikten BOSS_WARN_SCORE_GAP puan önce başlar ve SKORDAN
-// BAĞIMSIZ, gerçek zamanlı BOSS_WARN_SECONDS saniye sonra (performance.now()
-// ile ölçülür) boss'u tetikler — oyuncu o aralıkta hiç puan kazanamasa bile
-// (örn. eşiğin son birkaç puanına ulaşamıyorsa) boss "askıda" kalmaz, süre
-// dolunca kesin gelir. Skor eşiğine erken ulaşılırsa da (hızlı oyuncu)
-// beklemeden hemen tetiklenir — hangisi önce gelirse.
-const BOSS_WARN_SCORE_GAP = 100;
+// Telegraph (pikap kolunun inişi) bekleme dolunca başlar ve her zaman
+// BOSS_WARN_SECONDS sürer; sonunda boss patlar.
 const BOSS_WARN_SECONDS = 5;
 // Telegraph'ın "heyecan eğrisi": ilk %60'lık dilimde (5 sn'nin ilk 3
 // saniyesi) yavaş yavaş, sakin bir birikim; son %40'ında (son 2 saniye)
@@ -950,7 +958,8 @@ function update(dt){
       beep(700,0.15,'sine',0.15); beep(1000,0.15,'triangle',0.12); beep(1300,0.18,'sine',0.1);
     }
   } else if(!zen){
-    const stage = bossStageFor(bossNextIndex), warnStart = stage.score-BOSS_WARN_SCORE_GAP;
+    const stage = bossStageFor(bossNextIndex);
+    if(!bossTelegraph && noteRain<=0 && !tutorialActive) bossClock += dt;
     if(bossTelegraph && bossTelegraph.stageIndex===bossNextIndex){
       // Oyun zamanıyla sayılır: duraklatma/reklam/arka planda geçen süre sayılmaz
       // (eskiden duvar saatine bağlıydı; devam edilince boss anında patlıyordu).
@@ -967,8 +976,8 @@ function update(dt){
         startBossWave(stage);
         bossNextIndex++;
       }
-    } else if(score>=warnStart){
-      bossTelegraph = {stageIndex:bossNextIndex, el:0, t:0};
+    } else if(!tutorialActive && bossClock>=bossWaitFrames()){
+      bossTelegraph = {stageIndex:bossNextIndex, el:0, t:0}; bossClock = 0;
       showFlash('⚠ '+t('flash_boss_incoming'),50);
     }
   }
@@ -1155,10 +1164,12 @@ function updateHud(){
   const anyPowerupActive = player.shieldHits>0 || player.slowT>0 || player.magnetT>0 || player.multT>0 || !!(session && session.risk);
   let goalText='';
   if(mode!=='zen' && !bossActive && !anyPowerupActive){
-    const bossRemain = bossStageFor(bossNextIndex).score - score;
-    const recordRemain = stats.best - score;
-    if(recordRemain>0 && (bossRemain<=0 || recordRemain<bossRemain)) goalText = t('hud_goal_record',{n:Math.ceil(recordRemain)});
-    else if(bossRemain>0) goalText = t('hud_goal_boss',{n:Math.ceil(bossRemain)});
+    // Boss yaklaşınca (son 15 sn) geri sayım; değilse rekora kalan puan; rekor
+    // geçildiyse yine boss geri sayımı.
+    const bossSec = bossSecondsLeft(), recordRemain = stats.best - score;
+    if(bossTelegraph) goalText = '';
+    else if(bossSec<=15 || recordRemain<=0) goalText = t('hud_goal_boss_sec',{n:bossSec});
+    else goalText = t('hud_goal_record',{n:Math.ceil(recordRemain)});
   }
   if(_hud.goal!==goalText){ document.getElementById('goalHint').textContent=goalText; _hud.goal=goalText; }
   const comboText='x'+combo;
