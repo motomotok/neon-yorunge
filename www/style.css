@@ -505,7 +505,7 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
    katmanlarında: metin değişince yalnız o kutu yeniden çizilir. Eskiden kök
    katmanda oldukları için her değişimde tüm sayfa yeniden boyanıyordu
    (Redmi Note 9'da tek seferde 75-95 ms → oyundaki takılmaların asıl sebebi). */
-#scoreHud,#combo,#levelHud,#waveRow,#goalHint,#hpText,#hpBarWrap,#pw,#walletChip,#timerHud,#levelFlash,#hint,#pauseBtn{
+#scoreHud,#combo,#levelHud,#waveRow,#goalHint,#hpText,#hpBarWrap,#pw,#walletChip,#walletEndHud,#timerHud,#levelFlash,#hint,#pauseBtn{
   will-change:transform;}
 #pauseBtn{position:absolute;top:calc(env(safe-area-inset-top) + 78px);right:18px;pointer-events:auto;
   width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.18);
@@ -620,6 +620,7 @@ body.big-ui .btn{min-height:58px;font-size:1.12em;}
 body.big-ui .modeCard,body.big-ui .theme{padding:18px 10px;}
 body.left-hand #pauseBtn{left:18px;right:auto;}
 body.left-hand #walletChip{left:18px;right:auto;}
+body.left-hand #walletEndHud{left:18px;right:auto;}
 body.left-hand .hudTop{flex-direction:row-reverse;}
 
 #walletChip{position:absolute;top:calc(env(safe-area-inset-top) + 128px);right:18px;pointer-events:none;
@@ -1360,3 +1361,7 @@ h1 .gicon,h2 .gicon{color:var(--star);}
   #perkGrid{gap:6px;}
   #perkGrid .shopCard{padding:7px 9px 7px 7px;}
 }
+
+/* Oyun sonu nota tahmini: cüzdan çipinin hemen altında, küçük ve sakin. */
+#walletEndHud{position:absolute;top:calc(env(safe-area-inset-top) + 160px);right:18px;pointer-events:none;
+  font-size:10.5px;font-weight:700;color:#e9c991;opacity:.85;white-space:nowrap;text-shadow:0 1px 3px rgba(0,0,0,.6);}

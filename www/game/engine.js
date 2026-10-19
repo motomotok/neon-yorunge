@@ -119,6 +119,9 @@ function updateIdleOrb(dt){ player.ang += 0.006*dt; }
 // Zorluk çarpanı (0.8/1.35) yüzünden puan artışları küsuratlı olabiliyor;
 // her ekleme sonrası kuruşa (2 ondalık) yuvarlamazsak kayan nokta hatası
 // birikip "44.999999999" gibi uzun/çirkin değerlere yol açıyordu.
+// Oyun sonunda skora göre verilen nota bonusu (bkz. screens.js gameOver) —
+// HUD'daki "Oyun sonu" tahmini de aynı fonksiyonu kullanır, ikisi hiç ayrışmaz.
+function endScoreBonus(s){ return Math.round(Math.floor(s/12)*weekendMult()*(1+upgradeBonus('coinPct'))); }
 function addScore(n){ score = Math.round((score+n)*100)/100; }
 function normAng(a){ a%=(Math.PI*2); if(a<0)a+=Math.PI*2; return a; }
 function angDiff(a,b){ let d=b-a; while(d>Math.PI)d-=Math.PI*2; while(d<-Math.PI)d+=Math.PI*2; return d; }
@@ -1178,5 +1181,12 @@ function updateHud(){
   if(_hud.flash!==flashOpacity){ document.getElementById('levelFlash').style.opacity=flashOpacity; _hud.flash=flashOpacity; }
   const wallet = stats.notes||0;
   if(_hud.wallet!==wallet){ document.getElementById('walletHud').textContent=wallet; _hud.wallet=wallet; }
+  // Oyun bitince cüzdanda olacak nota: şimdiki bakiye + skor bonusu (zen'de bonus yok).
+  const endN = mode==='zen' ? null : wallet + Math.round(endScoreBonus(score)*noteEventMult());
+  if(_hud.endN!==endN){
+    const el=document.getElementById('walletEndHud');
+    if(el){ el.style.display = endN==null ? 'none' : ''; if(endN!=null) el.textContent=t('hud_end_notes',{n:endN}); }
+    _hud.endN=endN;
+  }
 }
 function chip(iconKey){ return `<div class="pwchip">${icon(iconKey)}<div class="pwbar"><i style="transform:scaleX(0)"></i></div></div>`; }

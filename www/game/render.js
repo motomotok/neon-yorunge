@@ -537,25 +537,9 @@ function drawItem(x,y,type,sc,t,it){
     const spin = (type==='hazardJump') ? 0 : t*(type==='hazardCreep'?1.1:type==='hazardPulse'?1.0:0.6);
     drawHazardImage(x,y,Rh*1.3,col,type,spin);
     ctx.globalAlpha=1;
-    if(type==='hazardJump'){
-      ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.setLineDash([3,5]); ctx.lineWidth=1.5;
-      ctx.beginPath(); ctx.arc(x,y,Rh*2.05,0,7); ctx.stroke(); ctx.setLineDash([]);
-    } else if(type==='hazardPull'){
-      ctx.save(); ctx.translate(x,y); ctx.rotate(-t*2.2);
-      ctx.strokeStyle=hexA('#ffb454',.55); ctx.setLineDash([2,4]); ctx.lineWidth=1.5;
-      ctx.beginPath(); ctx.arc(0,0,Rh*2.1,0,7); ctx.stroke(); ctx.setLineDash([]);
-      ctx.restore();
-    }
-    if(it && it.boss){
-      // Boss dalgasının öğelerini diğer tehlike şekillerinin üstüne titreşen
-      // altın bir halkayla işaretler — tip ne olursa olsun tanınabilir kalır.
-      ctx.strokeStyle=hexA('#ffd24a', 0.55+Math.sin(t*6)*0.25); ctx.lineWidth=2;
-      ctx.setLineDash([4,3]);
-      // Halka cızırtının görsel boyutunun (≈1.75·Rh) dışında kalır, içine taşmaz.
-      const rb = (type==='hazardPulse' ? R*1.4 : Rh)*2.15;
-      ctx.beginPath(); ctx.arc(x,y,rb,0,7); ctx.stroke();
-      ctx.setLineDash([]);
-    }
+    // Zıplayan/çeken cızırtıların ve boss dalgası öğelerinin etrafındaki
+    // noktalı çemberler kaldırıldı (2026-10-19): oyuncular "bu ne?" diye
+    // karışıyordu. Tüm cızırtılar — boss savaşı dahil — yalnız kendi görseli.
   } else if(type==='gold'){
     drawNoteShape(x,y,R*1.1,col,true,0);
     if(cfg.colorblind){ ctx.setLineDash([4,4]); ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(x,y,R*1.5,0,7); ctx.stroke(); ctx.setLineDash([]); }

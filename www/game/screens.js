@@ -246,7 +246,7 @@ function gameOver(reason){
   // Zen'de yalnız skora bağlı olmayan başarımlar (ör. Zen Ustası) açılabilir.
   checkAchievements(ranked ? {runScore, level, session, mode, elapsedSec}
     : {runScore:0, level:0, session:{...session, streakMax:0, shieldSaved:false}, mode, elapsedSec});
-  const scoreBonus = Math.round(Math.floor(runScore/12)*weekendMult()*(1+upgradeBonus('coinPct')));
+  const scoreBonus = endScoreBonus(runScore);
   // Zen modunda ("sonsuz mod") ne parçacık toplama ne de bu bonus cüzdana
   // yansır — risk almadan sınırsız kasmayı önlemek için (bkz. engine.js'de
   // parçacık toplama).
