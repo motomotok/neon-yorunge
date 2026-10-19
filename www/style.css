@@ -809,15 +809,15 @@ body.left-hand .hudTop{flex-direction:row-reverse;}
 /* Yetenekler > Kademe: kartlar yatay ve kompakt (simge solda, metin
    sağda) — 6 kart iPhone'da (Safari çubuklarıyla ~715px) tek ekrana
    kaydırmadan sığar. */
-#upgradesGrid{grid-template-columns:repeat(2,1fr);gap:8px;}
-#upgradesGrid .shopCard{display:grid;grid-template-columns:34px 1fr;grid-template-rows:auto auto auto;
+#upgradesGrid,#perkGrid{grid-template-columns:repeat(2,1fr);gap:8px;}
+#upgradesGrid .shopCard,#perkGrid .shopCard{display:grid;grid-template-columns:34px 1fr;grid-template-rows:auto auto auto;
   column-gap:8px;row-gap:2px;align-items:center;text-align:left;padding:9px 10px 9px 8px;}
-#upgradesGrid .shopCard .boostIcon{grid-row:1 / span 3;font-size:24px;align-self:center;justify-self:center;}
-#upgradesGrid .shopCard .cn{font-size:12px;text-align:left;line-height:1.2;}
-#upgradesGrid .shopCard .bdesc{font-size:9.5px;line-height:1.3;min-height:0;}
-#upgradesGrid .shopCard .price{white-space:nowrap;}
-#upgradesGrid .shopCard .bdesc.upDesc{color:#cfd5ea;font-weight:600;margin-bottom:2px;}
-#upgradesGrid .shopCard .price{font-size:11px;}
+#upgradesGrid .shopCard .boostIcon,#perkGrid .shopCard .boostIcon{grid-row:1 / span 3;font-size:24px;align-self:center;justify-self:center;}
+#upgradesGrid .shopCard .cn,#perkGrid .shopCard .cn{font-size:12px;text-align:left;line-height:1.2;}
+#upgradesGrid .shopCard .bdesc,#perkGrid .shopCard .bdesc{font-size:9.5px;line-height:1.3;min-height:0;}
+#upgradesGrid .shopCard .price,#perkGrid .shopCard .price{white-space:nowrap;}
+#upgradesGrid .shopCard .bdesc.upDesc,#perkGrid .shopCard .bdesc.upDesc{color:#cfd5ea;font-weight:600;margin-bottom:2px;}
+#upgradesGrid .shopCard .price,#perkGrid .shopCard .price{font-size:11px;text-align:left;}
 #screen-upgrades #upgradesSubText{font-size:12.5px;line-height:1.4;margin:0;}
 @media (max-height:640px){
   #screen-upgrades #upgradesSubText{display:none;}
@@ -1301,7 +1301,7 @@ h1 .gicon,h2 .gicon{color:var(--star);}
 
 /* Süpernova Yetenekleri (upgrades-ui.js renderPerks) */
 #perkWrap .perkHead{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;font-size:12.5px;font-weight:700;margin:2px 0 4px;}
-#perkWrap .perkIntro{text-align:center;font-size:11px;margin:0 0 8px;}
+#perkWrap .perkIntro{text-align:center;font-size:11px;margin:0 0 6px;}
 .perkCard.equipped{border-color:rgba(127,232,255,.85);box-shadow:inset 0 0 0 1px rgba(127,232,255,.35);}
 .perkCard.notOwned .boostIcon{opacity:.55;}
 .perkCard .price.core{color:#7fe8ff;}
