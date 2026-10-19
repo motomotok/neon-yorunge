@@ -692,6 +692,19 @@ function discLayer(world, map, opts, y){
   return m;
 }
 
+// Plakla DÖNMEYEN disk katmanı (çerçeve/kuşak): sahne grubuna eklenir, tema
+// kapanırken grupla birlikte temizlenir. renderOrder plak katmanlarının
+// (-2) üstünde, pena/notaların altında.
+function staticDisc(group, map, opts, y, order, inner){
+  // Halka geometrisi (iç yarıçap inner): ortası boş kalır, saydam pikseller
+  // boşuna çizilmez. RingGeometry UV'leri daireyle aynı düzlemsel eşlemede.
+  const g = new THREE.RingGeometry(DISC_R*inner, DISC_R, 128, 1); g.rotateX(-Math.PI/2);
+  const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial(Object.assign({map, transparent:true, depthWrite:false}, opts)));
+  m.position.y = TOP_Y + y; m.renderOrder = order;
+  group.add(m);
+  return m;
+}
+
 // ---------------- Hell's Anthem ve Lo-Fi: plak dışı süsler ----------------
 // Diğer temalardaki gibi (VU metre, Satürn, neon tabela) plağın dışındaki boş
 // alanlara konur: kameraya dönük düz görseller, bir kez çizilir, yalnız
@@ -1299,7 +1312,12 @@ function crystalSurface(){
   g.fillStyle = base; g.fillRect(0,0,S,S);
   for(let rr=C*0.85; rr>C*0.3; rr -= 3 + r()*5){ g.strokeStyle = `rgba(160,205,255,${0.03 + r()*0.05})`; g.lineWidth = 1; g.beginPath(); g.arc(C,C,rr,0,Math.PI*2); g.stroke(); }
   for(let i=0;i<1600;i++){ const a = r()*Math.PI*2, d = C*Math.sqrt(r())*0.86; g.fillStyle = `rgba(210,240,255,${0.04 + r()*0.14})`; g.fillRect(C + Math.cos(a)*d, C + Math.sin(a)*d, 1.6, 1.6); }
-  // Rün kuşağı (oyun halkalarının dışında)
+  return tex(c);
+}
+// Rün kuşağı (oyun halkalarının dışında): ayrı, saydam doku — plakla DÖNMEZ,
+// sabit çerçeve gibi durur (dönen rünler baş döndürüyordu).
+function crystalBand(){
+  const S = 1024, c = canvas(S), g = c.getContext('2d'), C = S/2;
   g.strokeStyle = '#24170b'; g.lineWidth = C*0.12; g.beginPath(); g.arc(C,C,C*0.93,0,Math.PI*2); g.stroke();
   g.strokeStyle = '#d98a2e';
   for(const [rad, w] of [[C*0.872, 3], [C*0.988, 5]]){ g.lineWidth = w; g.beginPath(); g.arc(C,C,rad,0,Math.PI*2); g.stroke(); }
@@ -1401,9 +1419,10 @@ function buildCrystal(world){
   const group = new THREE.Group(), spin = spinGroup(world);
   spinLayer(spin, world, crystalSurface(), {opacity:1}, 0.0003);
   spinLayer(spin, world, crystalShardsTexture(), {opacity:0.95}, 0.0006);
-  const runes = spinLayer(spin, world, crystalRuneGlow(), {blending:ADD, opacity:0.5}, 0.0009);
+  staticDisc(group, crystalBand(), {opacity:1}, 0.0008, -1.8, 0.84);
+  const runes = staticDisc(group, crystalRuneGlow(), {blending:ADD, opacity:0.5}, 0.0009, -1.7, 0.84);
   // Plağın kenarından taşan buz sivrileri (plakla döner, iki boy).
-  spin.add(rimSpikes(basicMat({map:iceSpikeTexture(), opacity:0.92}), 12, 0.26, DISC_R*0.95, i=>i%2 === 0 ? [0.03, 0.14] : [0.022, 0.09]));
+  group.add(rimSpikes(basicMat({map:iceSpikeTexture(), opacity:0.92}), 12, 0.26, DISC_R*0.95, i=>i%2 === 0 ? [0.03, 0.14] : [0.022, 0.09]));
   // Kristaller üstünde ara ara parlayan yıldız pırıltıları.
   const rs = seeded(9), sparkCol = new THREE.Color('#e2fbff'), SY = new THREE.Vector3(0, 1, 0);
   const sparkMesh = spinSparks(spin, 14, 0.032, basicMat({map:sparkleTexture(), blending:ADD}));
@@ -1969,6 +1988,35 @@ function cyberBackground(){
   g.fillStyle = hz; g.fillRect(0, S*0.7, S, S*0.3);
   return tex(c);
 }
+// Plağı saran devre çerçevesi (ringStrip dokusu: u = çevre, v = içten dışa).
+// base: koyu metal kuşak, pinler, turkuaz segmentler; glow: aynı segmentlerin
+// ADD parlak kopyası (notada ve ritimde parlar, çevre boyunca akar).
+function cyberBezelTextures(){
+  const W = 512, H = 64, r = seeded(31);
+  const b = canvas(W, H), g = b.getContext('2d'), l = canvas(W, H), h = l.getContext('2d');
+  const met = g.createLinearGradient(0, 0, 0, H);
+  met.addColorStop(0,'#05040f'); met.addColorStop(0.2,'#1b1747'); met.addColorStop(0.5,'#0f0c2c'); met.addColorStop(0.8,'#1b1747'); met.addColorStop(1,'#05040f');
+  g.fillStyle = met; g.fillRect(0, 0, W, H);
+  // İç ve dış ince neon çizgi
+  g.fillStyle = 'rgba(46,230,255,.75)'; g.fillRect(0, 5, W, 2); g.fillRect(0, H-7, W, 2);
+  // Pin dişleri (iç kenar) ve havalandırma çentikleri
+  g.fillStyle = 'rgba(160,190,255,.35)';
+  for(let x=0; x<W; x+=8) g.fillRect(x+2, 9, 3, 5);
+  g.fillStyle = 'rgba(0,0,0,.45)';
+  for(let x=4; x<W; x+=16) g.fillRect(x, H-18, 8, 3);
+  // Segmentler: turkuaz uzun bloklar + pembe kısa vurgular + boşluk
+  let x = 0;
+  while(x < W - 10){
+    const len = 30 + Math.floor(r()*50), pink = r() < 0.28, w = pink ? 14 : len;
+    const col = pink ? '#ff3df0' : (r() < 0.2 ? '#9b5bff' : '#2ee6ff');
+    g.fillStyle = 'rgba(10,8,30,.9)'; g.fillRect(x, 22, w, 20);
+    g.strokeStyle = col; g.globalAlpha = 0.45; g.lineWidth = 1.5; g.strokeRect(x+0.5, 22.5, w-1, 19); g.globalAlpha = 1;
+    h.fillStyle = col; h.shadowColor = col; h.shadowBlur = 8; h.fillRect(x+3, 28, w-6, 8);
+    x += w + 8 + Math.floor(r()*10);
+  }
+  h.shadowBlur = 0; h.fillStyle = '#2ee6ff'; h.fillRect(0, 5, W, 2); h.fillRect(0, H-7, W, 2);
+  return {base:tex(b, true), glow:tex(l, true)};
+}
 // Dijital yağmur sütunu: alta doğru parlaklaşan karakterler (baş en altta).
 function glyphColumnTexture(){
   const W = 32, H = 512, c = canvas(W, H), g = c.getContext('2d'), r = seeded(14), ch = '01ABCDEF<>/#$%';
@@ -2024,7 +2072,12 @@ function buildCyber(world){
   const pulseMesh = spinSparks(spin, 14, 0.022, basicMat({map:dotT, blending:ADD}));
   const pulseCol = [new THREE.Color('#2ee6ff'), new THREE.Color('#ff3df0')];
   const pulses = Array.from({length:14}, ()=>({a:rs()*Math.PI*2, u:rs(), sp:0.7 + rs()*0.7}));
-  group.add(glowRim('#ff3df0', DISC_R*1.006, 0.007, 0.85), glowRim('#2ee6ff', DISC_R*1.03, 0.0025, 0.45));
+  // Sabit neon devre çerçevesi + parlayan, çevre boyunca akan segment ışıkları.
+  const bz = cyberBezelTextures();
+  const bezel = new THREE.Mesh(ringStrip(DISC_R*1.068, DISC_R*0.125, 220, 6, TOP_Y-0.0006), basicMat({map:bz.base}));
+  const bezelLit = new THREE.Mesh(ringStrip(DISC_R*1.068, DISC_R*0.125, 220, 6, TOP_Y-0.0004), basicMat({map:bz.glow, blending:ADD, opacity:0.75}));
+  bezel.renderOrder = -1; bezelLit.renderOrder = -1;
+  group.add(bezel, bezelLit, glowRim('#ff3df0', DISC_R*1.006, 0.007, 0.85), glowRim('#2ee6ff', DISC_R*1.132, 0.004, 0.55));
   // Dijital yağmur
   const RN = 24, {air, mesh:rain} = airInstances(group, RN, basicMat({map:glyphColumnTexture(), blending:ADD, opacity:0.35}));
   const rcols = ['#2ee6ff','#ff3df0','#3f7bff'].map(c=>new THREE.Color(c));
@@ -2070,6 +2123,8 @@ function buildCyber(world){
     update(dt, t){
       kick = Math.max(0, kick - 0.035*dt);
       lit.material.opacity = 0.32 + beatAt(t)*0.18 + kick*0.45;
+      bz.glow.offset.x = (t*0.012) % 1;
+      bezelLit.material.opacity = 0.7 + beatAt(t)*0.2 + kick*0.3;
       pulses.forEach((p, i)=>{
         p.u += 0.004*p.sp*dt*(1 + kick*2);
         if(p.u > 1){ p.u = 0; p.a = Math.random()*Math.PI*2; }
