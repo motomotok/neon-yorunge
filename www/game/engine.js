@@ -34,6 +34,7 @@ const GAME_STATES = {play:1, pause:1, over:1, revive:1, story:1};
 const MENU_STATES = {menu:1, mode:1, shop:1, settings:1, stats:1, battlepass:1, upgrades:1, howto:1, language:1, loginstreak:1, dset:1};
 let mode='classic', diffKey='normal';
 let player, items, particles, score, combo, hp, maxHp, level, elapsed, spawnCooldown, shake, flash;
+let noteRain=0;   // Boss Avcısı nota yağmuru: kalan açı (radyan); >0 iken cızırtı gelmez
 let levelFlashT, session, timeLeft, newRecord, timeScale, timeScaleT, activeBoost=null, pendingBoost=null;
 // Boss dalgası: skor eşiklerinde (bkz. BOSS_STAGES) güneşten patlayarak
 // beliren, tek seferlik yoğun bir tehlike dalgası. bossWaveItems o dalganın
@@ -86,7 +87,7 @@ function resetGame(){
   timeLeft = mode==='time' ? 60 : null;
   newRecord=false; timeScale=1; timeScaleT=0;
   bossNextIndex=0; bossActive=false; bossWaveItems=[]; bossReward=0; bossTelegraph=null; bossQueue=[]; bossNextCol=0; bossEnd=0;
-  lastHeartScore=-HEART_SCORE_GAP;
+  lastHeartScore=-HEART_SCORE_GAP; noteRain=0;
   // Süpernova Yetenekleri (bkz. data.js PERKS): oyun başında bir kez okunur.
   const zenRun = mode==='zen';
   session.secondChance = !zenRun && hasPerk('secondChance');
@@ -738,7 +739,10 @@ function update(dt){
   // Labirent bitti ama son sütunlar henüz geride kalmadıysa (boss resmen
   // bitmeden) normal akış cızırtısız başlar — ekran o arada boş kalmasın.
   const bossTail = bossActive && bossNextCol>=bossEnd && !bossQueue.length;
-  if(!bossActive || bossTail) updateSpawns(dt, bossTail);
+  // Nota yağmuru sürerken normal akış (ve dolayısıyla cızırtı) durur; oyuncu
+  // bir tam tur dönünce yağmur biter.
+  if(noteRain>0) noteRain -= angStep*dt*timeScale;
+  else if(!bossActive || bossTail) updateSpawns(dt, bossTail);
 
   const perkMagnet = hasPerk('noteMagnet');
   for(const it of items){
@@ -885,7 +889,7 @@ function update(dt){
   let _iw=0;
   for(let _ir=0;_ir<items.length;_ir++){ if(items[_ir].alive) items[_iw++]=items[_ir]; }
   items.length=_iw;
-  if(items.length>60){
+  if(items.length>(noteRain>0 ? 90 : 60)){
     // Atılanlar ölü işaretlenir: aksi hâlde boss dalgası listesinde "canlı"
     // kalıp dalganın hiç bitmemesine (boss kilitlenmesi) yol açabiliyordu.
     for(let i=0;i<items.length-60;i++) items[i].alive=false;
@@ -901,11 +905,10 @@ function update(dt){
       showFlash(t('flash_wave_cleared'),60);
       queueToast(icon('coin')+' '+t('toast_boss_cleared',{n:finalReward}));
       session.bossesCleared++; stats.bossesCleared=(stats.bossesCleared||0)+1;
-      // Boss Avcısı yeteneği: önüne altın nota yağmuru (3 halkaya yayılmış).
-      if(hasPerk('bossHunter')){
-        for(let i=0;i<6;i++) items.push({ang:normAng(player.ang+0.9+i*0.32), ring:i%NUM_RINGS, type:'gold', alive:true, pop:0, expiring:false, prevFwd:null});
-        queueToast(icon('trophy')+' '+t('perk_boss_rain_toast'));
-      }
+      // Boss Avcısı yeteneği: NOTA YAĞMURU. Plaktaki cızırtılar söner, üç
+      // halkanın tamamı normal notalarla dolar (aynı görsel, aynı puan/kombo
+      // etkisi) ve oyuncu bir tam tur boyunca cızırtısız toplar (bkz. noteRain).
+      if(hasPerk('bossHunter')) startNoteRain();
       // İlk boss temizlendi: DJ Vinil ileriye dönük bir meydan okuma yazar
       // (bkz. narrator.js). Kutlama efektleri önce görünsün diye kısa gecikme.
       if(!stats.firstBossStory && typeof narratorFirstBossStory==='function') setTimeout(narratorFirstBossStory, 1100);
@@ -966,6 +969,23 @@ function stepGame(frameDt){
   } finally { _simBatch = false; }
   if(state!=='play') _simAcc = 0;
   updateHud();
+}
+
+// Nota yağmuru (Boss Avcısı): noteRain = kalan açı (radyan), bkz. üstteki let.
+function startNoteRain(){
+  for(const it of items){ if(it.alive && (isHazardType(it.type) || it.type==='hazardTwinDecoy')) it.expiring=true; }
+  // Halkalar kaydırmalı dizilir (aynı açıda üst üste gelmesin); pena'nın hemen
+  // önünden başlar, arkasında küçük bir boşluk kalır. ~15 nota × 3 halka.
+  const step=0.37, start=player.ang+0.45, span=Math.PI*2-0.75;
+  for(let r=0;r<NUM_RINGS;r++){
+    for(let a=r*step/3; a<span; a+=step){
+      items.push({ang:normAng(start+a), ring:r, type:'star', alive:true, pop:0, expiring:false, prevFwd:null, sealBump:0});
+    }
+  }
+  noteRain = Math.PI*2 + 0.4;
+  showFlash(t('perk_note_rain_flash'), 70);
+  queueToast(icon('trophy')+' '+t('perk_boss_rain_toast'));
+  burst(CX, CY, '#ffd27a', 40, 6); beep(880,0.12,'sine',0.13); beep(1320,0.16,'triangle',0.11);
 }
 
 function hitHazard(ix,iy,subtype,itm){
