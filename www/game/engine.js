@@ -34,6 +34,7 @@ const GAME_STATES = {play:1, pause:1, over:1, revive:1, story:1};
 const MENU_STATES = {menu:1, mode:1, shop:1, settings:1, stats:1, battlepass:1, upgrades:1, howto:1, language:1, loginstreak:1, dset:1};
 let mode='classic', diffKey='normal';
 let player, items, particles, score, combo, hp, maxHp, level, elapsed, spawnCooldown, shake, flash;
+const NOTE_RAIN_SCORE = 190;   // yağmurun tamamı toplanırsa ~200 puan (küsuratla)
 let noteRain=0;   // Boss Avcısı nota yağmuru: kalan açı (radyan); >0 iken cızırtı gelmez
 let levelFlashT, session, timeLeft, newRecord, timeScale, timeScaleT, activeBoost=null, pendingBoost=null;
 // Boss dalgası: skor eşiklerinde (bkz. BOSS_STAGES) güneşten patlayarak
@@ -848,6 +849,11 @@ function update(dt){
       it.alive=false;
       if(it.type==='diamond'){ combo++; addScore((20+level*4)*mult); session.stars++; session.diamonds++; stats.diamonds++;
         burst(ix,iy,'#fff4e0',10,3); shake=3; if(!musicCarriesNotes()){ beep(1200,0.1,'triangle',0.15); beep(1600,0.12,'sine',0.12); playMelodyNote(combo,0.12); } bumpCombo(); checkStreak(ix,iy,mult); }
+      else if(it.type==='star' && it.rainPts!=null){
+        // Nota yağmuru notası: tüm yağmur toplamda ~200 puan (bkz. NOTE_RAIN_SCORE);
+        // komboyu büyütmez — yoksa yağmurdan sonra her nota şişkin puan veriyordu.
+        addScore(it.rainPts + rnd()*0.4); session.stars++;
+      }
       else if(it.type==='star'){ combo++;
         // Yıldızın tam merkezine ne kadar yakın toplandığına göre küçük bir
         // "hassasiyet" küsuratı eklenir (0-0.99) — skorun her zaman anlamlı
@@ -976,12 +982,14 @@ function startNoteRain(){
   for(const it of items){ if(it.alive && (isHazardType(it.type) || it.type==='hazardTwinDecoy')) it.expiring=true; }
   // Halkalar kaydırmalı dizilir (aynı açıda üst üste gelmesin); pena'nın hemen
   // önünden başlar, arkasında küçük bir boşluk kalır. ~15 nota × 3 halka.
-  const step=0.37, start=player.ang+0.45, span=Math.PI*2-0.75;
+  const step=0.37, start=player.ang+0.45, span=Math.PI*2-0.75, rain=[];
   for(let r=0;r<NUM_RINGS;r++){
     for(let a=r*step/3; a<span; a+=step){
-      items.push({ang:normAng(start+a), ring:r, type:'star', alive:true, pop:0, expiring:false, prevFwd:null, sealBump:0});
+      rain.push({ang:normAng(start+a), ring:r, type:'star', alive:true, pop:0, expiring:false, prevFwd:null, sealBump:0});
     }
   }
+  // Hepsi toplanırsa ~NOTE_RAIN_SCORE puan: nota başına eşit pay.
+  for(const it of rain){ it.rainPts = NOTE_RAIN_SCORE/rain.length; items.push(it); }
   noteRain = Math.PI*2 + 0.4;
   showFlash(t('perk_note_rain_flash'), 70);
   queueToast(icon('trophy')+' '+t('perk_boss_rain_toast'));
