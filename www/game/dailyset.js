@@ -140,7 +140,7 @@ let _dsetMyUid=null, _dsetFetching=null;
 function dsetBuildBoard(d, real, frac){
   const rows=[];
   dsetBots(d).forEach(b=>{ const total=dsetBotTotalAt(b, frac); if(total>0) rows.push({name:b.name, total}); });
-  (real||[]).forEach(p=>{ if(p.uid!==_dsetMyUid && p.total>0) rows.push({name:p.name, total:p.total}); });
+  (real||[]).forEach(p=>{ if(p.uid!==_dsetMyUid && p.total>0) rows.push({name:dsetSafeName(p.name, p.uid), total:p.total}); });
   const myTotal=dsetTotal(d.top);
   const me={name:dsetPlayerName(), total:myTotal, me:true};
   if(myTotal>0) rows.push(me);
@@ -148,6 +148,14 @@ function dsetBuildBoard(d, real, frac){
   rows.sort((x,y)=> y.total-x.total || (y.me?1:0)-(x.me?1:0));
   rows.forEach((row,i)=>row.rank=i+1);
   return {rows, me: myTotal>0 ? me : null, count: rows.length};
+}
+// Tablodaki isimler istemciden geldiği için uygunsuz olanlar (küçük bir kara
+// liste, harf/rakam dışı zaten kuralda yasak) oyuna özgü takma adla gösterilir.
+const DSET_BAD_NAME = /(amk|orospu|pic|sik|yarak|yarrak|amcik|pezevenk|kahpe|ibne|kaltak|serefsiz|fuck|shit|bitch|cunt|dick|nigg|porn|sex|nazi|hitler|penis|vagina|whore|slut)/;
+function dsetSafeName(name, uid){
+  name = String(name||'');
+  if(!DSET_BAD_NAME.test(name.toLowerCase())) return name;
+  return 'DJ'+(1000 + dsetStrHash(String(uid||name)) % 9000);
 }
 function dsetCachedReal(day){
   const c=stats.dsetCache;
@@ -157,12 +165,14 @@ function dsetCachedReal(day){
 async function dsetFetchReal(day, force){
   if(!window.DailySetCloud) return dsetCachedReal(day);
   const c=stats.dsetCache;
-  if(!force && c && c.day===day && Date.now()-(c.at||0) < 90000) return c.list;
+  // Firestore ücretsiz kotası (günde 50 bin okuma): ekran için 5 dk önbellek ve
+  // 30 kayıt; yalnız ödül hesabında (günde bir) taze 50 kayıt okunur.
+  if(!force && c && c.day===day && Date.now()-(c.at||0) < 300000) return c.list;
   if(_dsetFetching) return _dsetFetching;
   _dsetFetching = (async ()=>{
     try{
       if(!_dsetMyUid) _dsetMyUid = await DailySetCloud.uid();
-      const list = await DailySetCloud.top(day, 50);
+      const list = await DailySetCloud.top(day, force ? 50 : 30);
       stats.dsetCache = {day, list, at:Date.now()};
       const others = list.filter(p=>p.uid!==_dsetMyUid).length;
       // Ertesi günün bot sayısı buna göre (bkz. dsetComputeBotCount).
@@ -245,7 +255,9 @@ async function dsetClaimPending(){
     const b=dsetBuildBoard(p, real, 1);
     if(!b.me){ stats.dsetPending=null; saveStats(); return false; }
     const rank=b.me.rank, rw=dsetRewardFor(rank, b.count);
+    const before=rewardSnapshot();
     dsetGrant(rw);
+    rewardLedgerAdd('dset', before);
     dsetPushHist(p.day, b.me.total);
     stats.dsetPending=null;
     if(rank===1) stats.dsetCrownDay=stats.dset.day;

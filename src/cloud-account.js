@@ -83,6 +83,7 @@ async function bootstrap() {
     lifetimeGems: data.lifetimeGems || 0,
     owned: data.owned || { themes: [], skins: [] },
     seasonPassActive: !!data.seasonPassActive,
+    seasonPassKey: typeof data.seasonPassKey === 'string' ? data.seasonPassKey : '',
     linkedProviders: data.linkedProviders || [],
   };
 }
@@ -99,6 +100,7 @@ async function syncState(d) {
     };
   }
   if (typeof d.seasonPassActive === 'boolean') patch.seasonPassActive = d.seasonPassActive;
+  if (typeof d.seasonPassKey === 'string') patch.seasonPassKey = d.seasonPassKey.slice(0, 20);
   await setDoc(userRef(), patch, { merge: true });
   return { ok: true };
 }

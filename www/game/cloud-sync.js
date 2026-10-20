@@ -36,19 +36,33 @@ async function initCloudSync() {
     _cloudProfile = cloud;
     // Yerel ilerleme ile bulut yedeğini birleştir: her alanda "daha ileride
     // olan" kazanır, hiçbir alanda geriye gidilmez.
-    stats.gems = Math.max(stats.gems || 0, cloud.gems || 0);
-    stats.lifetimeGems = Math.max(stats.lifetimeGems || 0, cloud.lifetimeGems || 0);
-    if (cloud.owned) {
-      stats.owned.themes = Array.from(new Set([...(stats.owned.themes || []), ...(cloud.owned.themes || [])]));
-      stats.owned.skins = Array.from(new Set([...(stats.owned.skins || []), ...(cloud.owned.skins || [])]));
-    }
-    if (cloud.seasonPassActive) stats.seasonPremium = true;
+    mergeCloudProfile(cloud);
     saveStats();
     refreshWallet();
     _cloudReady = true;
     syncLinkButtons();
     pushCloudState();
   } catch (e) { /* çevrimdışı / Firebase hazır değil — sessizce yerelde devam */ }
+}
+
+// Bulut belgesini oyuncu kendisi yazabildiği için (Firestore kuralı yalnız
+// "kendi belgen" diyor) oradan gelen hiçbir şey para değerinde güvenilmez:
+//  * Elmas buluttan ALINMAZ — satın alınan elmaslar mağaza makbuzlarından
+//    (restorePurchases) yeniden kurulur; buluttaki sayı yalnız bilgi.
+//  * Sezon Bileti yalnız AYNI sezonun anahtarıyla gelirse açılır (geçen
+//    sezonun bileti yeni sezonu açmaz).
+//  * Gerçek parayla alınan (gate 'iap') kozmetikler buluttan alınmaz; mağaza
+//    geri yüklemesi verir. Nota/elmasla alınanlar birleştirilir.
+// (Hesap bağlama şu an kapalı — ACCOUNT_LINK_ENABLED — açılmadan önce güvenli.)
+function mergeCloudProfile(cloud) {
+  const iapGate = (it) => !!(it && it.gate && it.gate.type === 'iap');
+  if (cloud.owned) {
+    const themes = (cloud.owned.themes || []).filter(k => THEMES[k] && !iapGate(THEMES[k]));
+    const skins = (cloud.owned.skins || []).filter(id => { const sk = SKINS.find(x => x.id === id); return sk && !iapGate(sk); });
+    stats.owned.themes = Array.from(new Set([...(stats.owned.themes || []), ...themes]));
+    stats.owned.skins = Array.from(new Set([...(stats.owned.skins || []), ...skins]));
+  }
+  if (cloud.seasonPassKey && cloud.seasonPassKey === stats.seasonKey) stats.seasonPremium = true;
 }
 
 function pushCloudState() {
@@ -58,6 +72,7 @@ function pushCloudState() {
     lifetimeGems: stats.lifetimeGems || 0,
     owned: { themes: stats.owned.themes || [], skins: stats.owned.skins || [] },
     seasonPassActive: !!stats.seasonPremium,
+    seasonPassKey: stats.seasonPremium ? (stats.seasonKey || '') : '',
   }).catch(() => {});
 }
 
@@ -73,13 +88,7 @@ async function linkAccount(which) {
     // Bu hesap başka bir cihazda zaten bağlıydı — oradaki bulut profilini
     // (elmas/kozmetikler/sezon bileti) indirip yerelle birleştir.
     const cloud = await CloudAccount.bootstrap();
-    stats.gems = Math.max(stats.gems || 0, cloud.gems || 0);
-    stats.lifetimeGems = Math.max(stats.lifetimeGems || 0, cloud.lifetimeGems || 0);
-    if (cloud.owned) {
-      stats.owned.themes = Array.from(new Set([...(stats.owned.themes || []), ...(cloud.owned.themes || [])]));
-      stats.owned.skins = Array.from(new Set([...(stats.owned.skins || []), ...(cloud.owned.skins || [])]));
-    }
-    if (cloud.seasonPassActive) stats.seasonPremium = true;
+    mergeCloudProfile(cloud);
     saveStats();
     refreshWallet();
     _cloudProfile = cloud;

@@ -64,6 +64,18 @@ const Music = (function(){
   }
   function resume(){ try{ if(ctx && ctx.state!=='running' && !suspended){ const p=ctx.resume(); if(p && p.catch) p.catch(()=>{}); } }catch(e){} }
 
+  // Düşük RAM'li cihazlar (navigator.deviceMemory ≤ 3 GB; çoğunlukla Android):
+  // çözülmüş stereo parça ~14 MB (56 sn × 32 kHz × 2 kanal × 4 bayt), iki şarkı
+  // ~44 MB. Bu cihazlarda kanallar tek kanala (mono) karıştırılıp yarıya iner.
+  // Diğer cihazlarda stereo aynen kalır.
+  const LOW_MEM = (navigator.deviceMemory || 8) <= 3;
+  function maybeMono(buf){
+    if(!LOW_MEM || buf.numberOfChannels < 2) return buf;
+    const m = ctx.createBuffer(1, buf.length, buf.sampleRate), o = m.getChannelData(0);
+    const a = buf.getChannelData(0), b = buf.getChannelData(1);
+    for(let i=0;i<o.length;i++) o[i] = (a[i]+b[i])*0.5;
+    return m;
+  }
   function decode(ab){
     return new Promise((res, rej)=>{
       const p = ctx.decodeAudioData(ab, res, rej);
@@ -76,7 +88,7 @@ const Music = (function(){
     Object.keys(buffers).forEach(k=>{ if(k!=='menu' && k!==name) delete buffers[k]; });
     const tr = MUSIC_TRACKS[name];
     buffers[name] = Promise.all(tr.parts.map(p =>
-      fetch('music/'+name+'/'+p+'.m4a').then(r=>{ if(!r.ok) throw new Error(r.status); return r.arrayBuffer(); }).then(decode)
+      fetch('music/'+name+'/'+p+'.m4a').then(r=>{ if(!r.ok) throw new Error(r.status); return r.arrayBuffer(); }).then(decode).then(maybeMono)
     )).then(list=>{ const o={}; tr.parts.forEach((p,i)=>o[p]=list[i]); return o; })
       .catch(e=>{ delete buffers[name]; throw e; });
     return buffers[name];

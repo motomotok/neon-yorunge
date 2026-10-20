@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.62.1';
+const GAME_VERSION = '2.63.0';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -567,7 +567,7 @@ let stats = load('beatOrbitStats', {
   cores:0, lifetimeCores:0, totalPrestiges:0, bestAtPrestige:0, gamesAtPrestige:0,
   coreUnlocked:['core_root'],
   perksOwned:[], perksEquipped:[], balanceV2:false, balanceV2Refund:null,
-  heatSeals:[], sealsOwned:[], seenIntro:[], risksCleared:0,
+  heatSeals:[], sealsOwned:[], seenIntro:[], risksCleared:0, rewardLedger:[],
   gems:0, lifetimeGems:0,
   // Günün Seti (bkz. dailyset.js)
   dset:null, dsetPending:null, dsetHist:[], dsetName:'', dsetCache:null, dsetRealSeen:0, dsetCrownDay:'', installId:'',
@@ -682,6 +682,61 @@ function gameNowMs(){
   return Math.max(n,last);
 }
 function gameNow(){ return new Date(gameNowMs()); }
+// ---- Saat ileri alma koruması (sunucusuz) ----
+// gameNowMs saati GERİ almayı etkisiz kılıyor ama İLERİ almak hâlâ mümkün:
+// saati gün gün ileri alıp her günün giriş/Günün Seti ödülünü önceden toplamak.
+// Sunucu saati olmadan bunu anında yakalayamayız; ama oyuncu saati gerçeğe
+// geri aldığında (Date.now() görülen en ileri andan saatlerce geride) hangi
+// ödüllerin "gelecekte" toplandığı bellidir: rewardLedger'daki o kayıtlar
+// geri alınır, seri ve günlük durum ileri alınmadan önceki hâline döner ve
+// oyun saati gerçeğe iner. Yani ileri almak hiçbir şey kazandırmaz; saatini
+// hep ileride tutan biri ise yalnızca o günlerin ödülünü erken almış olur.
+const CLOCK_TAMPER_MS = 3*3600000;   // bundan küçük geri sapmalar (saat düzeltmesi) yok sayılır
+function rewardLedgerAdd(kind, before, extra){
+  // before yoksa (yalnız gün durumu kaydı) ödül tutarı 0'dır.
+  const e = Object.assign({ts:gameNowMs(), kind,
+    notes: before ? Math.max(0,(stats.notes||0)-before.notes) : 0,
+    gems: before ? Math.max(0,(stats.gems||0)-before.gems) : 0}, extra||{});
+  if(before && before.boosts){
+    const b={}; for(const k in stats.boosts){ const d=(stats.boosts[k]||0)-(before.boosts[k]||0); if(d>0) b[k]=d; }
+    if(Object.keys(b).length) e.boosts=b;
+  }
+  stats.rewardLedger = (stats.rewardLedger||[]).concat([e]).slice(-40);
+}
+function rewardSnapshot(){ return {notes:stats.notes||0, gems:stats.gems||0, boosts:Object.assign({}, stats.boosts||{})}; }
+function clockRollbackCheck(){
+  const now=Date.now(), last=stats.lastSeenTs||0;
+  if(!last || last-now < CLOCK_TAMPER_MS) return false;
+  const lim = now + CLOCK_TAMPER_MS;
+  const ledger = stats.rewardLedger||[];
+  const future = ledger.filter(e=>e.ts > lim);
+  let notes=0, gems=0;
+  for(const e of future){
+    notes+=e.notes||0; gems+=e.gems||0;
+    if(e.boosts) for(const k in e.boosts) stats.boosts[k]=Math.max(0,(stats.boosts[k]||0)-e.boosts[k]);
+  }
+  stats.notes=Math.max(0,(stats.notes||0)-notes);
+  stats.gems=Math.max(0,(stats.gems||0)-gems);
+  // Gün durumu ileri alınmadan önceki hâline: en erken "gelecek" gün kaydı.
+  const firstDay = future.find(e=>e.kind==='day');
+  if(firstDay){
+    stats.lastSeenDate = firstDay.prevSeenDate||'';
+    stats.loginStreak = firstDay.prevStreak||0;
+    stats.lastClaimedRewardDate = firstDay.prevClaimDate||'';
+  }
+  // Gelecek tarihli Günün Seti günleri silinir (ödülü verilmez).
+  const realKey = typeof dsetDayKey==='function' ? dsetDayKey(now) : null;
+  if(realKey){
+    if(stats.dset && stats.dset.day > realKey) stats.dset=null;
+    if(stats.dsetPending && stats.dsetPending.day >= realKey) stats.dsetPending=null;
+    stats.dsetHist=(stats.dsetHist||[]).filter(h=>h.day < realKey);
+  }
+  stats.rewardLedger = ledger.filter(e=>e.ts <= lim);
+  stats.lastSeenTs = now;   // oyun saati gerçeğe iner
+  saveStats();
+  if(notes>0 || gems>0) setTimeout(()=>{ if(typeof queueToast==='function') queueToast(t('clock_rollback_toast',{notes, gems})); }, 1500);
+  return true;
+}
 function dateSeed(d){ d=d||gameNow(); return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate(); }
 function todayStr(d){ d=d||gameNow(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function daysBetweenStr(a,b){
@@ -794,7 +849,9 @@ function claimLoginReward(){
   if(loginRewardClaimedToday()) return false;
   const day = loginCycleDay();
   const reward = LOGIN_STREAK_REWARDS[day-1];
+  const before = rewardSnapshot();
   grantLoginStreakReward(reward);
+  rewardLedgerAdd('login', before);
   stats.lastClaimedRewardDate = todayStr();
   saveStats();
   return {day, reward};
@@ -809,11 +866,15 @@ function handleDailyReturn(){
   const td = todayStr();
   if(stats.lastSeenDate === td) return;
   const gap = stats.lastSeenDate ? daysBetweenStr(stats.lastSeenDate, td) : 0;
+  // Saat geri alınırsa bu günün durumuna dönebilmek için (bkz. clockRollbackCheck).
+  rewardLedgerAdd('day', null, {prevSeenDate:stats.lastSeenDate, prevStreak:stats.loginStreak||0, prevClaimDate:stats.lastClaimedRewardDate||''});
+  const beforeRet = rewardSnapshot();
   if(gap>=3){
     const bonus = Math.min(300, gap*20);
     addNotes(bonus);
     queueToast(t('toast_welcome_back',{gap, bonus}));
   }
+  if(gap>=3) rewardLedgerAdd('return', beforeRet);
   stats.loginStreak = (gap===1) ? (stats.loginStreak||0)+1 : 1;
   stats.lastSeenDate = td;
   saveStats();

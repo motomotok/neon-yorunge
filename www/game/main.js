@@ -14,6 +14,7 @@ const achTotalEl=document.getElementById('achTotal'); if(achTotalEl) achTotalEl.
 renderLangGrid();
 applyLanguage();
 resize(); initStars(); applyTheme(cfg.theme); applyAccessibility(); ensureTodayQuest(); ensureDailyEvent();
+clockRollbackCheck();   // saat ileri alınıp geri getirildiyse "gelecek" ödülleri geri al
 handleDailyReturn();
 resetGame(); renderThemeGrid(); goMenu();
 // cfg.gfx==='3d' ise 3D paketi burada tembel yüklenir (bkz. gfx.js). Açılış
@@ -77,11 +78,8 @@ function initIAP(){
       (productId, price)=>{ setGemLivePrice(productId, price); }
     );
   }
-  // Hangi mağazada çalıştığımızı Capacitor'e sor — premium.js/season-pass.js'teki
-  // storePlatform() ile aynı ayrım (bkz. oradaki not).
-  const nativePlatform = window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform();
-  const storePlatform = nativePlatform==='ios' ? window.CdvPurchase.Platform.APPLE_APPSTORE : window.CdvPurchase.Platform.GOOGLE_PLAY;
-  window.CdvPurchase.store.initialize([storePlatform]).catch(()=>{});
+  // Tüm ürünler kaydedildikten sonra TEK initialize (mağaza: bkz. iap-core.js).
+  window.CdvPurchase.store.initialize([IAP.platform()]).catch(()=>{});
 }
 initIAP();
 document.addEventListener('deviceready', initIAP);

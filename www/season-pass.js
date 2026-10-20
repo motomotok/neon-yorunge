@@ -15,18 +15,7 @@
   }
   const FALLBACK_PRICE_TEXT = '29 TL';
 
-  function isAvailable() {
-    return !!(window.CdvPurchase && window.CdvPurchase.store);
-  }
-
-  // Sadece kaydeder + handler bağlar; store.initialize() main.js'de,
-  // Premium.register() ile birlikte, tek seferlik çağrılır (bkz. premium.js).
-  // bkz. premium.js storePlatform() — aynı Google Play / Apple App Store ayrımı.
-  function storePlatform() {
-    const { Platform } = window.CdvPurchase;
-    const p = window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform();
-    return p === 'ios' ? Platform.APPLE_APPSTORE : Platform.GOOGLE_PLAY;
-  }
+  const isAvailable = () => IAP.available();
 
   // Doğrulanan makbuzda bu ürün var mı? (cordova-plugin-purchase v13:
   // receipt.collection = doğrulanmış satın alımlar; sourceReceipt.transactions
@@ -42,7 +31,7 @@
     if (!isAvailable()) return;
     const { store, ProductType } = window.CdvPurchase;
     const id = productId();
-    store.register({ id, type: ProductType.NON_CONSUMABLE, platform: storePlatform() });
+    store.register({ id, type: ProductType.NON_CONSUMABLE, platform: IAP.platform() });
 
     store.when().productUpdated((p) => {
       if (p.id !== productId()) return;
@@ -51,29 +40,11 @@
     // Sezon Bileti YALNIZ bu sezonun ürününü içeren bir doğrulamada açılır
     // (productId() her çağrıda TAZE okunur — geçen sezonun bileti bu sezonu
     // açmaz, bkz. dosya başındaki not).
-    window.__iapVerifiedHooks = window.__iapVerifiedHooks || [];
-    window.__iapVerifiedHooks.push((receipt) => { if (receiptHasProduct(receipt, productId())) onOwned && onOwned(); });
-    // approved→verify ve verified→finish dinleyicileri store genelindedir;
-    // üç IAP dosyası (premium/gem-shop/season-pass) bunları yalnız BİR kez
-    // bağlar (eskiden her dosya ayrı bağladığı için her işlem 3 kez doğrulanıyordu).
-    if (!window.__iapHandlersBound) {
-      window.__iapHandlersBound = true;
-      window.__iapVerifiedHooks = window.__iapVerifiedHooks || [];
-      store.when().approved((transaction) => transaction.verify());
-      store.when().verified((receipt) => {
-        window.__iapVerifiedHooks.forEach((h) => { try { h(receipt); } catch (e) {} });
-        receipt.finish();
-      });
-    }
+    IAP.onVerified((receipt) => { if (receiptHasProduct(receipt, productId())) onOwned && onOwned(); });
+    IAP.bindStoreHandlers();
   }
 
-  function purchase() {
-    if (!isAvailable()) return;
-    const { store } = window.CdvPurchase;
-    const product = store.get(productId());
-    const offer = product && product.getOffer && product.getOffer();
-    if (offer) store.order(offer);
-  }
+  function purchase() { IAP.order(productId()); }
 
   window.SeasonPass = { isNative: isAvailable, register, purchase, productId, FALLBACK_PRICE_TEXT };
 })();

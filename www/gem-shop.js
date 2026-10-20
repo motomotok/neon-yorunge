@@ -18,49 +18,26 @@
   const AMOUNTS = {}; PRODUCTS.forEach(p => { AMOUNTS[p.id] = p.amount; });
   const FALLBACK_PRICES = {}; PRODUCTS.forEach(p => { FALLBACK_PRICES[p.id] = p.fallbackPrice; });
 
-  function isAvailable() {
-    return !!(window.CdvPurchase && window.CdvPurchase.store);
-  }
+  const isAvailable = () => IAP.available();
 
-  function storePlatform() {
-    const { Platform } = window.CdvPurchase;
-    const p = window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform();
-    return p === 'ios' ? Platform.APPLE_APPSTORE : Platform.GOOGLE_PLAY;
-  }
-
+  // Ürünü kaydeder + ortak mağaza dinleyicilerini bağlar. store.initialize()
+  // burada ÇAĞRILMAZ: tüm ürünler kaydedildikten sonra main.js tek seferde yapar.
   function register(onPurchased, onPriceReady) {
     if (!isAvailable()) return;
     const { store, ProductType } = window.CdvPurchase;
-    PRODUCT_IDS.forEach(id => store.register({ id, type: ProductType.CONSUMABLE, platform: storePlatform() }));
+    PRODUCT_IDS.forEach(id => store.register({ id, type: ProductType.CONSUMABLE, platform: IAP.platform() }));
 
     store.when().productUpdated((p) => {
       if (PRODUCT_IDS.indexOf(p.id) === -1) return;
       if (p.owned) { onPurchased && onPurchased(p.id, AMOUNTS[p.id]); }
       else if (p.pricing && p.pricing.price) { onPriceReady && onPriceReady(p.id, p.pricing.price); }
     });
-    if (!window.__iapHandlersBound) {
-      window.__iapHandlersBound = true;
-      window.__iapVerifiedHooks = window.__iapVerifiedHooks || [];
-      store.when().approved((transaction) => transaction.verify());
-      store.when().verified((receipt) => {
-        window.__iapVerifiedHooks.forEach((h) => { try { h(receipt); } catch (e) {} });
-        receipt.finish();
-      });
-    }
+    IAP.bindStoreHandlers();
   }
 
-  function purchase(productId) {
-    if (!isAvailable()) return;
-    const { store } = window.CdvPurchase;
-    const product = store.get(productId);
-    const offer = product && product.getOffer && product.getOffer();
-    if (offer) store.order(offer);
-  }
+  function purchase(productId) { IAP.order(productId); }
 
-  function restore() {
-    if (!isAvailable()) return;
-    window.CdvPurchase.store.restorePurchases();
-  }
+  function restore() { IAP.restore(); }
 
   function fallbackPrice(productId) { return FALLBACK_PRICES[productId] || '₺49.99'; }
 
