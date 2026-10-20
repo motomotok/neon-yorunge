@@ -47,7 +47,7 @@ async function replaceAll(items) {
       notifications: items.map((n) => ({
         id: n.id, title: n.title, body: n.body,
         schedule: { at: n.at, allowWhileIdle: true },
-        channelId: CHANNEL, smallIcon: 'ic_stat_notify', iconColor: '#FFCF7A',
+        channelId: CHANNEL, smallIcon: 'ic_stat_notify', largeIcon: 'ic_notify_large', iconColor: '#FFCF7A',
       })),
     });
   } catch (e) {
