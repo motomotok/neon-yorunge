@@ -163,7 +163,7 @@ function syncMenuAnchors(){
 // drawItem) bir canvas'a basar; Render3D bunu doku olarak kullanır. Canavar
 // PNG'si henüz yüklenmediyse false döner ve birkaç kare sonra tekrar denenir.
 function paintItem3D(type, cnv){
-  const S=cnv.width, R=S/(2*2.6);
+  const S=cnv.width, R=S/(2*2.6*(type==='hazardBomb' ? 1.5 : 1));
   const g=cnv.getContext('2d');
   g.clearRect(0,0,S,S);
   const prev=ctx; ctx=g;

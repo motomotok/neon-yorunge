@@ -338,7 +338,7 @@ export class Entities {
       v.mat = new THREE.SpriteMaterial({map, transparent:true, depthWrite:false, depthTest:false});
       v.body = new THREE.Sprite(v.mat);
       v.body.position.y = HOVER;
-      v.baseScale = def ? 2.6*sz : 2*2.6;
+      v.baseScale = def ? 2.6*sz : 2*2.6*(type==='hazardBomb' ? 1.5 : 1);   // dev cızırtı dokusu küçük çizilir (bkz. gfx.js paintItem3D)
       v.body.scale.setScalar(v.baseScale);
       root.add(v.body);
     }

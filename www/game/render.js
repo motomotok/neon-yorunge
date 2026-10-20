@@ -701,9 +701,44 @@ function drawRiskBubble(x,y,R,type,t,it){
   }
   ctx.restore();
 }
+// Okunabilirlik (2.62): cızırtı görselleri ince, yarı saydam çizgiler — açık
+// ya da kalabalık temalarda (Lo-Fi, Hell, Candy, Steam, Kristal, Siber) zemine
+// karışıyordu. Her tip için BİR KEZ hazırlanan sprite: arkada koyu bir "delik"
+// (her zeminde kontrast), çevresinde tipin renginde hafif hâle, çizgiler
+// parlatılıp kalınlaştırılmış. Oyunda yalnız hazır canvas çizilir (ek maliyet
+// yok); 3D de dokusunu buradan alır. Çarpışma boyutu değişmedi.
+const HAZ_SPRITE_PAD = 0.12;   // sprite kenar boşluğu (görselin her yanında)
+const _hazSprite = {};
+function hazardSprite(type){
+  const key = HAZARD_IMG_KEY[type]; if(!key) return null;
+  if(_hazSprite[key]) return _hazSprite[key];
+  const img = MONSTER_IMG[key]; if(!imgReady(img)) return null;
+  const col = HAZARD_COLOR[type] || '#ff3b3b';
+  const S=256, c=document.createElement('canvas'); c.width=c.height=S;
+  const g=c.getContext('2d'), h=S/2, m=S*HAZ_SPRITE_PAD;
+  let gr=g.createRadialGradient(h,h,0,h,h,h*0.86);
+  gr.addColorStop(0,'rgba(6,3,10,.9)'); gr.addColorStop(0.68,'rgba(6,3,10,.75)'); gr.addColorStop(1,'rgba(6,3,10,0)');
+  g.fillStyle=gr; g.beginPath(); g.arc(h,h,h,0,7); g.fill();
+  gr=g.createRadialGradient(h,h,h*0.5,h,h,h);
+  gr.addColorStop(0,hexA(col,0)); gr.addColorStop(0.74,hexA(col,.42)); gr.addColorStop(1,hexA(col,0));
+  g.fillStyle=gr; g.beginPath(); g.arc(h,h,h,0,7); g.fill();
+  g.shadowColor=col; g.shadowBlur=S*0.045;
+  g.drawImage(img, m, m, S-2*m, S-2*m);
+  g.shadowBlur=0; g.globalCompositeOperation='lighter'; g.globalAlpha=0.5;
+  g.drawImage(img, m, m, S-2*m, S-2*m);
+  _hazSprite[key]=c; return c;
+}
 function drawHazardImage(x,y,size,col,type,rot){
   const img = MONSTER_IMG[HAZARD_IMG_KEY[type]];
-  if(img && img.complete && img.naturalWidth>0){
+  const spr = hazardSprite(type);
+  if(spr){
+    const k=Math.floor(performance.now()/80), rj=mulberry32(k*131+Math.round(x*7+y*13));
+    const jx=(rj()-0.5)*size*0.08, jy=(rj()-0.5)*size*0.08, s=size*1.35*1.08/(1-2*HAZ_SPRITE_PAD);
+    ctx.save(); ctx.translate(x+jx,y+jy); if(rot) ctx.rotate(rot);
+    ctx.globalAlpha*=0.88+rj()*0.12;
+    ctx.drawImage(spr, -s, -s, s*2, s*2);
+    ctx.restore();
+  } else if(img && img.complete && img.naturalWidth>0){
     // Cızırtı: ~12 kez/sn değişen küçük sarsıntı + parlaklık titremesi —
     // bozuk sinyal hissi. (t=0 ile çağrılan 3D doku üretiminde sabit kalır.)
     const k=Math.floor(performance.now()/80), rj=mulberry32(k*131+Math.round(x*7+y*13));
