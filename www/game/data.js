@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.70.0';
+const GAME_VERSION = '2.71.0';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -583,6 +583,7 @@ let stats = load('beatOrbitStats', {
 if((stats.heatSeals||[]).length && !(stats.sealsOwned||[]).length) stats.sealsOwned=[...stats.heatSeals];
 // 2.69: oyun öncesi takviyeler kaldırıldı — eldekiler satış fiyatından notaya
 // çevrilir (bir kez). Menü açılınca bilgi verilir (stats.boostRefundShown).
+if(stats.scoreRuns==null) stats.scoreRuns = Math.max(0, (stats.games||0) - (stats.tutorialDone ? 1 : 0));
 if(!stats.boostRefundDone){
   let refund=0;
   for(const b of BOOSTS) refund += (stats.boosts && stats.boosts[b.id]||0) * b.price;

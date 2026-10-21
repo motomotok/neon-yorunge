@@ -103,12 +103,22 @@ const STAT_AWARDS = [
 ];
 function syncStats(){
   document.getElementById('stBest').textContent=stats.best.toFixed(2);
-  let ai=0; STAT_AWARDS.forEach((a,i)=>{ if(stats.best>=a.min) ai=i; });
-  const aw=STAT_AWARDS[ai], nx=STAT_AWARDS[ai+1];
+  // Ödül plağı = Düello rütbesi (kilitliyse gri "Demo" plak).
   const hero=document.getElementById('stHero');
-  STAT_AWARDS.forEach(a=>hero.classList.remove('aw-'+a.cls)); hero.classList.add('aw-'+aw.cls);
-  document.getElementById('stAwardName').textContent=t(aw.key);
-  document.getElementById('stNextAward').textContent = nx ? t('stat_next_award',{name:t(nx.key), n:Math.ceil(nx.min-stats.best)}) : t('stat_max_award');
+  ['demo','bronze','silver','gold','platinum','diamond','master','champion'].forEach(c=>hero.classList.remove('aw-'+c));
+  const nm=document.getElementById('stAwardName'), nxEl=document.getElementById('stNextAward');
+  if(typeof duelUnlocked==='function' && !duelUnlocked()){
+    hero.classList.add('aw-demo');
+    nm.textContent=t('stat_rank_locked');
+    nxEl.textContent=t('stat_rank_unlock_in',{n:DUEL_UNLOCK_RUNS-(stats.scoreRuns||0)});
+  } else {
+    const d=duelState(), tr=rankTier(d.d, d.lp);
+    hero.classList.add('aw-'+tr.id);
+    nm.textContent=rankName(d.d, d.lp)+' · '+t('duel_lp',{n:d.lp});
+    if(d.d<DUEL_TOP) nxEl.textContent=t('stat_rank_next',{tier:rankName(d.d+1, 0), n:Math.max(1,100-d.lp)});
+    else if(d.lp<CHAMP_LP) nxEl.textContent=t('stat_rank_next',{tier:t('duel_tier_champion'), n:CHAMP_LP-d.lp});
+    else nxEl.textContent=t('stat_rank_top');
+  }
   document.getElementById('stStars').textContent=stats.stars;
   document.getElementById('stGames').textContent=stats.games;
   document.getElementById('stLevel').textContent=stats.maxLevel;

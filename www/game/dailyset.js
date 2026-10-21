@@ -19,9 +19,9 @@ const DSET_BOTS_MAX = 11, DSET_REAL_FULL = 30;
 const DSET_BOT_BANDS = [[1.03,1.07],[0.96,1.0],[0.9,0.95],[0.83,0.88],[0.74,0.8],[0.64,0.7],
   [0.54,0.6],[0.44,0.5],[0.34,0.4],[0.25,0.3],[0.16,0.22]];
 const DSET_REWARDS = [
-  {gems:4, notes:600},
-  {gems:2, notes:300},
-  {gems:1, notes:200},
+  {gems:30, notes:600},
+  {gems:20, notes:300},
+  {gems:10, notes:200},
 ];
 const DSET_REWARD_TOP10 = {notes:100}, DSET_REWARD_ALL = {notes:30};
 

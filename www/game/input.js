@@ -21,6 +21,10 @@ document.querySelectorAll('[data-go]').forEach(b=>{
       const expected=tutorialExpectedNav();
       if(expected && g!==expected){ if(typeof tutorialNudge==='function') tutorialNudge(); return; }
     }
+    if(typeof guideBlocksNav==='function' && guideBlocksNav(g)) return;
+    if(g==='duel' && typeof duelUnlocked==='function' && !duelUnlocked()){
+      queueToast(t('duel_locked_toast',{n:DUEL_UNLOCK_RUNS-(stats.scoreRuns||0)})); beep(200,0.1,'square',0.1); return;
+    }
     if(g==='mode') goMode();
     else if(g==='quickstart'){
       // Tutorial zaten sürüyorsa asla baştan başlatma (eskiden son adımda
@@ -42,6 +46,7 @@ document.querySelectorAll('[data-go]').forEach(b=>{
     else if(g==='dset') goDset();
     else if(g==='ranking') goRanking();
     else if(g==='duel') goDuel();
+    if(typeof guideOnNav==='function') guideOnNav(g);
   });
 });
 document.getElementById('dsetOverBtn').addEventListener('click', e=>{ e.stopPropagation(); goRanking('today'); });
@@ -62,7 +67,7 @@ document.getElementById('reviveSkipBtn').addEventListener('click', e=>{ e.stopPr
 document.getElementById('resumeBtn').addEventListener('click', e=>{ e.stopPropagation(); resumeGame(); });
 document.getElementById('zenFinishBtn').addEventListener('click', e=>{ e.stopPropagation(); gameOver('zen'); });
 document.getElementById('pauseBtn').addEventListener('click', e=>{ e.stopPropagation(); pauseGame(); });
-document.getElementById('tutorialSkipBtn').addEventListener('click', e=>{ e.stopPropagation(); if(typeof tutorialAskSkip==='function') tutorialAskSkip(); });
+document.getElementById('tutorialSkipBtn').addEventListener('click', e=>{ e.stopPropagation(); if(typeof guideActive!=='undefined' && guideActive){ guideEnd(); return; } if(typeof tutorialAskSkip==='function') tutorialAskSkip(); });
 document.getElementById('soundSw').addEventListener('click', ()=>{ cfg.sound=!cfg.sound; saveCfg(); syncSettings(); if(cfg.sound) beep(700,0.08,'sine',0.12); });
 document.getElementById('pauseSoundSw').addEventListener('click', ()=>{ cfg.sound=!cfg.sound; saveCfg(); syncSettings(); if(cfg.sound) beep(700,0.08,'sine',0.12); });
 document.querySelector('#screen-pause .toggle').addEventListener('click', e=>{

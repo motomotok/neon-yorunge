@@ -73,6 +73,8 @@ function syncSupernovaTag(){
   el.textContent = gain>0 ? t('menu_supernova_tag',{n:gain}) : t('menu_upgrade_tag');
 }
 function goMenu(){ state='menu'; setHud(false); showScreen('menu');
+  if(typeof syncDuelLock==='function') syncDuelLock();
+  if(typeof guideCheckMenu==='function') guideCheckMenu();
   if(stats.boostRefund>0 && stats.tutorialDone){ queueToast(t('boost_refund_toast',{n:stats.boostRefund})); stats.boostRefund=0; saveStats(); }
   ensureDailyEvent(); syncEventBanner(); syncLoginStreakDock(); syncSupernovaTag();
   // Denge 2 iadesi (bkz. data.js): bir kez söylenir.
@@ -246,6 +248,7 @@ function gameOver(reason){
   // Global Sıralama: Klasik + Günün Seti (bkz. ranking.js).
   if((mode==='classic' || mode==='daily') && !tutorialActive && typeof rkOnRun==='function') rkOnRun(runScore, session.heatLevel||0);
   let dsetRes=null;
+  if(mode==='daily' && !tutorialActive) stats.scoreRuns=(stats.scoreRuns||0)+1;
   if(mode==='daily'){
     stats.dailyDate=todayStr(); stats.dailyScore=runScore; stats.dailyCount=(stats.dailyCount||0)+1;
     dsetRes = dsetRecordRun(session.dsetDay || dsetDayKey(), runScore);
@@ -311,7 +314,7 @@ function gameOver(reason){
       if(adGamesLeft<=0){ adGamesLeft=rollAdInterval(); showAd = true; }
     } else showAd = Math.random() < SHORT_RUN_AD_CHANCE;
     // Oyuncu bu arada "Tekrar"a bastıysa reklam yeni oyunun ortasında açılmasın.
-    if(showAd) setTimeout(()=>{ if(state==='over') Ads.showInterstitial(); }, 700);
+    if(showAd) setTimeout(()=>{ if(state==='over'){ window._lastInterAt=Date.now(); Ads.showInterstitial(); } }, 700);
   }
   if(tutorialActive && typeof tutorialOnGameOver==='function') tutorialOnGameOver();
 }

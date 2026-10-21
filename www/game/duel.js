@@ -158,6 +158,7 @@ function renderDuelLobby(){
       else if(_duelSel.length<DUEL_SLOTS) _duelSel.push(p.id);
       else { queueToast(t('perk_slots_full_toast')); beep(200,0.1,'square',0.1); return; }
       beep(on?400:800,0.08,'sine',0.1); renderDuelLobby();
+      if(typeof guideOnDuelPick==='function') guideOnDuelPick(_duelSel.length);
     });
     grid.appendChild(card);
   });
@@ -228,6 +229,7 @@ async function duelStartSearch(){
   if(_duelSearching) return;
   if(_duelSel.length<DUEL_SLOTS){ queueToast(t('duel_pick_slots',{n:DUEL_SLOTS})); beep(200,0.1,'square',0.1); return; }
   _duelSearching=true;
+  if(typeof guideOnDuelSearch==='function') guideOnDuelSearch();
   // Yuvalar kilitlenir: maç bu seçimle oynanır.
   const perks=_duelSel.slice(); const d=duelState(); d.perks=perks.slice(); saveStats();
   const ov=document.getElementById('duelSearch'); ov.classList.add('show'); ov.classList.remove('found');
@@ -492,4 +494,19 @@ function duelGameOver(reason){
   if(fill) setTimeout(()=>{ fill.style.width=Math.max(0,Math.min(100,d.lp))+'%'; }, 350);
   if(win){ beep(660,0.12,'triangle',0.12); beep(990,0.16,'sine',0.11); beep(1320,0.2,'triangle',0.09); }
   else beep(200,0.3,'sine',0.12);
+  duelMaybeAd(win);
+}
+// Düello sonu reklamı — oyuncuyu kaçırmadan: ilk 3 düello hiç reklamsız;
+// sonra 3 maçta bir, tercihen galibiyetten sonra (kayıp üstüne reklam
+// sinir bozar), en geç 5. maçta; iki reklam arası en az 4 dakika.
+function duelMaybeAd(win){
+  if(stats.premiumNoAds || typeof Ads==='undefined') return;
+  const d=duelState();
+  if((d.games||0) <= 3) return;
+  d.adCount=(d.adCount||0)+1;
+  const since=Date.now()-(window._lastInterAt||0);
+  if(d.adCount>=3 && (win || d.adCount>=5) && since>240000){
+    d.adCount=0; saveStats();
+    setTimeout(()=>{ if(state==='duelover'){ window._lastInterAt=Date.now(); Ads.showInterstitial(); } }, 1200);
+  } else saveStats();
 }
