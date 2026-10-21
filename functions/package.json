@@ -1,0 +1,11 @@
+{
+  "name": "beat-orbit-functions",
+  "private": true,
+  "main": "index.js",
+  "engines": { "node": "20" },
+  "dependencies": {
+    "@google-cloud/billing": "^4.6.0",
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^6.1.0"
+  }
+}
