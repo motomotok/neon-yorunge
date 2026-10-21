@@ -11,7 +11,7 @@
 // gelen de zirveye çıkabilsin) ve "Tüm Zamanlar". Yalnız Klasik mod sayılır,
 // Isı mühürleri dahil (risk almak ödüllendirilir). Rekor kırınca sessizce
 // gönderilir (bkz. src/leaderboard.js GlobalBoard, firestore.rules lb/...).
-const NAME_CHANGE_GEMS = 50;
+const NAME_CHANGE_GEMS = 100;
 const NAME_RE = /^[\p{L}\p{N} _.\-]{3,16}$/u;
 // Uygunsuz kelimeler: harfler sadeleştirilip (Türkçe karakterler, 0→o, 1→i…,
 // boşluk/noktalama atılır) kök aranır.
@@ -42,15 +42,17 @@ function nameChangeCost(){
   if(!stats.playerName) return 0;                 // ilk ad
   return (stats.nameChanges||0) < 1 ? 0 : NAME_CHANGE_GEMS;
 }
-function openNameDialog(onDone){
+// opts.required: "Sonra" yok — DJ Vinil rehberinde isim yazılmadan geçilmez.
+function openNameDialog(onDone, opts){
   _nameDone=onDone||null;
+  const cb=document.getElementById('nameCancelBtn'); if(cb) cb.style.display = (opts && opts.required) ? 'none' : '';
   const ov=document.getElementById('nameOverlay'), inp=document.getElementById('nameInput');
   const cost=nameChangeCost();
   document.getElementById('nameSub').innerHTML = !stats.playerName ? t('name_first_sub')
     : cost===0 ? t('name_free_sub') : icon('gem')+' '+t('name_cost_sub',{n:cost});
   document.getElementById('nameErr').textContent='';
   inp.value = stats.playerName || '';
-  inp.placeholder = dsetPlayerName();
+  inp.placeholder = t('name_placeholder');
   ov.style.display='flex';
   setTimeout(()=>{ try{ inp.focus(); }catch(e){} }, 60);
 }
@@ -150,7 +152,9 @@ function goRanking(tab){
   state='ranking'; setHud(false); showScreen('ranking');
   renderRanking(null);
   const after=()=>{ rkSync().then(()=>rkLoad(false)); };
-  // Clash Royale gibi: sıralamaya ilk girişte oyuncu adını seçer.
+  // İlk giriş: DJ Vinil rehberi (isim yoksa önce isim yazdırır). Rehber
+  // görüldüyse ve isim yoksa düz isim penceresi.
+  if(typeof guideRankEnter==='function' && guideRankEnter(after)) return;
   if(!stats.playerName) openNameDialog(after); else after();
 }
 function rkLoad(force){

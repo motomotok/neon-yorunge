@@ -120,7 +120,9 @@ function goDuel(){
   _duelSel = (duelState().perks||[]).slice(0, DUEL_SLOTS);
   renderDuelLobby();
   // Rakiplerin göreceği ad: ilk düelloda seçilir (Sıralama ile aynı ad).
-  if(!stats.playerName && typeof openNameDialog==='function') openNameDialog(()=>renderDuelLobby());
+  // Rehber sürüyorsa ismi DJ Vinil sorar (guide.js).
+  const guiding = typeof guideActive!=='undefined' && guideActive==='duel';
+  if(!guiding && !stats.playerName && typeof openNameDialog==='function') openNameDialog(()=>renderDuelLobby());
 }
 function duelLpBar(lp, d){
   if(d>=DUEL_TOP) return `<div class="drLp"><b>${t('duel_lp',{n:lp})}</b></div>`;

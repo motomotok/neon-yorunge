@@ -50,6 +50,7 @@ document.querySelectorAll('[data-go]').forEach(b=>{
   });
 });
 document.getElementById('dsetOverBtn').addEventListener('click', e=>{ e.stopPropagation(); goRanking('today'); });
+document.getElementById('setNameBtn').addEventListener('click', e=>{ e.stopPropagation(); openNameDialog(()=>syncSettings()); beep(600,0.05,'sine',0.08); });
 document.getElementById('rkNameBtn').addEventListener('click', e=>{ e.stopPropagation(); openNameDialog(()=>{ if(state==='ranking') renderRanking(RK.cache[rkBoard(RK.tab)]||null); }); beep(600,0.05,'sine',0.08); });
 document.querySelectorAll('#rkTabs .stab').forEach(el=>el.addEventListener('click', e=>{ e.stopPropagation(); rkSetTab(el.dataset.rktab); beep(500,0.05,'sine',0.08); }));
 document.getElementById('duelFindBtn').addEventListener('click', e=>{ e.stopPropagation(); duelStartSearch(); });

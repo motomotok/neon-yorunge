@@ -108,6 +108,7 @@ function goMenu(){ state='menu'; setHud(false); showScreen('menu');
 let _menuBootDone=false;
 function goHowto(){ state='howto'; setHud(false); showScreen('howto'); renderHowtoIcons(); }
 function goSettings(){ state='settings'; setHud(false); showScreen('settings'); syncSettings(); }
+function syncSettingsName(){ const el=document.getElementById('setNameVal'); if(el) el.textContent = stats.playerName || t('name_none'); }
 function goStats(){ state='stats'; setHud(false); showScreen('stats'); syncStats(); }
 function goMode(){ goRanking('today'); }   // eski Modlar ekranı kaldırıldı
 // Mağaza her açılışta Temalar sekmesiyle ve en üstten başlar (son kalınan

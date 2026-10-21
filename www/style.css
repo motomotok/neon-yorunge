@@ -294,6 +294,12 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
   background:linear-gradient(160deg,#7dffb0,#2fe6c4 55%,#1fb5d6)!important;color:#03221c!important;border-color:rgba(220,255,240,.6)!important;
   box-shadow:0 0 22px -4px rgba(47,230,196,.75), inset 0 0 0 1px rgba(255,255,255,.15)!important;}
 .upPlayBtn .gicon{width:18px;height:18px;vertical-align:-3px;}
+.setNameRow{display:flex;align-items:center;gap:8px;width:100%;max-width:420px;margin:8px auto 4px;padding:9px 12px;border-radius:14px;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);font-size:13px;}
+.setNameRow>.gicon{width:16px;height:16px;color:var(--gold,#ffd24a);flex:none;}
+.setNameRow .snLbl{opacity:.75;flex:none;} .setNameRow b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.setNameRow .btn{width:auto;flex:none;padding:7px 12px;font-size:12px;}
+#nameInput::placeholder{color:rgba(255,255,255,.35);font-style:italic;}
 
 /* Yükselt: kalıcı ilerleme döngüsünün kalbi — BAŞLA'nın hemen altında,
    farklı (mor) renkte ve kendi ayrı, daha yavaş nabzıyla öne çıkarılıyor. */

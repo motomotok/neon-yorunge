@@ -2,6 +2,7 @@
 // mantığı. Oyun fiziğine dokunmaz, sadece data.js'deki kataloglar ile
 // #screen-* elemanlarını senkronize eder.
 function syncSettings(){
+  if(typeof syncSettingsName==='function') syncSettingsName();
   document.getElementById('soundSw').classList.toggle('on', cfg.sound);
   const pauseSw=document.getElementById('pauseSoundSw'); if(pauseSw) pauseSw.classList.toggle('on', cfg.sound);
   document.getElementById('musicSw').classList.toggle('on', !!cfg.music);
