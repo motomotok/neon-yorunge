@@ -614,6 +614,13 @@ function drawItem(x,y,type,sc,t,it){
     }
   } else if(type==='riskRewind' || type==='riskDark'){
     drawRiskBubble(x,y,R,type,t,it);
+  } else if(type==='attackOrb'){
+    // Düello saldırı balonu: güç ailesinin baloncuğu, turuncu; içinde şimşek.
+    const bob = it ? Math.sin(t*2.4 + it.ang*3)*R*0.18 : 0, r=R*1.55*(it ? 1+Math.sin(t*7)*0.05 : 1);
+    drawBubble(x, y+bob, r, '#ff9a3c');
+    const s=r*0.55; ctx.save(); ctx.translate(x, y+bob); ctx.fillStyle='#ffffff'; ctx.shadowColor='#ff9a3c'; ctx.shadowBlur=r*0.4;
+    ctx.beginPath(); ctx.moveTo(0.15*s,-0.95*s); ctx.lineTo(-0.55*s,0.12*s); ctx.lineTo(-0.02*s,0.12*s); ctx.lineTo(-0.2*s,0.95*s);
+    ctx.lineTo(0.58*s,-0.18*s); ctx.lineTo(0.05*s,-0.18*s); ctx.closePath(); ctx.fill(); ctx.restore();
   } else if(isPower(type)){
     // Güç ailesi (kalkan, yavaşlatma, mıknatıs, ×2): hepsi aynı camsı
     // baloncuğun içinde — "baloncuk = güç" tek bakışta okunur, kırmızı

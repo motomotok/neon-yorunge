@@ -49,6 +49,7 @@ function clearPlayOverlays(){
   if(typeof cancelResumeCountdown==='function') cancelResumeCountdown();
   if(typeof hideRiskFx==='function') hideRiskFx();
   if(typeof hideIntroCard==='function') hideIntroCard();
+  if(typeof duelAbort==='function' && state!=='over') duelAbort();
 }
 
 // Her oyun başlangıcında 5 saniyeliğine sol/sağ dokunma bölgelerini
@@ -131,8 +132,11 @@ function startGame(m,d){
   if(mode==='daily'){
     dsetDay = dsetEnsureDay().day;
     rngFn = mulberry32(dsetSeed(dsetDay));
+  } else if(mode==='duel' && duelMatch){
+    rngFn = mulberry32(duelMatch.seed);   // iki oyuncu aynı haritada
+    metaOff = true;
   } else rngFn = Math.random;
-  if(mode!=='daily' && pendingBoost && (stats.boosts[pendingBoost]||0)>0){
+  if(mode!=='daily' && mode!=='duel' && pendingBoost && (stats.boosts[pendingBoost]||0)>0){
     stats.boosts[pendingBoost]--; saveStats(); activeBoost=pendingBoost;
   }
   pendingBoost=null;
@@ -141,7 +145,7 @@ function startGame(m,d){
   beep(440,0.1,'sine',0.12);
   // En az bir kalıcı yükseltme alınmışsa, deneme başında kısa bir "güç
   // özeti" — oyuncu kasarak kazandığı gücü her denemede hissetsin.
-  if(mode!=='zen' && totalPowerLevel()>0){
+  if(mode!=='zen' && mode!=='duel' && totalPowerLevel()>0){
     queueToast(t('run_start_power',{n:stats.games+1, hp:maxHp}));
   }
   // Isı mühürleri açıksa oyuncu baştan bilsin (puan çarpanı + zorluk).
@@ -223,6 +227,7 @@ function nearestCheapCosmetic(){
   return best;
 }
 function gameOver(reason){
+  if(mode==='duel' && typeof duelGameOver==='function'){ duelGameOver(reason); return; }
   state='over';
   const runScore=score, elapsedSec=elapsed/60;
   // Zen (tehlikesiz, sınırsız kombo) ilerleme sistemlerinden ayrı tutulur:

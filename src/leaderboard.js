@@ -88,6 +88,34 @@ window.GlobalBoard = {
   above: (board, score) => withTimeout(gbAbove(board, score), 7000),
 };
 
+// ---- Düello kayıtları ("hayalet" maçlar, bkz. www/game/duel.js) ----
+// Firestore iç içe dizi saklamadığı için örnekler düz diziye açılır:
+// s = [t, puan, can, kalkan, t, puan, ...].
+const ghosts = () => collection(db(), 'duelGhosts');
+async function duelUpload(g) {
+  const u = await ensureUser();
+  const s = []; (g.samples || []).forEach((x) => s.push(+x[0], +x[1], +x[2], +x[3]));
+  await setDoc(doc(ghosts()), {
+    v: 1, uid: u.uid, seed: g.seed | 0, name: g.name, rating: Math.round(g.rating), theme: String(g.theme || ''), skin: String(g.skin || ''),
+    perks: (g.perks || []).slice(0, 3), s, a: (g.attacks || []).slice(0, 40), died: g.died == null ? null : +g.died, score: +g.score || 0,
+    ts: serverTimestamp(),
+  });
+  return u.uid;
+}
+async function duelFind(rating, span) {
+  const snap = await getDocs(query(ghosts(), where('rating', '>=', rating - span), where('rating', '<=', rating + span), limit(25)));
+  return snap.docs.map((d) => {
+    const x = d.data(), samples = [];
+    for (let i = 0; i + 3 < (x.s || []).length; i += 4) samples.push([x.s[i], x.s[i + 1], x.s[i + 2], x.s[i + 3]]);
+    return { uid: x.uid, name: String(x.name || ''), rating: +x.rating || 1000, seed: x.seed | 0, samples, attacks: x.a || [],
+      died: x.died == null ? null : +x.died, perks: x.perks || [], theme: x.theme, skin: x.skin };
+  }).filter((g) => g.samples.length > 10);
+}
+window.DuelCloud = {
+  upload: (g) => withTimeout(duelUpload(g), 9000),
+  find: (rating, span) => withTimeout(duelFind(rating, span), 7000),
+};
+
 window.DailySetCloud = {
   submit: (day, name, total, runs) => withTimeout(submit(day, name, total, runs), 9000),
   top: (day, n) => withTimeout(top(day, n), 7000),

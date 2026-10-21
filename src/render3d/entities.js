@@ -93,7 +93,7 @@ function yarnCore(){
 }
 let _yarnCoreGeo=null;
 
-export const ITEM_TYPES = ['star','gold','diamond','coin','heart','shield','slow','magnet','mult','riskRewind','riskDark',
+export const ITEM_TYPES = ['star','gold','diamond','coin','heart','shield','slow','magnet','mult','riskRewind','riskDark','attackOrb',
   'hazard','hazardJump','hazardBomb','hazardPull','hazardTwin','hazardTwinDecoy','hazardPulse','hazardCreep'];
 // ---- Sarı cızırtının kilitlediği yarım halka (engine: SEAL_SPAN) ----
 function sealArcGeometry(r, w, span, seg){
@@ -499,6 +499,8 @@ export class Entities {
       flipX = 1; scale = 1.08;
     } else if(type==='heart'){
       scale = 1+Math.sin(t*5)*0.08;
+    } else if(type==='attackOrb'){
+      scale = 1+Math.sin(t*7)*0.05;
     } else if(type==='riskRewind' || type==='riskDark'){
       // Risk balonu: nabız + ara sıra bozuk sinyal titremesi.
       scale = 1+Math.sin(t*6+it.ang)*0.05;

@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.65.0';
+const GAME_VERSION = '2.66.0';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -236,7 +236,10 @@ function upgradeLevel(key){ return Math.min(META_UPGRADES[key].tiers.length, (st
 // anahtar setini paylaşır — böylece maxHpFor()/shieldHitsFor() ve
 // engine.js'teki her upgradeBonus() çağrısı otomatik olarak ikisinin
 // toplamını görür, ayrı bir entegrasyon noktası gerekmez.
+// Düello sırasında kalıcı güçler kapalı (herkes eşit başlar, bkz. duel.js).
+let metaOff = false;
 function upgradeBonus(key){
+  if(metaOff) return 0;
   const lvl=upgradeLevel(key), tiers=META_UPGRADES[key].tiers;
   let s=0; for(let i=0;i<lvl;i++) s+=tiers[i].add;
   return s + coreBonus(key);
@@ -350,7 +353,7 @@ function perkSlots(){ const n=stats.totalPrestiges||0; return PERK_SLOT_AT.filte
 function nextPerkSlotAt(){ const n=stats.totalPrestiges||0; const x=PERK_SLOT_AT.find(v=>v>n); return x==null ? null : x; }
 function perkOwned(id){ return (stats.perksOwned||[]).includes(id); }
 function perkEquipped(id){ return (stats.perksEquipped||[]).includes(id); }
-function hasPerk(id){ return perkOwned(id) && perkEquipped(id); }
+function hasPerk(id){ return !metaOff && perkOwned(id) && perkEquipped(id); }
 function buyPerk(id){
   const p=PERKS.find(x=>x.id===id);
   if(!p || perkOwned(id) || (stats.cores||0)<p.cost) return false;
@@ -408,6 +411,7 @@ function coreNode(id){ return CORE_TREE.find(n=>n.id===id); }
 function coreNodeOwned(id){ return (stats.coreUnlocked||[]).includes(id); }
 function coreNodeReqMet(node){ return node.req.every(r=>coreNodeOwned(r)); }
 function coreBonus(key){
+  if(metaOff) return 0;
   let s=0;
   for(const node of CORE_TREE){ if(node.effects[key] && coreNodeOwned(node.id)) s+=node.effects[key]; }
   return s;
@@ -568,7 +572,7 @@ let stats = load('beatOrbitStats', {
   coreUnlocked:['core_root'],
   perksOwned:[], perksEquipped:[], balanceV2:false, balanceV2Refund:null,
   heatSeals:[], sealsOwned:[], seenIntro:[], risksCleared:0, rewardLedger:[],
-  playerName:'', nameChanges:0, myUid:'', gb:null,
+  playerName:'', nameChanges:0, myUid:'', gb:null, duel:null,
   gems:0, lifetimeGems:0,
   // Günün Seti (bkz. dailyset.js)
   dset:null, dsetPending:null, dsetHist:[], dsetName:'', dsetCache:null, dsetRealSeen:0, dsetCrownDay:'', installId:'',

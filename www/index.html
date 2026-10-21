@@ -35,6 +35,8 @@
   <button id="pauseBtn"><i class="gicon" data-icon="pause"></i></button>
   <div id="walletChip"><i class="gicon" data-icon="coin"></i> <span id="walletHud">0</span></div>
   <div id="walletEndHud"></div>
+  <!-- Düello: rakip paneli (bkz. game/duel.js) -->
+  <div id="duelHud"><div id="duelOppRec"></div><div class="dhInfo"><span id="duelOppName"></span><b id="duelOppScore">0.00</b><div class="dhHp"><i id="duelOppHp"></i></div></div><div id="duelOppPop"></div></div>
 </div>
 <div id="levelFlash"></div>
 <!-- Risk balonu katmanları (bkz. engine.js syncRiskFx) ve ilk görüş tanıtım kartı (introCheck). -->
@@ -119,6 +121,7 @@
       </button>
       <div class="menuSocialRow">
         <button class="menuSocialBtn rank" data-go="ranking"><i class="gicon" data-icon="trophy"></i><span data-i18n="nav_rank">Sıralama</span></button>
+        <button class="menuSocialBtn duel" data-go="duel"><i class="gicon" data-icon="lightning"></i><span data-i18n="nav_duel">Düello</span></button>
       </div>
       <button class="btn menuStartBtn" data-go="quickstart"><i class="gicon" data-icon="play"></i> <span data-i18n="menu_start">BAŞLA</span></button>
       <div class="menuUpgradeWrap">
@@ -503,6 +506,35 @@
     </div>
   </div>
 
+  <!-- Düello lobisi (bkz. game/duel.js) -->
+  <div class="screen fullpin" id="screen-duel">
+    <div class="screenHead">
+      <h2><i class="gicon" data-icon="lightning"></i> <span data-i18n="duel_title">Düello</span></h2>
+      <div class="duelRankCard" id="duelRankCard"></div>
+    </div>
+    <div class="screenBody">
+      <div class="perkSlotsTitle" data-i18n="duel_slots_title">Düello Yuvaları</div>
+      <div class="perkSlots" id="duelSlots"></div>
+      <div class="sub perkIntro" data-i18n="duel_slots_hint"></div>
+      <div class="shopGrid" id="duelPerkGrid"></div>
+      <div class="perkSlotsTitle" data-i18n="duel_practice_title">Antrenman</div>
+      <div class="duelBots" id="duelBots"></div>
+      <div class="dsPrivacy" data-i18n="duel_note"></div>
+    </div>
+    <div class="screenFoot">
+      <button class="btn duelFindBtn" id="duelFindBtn"><i class="gicon" data-icon="lightning"></i> <span data-i18n="duel_find">MAÇ ARA</span></button>
+      <button class="btn alt small" data-go="menu"><i class="gicon" data-icon="back"></i> <span data-i18n="btn_back">Geri</span></button>
+    </div>
+  </div>
+  <div class="screen" id="screen-duelvs"><div class="duelVs" id="duelVsBody"></div><div class="duelVsCount" id="duelVsCount"></div></div>
+  <div class="screen" id="screen-duelover">
+    <div id="duelOverBody"></div>
+    <div class="row2">
+      <button class="btn" id="duelAgainBtn"><i class="gicon" data-icon="lightning"></i> <span data-i18n="duel_again">Tekrar Ara</span></button>
+      <button class="btn alt small" id="duelLobbyBtn"><i class="gicon" data-icon="back"></i> <span data-i18n="duel_lobby">Lobi</span></button>
+    </div>
+  </div>
+
   <!-- Global Sıralama (bkz. game/ranking.js) -->
   <div class="screen fullpin" id="screen-ranking">
     <div class="screenHead">
@@ -592,6 +624,7 @@
   </div>
 </div>
 
+<div id="duelSearch"><div class="dsrBox"><div class="dsrDisc"></div><b data-i18n="duel_searching">Rakip aranıyor…</b><small data-i18n="duel_locked">Yuvalar kilitlendi</small><div class="dsrPerks" id="duelSearchPerks"></div></div></div>
  <!-- Oyuncu adı penceresi (bkz. game/ranking.js) -->
 <div id="nameOverlay" style="display:none">
   <div class="card nameCard">
@@ -656,6 +689,7 @@
 <script src="game/update.js"></script>
 <script src="game/dailyset.js"></script>
 <script src="game/ranking.js"></script>
+<script src="game/duel.js"></script>
 <script src="game/upgrades-ui.js"></script>
 <script src="game/narrator.js"></script>
 <script src="game/tutorial.js"></script>

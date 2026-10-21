@@ -31,7 +31,7 @@ let state='menu';
 const GAME_STATES = {play:1, pause:1, over:1, revive:1, story:1};
 // Menü ailesindeki tüm ekranlar: gerçek oyun burada değil ama oyuncu küresi
 // hâlâ yörüngede yavaşça dönüyor olmalı — "canlı menü" hissi için.
-const MENU_STATES = {menu:1, mode:1, shop:1, settings:1, stats:1, battlepass:1, upgrades:1, howto:1, language:1, loginstreak:1, dset:1, ranking:1};
+const MENU_STATES = {menu:1, mode:1, shop:1, settings:1, stats:1, battlepass:1, upgrades:1, howto:1, language:1, loginstreak:1, dset:1, ranking:1, duel:1, duelvs:1, duelover:1};
 let mode='classic', diffKey='normal';
 let player, items, particles, score, combo, hp, maxHp, level, elapsed, spawnCooldown, shake, flash;
 const NOTE_RAIN_SCORE = 190;   // yağmurun tamamı toplanırsa ~200 puan (küsuratla)
@@ -86,7 +86,7 @@ function resetGame(){
   level=1; elapsed=0; spawnCooldown=0; threatCd=150; rareSince=0; teaserCredit=0; teaserLastScore=0; breathT=0; nextBreath=720; shake=0; flash=0; levelFlashT=0;   // threatCd: tehdit yönetmeni ilk ~2.5 sn bekler
   session = {stars:0, golds:0, diamonds:0, magnets:0, hits:0, shieldSaved:false, streakMax:0,
              coins:0, coinPickups:0, luckyCharges:0, noteMult:1, revivedUsed:false, bossesCleared:0};
-  timeLeft = mode==='time' ? 60 : null;
+  timeLeft = mode==='time' ? 60 : mode==='duel' ? DUEL_SECS : null;
   newRecord=false; timeScale=1; timeScaleT=0;
   bossNextIndex=0; bossClock=0; bossActive=false; bossWaveItems=[]; bossReward=0; bossTelegraph=null; bossQueue=[]; bossNextCol=0; bossEnd=0;
   lastHeartScore=-HEART_SCORE_GAP; noteRain=0;
@@ -104,6 +104,7 @@ function resetGame(){
   session.secondChance = !zenRun && hasPerk('secondChance');
   session.ringLerp = hasPerk('nimblePick') ? 0.38 : 0.22;
   if(!zenRun && hasPerk('shieldStart') && !session.heat.noShield) player.shieldHits=shieldHitsFor();
+  if(mode==='duel' && typeof duelSetup==='function') duelSetup();
   if(activeBoost){
     if(activeBoost==='shieldstart') player.shieldHits=shieldHitsFor();
     else if(activeBoost==='slowstart') player.slowT=SLOW_DUR;
@@ -141,6 +142,8 @@ function easeOut(t){ return 1-Math.pow(1-t,3); }
 function isHazardType(t){ return t==='hazard'||t==='hazardJump'||t==='hazardBomb'||t==='hazardPull'||t==='hazardTwin'||t==='hazardPulse'||t==='hazardCreep'; }
 function isPower(t){ return t==='shield'||t==='slow'||t==='magnet'||t==='mult'; }
 function isRisk(t){ return t==='riskRewind'||t==='riskDark'; }
+// Oyuncunun kendisi seçmesi gereken balonlar: mıknatıslar çekmez.
+function isChoiceOrb(t){ return isRisk(t) || t==='attackOrb'; }
 
 // Skor eşiklerinde açılan gelişmiş tehlike tipleri: eşiğe ulaşınca bir anda
 // hep-ya-da-hiç değil, eşikten ne kadar ileri gidersen ihtimali o kadar
@@ -474,6 +477,8 @@ function spawnItem(atAng, atRing, forceHazard, safe){
     type = pickHazardKind();
   } else if(heartEligible && rnd()<HEART_CHANCE*(1+coreBonus('heartBoost'))){
     type='heart'; lastHeartScore=score;
+  } else if(mode==='duel' && duelOrbReady()){
+    type='attackOrb'; duelOrbCd = duelOrbGap();
   } else if(riskReady()){
     type = rnd()<0.5 ? 'riskRewind' : 'riskDark'; riskCd = riskGap();
   } else {
@@ -730,7 +735,7 @@ function update(dt){
   const nl = zen ? level : 1 + Math.floor(elapsed/720);
   if(nl>level){ level=nl; beep(660,0.1,'triangle',0.13); beep(990,0.12,'sine',0.10); showFlash(t('flash_level',{n:level}),70); vibrate([10,50,10]); }
 
-  if(mode==='time'){
+  if(mode==='time' || mode==='duel'){
     timeLeft -= dt/60;
     if(timeLeft<=0){ timeLeft=0; gameOver('time'); return; }
   }
@@ -765,8 +770,11 @@ function update(dt){
   if(player.invulT>0) player.invulT-=dt;
   if(player.multT>0) player.multT-=dt;
   // Risk balonu etkisi sürerken notalar ×2 (bkz. activateRisk).
-  const mult = (player.multT>0 ? 2+upgradeBonus('multPower') : 1) * (diffCfg.scoreMult||1) * (session.risk ? 2 : 1);
+  // Risk balonu ×2 (düelloda rakipten gelen saldırı ×2 vermez); düello Melodist +%25.
+  const mult = (player.multT>0 ? 2+upgradeBonus('multPower') : 1) * (diffCfg.scoreMult||1)
+    * (session.risk && !session.risk.attack ? 2 : 1) * (session.duelNoteMul||1);
   updateRisk(dt);
+  if(mode==='duel' && typeof duelTick==='function'){ duelTick(dt); if(state!=='play') return; }
   introCheck(dt);
 
   // Boss dalgası sürerken normal akış duraklar — "stage" temiz kalsın,
@@ -779,7 +787,7 @@ function update(dt){
   if(noteRain>0) noteRain -= angStep*dt*timeScale;
   else if(!bossActive || bossTail) updateSpawns(dt, bossTail);
 
-  const perkMagnet = hasPerk('noteMagnet');
+  const perkMagnet = hasPerk('noteMagnet') || (mode==='duel' && duelHas('dpMagnet'));
   for(const it of items){
     if(!it.alive) continue;
     if(!it.expiring && it.pop<1) it.pop=Math.min(1,it.pop+dt*0.14);
@@ -869,11 +877,11 @@ function update(dt){
     // halkada dış halkaya göre çok daha dar bir gerçek mesafeye denk
     // geliyordu; piksel mesafesi tüm halkalarda tutarlı bir cömertlik sağlar.
     // Mıknatıslar risk balonunu ÇEKMEZ: riske girmek oyuncunun kendi kararı.
-    const magnetGrab = player.magnetT>0 && !isPower(it.type) && !isRisk(it.type);
+    const magnetGrab = player.magnetT>0 && !isPower(it.type) && !isChoiceOrb(it.type);
     let grabbed;
     if(magnetGrab){
       grabbed = da<hitWindow && settled; // mıknatıs halka farkı gözetmeden çeker
-    } else if(perkMagnet && settled && !isPower(it.type) && !isRisk(it.type) && Math.abs(it.ring-curRing)===1 && da<hitWindow*0.8){
+    } else if(perkMagnet && settled && !isPower(it.type) && !isChoiceOrb(it.type) && Math.abs(it.ring-curRing)===1 && da<hitWindow*0.8){
       grabbed = true;   // Nota Mıknatısı yeteneği: komşu halkadaki notayı da alır
     } else {
       const px=CX+Math.cos(player.ang)*player.curRadius, py=CY+Math.sin(player.ang)*player.curRadius;
@@ -922,6 +930,7 @@ function update(dt){
         if(it.tutorialTag && typeof tutorialOnItemResolved==='function') tutorialOnItemResolved(it.tutorialTag);
       }
       else if(isRisk(it.type)) activateRisk(it.type,ix,iy);
+      else if(it.type==='attackOrb') duelOnOrb(ix,iy);
       else {
         activatePower(it.type,ix,iy);
         if(it.tutorialTag && typeof tutorialOnItemResolved==='function') tutorialOnItemResolved(it.tutorialTag);
@@ -957,7 +966,7 @@ function update(dt){
       if(!stats.firstBossStory && typeof narratorFirstBossStory==='function') setTimeout(narratorFirstBossStory, 1100);
       beep(700,0.15,'sine',0.15); beep(1000,0.15,'triangle',0.12); beep(1300,0.18,'sine',0.1);
     }
-  } else if(!zen){
+  } else if(!zen && mode!=='duel'){
     const stage = bossStageFor(bossNextIndex);
     if(!bossTelegraph && noteRain<=0 && !tutorialActive) bossClock += dt;
     if(bossTelegraph && bossTelegraph.stageIndex===bossNextIndex){
@@ -1065,7 +1074,7 @@ function hitHazard(ix,iy,subtype,itm){
     // (offerRevive) akışı kesip 6 saniyelik bir bekleme dayatır, bu yüzden
     // tutorial sırasında doğrudan oyun-sonuna gidilir.
     if(tutorialActive) gameOver();
-    else if(mode!=='zen' && !session.revivedUsed) offerRevive();
+    else if(mode!=='zen' && mode!=='duel' && !session.revivedUsed) offerRevive();
     else gameOver();
   }
   else { player.invulT=INVUL; beep(220,0.15,'square',0.1,true); }
@@ -1144,7 +1153,7 @@ function updateHud(){
   // "Dalga" satırı: sıradaki boss dalgasının numarası (sonsuz boss sistemi
   // olduğu için sabit bir payda yok, bkz. bossStageFor()). Zen modda boss
   // hiç yok, satır tamamen gizlenir.
-  const waveActive = mode!=='zen';
+  const waveActive = mode!=='zen' && mode!=='duel';
   if(_hud.waveActive!==waveActive){
     document.getElementById('waveRow').style.display = waveActive ? '' : 'none';
     _hud.waveActive=waveActive;
@@ -1163,7 +1172,7 @@ function updateHud(){
   // yüzden herhangi bir takviye aktifken ipucu geçici olarak gizleniyor.
   const anyPowerupActive = player.shieldHits>0 || player.slowT>0 || player.magnetT>0 || player.multT>0 || !!(session && session.risk);
   let goalText='';
-  if(mode!=='zen' && !bossActive && !anyPowerupActive){
+  if(mode!=='zen' && mode!=='duel' && !bossActive && !anyPowerupActive){
     // Boss yaklaşınca (son 15 sn) geri sayım; değilse rekora kalan puan; rekor
     // geçildiyse yine boss geri sayımı.
     const bossSec = bossSecondsLeft(), recordRemain = stats.best - score;
@@ -1181,7 +1190,7 @@ function updateHud(){
   if(_hud.hp!==hpPct){ document.getElementById('hpBarFill').style.transform='scaleX('+(hpPct/100)+')'; _hud.hp=hpPct; }
   const hpText = mode==='zen' ? '∞' : hp+'/'+maxHp;
   if(_hud.hpText!==hpText){ document.getElementById('hpText').textContent=hpText; _hud.hpText=hpText; }
-  const isTime = mode==='time';
+  const isTime = mode==='time' || mode==='duel';
   if(_hud.isTime!==isTime){
     document.getElementById('timerLbl').style.display = isTime?'block':'none';
     document.getElementById('timerHud').style.display = isTime?'block':'none';
@@ -1229,10 +1238,11 @@ function updateHud(){
     _hud.heat=heatTxt;
   }
   syncRiskFx();
+  if(mode==='duel' && typeof duelHudSync==='function') duelHudSync();
   const wallet = stats.notes||0;
   if(_hud.wallet!==wallet){ document.getElementById('walletHud').textContent=wallet; _hud.wallet=wallet; }
   // Oyun bitince cüzdanda olacak nota: şimdiki bakiye + skor bonusu (zen'de bonus yok).
-  const endN = mode==='zen' ? null : wallet + Math.round(endScoreBonus(score)*noteEventMult());
+  const endN = (mode==='zen' || mode==='duel') ? null : wallet + Math.round(endScoreBonus(score)*noteEventMult());
   if(_hud.endN!==endN){
     const el=document.getElementById('walletEndHud');
     if(el){ el.style.display = endN==null ? 'none' : ''; if(endN!=null) el.textContent=t('hud_end_notes',{n:endN}); }
@@ -1250,7 +1260,7 @@ function chip(iconKey,cls){ return `<div class="pwchip${cls?' '+cls:''}">${icon(
 const RISK_DUR = 420, RISK_FIRST = 900, RISK_MIN_SCORE = 250, RISK_CLEAN_BONUS = 60;
 let riskCd = RISK_FIRST;
 function riskReady(){
-  if(riskCd>0 || mode==='zen' || tutorialActive || score<RISK_MIN_SCORE) return false;
+  if(riskCd>0 || mode==='zen' || mode==='duel' || tutorialActive || score<RISK_MIN_SCORE) return false;
   if(session.risk || bossActive || bossTelegraph || noteRain>0) return false;
   for(const it of items) if(it.alive && isRisk(it.type)) return false;
   return true;
@@ -1351,7 +1361,7 @@ function hideRiskFx(){
 // adı ve tek cümleyle ne yaptığı. Her tip ömür boyu bir kez. Nota, temel
 // cızırtı ve can tutorial'da öğretildiği için tanıtılmaz. Boss labirentindeki
 // sabit duvarlar davranışlarını göstermediği için atlanır.
-const INTRO_FAMILY = {coin:'good', diamond:'good', shield:'power', slow:'power', magnet:'power', mult:'power',
+const INTRO_FAMILY = {attackOrb:'power', coin:'good', diamond:'good', shield:'power', slow:'power', magnet:'power', mult:'power',
   hazardJump:'bad', hazardBomb:'bad', hazardPull:'bad', hazardTwin:'bad', hazardPulse:'bad', hazardCreep:'bad',
   riskRewind:'risk', riskDark:'risk'};
 let introCd=0, _introHideT=null;
