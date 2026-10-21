@@ -312,11 +312,13 @@ function renderDset(){
   const stand=(rank)=>{
     const r=b.rows[rank-1];
     const medal=['🥇','🥈','🥉'][rank-1];
+    const rw=DSET_REWARDS[rank-1];
+    const rwHtml = `<div class="dsBlockRw">${rw.gems?`<span>${icon('gem')}${rw.gems}</span>`:''}${rw.notes?`<span>${icon('coin')}${rw.notes}</span>`:''}</div>`;
     return `<div class="dsStand p${rank}${r&&r.me?' me':''}">
       <div class="dsMedal">${medal}</div>
       <div class="dsName">${r?dsetEsc(r.name):'—'}</div>
       <div class="dsPts">${r?dsetFmt(r.total):''}</div>
-      <div class="dsBlock">${rank}</div></div>`;
+      <div class="dsBlock rw"><b>${rank}</b>${rwHtml}</div></div>`;
   };
   document.getElementById('rkPodium').innerHTML = stand(2)+stand(1)+stand(3);
   // Kendi kartı

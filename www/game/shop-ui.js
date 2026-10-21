@@ -24,6 +24,18 @@ function showDjConfirm(message, onYes, labels, onNo){
   const ic = document.getElementById('pcIcon');
   if(ic) ic.innerHTML = '<img src="img/dj_vinil.png" alt="" style="width:64px;height:64px;border-radius:50%;box-shadow:0 0 0 2px #c9a46a">';
 }
+// DJ Vinil oyuncuyu ara ara mağazaya davet eder (sıkmadan: 5., 20., 40.
+// denemede bir kez). Aynı oyun sonunda başka bir DJ sorusu çıktıysa bir
+// sonraki oyuna kalır.
+const SHOP_NUDGE_AT = [5, 20, 40];
+function maybeNudgeShop(){
+  if(tutorialActive || !stats.tutorialDone || mode==='duel') return;
+  const n=stats.shopNudges||0, at=SHOP_NUDGE_AT[n];
+  if(at==null || (stats.games||0) < at) return;
+  if(window._djNudgeAt && Date.now()-window._djNudgeAt < 5000) return;   // giriş hatırlatması bu oyunda çıktı
+  stats.shopNudges=n+1; saveStats();
+  setTimeout(()=>{ if(state==='over') showDjConfirm(t('shop_nudge_'+(n+1)), ()=>goShop(), {yes:t('shop_nudge_yes'), no:t('btn_later')}); }, 1800);
+}
 function syncMusicVol(){
   const v=Math.round((typeof cfg.musicVol==='number' ? cfg.musicVol : MUSIC_VOL_DEFAULT)*100);
   document.querySelectorAll('.musicVol').forEach(el=>{ if(+el.value!==v) el.value=v; });

@@ -216,6 +216,13 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
 .dsStand.p3 .dsBlock{height:44px;background:linear-gradient(180deg,#ffc8a0,#b86a35);}
 .dsStand.me .dsName{color:var(--player);}
 .dsStand.me .dsBlock{outline:2px solid var(--player);outline-offset:2px;}
+/* Bugün sekmesi: blokların içinde gün sonu ödülleri */
+.dsBlock.rw{flex-direction:column;align-items:center;justify-content:flex-start;gap:3px;padding-top:4px;}
+.dsBlock.rw b{font-size:18px;line-height:1;}
+.dsBlockRw{display:flex;flex-direction:column;align-items:center;gap:1px;font-family:var(--font-ui);font-size:11px;font-weight:800;color:#2a1600;}
+.dsBlockRw span{display:flex;align-items:center;gap:3px;white-space:nowrap;}
+.dsBlockRw .gicon{width:12px;height:12px;}
+.dsStand.p1 .dsBlock.rw{height:92px;} .dsStand.p2 .dsBlock.rw{height:76px;} .dsStand.p3 .dsBlock.rw{height:66px;}
 .dsYou{width:100%;flex:none;border-radius:16px;padding:10px 14px;text-align:left;
   background:rgba(47,230,196,.09);border:1px solid rgba(47,230,196,.4);}
 .dsYouTop{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:15px;}
@@ -282,6 +289,11 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
   box-shadow:0 0 22px -4px rgba(255,120,40,.75), inset 0 0 0 1px rgba(255,255,255,.12)!important;}
 .menuSocialRow .menuUpgradeBtn{width:auto;padding:9px 18px;font-size:14px;border-radius:999px;font-family:var(--font-ui);font-weight:800;}
 .menuUpgradeTag:not(.supernova){display:none;}
+/* Yetenekler ekranındaki BAŞLA: oyun buradan başlar (roguelite döngüsü). */
+.upPlayBtn{width:min(320px,100%);margin:0 auto 6px;padding:13px 14px;font-size:17px;letter-spacing:1px;
+  background:linear-gradient(160deg,#7dffb0,#2fe6c4 55%,#1fb5d6)!important;color:#03221c!important;border-color:rgba(220,255,240,.6)!important;
+  box-shadow:0 0 22px -4px rgba(47,230,196,.75), inset 0 0 0 1px rgba(255,255,255,.15)!important;}
+.upPlayBtn .gicon{width:18px;height:18px;vertical-align:-3px;}
 
 /* Yükselt: kalıcı ilerleme döngüsünün kalbi — BAŞLA'nın hemen altında,
    farklı (mor) renkte ve kendi ayrı, daha yavaş nabzıyla öne çıkarılıyor. */

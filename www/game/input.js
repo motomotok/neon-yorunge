@@ -26,7 +26,7 @@ document.querySelectorAll('[data-go]').forEach(b=>{
       // Tutorial zaten sürüyorsa asla baştan başlatma (eskiden son adımda
       // BAŞLA'ya basılınca tutorial yeniden başlıyordu).
       if(tutorialActive) return;
-      const go=()=>{ if(!stats.tutorialDone && typeof startTutorial==='function') startTutorial(); else startGame('daily'); };
+      const go=()=>{ if(!stats.tutorialDone && typeof startTutorial==='function') startTutorial(); else goUpgrades(); };   // roguelite: önce yetenekler, oyun oradaki BAŞLA ile
       go();
     }
     else if(g==='menu') goMenu();
@@ -37,6 +37,7 @@ document.querySelectorAll('[data-go]').forEach(b=>{
     else if(g==='battlepass') goBattlepass();
     else if(g==='loginstreak') goLoginStreak();
     else if(g==='upgrades') goUpgrades();
+    else if(g==='playnow'){ if(!tutorialActive) startGame('daily'); }
     else if(g==='language') goLanguage();
     else if(g==='dset') goDset();
     else if(g==='ranking') goRanking();

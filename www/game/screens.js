@@ -117,6 +117,7 @@ function goBattlepass(){ state='battlepass'; setHud(false); showScreen('battlepa
 function goLoginStreak(){ state='loginstreak'; setHud(false); showScreen('loginstreak'); renderLoginStreakScreen(); }
 function goLanguage(){ state='language'; setHud(false); showScreen('language'); if(typeof syncLangDockButton==='function') syncLangDockButton(); }
 function goUpgrades(){ state='upgrades'; setHud(false); showScreen('upgrades'); refreshWallet(); renderUpgrades(); renderUpgradesTab();
+  const pb=document.getElementById('upPlayBtn'); if(pb) pb.style.display = tutorialActive ? 'none' : '';
   if(tutorialActive && typeof tutorialOnNav==='function') tutorialOnNav('upgrades');
 }
 
@@ -270,6 +271,7 @@ function gameOver(reason){
   ensureRival();
   saveStats();
   if(window.CloudSync) CloudSync.onGameOver();
+  if(typeof maybeNudgeShop==='function') maybeNudgeShop();
   if(mode!=='zen' && window.PlayGames && PlayGames.isNative() && PlayGames.signedIn) PlayGames.submitScore(runScore);
   if(beatenRival){
     const beatenName = cfg.lang==='tr' ? turkishAccusative(beatenRival) : beatenRival;
