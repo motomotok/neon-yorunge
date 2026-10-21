@@ -288,13 +288,15 @@ async function dsetClaimPending(){
 
 // ---- Ekran ----
 let _dsetTimer=null;
-function goDset(){
-  state='dset'; setHud(false); showScreen('dset');
+// Ayrı ekranı yok: Sıralama ekranının "Bugün" sekmesi (bkz. ranking.js).
+function goDset(){ goRanking('today'); }
+const dsetOnToday = ()=> state==='ranking' && typeof RK!=='undefined' && RK.tab==='today';
+function dsetShowToday(){
   dsetEnsureDay(); renderDset();
-  dsetFetchReal(stats.dset.day, false, dsetLg(stats.dset)).then(()=>{ if(state==='dset') renderDset(); });
+  dsetFetchReal(stats.dset.day, false, dsetLg(stats.dset)).then(()=>{ if(dsetOnToday()) renderDset(); });
   dsetSubmit();
   clearInterval(_dsetTimer);
-  _dsetTimer=setInterval(()=>{ if(state!=='dset'){ clearInterval(_dsetTimer); return; } renderDset(); }, 20000);
+  _dsetTimer=setInterval(()=>{ if(!dsetOnToday()){ clearInterval(_dsetTimer); return; } renderDset(); }, 20000);
 }
 function dsetTimeLeftText(){
   const ms=dsetMsLeft(), h=Math.floor(ms/3600000), m=Math.floor(ms%3600000/60000);
@@ -304,7 +306,7 @@ function dsetEsc(s){ return String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&
 function renderDset(){
   const d=dsetEnsureDay();
   const b=dsetBuildBoard(d, dsetCachedReal(d.day, dsetLg(d)), dsetDayFrac(d.day));
-  document.getElementById('dsTimer').innerHTML=icon('hourglass')+' '+dsetTimeLeftText();
+  document.getElementById('rkTimer').innerHTML=icon('hourglass')+' '+dsetTimeLeftText();
   const crown = stats.dsetCrownDay===d.day ? ' <span class="dsCrown">👑 '+t('dset_crown')+'</span>' : '';
   // Kürsü: 2 - 1 - 3
   const stand=(rank)=>{
@@ -316,9 +318,9 @@ function renderDset(){
       <div class="dsPts">${r?dsetFmt(r.total):''}</div>
       <div class="dsBlock">${rank}</div></div>`;
   };
-  document.getElementById('dsPodium').innerHTML = stand(2)+stand(1)+stand(3);
+  document.getElementById('rkPodium').innerHTML = stand(2)+stand(1)+stand(3);
   // Kendi kartı
-  const you=document.getElementById('dsYou');
+  const you=document.getElementById('rkYou');
   if(b.me){
     const above=b.rows[b.me.rank-2];
     const tip = above ? t('dset_to_next',{name:dsetEsc(above.name), n:dsetFmt(above.total-b.me.total+0.01)}) : t('dset_lead');
@@ -331,12 +333,12 @@ function renderDset(){
   }
   // Liste (4. sıradan itibaren)
   const list=b.rows.slice(3, 40).map(r=>`<div class="dsRow${r.me?' me':''}"><span class="rk">${r.rank}</span><span class="nm">${dsetEsc(r.name)}</span><span class="pt">${dsetFmt(r.total)}</span></div>`).join('');
-  document.getElementById('dsList').innerHTML = list;
-  const nick=document.getElementById('dsNick'); if(nick) nick.textContent=dsetPlayerName();
+  document.getElementById('rkList').innerHTML = list;
+  const nick=document.getElementById('rkName'); if(nick) nick.textContent=dsetPlayerName()+(stats.myUid?' '+playerTag(stats.myUid):'');
   renderDsetRewards();
 }
 function renderDsetRewards(){
-  const el=document.getElementById('dsRewards'); if(!el) return;
+  const el=document.getElementById('rkRewards'); if(!el) return;
   const row=(lbl, rw)=>`<div class="dsRw"><span>${lbl}</span><span>${dsetRewardText(rw)}</span></div>`;
   el.innerHTML = `<div class="dsRwHead">${icon('gift')} ${t('dset_rewards_title')}</div>`
     + row('🥇', DSET_REWARDS[0]) + row('🥈', DSET_REWARDS[1]) + row('🥉', DSET_REWARDS[2])
@@ -349,7 +351,7 @@ function dsetRerollName(){
 }
 // Ana menüdeki çip: sıra ya da davet.
 function syncDsetChip(){
-  const el=document.getElementById('menuSetChip'); if(!el) return;
+  const el=document.getElementById('menuSetChip'); if(!el) return;   // 2.69.1'de menüden kalktı
   if(!stats.tutorialDone){ el.style.display='none'; return; }
   const d=dsetEnsureDay();
   const b=dsetBuildBoard(d, dsetCachedReal(d.day, dsetLg(d)), dsetDayFrac(d.day));

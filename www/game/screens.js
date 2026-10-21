@@ -107,7 +107,7 @@ let _menuBootDone=false;
 function goHowto(){ state='howto'; setHud(false); showScreen('howto'); renderHowtoIcons(); }
 function goSettings(){ state='settings'; setHud(false); showScreen('settings'); syncSettings(); }
 function goStats(){ state='stats'; setHud(false); showScreen('stats'); syncStats(); }
-function goMode(){ goDset(); }   // eski Modlar ekranı kaldırıldı
+function goMode(){ goRanking('today'); }   // eski Modlar ekranı kaldırıldı
 // Mağaza her açılışta Temalar sekmesiyle ve en üstten başlar (son kalınan
 // sekmeyi hatırlamaz).
 function goShop(){ state='shop'; setHud(false); showScreen('shop'); shopTab='themes';
@@ -120,8 +120,9 @@ function goUpgrades(){ state='upgrades'; setHud(false); showScreen('upgrades'); 
   if(tutorialActive && typeof tutorialOnNav==='function') tutorialOnNav('upgrades');
 }
 
-// Oyunda iki oyun var: OYNA (Günün Seti — herkes aynı günlük harita, en iyi
-// 3 oyun günlük tabloya, her oyun Global Sıralama'ya) ve Düello. Eski modlar
+// Oyunda iki oyun var: OYNA (her oyun rastgele harita; günün en iyi 3 oyunu
+// ödüllü günlük sıralamaya — bkz. dailyset.js —, her oyun Global Sıralama'ya)
+// ve Düello. Eski modlar
 // (Klasik/Zaman/Zen) ve oyun öncesi takviyeler 2.69'da kaldırıldı.
 function startGame(m,d){
   notifyRecordPlayHour();
@@ -130,12 +131,12 @@ function startGame(m,d){
   // Zorluk seçimi yok: tek, dengeli (normal) zorluk.
   mode=m; diffKey='normal';
   diffCfg = DIFF[diffKey];
-  // Günün Seti (bkz. dailyset.js): sınırsız deneme, herkes için aynı tohum.
-  // Kalıcı yetenekler, Süpernova ve Isı geçerli.
+  // Normal oyun: rastgele harita; sonucu günlük sıralamaya yazılır (oyunun
+  // başladığı güne). Kalıcı yetenekler, Süpernova ve Isı geçerli.
   let dsetDay=null;
   if(mode==='daily'){
     dsetDay = dsetEnsureDay().day;
-    rngFn = mulberry32(dsetSeed(dsetDay));
+    rngFn = Math.random;
   } else if(mode==='duel' && duelMatch){
     rngFn = mulberry32(duelMatch.seed);   // iki oyuncu aynı haritada
     metaOff = true;

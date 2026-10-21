@@ -112,13 +112,9 @@
     <div class="menuCorner right">
       <button class="menuDockBtn mini" data-go="language"><span class="dockFlag" id="langFlagIcon"></span><span data-i18n="nav_lang">Dil Seçin</span></button>
       <button class="menuDockBtn mini" data-go="settings"><i class="gicon" data-icon="gear"></i><span data-i18n="nav_settings">Ayarlar</span></button>
-      <button class="menuDockBtn mini" data-go="dset"><i class="gicon" data-icon="calendar"></i><span data-i18n="nav_daily">Günlük</span></button>
       <button class="menuDockBtn mini" data-go="stats"><i class="gicon" data-icon="chart"></i><span data-i18n="nav_stats">İstatistik</span></button>
     </div>
     <div class="menuCenter">
-      <button class="menuSetBtn" id="menuSetChip" data-go="dset" style="display:none">
-        <i class="gicon" data-icon="trophy"></i><span class="msTxt"><b data-i18n="dset_title">Günün Seti</b><small id="menuSetText"></small></span>
-      </button>
       <div class="menuSocialRow">
         <button class="menuSocialBtn rank" data-go="ranking"><i class="gicon" data-icon="trophy"></i><span data-i18n="nav_rank">Sıralama</span></button>
         <button class="menuSocialBtn duel" data-go="duel"><i class="gicon" data-icon="lightning"></i><span data-i18n="nav_duel">Düello</span></button>
@@ -471,26 +467,6 @@
 
   <!-- Günün Seti: günlük yarışma (bkz. game/dailyset.js). Üstte 1-2-3 kürsüsü,
        altta oyuncunun kartı ve sıralamanın geri kalanı. -->
-  <div class="screen fullpin" id="screen-dset">
-    <div class="screenHead">
-      <h2><i class="gicon" data-icon="trophy"></i> <span data-i18n="dset_title">Günün Seti</span></h2>
-      <div class="dsTimer" id="dsTimer"></div>
-    </div>
-    <div class="screenBody">
-      <div class="dsPodium" id="dsPodium"></div>
-      <div class="dsYou" id="dsYou"></div>
-      <div class="dsList" id="dsList"></div>
-      <div class="dsRewards" id="dsRewards"></div>
-      <div class="dsNickRow"><span data-i18n="dset_nick">Takma adın</span> <b id="dsNick"></b>
-        <button class="iconBtn" id="dsNickBtn" aria-label="edit">✏️</button></div>
-      <div class="dsPrivacy" data-i18n="dset_privacy"></div>
-    </div>
-    <div class="screenFoot">
-      <button class="btn" id="dsPlayBtn"><i class="gicon" data-icon="play"></i> <span data-i18n="dset_play">OYNA</span></button>
-      <button class="btn alt small" data-go="menu"><i class="gicon" data-icon="back"></i> <span data-i18n="btn_back">Geri</span></button>
-    </div>
-  </div>
-
   <!-- Düello lobisi (bkz. game/duel.js) -->
   <div class="screen fullpin" id="screen-duel">
     <div class="screenHead">
@@ -524,7 +500,8 @@
     <div class="screenHead">
       <h2><i class="gicon" data-icon="trophy"></i> <span data-i18n="rank_title">Sıralama</span></h2>
       <div class="shopTabs" id="rkTabs">
-        <div class="stab sel" data-rktab="week"><span data-i18n="rank_tab_week">Bu Hafta</span></div>
+        <div class="stab sel" data-rktab="today"><span data-i18n="rank_tab_today">Bugün</span></div>
+        <div class="stab" data-rktab="week"><span data-i18n="rank_tab_week">Bu Hafta</span></div>
         <div class="stab" data-rktab="all"><span data-i18n="rank_tab_all">Tüm Zamanlar</span></div>
       </div>
       <div class="dsTimer" id="rkTimer"></div>
@@ -533,9 +510,10 @@
       <div class="dsPodium" id="rkPodium"></div>
       <div class="dsYou" id="rkYou"></div>
       <div class="dsList" id="rkList"></div>
+      <div class="dsRewards" id="rkRewards" style="display:none"></div>
       <div class="dsNickRow"><span data-i18n="rank_your_name">İsmin</span> <b id="rkName"></b>
         <button class="iconBtn" id="rkNameBtn" aria-label="edit">✏️</button></div>
-      <div class="dsPrivacy" data-i18n="rank_note"></div>
+      <div class="dsPrivacy" id="rkNote" data-i18n="rank_note"></div>
     </div>
     <div class="screenFoot">
       <button class="btn" data-go="quickstart"><i class="gicon" data-icon="play"></i> <span data-i18n="dset_play">OYNA</span></button>

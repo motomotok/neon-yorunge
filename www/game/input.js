@@ -43,9 +43,7 @@ document.querySelectorAll('[data-go]').forEach(b=>{
     else if(g==='duel') goDuel();
   });
 });
-document.getElementById('dsPlayBtn').addEventListener('click', e=>{ e.stopPropagation(); startGame('daily'); });
-document.getElementById('dsetOverBtn').addEventListener('click', e=>{ e.stopPropagation(); goDset(); });
-document.getElementById('dsNickBtn').addEventListener('click', e=>{ e.stopPropagation(); openNameDialog(()=>{ if(state==='dset') renderDset(); }); beep(600,0.05,'sine',0.08); });
+document.getElementById('dsetOverBtn').addEventListener('click', e=>{ e.stopPropagation(); goRanking('today'); });
 document.getElementById('rkNameBtn').addEventListener('click', e=>{ e.stopPropagation(); openNameDialog(()=>{ if(state==='ranking') renderRanking(RK.cache[rkBoard(RK.tab)]||null); }); beep(600,0.05,'sine',0.08); });
 document.querySelectorAll('#rkTabs .stab').forEach(el=>el.addEventListener('click', e=>{ e.stopPropagation(); rkSetTab(el.dataset.rktab); beep(500,0.05,'sine',0.08); }));
 document.getElementById('duelFindBtn').addEventListener('click', e=>{ e.stopPropagation(); duelStartSearch(); });

@@ -79,7 +79,7 @@ function saveNameDialog(){
 
 // ---- Sıralama ----
 const RK_TZ_MS = 3*3600000, RK_CACHE_MS = 600000;
-const RK = {tab:'week', cache:{}, loading:{}};
+const RK = {tab:'today', cache:{}, loading:{}};
 function rkWeekKey(ms){
   const d=new Date((ms==null ? gameNowMs() : ms)+RK_TZ_MS);
   const dow=(d.getUTCDay()+6)%7;                                  // pazartesi=0
@@ -145,7 +145,8 @@ async function rkFetch(board, force){
   })();
   return RK.loading[board];
 }
-function goRanking(){
+function goRanking(tab){
+  if(tab) RK.tab=tab;
   state='ranking'; setHud(false); showScreen('ranking');
   renderRanking(null);
   const after=()=>{ rkSync().then(()=>rkLoad(false)); };
@@ -153,6 +154,7 @@ function goRanking(){
   if(!stats.playerName) openNameDialog(after); else after();
 }
 function rkLoad(force){
+  if(RK.tab==='today'){ dsetShowToday(); return; }
   const board=rkBoard(RK.tab), tab=RK.tab;
   if(!window.GlobalBoard){ renderRanking({ok:false, top:[], my:0}); return; }
   rkFetch(board, force).then(res=>{ if(state==='ranking' && RK.tab===tab) renderRanking(res); });
@@ -160,11 +162,17 @@ function rkLoad(force){
 function rkSetTab(tab){
   RK.tab=tab;
   document.querySelectorAll('#rkTabs .stab').forEach(el=>el.classList.toggle('sel', el.dataset.rktab===tab));
+  if(tab==='today'){ renderRanking(null); dsetShowToday(); return; }
   renderRanking(RK.cache[rkBoard(tab)]||null); rkLoad(false);
 }
 function rkFmt(v){ return (Math.round(v*100)/100).toLocaleString(cfg.lang||'tr',{maximumFractionDigits:2}); }
 function renderRanking(res){
   document.querySelectorAll('#rkTabs .stab').forEach(el=>el.classList.toggle('sel', el.dataset.rktab===RK.tab));
+  const today = RK.tab==='today';
+  const rw=document.getElementById('rkRewards'), note=document.getElementById('rkNote');
+  if(rw) rw.style.display = today ? '' : 'none';
+  if(note) note.style.display = today ? 'none' : '';
+  if(today){ renderDset(); return; }   // ödüllü günlük sıralama (dailyset.js)
   const ms=rkWeekMsLeft(), dd=Math.floor(ms/86400000), hh=Math.floor(ms%86400000/3600000);
   document.getElementById('rkTimer').innerHTML = RK.tab==='week' ? icon('hourglass')+' '+t('rank_reset_in',{d:dd, h:hh}) : icon('trophy')+' '+t('rank_tab_all');
   const nm=document.getElementById('rkName'); if(nm) nm.textContent=playerName()+(stats.myUid?' '+playerTag(stats.myUid):'');
