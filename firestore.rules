@@ -18,6 +18,25 @@ service cloud.firestore {
     // Herkes okuyabilir; her oyuncu yalnız kendi belgesini yazar. Ad oyunun
     // ürettiği takma addır (harf/rakam), toplam makul sınırda ve gün içinde
     // yalnız artabilir. Silme yok.
+    // Oyuncunun seçtiği isim: harf (her dil), rakam, boşluk, _ . - ; 3-16 karakter.
+    function nameOk(n) {
+      return n is string && n.matches('^[\\p{L}\\p{N} _.-]{3,16}$');
+    }
+    // Global Sıralama (Klasik): 'all' ya da haftalık 'w2026-43'.
+    match /lb/{board}/scores/{uid} {
+      allow read: if true;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && (board == 'all' || board.matches('^w20[0-9]{2}-[0-5][0-9]$'))
+        && request.resource.data.keys().hasOnly(['name', 'score', 'heat', 'ts'])
+        && nameOk(request.resource.data.name)
+        && request.resource.data.score is number
+        && request.resource.data.score >= 0 && request.resource.data.score <= 2000000
+        && request.resource.data.heat is int
+        && request.resource.data.heat >= 0 && request.resource.data.heat <= 5
+        && request.resource.data.ts == request.time
+        && (resource == null || request.resource.data.score >= resource.data.score);
+    }
+
     // Yalnız dün/bugün/yarın (saat dilimi payıyla) yazılabilir: geçmiş ya da
     // ileri tarihli günlere (saat ileri alınarak) kayıt atılamaz.
     function dayNear(day) {
@@ -30,8 +49,7 @@ service cloud.firestore {
         && day.matches('^20[0-9]{2}-[01][0-9]-[0-3][0-9]$')
         && dayNear(day)
         && request.resource.data.keys().hasOnly(['name', 'total', 'runs', 'ts'])
-        && request.resource.data.name is string
-        && request.resource.data.name.matches('^[A-Za-z0-9]{3,20}$')
+        && nameOk(request.resource.data.name)
         && request.resource.data.total is number
         && request.resource.data.total >= 0 && request.resource.data.total <= 300000
         && request.resource.data.runs is int

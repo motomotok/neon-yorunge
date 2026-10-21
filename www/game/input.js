@@ -50,11 +50,17 @@ document.querySelectorAll('[data-go]').forEach(b=>{
     else if(g==='upgrades') goUpgrades();
     else if(g==='language') goLanguage();
     else if(g==='dset') goDset();
+    else if(g==='ranking') goRanking();
   });
 });
 document.getElementById('dsPlayBtn').addEventListener('click', e=>{ e.stopPropagation(); startGame('daily'); });
 document.getElementById('dsetOverBtn').addEventListener('click', e=>{ e.stopPropagation(); goDset(); });
-document.getElementById('dsNickBtn').addEventListener('click', e=>{ e.stopPropagation(); dsetRerollName(); beep(600,0.05,'sine',0.08); });
+document.getElementById('dsNickBtn').addEventListener('click', e=>{ e.stopPropagation(); openNameDialog(()=>{ if(state==='dset') renderDset(); }); beep(600,0.05,'sine',0.08); });
+document.getElementById('rkNameBtn').addEventListener('click', e=>{ e.stopPropagation(); openNameDialog(()=>{ if(state==='ranking') renderRanking(RK.cache[rkBoard(RK.tab)]||null); }); beep(600,0.05,'sine',0.08); });
+document.querySelectorAll('#rkTabs .stab').forEach(el=>el.addEventListener('click', e=>{ e.stopPropagation(); rkSetTab(el.dataset.rktab); beep(500,0.05,'sine',0.08); }));
+document.getElementById('nameSaveBtn').addEventListener('click', e=>{ e.stopPropagation(); saveNameDialog(); });
+document.getElementById('nameCancelBtn').addEventListener('click', e=>{ e.stopPropagation(); closeNameDialog(); const f=_nameDone; _nameDone=null; if(f) f(); });
+document.getElementById('nameInput').addEventListener('keydown', e=>{ e.stopPropagation(); if(e.key==='Enter') saveNameDialog(); });
 document.getElementById('retryBtn').addEventListener('click', e=>{ e.stopPropagation(); startGame(); });
 document.getElementById('shareBtn').addEventListener('click', e=>{ e.stopPropagation(); shareScore(); });
 document.getElementById('watchAdCoinsBtn').addEventListener('click', e=>{ e.stopPropagation(); watchAdForCoins(); });

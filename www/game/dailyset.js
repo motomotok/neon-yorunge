@@ -51,6 +51,7 @@ function dsetTotal(top){ return Math.round((top||[]).reduce((s,v)=>s+v,0)*100)/1
 function dsetFmt(n){ return (+n||0).toFixed(2); }
 
 function dsetPlayerName(){
+  if(stats.playerName) return stats.playerName;   // oyuncunun seçtiği ad (bkz. ranking.js)
   if(!stats.dsetName){ stats.dsetName = dsetGenName(Math.random); saveStats(); }
   return stats.dsetName;
 }

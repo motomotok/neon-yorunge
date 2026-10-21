@@ -117,6 +117,9 @@
       <button class="menuSetBtn" id="menuSetChip" data-go="dset" style="display:none">
         <i class="gicon" data-icon="trophy"></i><span class="msTxt"><b data-i18n="dset_title">Günün Seti</b><small id="menuSetText"></small></span>
       </button>
+      <div class="menuSocialRow">
+        <button class="menuSocialBtn rank" data-go="ranking"><i class="gicon" data-icon="trophy"></i><span data-i18n="nav_rank">Sıralama</span></button>
+      </div>
       <button class="btn menuStartBtn" data-go="quickstart"><i class="gicon" data-icon="play"></i> <span data-i18n="menu_start">BAŞLA</span></button>
       <div class="menuUpgradeWrap">
         <button class="btn menuUpgradeBtn" data-go="upgrades"><i class="gicon" data-icon="lightning"></i> <span data-i18n="menu_upgrades">YETENEKLER</span></button>
@@ -491,11 +494,35 @@
       <div class="dsList" id="dsList"></div>
       <div class="dsRewards" id="dsRewards"></div>
       <div class="dsNickRow"><span data-i18n="dset_nick">Takma adın</span> <b id="dsNick"></b>
-        <button class="iconBtn" id="dsNickBtn" aria-label="🎲">🎲</button></div>
+        <button class="iconBtn" id="dsNickBtn" aria-label="edit">✏️</button></div>
       <div class="dsPrivacy" data-i18n="dset_privacy"></div>
     </div>
     <div class="screenFoot">
       <button class="btn" id="dsPlayBtn"><i class="gicon" data-icon="play"></i> <span data-i18n="dset_play">OYNA</span></button>
+      <button class="btn alt small" data-go="menu"><i class="gicon" data-icon="back"></i> <span data-i18n="btn_back">Geri</span></button>
+    </div>
+  </div>
+
+  <!-- Global Sıralama (bkz. game/ranking.js) -->
+  <div class="screen fullpin" id="screen-ranking">
+    <div class="screenHead">
+      <h2><i class="gicon" data-icon="trophy"></i> <span data-i18n="rank_title">Sıralama</span></h2>
+      <div class="shopTabs" id="rkTabs">
+        <div class="stab sel" data-rktab="week"><span data-i18n="rank_tab_week">Bu Hafta</span></div>
+        <div class="stab" data-rktab="all"><span data-i18n="rank_tab_all">Tüm Zamanlar</span></div>
+      </div>
+      <div class="dsTimer" id="rkTimer"></div>
+    </div>
+    <div class="screenBody">
+      <div class="dsPodium" id="rkPodium"></div>
+      <div class="dsYou" id="rkYou"></div>
+      <div class="dsList" id="rkList"></div>
+      <div class="dsNickRow"><span data-i18n="rank_your_name">İsmin</span> <b id="rkName"></b>
+        <button class="iconBtn" id="rkNameBtn" aria-label="edit">✏️</button></div>
+      <div class="dsPrivacy" data-i18n="rank_note"></div>
+    </div>
+    <div class="screenFoot">
+      <button class="btn" data-go="quickstart"><i class="gicon" data-icon="play"></i> <span data-i18n="dset_play">OYNA</span></button>
       <button class="btn alt small" data-go="menu"><i class="gicon" data-icon="back"></i> <span data-i18n="btn_back">Geri</span></button>
     </div>
   </div>
@@ -565,6 +592,20 @@
   </div>
 </div>
 
+ <!-- Oyuncu adı penceresi (bkz. game/ranking.js) -->
+<div id="nameOverlay" style="display:none">
+  <div class="card nameCard">
+    <div class="nameIcon"><i class="gicon" data-icon="trophy"></i></div>
+    <div class="nameTitle" data-i18n="name_title">Oyuncu adın</div>
+    <div class="sub nameSub" id="nameSub"></div>
+    <input id="nameInput" type="text" maxlength="16" autocomplete="off" autocapitalize="words" spellcheck="false">
+    <div class="nameErr" id="nameErr"></div>
+    <div class="row2">
+      <button class="btn alt small" id="nameCancelBtn"><span data-i18n="btn_later">Sonra</span></button>
+      <button class="btn small" id="nameSaveBtn"><i class="gicon" data-icon="check"></i> <span data-i18n="name_save">Kaydet</span></button>
+    </div>
+  </div>
+</div>
 <div id="coreInfoOverlay" style="display:none;position:fixed;inset:0;z-index:35;align-items:center;justify-content:center;background:#04060f;padding:20px;">
   <div class="card coreInfoCard" style="max-width:280px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center;">
     <div id="ciIcon" style="font-size:34px;"></div>
@@ -614,6 +655,7 @@
 <script src="game/notify.js"></script>
 <script src="game/update.js"></script>
 <script src="game/dailyset.js"></script>
+<script src="game/ranking.js"></script>
 <script src="game/upgrades-ui.js"></script>
 <script src="game/narrator.js"></script>
 <script src="game/tutorial.js"></script>

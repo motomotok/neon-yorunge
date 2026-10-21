@@ -56,6 +56,38 @@ async function uid() {
   return a.currentUser ? a.currentUser.uid : null;
 }
 
+// ---- Global Sıralama (Klasik mod) ----
+// lb/{board}/scores/{uid}: board = 'all' (tüm zamanlar) ya da 'w2026-43'
+// (haftalık, pazartesi 00:00 TR'de yenilenir). Oyuncu yalnız kendi belgesini,
+// yalnız rekor kırınca yazar; skor yalnız artabilir (bkz. firestore.rules).
+// Okuma maliyeti (Firebase ücretsiz kota): ilk 10 + "kaçıncıyım" sayımı
+// (≈1 okuma / 1000 kayıt) + hemen üstümdeki kişi = ekran başına ~12 okuma.
+const lbScores = (board) => collection(db(), 'lb', board, 'scores');
+async function gbSubmit(board, name, score, heat) {
+  const u = await ensureUser();
+  await setDoc(doc(db(), 'lb', board, 'scores', u.uid), { name, score, heat, ts: serverTimestamp() });
+  return u.uid;
+}
+async function gbTop(board, n) {
+  const snap = await getDocs(query(lbScores(board), orderBy('score', 'desc'), limit(n)));
+  return snap.docs.map((d) => ({ uid: d.id, name: String(d.data().name || ''), score: +d.data().score || 0, heat: +d.data().heat || 0 }));
+}
+async function gbRank(board, score) {
+  const snap = await getCountFromServer(query(lbScores(board), where('score', '>', score)));
+  return snap.data().count + 1;
+}
+async function gbAbove(board, score) {
+  const snap = await getDocs(query(lbScores(board), where('score', '>', score), orderBy('score', 'asc'), limit(1)));
+  const d = snap.docs[0];
+  return d ? { uid: d.id, name: String(d.data().name || ''), score: +d.data().score || 0 } : null;
+}
+window.GlobalBoard = {
+  submit: (board, name, score, heat) => withTimeout(gbSubmit(board, name, score, heat), 9000),
+  top: (board, n) => withTimeout(gbTop(board, n), 7000),
+  rank: (board, score) => withTimeout(gbRank(board, score), 7000),
+  above: (board, score) => withTimeout(gbAbove(board, score), 7000),
+};
+
 window.DailySetCloud = {
   submit: (day, name, total, runs) => withTimeout(submit(day, name, total, runs), 9000),
   top: (day, n) => withTimeout(top(day, n), 7000),

@@ -31,7 +31,7 @@ let state='menu';
 const GAME_STATES = {play:1, pause:1, over:1, revive:1, story:1};
 // Menü ailesindeki tüm ekranlar: gerçek oyun burada değil ama oyuncu küresi
 // hâlâ yörüngede yavaşça dönüyor olmalı — "canlı menü" hissi için.
-const MENU_STATES = {menu:1, mode:1, shop:1, settings:1, stats:1, battlepass:1, upgrades:1, howto:1, language:1, loginstreak:1, dset:1};
+const MENU_STATES = {menu:1, mode:1, shop:1, settings:1, stats:1, battlepass:1, upgrades:1, howto:1, language:1, loginstreak:1, dset:1, ranking:1};
 let mode='classic', diffKey='normal';
 let player, items, particles, score, combo, hp, maxHp, level, elapsed, spawnCooldown, shake, flash;
 const NOTE_RAIN_SCORE = 190;   // yağmurun tamamı toplanırsa ~200 puan (küsuratla)
