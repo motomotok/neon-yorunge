@@ -564,7 +564,9 @@ function drawItem(x,y,type,sc,t,it){
     // Nota görseli; Subway Surfers coin'leri gibi hafif aşağı-yukarı salınır
     // (it yoksa — 3D doku üretimi — salınım 3D tarafında yapılır).
     const bob = it ? Math.sin(t*3.2 + it.ang*3)*R*0.3 : 0;
+    drawCollectGlow(x, y+bob, R*2.0, it ? 0.8+Math.sin(t*3+it.ang*5)*0.2 : 1);
     if(imgReady(ITEM_IMG.note)){ const s=R*1.45; ctx.drawImage(ITEM_IMG.note, x-s, y-s+bob, s*2, s*2); }
+    if(it) drawTwinkle(x+R*0.95, y-R*1.05+bob, R*0.5, t*2.6+it.ang*7);
     else drawNoteShape(x,y+bob,R,col,false,0);
     if(cfg.colorblind){ ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(x,y,R*1.15,0,7); ctx.stroke(); }
   } else if(type==='diamond'){
@@ -592,6 +594,8 @@ function drawItem(x,y,type,sc,t,it){
   } else if(type==='coin'){
     // Para birimi (Nota) jetonu — altın jeton görseli, madeni para gibi kendi
     // ekseninde döner (yatay ölçek cos ile daralıp genişler).
+    drawCollectGlow(x, y, R*1.9, it ? 0.8+Math.sin(t*3+it.ang*5)*0.2 : 1);
+    if(it) drawTwinkle(x+R*0.85, y-R*0.85, R*0.45, t*2.3+it.ang*9);
     if(imgReady(ITEM_IMG.coin)){
       const flip = it ? Math.cos(t*1.6 + it.ang*2) : 1, fx = 0.35 + 0.65*Math.abs(flip), s=R*1.15;
       ctx.save(); ctx.translate(x,y); ctx.scale(fx,1);
@@ -666,6 +670,30 @@ const HAZARD_COLOR = {
   hazardTwin:'#b04bff', hazardTwinDecoy:'#b04bff', hazardPulse:'#ff3b3b', hazardCreep:'#ff4fd8',
 };
 const POWER_BUBBLE = '#7fe8ff', RISK_COL = '#c46bff';
+// Toplanabilir dil: nota ve nota jetonu arkasında küçük, yumuşak, sıcak altın
+// parıltı (bir kez çizilip önbelleğe alınır) + ara sıra yanıp sönen minik
+// pırıltı. Bilerek ölçülü: oyunu ışıl ışıl yapmadan "bu alınır" desin.
+let _glowSpr=null;
+function drawCollectGlow(x,y,r,a){
+  if(!_glowSpr){
+    const c=document.createElement('canvas'); c.width=c.height=128; const g=c.getContext('2d');
+    const gr=g.createRadialGradient(64,64,0,64,64,64);
+    gr.addColorStop(0,'rgba(255,214,120,.55)'); gr.addColorStop(0.45,'rgba(255,190,90,.22)'); gr.addColorStop(1,'rgba(255,170,60,0)');
+    g.fillStyle=gr; g.fillRect(0,0,128,128); _glowSpr=c;
+  }
+  const pa=ctx.globalAlpha; ctx.globalAlpha=pa*a;
+  ctx.drawImage(_glowSpr, x-r, y-r, r*2, r*2);
+  ctx.globalAlpha=pa;
+}
+// Dört kollu pırıltı; faz döngüsünün yalnız kısa bir anında görünür.
+function drawTwinkle(x,y,sz,ph){
+  const tw=Math.pow(Math.max(0, Math.sin(ph)), 6); if(tw<0.04) return;
+  const s=sz*(0.4+0.6*tw);
+  ctx.save(); ctx.translate(x,y); ctx.globalAlpha*=tw; ctx.fillStyle='#fffbe8';
+  ctx.beginPath();
+  for(let i=0;i<8;i++){ const a=i*Math.PI/4, rr=(i%2?0.16:1)*s; i?ctx.lineTo(Math.cos(a)*rr,Math.sin(a)*rr):ctx.moveTo(Math.cos(a)*rr,Math.sin(a)*rr); }
+  ctx.closePath(); ctx.fill(); ctx.restore();
+}
 // Camsı baloncuk: güç ailesinin ortak çerçevesi (risk balonu da aynı formda, mor).
 function drawBubble(x,y,r,col){
   const g=ctx.createRadialGradient(x-r*0.35,y-r*0.4,r*0.05,x,y,r);
@@ -716,15 +744,15 @@ function hazardSprite(type){
   const col = HAZARD_COLOR[type] || '#ff3b3b';
   const S=256, c=document.createElement('canvas'); c.width=c.height=S;
   const g=c.getContext('2d'), h=S/2, m=S*HAZ_SPRITE_PAD;
-  let gr=g.createRadialGradient(h,h,0,h,h,h*0.86);
-  gr.addColorStop(0,'rgba(6,3,10,.9)'); gr.addColorStop(0.68,'rgba(6,3,10,.75)'); gr.addColorStop(1,'rgba(6,3,10,0)');
+  // Işık "ödül" dilidir (notalar/jetonlar parlar); cızırtı PARLAMAZ: arkasında
+  // koyu, sert kenarlı bir delik, çizgilerinin çevresinde koyu kontur — her
+  // zeminde seçilir ama toplanabilir bir şey gibi görünmez.
+  let gr=g.createRadialGradient(h,h,0,h,h,h*0.9);
+  gr.addColorStop(0,'rgba(6,3,10,.92)'); gr.addColorStop(0.8,'rgba(6,3,10,.82)'); gr.addColorStop(1,'rgba(6,3,10,0)');
   g.fillStyle=gr; g.beginPath(); g.arc(h,h,h,0,7); g.fill();
-  gr=g.createRadialGradient(h,h,h*0.5,h,h,h);
-  gr.addColorStop(0,hexA(col,0)); gr.addColorStop(0.74,hexA(col,.42)); gr.addColorStop(1,hexA(col,0));
-  g.fillStyle=gr; g.beginPath(); g.arc(h,h,h,0,7); g.fill();
-  g.shadowColor=col; g.shadowBlur=S*0.045;
+  g.shadowColor='rgba(0,0,0,.95)'; g.shadowBlur=S*0.03;
   g.drawImage(img, m, m, S-2*m, S-2*m);
-  g.shadowBlur=0; g.globalCompositeOperation='lighter'; g.globalAlpha=0.5;
+  g.shadowBlur=0; g.globalCompositeOperation='lighter'; g.globalAlpha=0.35;
   g.drawImage(img, m, m, S-2*m, S-2*m);
   _hazSprite[key]=c; return c;
 }

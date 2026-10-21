@@ -342,6 +342,14 @@ export class Entities {
       v.body.scale.setScalar(v.baseScale);
       root.add(v.body);
     }
+    // Nota ve jeton: köşede ara sıra yanıp sönen tek minik pırıltı (2D ile aynı dil).
+    if(type==='star' || type==='coin'){
+      const s = new THREE.Sprite(new THREE.SpriteMaterial({map:sparkTexture(), transparent:true, opacity:0,
+        depthWrite:false, depthTest:false, blending:THREE.AdditiveBlending}));
+      s.position.set(type==='star' ? 0.95 : 0.85, HOVER + (type==='star' ? 1.05 : 0.85), 0.01);
+      s.userData.phase = Math.random()*6.28; s.userData.rare = true;
+      root.add(s); v.sparks = [s];
+    }
     // Sol anahtarı: çevresinde sabit noktalarda belirip sönen küçük yıldızlar.
     if(type==='diamond'){
       v.sparks = CLEF_SPARKS.map(sp=>{
@@ -526,7 +534,8 @@ export class Entities {
     }
     v.shadow.material.opacity = 0.5;
     if(v.sparks) for(const s of v.sparks){
-      const tw = Math.max(0, Math.sin(t*2.2 + s.userData.phase));
+      let tw = Math.max(0, Math.sin(t*2.2 + s.userData.phase));
+      if(s.userData.rare) tw = Math.pow(tw, 6)*0.9;
       s.material.opacity = tw; s.scale.setScalar(0.35 + tw*0.55); s.material.rotation = t*2 + s.userData.phase;
     }
     // Boss dalgasının öğeleri: altlarında dönen kesikli altın halka.
