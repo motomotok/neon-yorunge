@@ -240,8 +240,8 @@ function gameOver(reason){
   if(ranked) stats.best=Math.max(stats.best, runScore);
   stats.stars += session.stars; stats.games++; if(ranked) stats.maxLevel=Math.max(stats.maxLevel, level);
   if(ranked) addToLeaderboard(runScore);
-  // Global Sıralama: yalnız Klasik (bkz. ranking.js).
-  if(mode==='classic' && !tutorialActive && typeof rkOnRun==='function') rkOnRun(runScore, session.heatLevel||0);
+  // Global Sıralama: Klasik + Günün Seti (bkz. ranking.js).
+  if((mode==='classic' || mode==='daily') && !tutorialActive && typeof rkOnRun==='function') rkOnRun(runScore, session.heatLevel||0);
   let dsetRes=null;
   if(mode==='daily'){
     stats.dailyDate=todayStr(); stats.dailyScore=runScore; stats.dailyCount=(stats.dailyCount||0)+1;

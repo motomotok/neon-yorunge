@@ -1494,7 +1494,7 @@ body.introOn #levelFlash{padding-top:calc(env(safe-area-inset-top) + 252px);}
 .drBar i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#ff9a3c,#ffd36b);transition:width .9s cubic-bezier(.2,.8,.2,1);}
 .drShield{color:#7fe8ff;opacity:.9!important;} .drShield .gicon{width:12px;height:12px;vertical-align:-2px;}
 .duelHist{display:flex;flex-direction:column;gap:5px;width:100%;max-width:420px;margin:0 auto;}
-.dhRow{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:8px;padding:6px 10px;border-radius:10px;
+.dhRow{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto auto;align-items:center;gap:8px;padding:6px 10px;border-radius:10px;
   background:rgba(255,255,255,.04);border-left:3px solid #ff7b7b;font-size:12px;}
 .dhRow.win{border-left-color:#7dffb0;}
 .dhRes{font-family:var(--font-display);font-size:11px;width:18px;text-align:center;}
@@ -1502,6 +1502,9 @@ body.introOn #levelFlash{padding-top:calc(env(safe-area-inset-top) + 252px);}
 .dhOpp{display:flex;flex-direction:column;min-width:0;line-height:1.2;}
 .dhOpp b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;} .dhOpp small{font-size:10px;opacity:.6;}
 .dhSc{font-size:11px;opacity:.7;white-space:nowrap;}
+.dhWhy{font-size:10px;font-weight:700;white-space:nowrap;opacity:.85;}
+.dhRow.win .dhWhy{color:#a8ffd0;} .dhRow.lose .dhWhy{color:#ffb0b0;}
+.doReason.win{color:#a8ffd0;opacity:1;font-weight:700;} .doReason.lose{color:#ffb0b0;opacity:1;font-weight:700;}
 .dhLp{font-family:var(--font-display);font-size:12px;white-space:nowrap;min-width:46px;text-align:right;}
 .dhRow.win .dhLp{color:#7dffb0;} .dhRow.lose .dhLp{color:#ff7b7b;}
 .dhEmpty{text-align:center;font-size:12px;opacity:.6;padding:6px 0;}

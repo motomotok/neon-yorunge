@@ -18,6 +18,7 @@
 // belirler; görünür rütbe Bronz IV → … → Elmas I → Usta → Şampiyon. 100 LP'de
 // terfi, 0 LP'de kayıpta küme düşme; yeni kademeye çıkınca 3 maçlık koruma.
 const DUEL_SECS = 90, DUEL_HP = 5, DUEL_SLOTS = 3, DUEL_SAMPLE = 30;   // 30 kare = 0.5 sn
+const DUEL_ATK_HP_CHANCE = 0.4;   // isabetli saldırının rakibe can kaybettirme olasılığı
 const DUEL_PERKS = [
   {id:'dpStriker', icon:'lightning'},   // saldırı balonu daha sık
   {id:'dpGuard',   icon:'shield'},      // maça kalkanla başla
@@ -164,7 +165,8 @@ function renderDuelLobby(){
   const h=document.getElementById('duelHist');
   h.innerHTML = d.hist.length ? d.hist.map(x=>
     `<div class="dhRow ${x.w?'win':'lose'}"><span class="dhRes">${t(x.w?'duel_hist_w':'duel_hist_l')}</span>
-      <span class="dhOpp"><b>${dsetEsc(x.n)}</b><small>${x.or||''}${x.ff?' · '+t('duel_hist_ff'):''}</small></span>
+      <span class="dhOpp"><b>${dsetEsc(x.n)}</b><small>${x.or||''}</small></span>
+      <span class="dhWhy">${(x.why||x.ff)?t('duel_hwhy_'+(x.why||'ff')):''}</span>
       <span class="dhSc">${(+x.ms||0).toFixed(0)} – ${(+x.os||0).toFixed(0)}</span>
       <span class="dhLp">${x.dl>=0?'+':''}${x.dl} LP</span></div>`).join('')
     : `<div class="dhEmpty">${t('duel_hist_empty')}</div>`;
@@ -244,9 +246,9 @@ async function duelStartSearch(){
   duelMatch = {seed: opp.seed, opp, perks, ranked:true};
   duelShowVs();
 }
-function duelPushHist(dd, m, win, delta, ms, os, ff){
+function duelPushHist(dd, m, win, delta, ms, os, why){
   const o=m.opp;
-  dd.hist.unshift({w:win?1:0, dl:delta, n:safeOtherName(o.name,o.uid), or:rankName(o.d|0, o.lp|0), ms:Math.round(ms), os:Math.round(os), ff:ff?1:0});
+  dd.hist.unshift({w:win?1:0, dl:delta, n:safeOtherName(o.name,o.uid), or:rankName(o.d|0, o.lp|0), ms:Math.round(ms), os:Math.round(os), why});
   dd.hist=dd.hist.slice(0,10);
 }
 // Maç ortasında çıkış (duraklat → menü): hükmen yenilgi (−5 LP ceza) —
@@ -260,7 +262,7 @@ function duelAbort(){
   if(m && !m.done && elapsed>60){
     m.done=true;
     const d=duelState(), res=duelApplyResult(d, false, m.opp.mmr||1000, true);
-    duelPushHist(d, m, false, res.delta, score, duelOppScore(elapsed/60), true);
+    duelPushHist(d, m, false, res.delta, score, duelOppScore(elapsed/60), 'ff');
     saveStats();
     queueToast(t('duel_forfeit')+' ('+res.delta+' LP)');
   }
@@ -279,8 +281,8 @@ function duelMakeBot(b, mmrOverride){
     if(died==null && i>0){
       const notes = r() < (0.55+skill*0.4) ? 1 + (r()<skill*0.6?1:0) : 0;
       for(let k=0;k<notes;k++){ combo++; score += Math.min(combo, 40); }
-      // Darbe: acemi 90 sn'de ~3 kez (bazen düşer), usta nadiren.
-      if(r() < (0.017-skill*0.014)){ hp -= r()<0.8 ? 1 : 2; combo=1; if(hp<=0){ hp=0; died=tt; } }
+      // Darbe: acemi 90 sn'de ~3-4 kez (~%30 elenir), usta nadiren.
+      if(r() < (0.02-skill*0.016)){ hp -= r()<0.8 ? 1 : 2; combo=1; if(hp<=0){ hp=0; died=tt; } }
       if(tt>=nextAtk){ if(r() < 0.35+skill*0.55) attacks.push(+tt.toFixed(1)); nextAtk = tt + 12 - skill*4 + r()*4; }
     }
     samples.push([+tt.toFixed(1), Math.round(score*100)/100, hp, 0]);
@@ -327,7 +329,7 @@ function duelSetup(){
   session.mirrorLeft = duelHas('dpMirror') ? 1 : 0;
   duelOrbCd = 360;
   _duelRec = {samples:[], attacks:[], next:0, died:null, sent:0, blocked:0};
-  _duelOpp = {i:0, atk:0, penalty:0, hits:0, score:0, hp:DUEL_HP, shield:0, ko:null, popT:0, popTxt:''};
+  _duelOpp = {i:0, atk:0, penalty:0, hits:0, hpLoss:0, score:0, hp:DUEL_HP, shield:0, ko:null, koT:0, popT:0, popTxt:''};
   const o=m.opp;
   document.getElementById('duelOppName').textContent = safeOtherName(o.name, o.uid);
   document.getElementById('duelOppRec').innerHTML = duelRecordHtml(o.theme, o.skin, 'spin rev');
@@ -350,7 +352,10 @@ function duelSendAttack(reflected){
   const cur = Math.max(0, (s?s[1]:0) - op.penalty);
   const dmg = Math.round((cur*0.06 + 25)*100)/100;
   op.penalty += dmg; op.hits++;
-  op.popTxt = (reflected ? '↩ ' : '')+'−'+Math.round(dmg); op.popT=70;
+  // İsabet %40 ihtimalle rakibe 1 can da kaybettirir (saldırı altında hata yapar).
+  const hpHit = Math.random() < DUEL_ATK_HP_CHANCE;
+  if(hpHit) op.hpLoss++;
+  op.popTxt = (reflected ? '↩ ' : '')+'−'+Math.round(dmg)+(hpHit?' ♥−1':''); op.popT=70;
   showFlash(t(reflected?'duel_reflected':'duel_attack_out'), 40, null, 'melody');
 }
 // Rakipten gelen saldırı: kısa Geri Sar / Karartma ya da cızırtı sürüsü.
@@ -380,6 +385,7 @@ function duelOppSample(tt){
   let i=Math.min(sm.length-1, Math.max(0, Math.floor(tt*2)));
   return sm[i];
 }
+function duelOppHp(tt){ const s=duelOppSample(tt); return (s?s[2]:DUEL_HP) - (_duelOpp?_duelOpp.hpLoss:0); }
 function duelOppScore(tt){ const s=duelOppSample(tt); return Math.max(0, (s?s[1]:0) - _duelOpp.penalty); }
 function duelTick(dt){
   if(duelOrbCd>0) duelOrbCd-=dt;
@@ -392,8 +398,13 @@ function duelTick(dt){
     _duelRec.samples.push([+tt.toFixed(1), Math.round(score*100)/100, hp, player.shieldHits>0?1:0]);
   }
   if(op.popT>0) op.popT-=dt;
-  // Rakip nakavt oldu mu?
-  if(o.died!=null && tt>=o.died && op.ko==null){ op.ko=tt; duelEnd('oppko'); }
+  // Rakip elendi mi? (kendi kaydında canı bitti ya da saldırılarımız canını bitirdi)
+  if(op.ko==null && ((o.died!=null && tt>=o.died) || duelOppHp(tt)<=0)){
+    op.ko=tt; op.koT=75;
+    showFlash(t('duel_opp_ko_flash'), 75, null, 'melody');
+    burst(CX, CY, '#7dffb0', 30, 6); beep(660,0.12,'triangle',0.12); beep(990,0.18,'sine',0.1);
+  }
+  if(op.ko!=null && op.koT>0){ op.koT-=dt; if(op.koT<=0) duelEnd('oppko'); }
 }
 let _duelHudT=0;
 function duelHudSync(){
@@ -402,7 +413,7 @@ function duelHudSync(){
   const sc=duelOppScore(tt);
   const el=document.getElementById('duelOppScore'), txt=sc.toFixed(2);
   if(el.textContent!==txt) el.textContent=txt;
-  const hpv = s ? s[2] : DUEL_HP;
+  const hpv = op.ko!=null ? 0 : duelOppHp(tt);
   const hb=document.getElementById('duelOppHp'); const w=Math.max(0,hpv)/DUEL_HP;
   if(hb.dataset.w!==String(w)){ hb.dataset.w=String(w); hb.style.transform='scaleX('+w+')'; }
   const pop=document.getElementById('duelOppPop');
@@ -428,12 +439,14 @@ function duelGameOver(reason){
   let win;
   if(iDied && !oppDied) win=false;
   else if(oppDied && !iDied) win=true;
+  else if(iDied && oppDied) win = _duelOpp.ko <= tt;   // önce elenen kaybeder
   else win = myScore >= oppScore;
-  if(!iDied && !oppDied && myScore===oppScore) win=true;
+  // Sonucun nedeni (sonuç ekranı + maç geçmişi).
+  const why = (oppDied && win) ? 'oppko' : (iDied && !win) ? (myScore>oppScore ? 'kohi' : 'ko') : (win ? 'timew' : 'timel');
   // Rütbe: MMR + LP
   const d=duelState(), mmrBefore=d.mmr, rankBefore={d:d.d, lp:d.lp};
   const res=duelApplyResult(d, win, o.mmr||1000, false), delta=res.delta;
-  duelPushHist(d, m, win, delta, myScore, oppScore, false);
+  duelPushHist(d, m, win, delta, myScore, oppScore, why);
   // Küçük nota ödülü (maç başına), kaydı yükle.
   const reward = win ? 40 : 12;
   addNotes(reward);
@@ -457,7 +470,7 @@ function duelGameOver(reason){
   const fromW = res.ev ? (delta>0?0:100) : Math.max(0,Math.min(100,rankBefore.lp));
   document.getElementById('duelOverBody').innerHTML =
     `<div class="doBanner ${win?'win':'lose'}">${t(win?'duel_win':'duel_lose')}</div>
-     <div class="doReason">${t('duel_reason_'+(oppDied&&!iDied?'oppko':iDied&&!oppDied?'ko':'time'))}</div>
+     <div class="doReason ${win?'win':'lose'}">${t('duel_why_'+why)}</div>
      <div class="doScores"><div class="me"><small>${dsetEsc(playerName())}</small><b>${myScore.toFixed(2)}</b></div>
        <div class="vs">VS</div><div class="opp"><small>${dsetEsc(safeOtherName(o.name,o.uid))}</small><b>${oppScore.toFixed(2)}</b></div></div>
      <div class="doStats">${t('duel_attacks_line',{sent:_duelRec.sent, got:_duelOpp.atk})}</div>
