@@ -1,4 +1,13 @@
 {
-  "indexes": [],
+  "indexes": [
+    {
+      "collectionGroup": "duels",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "b", "order": "ASCENDING" },
+        { "fieldPath": "t", "order": "DESCENDING" }
+      ]
+    }
+  ],
   "fieldOverrides": []
 }

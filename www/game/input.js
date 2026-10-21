@@ -59,8 +59,8 @@ document.getElementById('dsetOverBtn').addEventListener('click', e=>{ e.stopProp
 document.getElementById('dsNickBtn').addEventListener('click', e=>{ e.stopPropagation(); openNameDialog(()=>{ if(state==='dset') renderDset(); }); beep(600,0.05,'sine',0.08); });
 document.getElementById('rkNameBtn').addEventListener('click', e=>{ e.stopPropagation(); openNameDialog(()=>{ if(state==='ranking') renderRanking(RK.cache[rkBoard(RK.tab)]||null); }); beep(600,0.05,'sine',0.08); });
 document.querySelectorAll('#rkTabs .stab').forEach(el=>el.addEventListener('click', e=>{ e.stopPropagation(); rkSetTab(el.dataset.rktab); beep(500,0.05,'sine',0.08); }));
-document.getElementById('duelFindBtn').addEventListener('click', e=>{ e.stopPropagation(); duelStartSearch({ranked:true}); });
-document.getElementById('duelAgainBtn').addEventListener('click', e=>{ e.stopPropagation(); const r=duelMatch ? duelMatch.ranked : true, bot=(duelMatch && !duelMatch.ranked && duelMatch.opp.kind==='bot') ? DUEL_BOTS.find(b=>'bot_'+b.id===duelMatch.opp.uid) : null; goDuel(); duelStartSearch(bot ? {bot, ranked:false} : {ranked:r}); });
+document.getElementById('duelFindBtn').addEventListener('click', e=>{ e.stopPropagation(); duelStartSearch(); });
+document.getElementById('duelAgainBtn').addEventListener('click', e=>{ e.stopPropagation(); goDuel(); duelStartSearch(); });
 document.getElementById('duelLobbyBtn').addEventListener('click', e=>{ e.stopPropagation(); goDuel(); });
 document.getElementById('nameSaveBtn').addEventListener('click', e=>{ e.stopPropagation(); saveNameDialog(); });
 document.getElementById('nameCancelBtn').addEventListener('click', e=>{ e.stopPropagation(); closeNameDialog(); const f=_nameDone; _nameDone=null; if(f) f(); });

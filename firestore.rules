@@ -37,20 +37,26 @@ service cloud.firestore {
         && (resource == null || request.resource.data.score >= resource.data.score);
     }
 
-    // Düello kayıtları: herkes okur; oyuncu yalnız kendi adına, yalnız yeni
-    // kayıt ekler (düzenleme/silme yok). Boyutlar sınırlı.
-    match /duelGhosts/{id} {
+    // Düello: her oyuncunun en son maçı, belge kimliği = uid (üzerine yazılır).
+    // Herkes okur (rakip olarak oynatılır); yalnız sahibi yazar. Boyutlar sınırlı.
+    match /duels/{uid} {
       allow read: if true;
-      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid
-        && request.resource.data.keys().hasOnly(['v', 'uid', 'seed', 'name', 'rating', 'theme', 'skin', 'perks', 's', 'a', 'died', 'score', 'ts'])
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['v', 'seed', 'name', 'mmr', 'b', 'd', 'lp', 'theme', 'skin', 'perks', 's', 'a', 'died', 'score', 't'])
         && nameOk(request.resource.data.name)
         && request.resource.data.seed is int
-        && request.resource.data.rating is int && request.resource.data.rating >= 0 && request.resource.data.rating <= 4000
+        && request.resource.data.mmr is int && request.resource.data.mmr >= 0 && request.resource.data.mmr <= 4000
+        && request.resource.data.b is int && request.resource.data.b == math.floor(request.resource.data.mmr / 100)
+        && request.resource.data.d is int && request.resource.data.d >= 0 && request.resource.data.d <= 20
+        && request.resource.data.lp is int && request.resource.data.lp >= 0 && request.resource.data.lp <= 5000
+        && request.resource.data.theme is string && request.resource.data.theme.size() <= 24
+        && request.resource.data.skin is string && request.resource.data.skin.size() <= 24
         && request.resource.data.s is list && request.resource.data.s.size() <= 820
         && request.resource.data.a is list && request.resource.data.a.size() <= 40
         && request.resource.data.perks is list && request.resource.data.perks.size() <= 3
-        && request.resource.data.score is number && request.resource.data.score <= 2000000
-        && request.resource.data.ts == request.time;
+        && request.resource.data.score is number && request.resource.data.score >= 0 && request.resource.data.score <= 2000000
+        && request.resource.data.t == request.time;
+      allow delete: if request.auth != null && request.auth.uid == uid;
     }
 
     // Yalnız dün/bugün/yarın (saat dilimi payıyla) yazılabilir: geçmiş ya da

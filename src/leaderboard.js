@@ -90,32 +90,40 @@ window.GlobalBoard = {
   above: (board, score) => withTimeout(gbAbove(board, score), 7000),
 };
 
-// ---- Düello kayıtları ("hayalet" maçlar, bkz. www/game/duel.js) ----
-// Firestore iç içe dizi saklamadığı için örnekler düz diziye açılır:
-// s = [t, puan, can, kalkan, t, puan, ...].
-const ghosts = () => collection(db(), 'duelGhosts');
+// ---- Düello kayıtları (bkz. www/game/duel.js) ----
+// duels/{uid}: her oyuncunun EN SON tamamladığı düello maçı (tek belge —
+// her yeni maç bir öncekinin üzerine yazılır). Böylece depo oyuncu sayısıyla
+// sınırlı kalır (~7 KB × oyuncu), silme/temizlik gerekmez, ve havuz kendiliğinden
+// hep taze olur. b = MMR kovası (mmr/100); eşleşme kendi kovası ±1'deki EN YENİ
+// 25 kaydı okur (dizin: b ASC, t DESC). Firestore iç içe dizi saklamadığı için
+// örnekler düz diziye açılır: s = [t, puan, can, kalkan, t, puan, ...].
+const duels = () => collection(db(), 'duels');
+const duelBucket = (mmr) => Math.max(0, Math.min(40, Math.floor(mmr / 100)));
 async function duelUpload(g) {
   const u = await ensureUser();
   const s = []; (g.samples || []).forEach((x) => s.push(+x[0], +x[1], +x[2], +x[3]));
-  await setDoc(doc(ghosts()), {
-    v: 1, uid: u.uid, seed: g.seed | 0, name: g.name, rating: Math.round(g.rating), theme: String(g.theme || ''), skin: String(g.skin || ''),
-    perks: (g.perks || []).slice(0, 3), s, a: (g.attacks || []).slice(0, 40), died: g.died == null ? null : +g.died, score: +g.score || 0,
-    ts: serverTimestamp(),
+  await setDoc(doc(duels(), u.uid), {
+    v: 2, seed: g.seed | 0, name: g.name, mmr: Math.round(g.mmr), b: duelBucket(g.mmr), d: g.d | 0, lp: g.lp | 0,
+    theme: String(g.theme || '').slice(0, 24), skin: String(g.skin || '').slice(0, 24),
+    perks: (g.perks || []).slice(0, 3), s, a: (g.attacks || []).slice(0, 40), died: g.died == null ? null : +g.died,
+    score: +g.score || 0, t: serverTimestamp(),
   });
   return u.uid;
 }
-async function duelFind(rating, span) {
-  const snap = await getDocs(query(ghosts(), where('rating', '>=', rating - span), where('rating', '<=', rating + span), limit(25)));
+async function duelFind(mmr) {
+  const b = duelBucket(mmr);
+  const snap = await getDocs(query(duels(), where('b', 'in', [b - 1, b, b + 1]), orderBy('t', 'desc'), limit(25)));
   return snap.docs.map((d) => {
     const x = d.data(), samples = [];
     for (let i = 0; i + 3 < (x.s || []).length; i += 4) samples.push([x.s[i], x.s[i + 1], x.s[i + 2], x.s[i + 3]]);
-    return { uid: x.uid, name: String(x.name || ''), rating: +x.rating || 1000, seed: x.seed | 0, samples, attacks: x.a || [],
-      died: x.died == null ? null : +x.died, perks: x.perks || [], theme: x.theme, skin: x.skin };
+    return { uid: d.id, name: String(x.name || ''), mmr: +x.mmr || 1000, d: x.d | 0, lp: x.lp | 0, seed: x.seed | 0, samples,
+      attacks: x.a || [], died: x.died == null ? null : +x.died, perks: x.perks || [], theme: x.theme, skin: x.skin,
+      at: x.t && x.t.toMillis ? x.t.toMillis() : 0 };
   }).filter((g) => g.samples.length > 10);
 }
 window.DuelCloud = {
   upload: (g) => withTimeout(duelUpload(g), 9000),
-  find: (rating, span) => withTimeout(duelFind(rating, span), 7000),
+  find: (mmr) => withTimeout(duelFind(mmr), 7000),
 };
 
 window.DailySetCloud = {

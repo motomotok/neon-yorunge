@@ -1,17 +1,22 @@
-// DÜELLO — 90 saniyelik 1'e 1 maç, "hayalet" (asenkron) rakiple.
+// DÜELLO — 90 saniyelik 1'e 1 dereceli maç.
 //
-// Her oyuncu kendi telefonunda, AYNI tohumlu haritada oynar. Rakip, gerçek bir
-// oyuncunun daha önce oynadığı düello maçının kaydıdır (Firestore duelGhosts);
-// oyuncu yoksa ya da antrenmanda, seviyesine göre üretilmiş bir bottur. Kayıt
-// maç boyunca oynatılır: rakibin puanı/canı canlı akar, rakibin gönderdiği
-// saldırılar tam o anlarda bize gelir. Bizim gönderdiğimiz saldırılar kayda
-// dokunamayacağı için rakibin puanından düşer (kalkanı varsa engellenir).
-// Bu sayede sunucu kiralamadan, oyuncu azken bile her an rakip bulunur.
+// Her oyuncu kendi telefonunda, rakibiyle AYNI tohumlu haritada oynar. Rakip,
+// başka bir oyuncunun en son tamamladığı düello maçıdır (Firestore duels/{uid},
+// oyuncu başına tek belge, her maçta üzerine yazılır); maç boyunca oynatılır:
+// rakibin puanı/canı canlı akar, rakibin saldırıları tam o anlarda bize gelir,
+// bizim saldırılarımız rakibin puanından düşer (kalkanı varsa engellenir).
+// Havuz henüz küçükken her kademede 5 kişilik başlangıç kadrosu (DUEL_SEEDS)
+// boşluğu doldurur; gerçek oyuncu kaydı geldikçe kadro geri çekilir.
+// Sunucu kiralamadan, oyuncu azken bile her an rakip bulunur.
 //
 // Adalet: kalıcı yükseltmeler, Çekirdek Ağacı, Süpernova yetenekleri, Isı ve
 // takviyeler KAPALI (metaOff); herkes aynı canla başlar. Fark, maçtan önce
 // seçilen 3 düello yeteneğiyle (DUEL_PERKS — herkese açık) gelir; "Maç Ara"ya
-// basınca yuvalar kilitlenir. Rütbe: Elo (gizli) → görünür kademe.
+// basınca yuvalar kilitlenir.
+//
+// Rütbe (LoL tarzı): gizli MMR (Elo) eşleşmeyi ve kazanılan/kaybedilen LP'yi
+// belirler; görünür rütbe Bronz IV → … → Elmas I → Usta → Şampiyon. 100 LP'de
+// terfi, 0 LP'de kayıpta küme düşme; yeni kademeye çıkınca 3 maçlık koruma.
 const DUEL_SECS = 90, DUEL_HP = 5, DUEL_SLOTS = 3, DUEL_SAMPLE = 30;   // 30 kare = 0.5 sn
 const DUEL_PERKS = [
   {id:'dpStriker', icon:'lightning'},   // saldırı balonu daha sık
@@ -22,47 +27,113 @@ const DUEL_PERKS = [
   {id:'dpMagnet',  icon:'magnet'},      // komşu halkadaki notayı da al
   {id:'dpFocus',   icon:'target'},      // gelen saldırılar %40 kısa
 ];
-// Müzik sektörünün plak sertifikaları: Demo → Single → Altın → Platin → Elmas → Efsane.
+// Kademeler: ilk 5'i 4 kümeli (IV → I), Usta ve Şampiyon tek basamak.
+// d = 0..19 küme sırası (Bronz IV = 0, Elmas I = 19), 20 = Usta (Şampiyon:
+// Usta'da CHAMP_LP ve üstü).
 const DUEL_TIERS = [
-  {id:'demo',     min:0,    col:'#9aa6b5'},
-  {id:'single',   min:1100, col:'#7fe8ff'},
-  {id:'gold',     min:1300, col:'#ffc94a'},
-  {id:'platinum', min:1500, col:'#dfe8f5'},
-  {id:'diamond',  min:1700, col:'#9fe6ff'},
-  {id:'legend',   min:1900, col:'#ff7ae0'},
+  {id:'bronze',   col:'#d9925a'},
+  {id:'silver',   col:'#cfd8e3'},
+  {id:'gold',     col:'#ffc94a'},
+  {id:'platinum', col:'#6fe8d2'},
+  {id:'diamond',  col:'#8fc4ff'},
+  {id:'master',   col:'#c46bff'},
+  {id:'champion', col:'#ff5f8f'},
 ];
-// Antrenman rakipleri (oyuncu yokken de oynanabilsin; "Maç Ara" da gerçek
-// kayıt bulamazsa en yakın seviyedekini getirir).
-const DUEL_BOTS = [
-  {id:'b1', name:'Acemi Kaset',   rating:900,  skill:0.15},
-  {id:'b2', name:'Demo Deniz',    rating:1080, skill:0.32},
-  {id:'b3', name:'Single Selin',  rating:1280, skill:0.5},
-  {id:'b4', name:'Altın Kerem',   rating:1480, skill:0.68},
-  {id:'b5', name:'Platin Ayla',   rating:1700, skill:0.85},
-];
+const DUEL_TOP = 20, CHAMP_LP = 400, ROMAN = ['','I','II','III','IV'];
+const DUEL_BASE_MMR = 900, DUEL_STEP = 45;            // her küme ≈ 45 MMR
+function rankTier(d, lp){ return d>=DUEL_TOP ? DUEL_TIERS[lp>=CHAMP_LP?6:5] : DUEL_TIERS[Math.floor(d/4)]; }
+function rankDiv(d){ return d>=DUEL_TOP ? 0 : 4-(d%4); }
+function rankName(d, lp){ const dv=rankDiv(d); return t('duel_tier_'+rankTier(d,lp).id)+(dv?' '+ROMAN[dv]:''); }
+// Görünür rütbenin "olması gereken" MMR'si: MMR bundan yüksekse LP daha hızlı gelir.
+function rankMmr(d, lp){ return d>=DUEL_TOP ? DUEL_BASE_MMR+DUEL_TOP*DUEL_STEP+lp*0.5 : DUEL_BASE_MMR+d*DUEL_STEP+Math.min(lp,100)/100*DUEL_STEP; }
+function rankFromMmr(m){
+  const x=(m-DUEL_BASE_MMR)/DUEL_STEP;
+  if(x>=DUEL_TOP) return {d:DUEL_TOP, lp:Math.round((m-DUEL_BASE_MMR-DUEL_TOP*DUEL_STEP)*2)};
+  const d=Math.max(0, Math.floor(x));
+  return {d, lp:x<0?0:Math.round((x-d)*100)};
+}
+function rankBadgeHtml(d, lp, cls){
+  const tr=rankTier(d,lp), dv=rankDiv(d);
+  return `<div class="drBadge ${cls||''}" style="--tc:${tr.col}">${icon('trophy')}${dv?`<span class="drDiv">${ROMAN[dv]}</span>`:''}</div>`;
+}
+
+// Başlangıç kadrosu: kademe başına 5 oyuncu (Bronz → Elmas = 25). Maçları
+// MMR'lerine göre üretilir; havuzda yeterli gerçek oyuncu kaydı birikince
+// eşleşmeye çıkmazlar (duelFindOpp).
+const DUEL_SEED_NAMES = ['Kaan_07','melodi.exe','Bora','Zeynep','NoiseHunter',
+  'bass.boy','Elif K','Mert44','LunaBeat','Ozzy',
+  'Deniz_tr','PlakCı','Yusuf.99','RitimKızı','Can Bey',
+  'neon_ece','Tuna','SynthWave','Ayşe 23','KaraPlak',
+  'Emir-7','Lina','GrooveX','Selin.mp3','DJ Arda'];
+const DUEL_SEEDS = DUEL_SEED_NAMES.map((name,i)=>({id:'p'+(i+1), name, mmr: DUEL_BASE_MMR + Math.floor(i/5)*180 + 18 + (i%5)*36}));
+function duelSkillFor(mmr){ return Math.max(0.08, Math.min(0.97, (mmr-850)/1050)); }
 
 let duelMatch = null;      // {seed, opp, perks, ranked}
 let _duelSel = [];         // lobide seçili yetenekler
 function duelState(){
-  if(!stats.duel) stats.duel={rating:1000, wins:0, losses:0, streak:0, perks:['dpGuard','dpStriker','dpMelody']};
-  return stats.duel;
+  let d=stats.duel;
+  if(!d) d=stats.duel={mmr:1000, d:0, lp:0, games:0, wins:0, losses:0, streak:0, shield:0, hist:[], seen:[], perks:['dpGuard','dpStriker','dpMelody']};
+  if(d.mmr==null){   // 2.66-2.67 (Elo puanı) → yeni sistem
+    d.mmr = Math.round(d.rating||1000); const r=rankFromMmr(Math.min(d.mmr, 1300));
+    d.d=r.d; d.lp=0; d.games=(d.wins||0)+(d.losses||0); d.shield=0; d.hist=[]; d.seen=[]; delete d.rating;
+  }
+  if(!d.hist) d.hist=[]; if(!d.seen) d.seen=[];
+  return d;
 }
-function duelTier(r){ let t=DUEL_TIERS[0]; for(const x of DUEL_TIERS) if(r>=x.min) t=x; return t; }
-function duelTierName(r){ return t('duel_tier_'+duelTier(r).id); }
 function duelHas(id){ return !!(duelMatch && duelMatch.perks.includes(id)); }
+
+// Maç sonucu → MMR + LP. Dönüş: {delta, ev, before}.
+function duelApplyResult(dd, win, oppMmr, forfeit){
+  const before={d:dd.d, lp:dd.lp, mmr:dd.mmr};
+  const E = 1/(1+Math.pow(10,(oppMmr-dd.mmr)/400));
+  // MMR görünür rütbenin üstündeyse daha çok kazanır, daha az kaybeder (ve tersi).
+  const adj = Math.max(-8, Math.min(8, (dd.mmr - rankMmr(dd.d, dd.lp))/25));
+  let delta = win ? Math.max(10, Math.min(35, Math.round(40*(1-E) + adj)))
+                  : -Math.max(8, Math.min(30, Math.round(40*E - adj)));
+  if(forfeit) delta -= 5;
+  const K = (dd.games||0) < 15 ? 40 : 24;
+  dd.mmr = Math.max(300, Math.min(4000, Math.round(dd.mmr + K*((win?1:0)-E))));
+  dd.games=(dd.games||0)+1;
+  if(win){ dd.wins++; dd.streak=(dd.streak||0)+1; } else { dd.losses++; dd.streak=0; }
+  let ev=null;
+  dd.lp += delta;
+  if(dd.d<DUEL_TOP && dd.lp>=100){
+    dd.d++; dd.lp-=100;
+    if(dd.d%4===0){ ev='tierup'; dd.shield=3; } else ev='promo';
+  } else if(dd.d>=DUEL_TOP && before.lp<CHAMP_LP && dd.lp>=CHAMP_LP){ ev='tierup'; dd.shield=3; }
+  else if(dd.d>=DUEL_TOP && before.lp>=CHAMP_LP && dd.lp<CHAMP_LP){ ev='tierdown'; }
+  else if(dd.lp<0){
+    if(dd.d===0) dd.lp=0;
+    else if(dd.d%4===0){                       // kademe sınırı: koruma varsa düşmez
+      if(dd.shield>0) dd.lp=0;
+      else { dd.d--; dd.lp=75; ev='tierdown'; }
+    } else { dd.d--; dd.lp=75; ev='demote'; }
+  }
+  if(ev!=='tierup' && dd.shield>0) dd.shield--;
+  return {delta, ev, before};
+}
 
 // ---- Lobi ----
 function goDuel(){
   state='duel'; setHud(false); showScreen('duel');
   _duelSel = (duelState().perks||[]).slice(0, DUEL_SLOTS);
   renderDuelLobby();
+  // Rakiplerin göreceği ad: ilk düelloda seçilir (Sıralama ile aynı ad).
+  if(!stats.playerName && typeof openNameDialog==='function') openNameDialog(()=>renderDuelLobby());
+}
+function duelLpBar(lp, d){
+  if(d>=DUEL_TOP) return `<div class="drLp"><b>${t('duel_lp',{n:lp})}</b></div>`;
+  return `<div class="drLp"><div class="drBar"><i style="width:${Math.max(0,Math.min(100,lp))}%"></i></div><b>${t('duel_lp',{n:lp})}</b></div>`;
 }
 function renderDuelLobby(){
-  const d=duelState(), tier=duelTier(d.rating);
+  const d=duelState();
+  const wr = d.games ? Math.round(d.wins/d.games*100) : 0;
   document.getElementById('duelRankCard').innerHTML =
-    `<div class="drBadge" style="--tc:${tier.col}">${icon('trophy')}</div>
-     <div class="drInfo"><b>${duelTierName(d.rating)}</b><span>${dsetEsc(playerName())}</span>
-     <small>${t('duel_rating',{n:Math.round(d.rating)})} · ${t('duel_record',{w:d.wins, l:d.losses})}</small></div>`;
+    `${rankBadgeHtml(d.d, d.lp)}
+     <div class="drInfo"><b style="color:${rankTier(d.d,d.lp).col}">${rankName(d.d, d.lp)}</b><span>${dsetEsc(playerName())}</span>
+     ${duelLpBar(d.lp, d.d)}
+     <small>${t('duel_record',{w:d.wins, l:d.losses})}${d.games?` · %${wr}`:''}${d.streak>=2?` · ${t('duel_streak',{n:d.streak})}`:''}</small>
+     ${d.shield>0?`<small class="drShield">${icon('shield')} ${t('duel_shield',{n:d.shield})}</small>`:''}</div>`;
   const slots=document.getElementById('duelSlots');
   slots.innerHTML='';
   for(let i=0;i<DUEL_SLOTS;i++){
@@ -89,67 +160,118 @@ function renderDuelLobby(){
     });
     grid.appendChild(card);
   });
-  const bots=document.getElementById('duelBots'); bots.innerHTML='';
-  DUEL_BOTS.forEach(b=>{
-    const el=document.createElement('button'); el.type='button'; el.className='duelBotBtn';
-    el.innerHTML=`<b>${dsetEsc(b.name)}</b><small>${duelTierName(b.rating)}</small>`;
-    el.addEventListener('click', ()=>duelStartSearch({bot:b, ranked:false}));
-    bots.appendChild(el);
-  });
+  // Son maçlar: gelen/giden LP.
+  const h=document.getElementById('duelHist');
+  h.innerHTML = d.hist.length ? d.hist.map(x=>
+    `<div class="dhRow ${x.w?'win':'lose'}"><span class="dhRes">${t(x.w?'duel_hist_w':'duel_hist_l')}</span>
+      <span class="dhOpp"><b>${dsetEsc(x.n)}</b><small>${x.or||''}${x.ff?' · '+t('duel_hist_ff'):''}</small></span>
+      <span class="dhSc">${(+x.ms||0).toFixed(0)} – ${(+x.os||0).toFixed(0)}</span>
+      <span class="dhLp">${x.dl>=0?'+':''}${x.dl} LP</span></div>`).join('')
+    : `<div class="dhEmpty">${t('duel_hist_empty')}</div>`;
 }
 
 // ---- Eşleşme ----
+// Havuz: kendi MMR kovası ±1'deki en yeni 25 oyuncu kaydı (tek sorgu, ≤25
+// okuma; 3 dk önbellek) + havuz küçükse başlangıç kadrosu. Seçim ağırlıklı
+// rastgele (±200 MMR penceresinde): MMR'si yakın olan ve son 24 saatte oynamış olan öne çıkar, son
+// karşılaşılan 8 rakip geri plana düşer.
 let _duelSearching=false;
-async function duelStartSearch(opts){
+const _duelPool = {b:-1, at:0, list:null};
+async function duelCloudPool(mmr){
+  if(!window.DuelCloud) return [];
+  const b=Math.floor(mmr/100);
+  if(_duelPool.list && _duelPool.b===b && Date.now()-_duelPool.at < 180000) return _duelPool.list;
+  const list = await DuelCloud.find(mmr).catch(()=>null);
+  if(!list) return [];
+  _duelPool.b=b; _duelPool.at=Date.now(); _duelPool.list=list;
+  return list;
+}
+function duelPick(cands){
+  const sum=cands.reduce((a,c)=>a+c.w,0); if(!(sum>0)) return null;
+  let r=Math.random()*sum;
+  for(const c of cands){ r-=c.w; if(r<=0) return c; }
+  return cands[cands.length-1];
+}
+async function duelFindOpp(dd){
+  const mine=stats.myUid, seen=dd.seen||[], now=Date.now();
+  const near=(m)=>Math.exp(-Math.abs(m-dd.mmr)/120);
+  const cloud=(await duelCloudPool(dd.mmr)).filter(g=>g.uid!==mine);
+  const cands=cloud.map(g=>({g, w: near(g.mmr) * (1 + 2*Math.exp(-(now-(g.at||0))/864e5)) * (seen.includes(g.uid)?0.12:1)}));
+  // Başlangıç kadrosu, gerçek kayıt azaldıkça devreye girer.
+  const seedW = cloud.length>=8 ? 0 : cloud.length>=4 ? 0.25 : cloud.length>=1 ? 0.5 : 1;
+  if(seedW>0){
+    DUEL_SEEDS.forEach(s=>{
+      // Usta+ oyuncuya en üst kadro kendi seviyesine çekilir.
+      const m = dd.mmr>1790 && s.mmr>1620 ? dd.mmr-120+Math.random()*240 : s.mmr;
+      cands.push({seed:s, m, w: near(m)*seedW*(seen.includes('bot_'+s.id)?0.12:1)});
+    });
+  }
+  // Sert pencere: önce ±200 MMR, kimse yoksa ±350, o da yoksa en yakın.
+  const dm=(c)=>Math.abs((c.g?c.g.mmr:c.m)-dd.mmr);
+  let win=cands.filter(c=>dm(c)<=200);
+  if(!win.length) win=cands.filter(c=>dm(c)<=350);
+  if(!win.length && cands.length) win=[cands.reduce((a,c)=>dm(c)<dm(a)?c:a)];
+  const c=duelPick(win);
+  if(!c) return duelMakeBot(DUEL_SEEDS.reduce((a,x)=>Math.abs(x.mmr-dd.mmr)<Math.abs(a.mmr-dd.mmr)?x:a));
+  if(c.g) return Object.assign({}, c.g, {kind:'ghost'});
+  return duelMakeBot(c.seed, c.m);
+}
+async function duelStartSearch(){
   if(_duelSearching) return;
   if(_duelSel.length<DUEL_SLOTS){ queueToast(t('duel_pick_slots',{n:DUEL_SLOTS})); beep(200,0.1,'square',0.1); return; }
   _duelSearching=true;
   // Yuvalar kilitlenir: maç bu seçimle oynanır.
   const perks=_duelSel.slice(); const d=duelState(); d.perks=perks.slice(); saveStats();
-  const ov=document.getElementById('duelSearch'); ov.classList.add('show');
+  const ov=document.getElementById('duelSearch'); ov.classList.add('show'); ov.classList.remove('found');
+  document.getElementById('duelSearchTitle').textContent=t('duel_searching');
   document.getElementById('duelSearchPerks').innerHTML = perks.map(id=>`<span>${icon(DUEL_PERKS.find(p=>p.id===id).icon)} ${t(id+'_name')}</span>`).join('');
-  const ranked = opts.ranked!==false;
+  const tEl=document.getElementById('duelSearchTime'), t0=Date.now();
+  const clock=()=>{ const s=Math.floor((Date.now()-t0)/1000); tEl.textContent='0:'+String(s).padStart(2,'0'); };
+  clock(); const iv=setInterval(clock, 250);
   let opp=null;
-  const t0=Date.now();
-  try{
-    if(!opts.bot && ranked && window.DuelCloud){
-      const list = await DuelCloud.find(Math.round(d.rating), 160).catch(()=>[]);
-      const mine = stats.myUid;
-      const pool = list.filter(g=>g.uid!==mine);
-      if(pool.length) opp = Object.assign(pool[Math.floor(Math.random()*pool.length)], {kind:'ghost'});
-    }
-  }catch(e){}
-  if(!opp){
-    const b = opts.bot || DUEL_BOTS.reduce((a,x)=>Math.abs(x.rating-d.rating)<Math.abs(a.rating-d.rating)?x:a);
-    opp = duelMakeBot(b);
-  }
-  // Arama hissi: en az ~1.6 sn.
-  await new Promise(r=>setTimeout(r, Math.max(0, 1600-(Date.now()-t0))));
-  ov.classList.remove('show'); _duelSearching=false;
-  duelMatch = {seed: opp.seed, opp, perks, ranked};
+  try{ opp = await duelFindOpp(d); }catch(e){}
+  if(!opp) opp=duelMakeBot(DUEL_SEEDS[0]);
+  // Gerçek kuyruk gibi: 2.5-6 sn arası.
+  const wait = 2500 + Math.random()*3500;
+  await new Promise(r=>setTimeout(r, Math.max(0, wait-(Date.now()-t0))));
+  clearInterval(iv);
+  ov.classList.add('found');
+  document.getElementById('duelSearchTitle').textContent=t('duel_found');
+  beep(660,0.1,'triangle',0.1); beep(990,0.14,'sine',0.09);
+  await new Promise(r=>setTimeout(r, 700));
+  ov.classList.remove('show','found'); _duelSearching=false;
+  d.seen=[opp.uid].concat((d.seen||[]).filter(x=>x!==opp.uid)).slice(0,8); saveStats();
+  duelMatch = {seed: opp.seed, opp, perks, ranked:true};
   duelShowVs();
 }
-// Maç ortasında çıkış (duraklat → menü): sıralı maçta hükmen yenilgi —
-// kaybederken çıkıp puanı korumak olmasın.
+function duelPushHist(dd, m, win, delta, ms, os, ff){
+  const o=m.opp;
+  dd.hist.unshift({w:win?1:0, dl:delta, n:safeOtherName(o.name,o.uid), or:rankName(o.d|0, o.lp|0), ms:Math.round(ms), os:Math.round(os), ff:ff?1:0});
+  dd.hist=dd.hist.slice(0,10);
+}
+// Maç ortasında çıkış (duraklat → menü): hükmen yenilgi (−5 LP ceza) —
+// kaybederken çıkıp puanı korumak olmasın. Kayıt havuza girmez.
 function duelAbort(){
   if(!(typeof mode!=='undefined' && mode==='duel')) return;
   metaOff=false;
   const hud=document.getElementById('duelHud'); if(hud) hud.classList.remove('show');
   document.body.classList.remove('duel');
   const m=duelMatch;
-  if(m && !m.done && m.ranked && elapsed>60){
+  if(m && !m.done && elapsed>60){
     m.done=true;
-    const d=duelState(), exp=1/(1+Math.pow(10,((m.opp.rating||1000)-d.rating)/400));
-    d.rating=Math.max(0, d.rating+Math.min(-6, Math.round(32*(0-exp)))); d.losses++; d.streak=0; saveStats();
-    queueToast(t('duel_forfeit'));
+    const d=duelState(), res=duelApplyResult(d, false, m.opp.mmr||1000, true);
+    duelPushHist(d, m, false, res.delta, score, duelOppScore(elapsed/60), true);
+    saveStats();
+    queueToast(t('duel_forfeit')+' ('+res.delta+' LP)');
   }
   if(m) m.done=true;
 }
 
-// Bot maçı: beceri değerine göre üretilen, maçtan maça değişen kayıt.
-function duelMakeBot(b){
+// Başlangıç kadrosundan bir oyuncunun maçı: MMR'ye göre beceri, maçtan maça değişir.
+function duelMakeBot(b, mmrOverride){
+  const mmr = Math.round(mmrOverride || b.mmr), rk=rankFromMmr(mmr);
   const seed = (Math.random()*1e9)|0, r=mulberry32(seed ^ 0x5eed);
-  const skill=b.skill, samples=[], attacks=[];
+  const skill=duelSkillFor(mmr), samples=[], attacks=[];
   let score=0, combo=1, hp=DUEL_HP, died=null, nextAtk=6+r()*6;
   const themes=Object.keys(THEMES), skins=SKINS.filter(s=>s.img);
   for(let i=0;i<=DUEL_SECS*2;i++){
@@ -157,20 +279,20 @@ function duelMakeBot(b){
     if(died==null && i>0){
       const notes = r() < (0.55+skill*0.4) ? 1 + (r()<skill*0.6?1:0) : 0;
       for(let k=0;k<notes;k++){ combo++; score += Math.min(combo, 40); }
-      // Darbe: acemi bot 90 sn'de ~3 kez (bazen düşer), usta bot nadiren.
+      // Darbe: acemi 90 sn'de ~3 kez (bazen düşer), usta nadiren.
       if(r() < (0.017-skill*0.014)){ hp -= r()<0.8 ? 1 : 2; combo=1; if(hp<=0){ hp=0; died=tt; } }
       if(tt>=nextAtk){ if(r() < 0.35+skill*0.55) attacks.push(+tt.toFixed(1)); nextAtk = tt + 12 - skill*4 + r()*4; }
     }
     samples.push([+tt.toFixed(1), Math.round(score*100)/100, hp, 0]);
   }
   // Puan ölçeği: otomatik oyuncu ölçümünde 90 sn'lik düello ~10-45 bin puan
-  // (kombo büyüdükçe nota puanı artıyor). Bot eğrisi beceriye göre hedef bir
-  // final puanına ölçeklenir (±%20): acemi ~3.6 bin … platin ~22 bin.
+  // (kombo büyüdükçe nota puanı artıyor). Eğri beceriye göre hedef bir final
+  // puanına ölçeklenir (±%20): Bronz ~3.5 bin … Elmas ~24 bin.
   const target = (2500 + 26000*Math.pow(skill, 1.6)) * (0.8 + r()*0.4);
   const raw = samples[samples.length-1][1] || 1, k = target/raw;
   samples.forEach(sm=>{ sm[1] = Math.round(sm[1]*k*100)/100; });
   const perks = DUEL_PERKS.map(p=>p.id).sort(()=>r()-0.5).slice(0,3);
-  return {kind:'bot', name:b.name, uid:'bot_'+b.id, rating:b.rating, seed, samples, attacks, died, perks,
+  return {kind:'seed', name:b.name, uid:'bot_'+b.id, mmr, d:rk.d, lp:Math.max(0,Math.min(rk.d>=DUEL_TOP?999:99, rk.lp)), seed, samples, attacks, died, perks,
     theme:themes[Math.floor(r()*themes.length)], skin:(skins[Math.floor(r()*skins.length)]||{}).id||'teal'};
 }
 
@@ -185,9 +307,9 @@ function duelShowVs(){
   state='duelvs'; showScreen('duelvs');
   const perkList=(ids)=>ids.map(id=>{ const p=DUEL_PERKS.find(x=>x.id===id); return p?`<span title="${t(id+'_name')}">${icon(p.icon)}</span>`:''; }).join('');
   document.getElementById('duelVsBody').innerHTML =
-    `<div class="vsSide me">${duelRecordHtml(cfg.theme, cfg.skin, 'spin')}<b>${dsetEsc(playerName())}</b><small>${duelTierName(d.rating)}</small><div class="vsPerks">${perkList(m.perks)}</div></div>
+    `<div class="vsSide me">${duelRecordHtml(cfg.theme, cfg.skin, 'spin')}<b>${dsetEsc(playerName())}</b><small style="color:${rankTier(d.d,d.lp).col}">${rankName(d.d,d.lp)}</small><div class="vsPerks">${perkList(m.perks)}</div></div>
      <div class="vsMid">VS</div>
-     <div class="vsSide opp">${duelRecordHtml(o.theme, o.skin, 'spin rev')}<b>${dsetEsc(safeOtherName(o.name, o.uid))}</b><small>${duelTierName(o.rating)}${o.kind==='bot'?' · BOT':''}</small><div class="vsPerks">${perkList(o.perks||[])}</div></div>`;
+     <div class="vsSide opp">${duelRecordHtml(o.theme, o.skin, 'spin rev')}<b>${dsetEsc(safeOtherName(o.name, o.uid))}</b><small style="color:${rankTier(o.d|0,o.lp|0).col}">${rankName(o.d|0,o.lp|0)}</small><div class="vsPerks">${perkList(o.perks||[])}</div></div>`;
   beep(220,0.25,'sawtooth',0.08); beep(330,0.25,'sawtooth',0.07);
   let n=3; const cd=document.getElementById('duelVsCount'); cd.textContent=n;
   const tick=()=>{ n--; if(n<=0){ cd.textContent=''; startGame('duel'); return; } cd.textContent=n; beep(n===1?660:440,0.08,'sine',0.08); setTimeout(tick, 800); };
@@ -308,42 +430,47 @@ function duelGameOver(reason){
   else if(oppDied && !iDied) win=true;
   else win = myScore >= oppScore;
   if(!iDied && !oppDied && myScore===oppScore) win=true;
-  // Rütbe (Elo)
-  const d=duelState(), before=d.rating;
-  let delta=0;
-  if(m.ranked){
-    const exp = 1/(1+Math.pow(10,((o.rating||1000)-d.rating)/400));
-    delta = Math.round(32*((win?1:0)-exp));
-    if(win && delta<8) delta=8; if(!win && delta>-6) delta=-6;
-    d.rating = Math.max(0, d.rating+delta);
-    if(win){ d.wins++; d.streak=(d.streak||0)+1; } else { d.losses++; d.streak=0; }
-  }
+  // Rütbe: MMR + LP
+  const d=duelState(), mmrBefore=d.mmr, rankBefore={d:d.d, lp:d.lp};
+  const res=duelApplyResult(d, win, o.mmr||1000, false), delta=res.delta;
+  duelPushHist(d, m, win, delta, myScore, oppScore, false);
   // Küçük nota ödülü (maç başına), kaydı yükle.
-  const reward = m.ranked ? (win?40:12) : (win?10:3);
+  const reward = win ? 40 : 12;
   addNotes(reward);
   _duelRec.samples.push([+Math.min(tt,DUEL_SECS).toFixed(1), myScore, Math.max(0,hp), player.shieldHits>0?1:0]);
   if(iDied) _duelRec.died=+tt.toFixed(1);
   saveStats();
   m.done = true;
-  // 10 sn'den kısa maçlar rakip havuzuna girmez (anlamlı bir kayıt değil).
-  if(m.ranked && window.DuelCloud && _duelRec.samples.length>20){
-    DuelCloud.upload({seed:m.seed, name:playerName(), rating:Math.round(before), theme:cfg.theme, skin:cfg.skin,
+  // Tamamlanan maç (süre doldu ya da can bitti) oyuncunun havuzdaki kaydı
+  // olur; bir öncekinin üzerine yazılır. 10 sn'den kısa maç kaydedilmez.
+  if(window.DuelCloud && _duelRec.samples.length>20){
+    DuelCloud.upload({seed:m.seed, name:playerName(), mmr:mmrBefore, d:rankBefore.d, lp:Math.max(0,rankBefore.lp), theme:cfg.theme, skin:cfg.skin,
       perks:m.perks, samples:_duelRec.samples.slice(0,200), attacks:_duelRec.attacks.slice(0,40), died:_duelRec.died, score:myScore})
-      .then(uid=>{ if(uid) stats.myUid=uid; }).catch(()=>{});
+      .then(uid=>{ if(uid){ stats.myUid=uid; saveStats(); } }).catch(()=>{});
   }
   // Sonuç ekranı
   setHud(false); showScreen('duelover');
-  const tierAfter=duelTier(d.rating), tierBefore=duelTier(before);
+  const down = res.ev==='tierdown' || res.ev==='demote';
+  const evTxt = res.ev==='tierup' ? t('duel_tier_up',{tier:rankName(d.d,d.lp)}) : res.ev==='promo' ? t('duel_promo',{tier:rankName(d.d,d.lp)})
+    : down ? t('duel_tier_down',{tier:rankName(d.d,d.lp)}) : '';
+  // LP çubuğu maç öncesinden sonrasına dolar (terfi/düşüşte yeni kümenin başından/sonundan).
+  const fromW = res.ev ? (delta>0?0:100) : Math.max(0,Math.min(100,rankBefore.lp));
   document.getElementById('duelOverBody').innerHTML =
     `<div class="doBanner ${win?'win':'lose'}">${t(win?'duel_win':'duel_lose')}</div>
      <div class="doReason">${t('duel_reason_'+(oppDied&&!iDied?'oppko':iDied&&!oppDied?'ko':'time'))}</div>
      <div class="doScores"><div class="me"><small>${dsetEsc(playerName())}</small><b>${myScore.toFixed(2)}</b></div>
        <div class="vs">VS</div><div class="opp"><small>${dsetEsc(safeOtherName(o.name,o.uid))}</small><b>${oppScore.toFixed(2)}</b></div></div>
      <div class="doStats">${t('duel_attacks_line',{sent:_duelRec.sent, got:_duelOpp.atk})}</div>
-     ${m.ranked?`<div class="doRating ${delta>=0?'up':'down'}">${duelTierName(d.rating)} · ${Math.round(d.rating)} <span>${delta>=0?'+':''}${delta}</span></div>`
-       :`<div class="doRating">${t('duel_practice')}</div>`}
-     ${tierAfter.id!==tierBefore.id?`<div class="doTierUp">${icon('trophy')} ${t(d.rating>before?'duel_tier_up':'duel_tier_down',{tier:duelTierName(d.rating)})}</div>`:''}
+     <div class="doRank">${rankBadgeHtml(d.d, d.lp, 'sm')}
+       <div class="doRankInfo"><b style="color:${rankTier(d.d,d.lp).col}">${rankName(d.d, d.lp)}</b>
+         ${d.d>=DUEL_TOP?'':`<div class="drBar"><i id="doLpFill" style="width:${fromW}%"></i></div>`}
+         <small>${t('duel_lp',{n:d.lp})}</small></div>
+       <div class="doLp ${delta>=0?'up':'down'}">${delta>=0?'+':''}${delta} LP</div></div>
+     ${evTxt?`<div class="doTierUp ${down?'down':''}">${icon(down?'back':'trophy')} ${evTxt}</div>`:''}
+     ${d.shield>0 && res.ev==='tierup'?`<div class="doShield">${icon('shield')} ${t('duel_shield',{n:d.shield})}</div>`:''}
      <div class="doReward">${icon('coin')} +${reward}</div>`;
+  const fill=document.getElementById('doLpFill');
+  if(fill) setTimeout(()=>{ fill.style.width=Math.max(0,Math.min(100,d.lp))+'%'; }, 350);
   if(win){ beep(660,0.12,'triangle',0.12); beep(990,0.16,'sine',0.11); beep(1320,0.2,'triangle',0.09); }
   else beep(200,0.3,'sine',0.12);
 }

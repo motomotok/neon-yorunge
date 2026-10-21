@@ -517,9 +517,8 @@
       <div class="perkSlots" id="duelSlots"></div>
       <div class="sub perkIntro" data-i18n="duel_slots_hint"></div>
       <div class="shopGrid" id="duelPerkGrid"></div>
-      <div class="perkSlotsTitle" data-i18n="duel_practice_title">Antrenman</div>
-      <div class="duelBots" id="duelBots"></div>
-      <div class="dsPrivacy" data-i18n="duel_note"></div>
+      <div class="perkSlotsTitle" data-i18n="duel_history">Son Maçlar</div>
+      <div class="duelHist" id="duelHist"></div>
     </div>
     <div class="screenFoot">
       <button class="btn duelFindBtn" id="duelFindBtn"><i class="gicon" data-icon="lightning"></i> <span data-i18n="duel_find">MAÇ ARA</span></button>
@@ -624,7 +623,7 @@
   </div>
 </div>
 
-<div id="duelSearch"><div class="dsrBox"><div class="dsrDisc"></div><b data-i18n="duel_searching">Rakip aranıyor…</b><small data-i18n="duel_locked">Yuvalar kilitlendi</small><div class="dsrPerks" id="duelSearchPerks"></div></div></div>
+<div id="duelSearch"><div class="dsrBox"><div class="dsrDisc"></div><b id="duelSearchTitle" data-i18n="duel_searching">Rakip aranıyor…</b><span class="dsrTime" id="duelSearchTime">0:00</span><small data-i18n="duel_locked">Yuvalar kilitlendi</small><div class="dsrPerks" id="duelSearchPerks"></div></div></div>
  <!-- Oyuncu adı penceresi (bkz. game/ranking.js) -->
 <div id="nameOverlay" style="display:none">
   <div class="card nameCard">
