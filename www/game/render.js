@@ -566,8 +566,8 @@ function drawItem(x,y,type,sc,t,it){
     const bob = it ? Math.sin(t*3.2 + it.ang*3)*R*0.3 : 0;
     drawCollectGlow(x, y+bob, R*2.0, it ? 0.8+Math.sin(t*3+it.ang*5)*0.2 : 1);
     if(imgReady(ITEM_IMG.note)){ const s=R*1.45; ctx.drawImage(ITEM_IMG.note, x-s, y-s+bob, s*2, s*2); }
-    if(it) drawTwinkle(x+R*0.95, y-R*1.05+bob, R*0.5, t*2.6+it.ang*7);
     else drawNoteShape(x,y+bob,R,col,false,0);
+    if(it) drawTwinkle(x+R*0.95, y-R*1.05+bob, R*0.5, t*2.6+it.ang*7);
     if(cfg.colorblind){ ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(x,y,R*1.15,0,7); ctx.stroke(); }
   } else if(type==='diamond'){
     // Nadir değerli öğe (kodda 'diamond'): sol anahtarı. Asset gelene kadar
