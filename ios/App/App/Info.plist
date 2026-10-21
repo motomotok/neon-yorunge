@@ -131,5 +131,14 @@
 		<dict><key>SKAdNetworkIdentifier</key><string>97r2b46745.skadnetwork</string></dict>
 		<dict><key>SKAdNetworkIdentifier</key><string>3qcr597p9d.skadnetwork</string></dict>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.905630422658-0n9kqoluvi93hrjrjiv2v35n9pj5hsug</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

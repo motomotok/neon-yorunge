@@ -1,138 +1,126 @@
-// Beat Orbit — bulut hesap akışının oyun tarafı (düz <script>, esbuild ile
-// paketlenmez). window.CloudAccount (firebase-bundle.js, src/cloud-account.js'ten
-// derlenir) üzerinden Firebase ile konuşur. Ağ yoksa / Firebase henüz hazır
-// değilse tüm fonksiyonlar sessizce no-op olur — oyun tamamen yerel veriyle
-// çalışmaya devam eder, bu katman sadece bir bulut yedeğidir (bkz.
-// cloud-account.js başındaki not: burada elmas/ödül VERİLMEZ, sadece
-// satın alımların/sezon biletin cihaz değiştirince kaybolmaması için
-// yedekleme + geri yükleme yapılır).
-let _cloudReady = false;
-let _cloudProfile = null;
+// Beat Orbit — Google/Apple ile giriş + bulut ilerleme kaydının oyun tarafı
+// (düz <script>, esbuild ile paketlenmez). window.CloudAccount
+// (firebase-bundle.js, src/cloud-account.js) üzerinden Firebase ile konuşur.
+// Ağ yoksa / Firebase hazır değilse her şey sessizce no-op olur — oyun
+// tamamen yerel veriyle çalışmaya devam eder.
+//
+// Akış: oyuncu Ayarlar'dan Google ya da Apple'ı bağlar → bu cihazdaki
+// ilerleme (stats) buluta kaydedilir; sonra her oyun sonunda ve uygulama arka
+// plana geçerken kendiliğinden güncellenir. Yeni bir telefonda aynı hesapla
+// giriş yapılınca buluttaki ilerleme bulunur ve sorulur: "buluttakini yükle"
+// ya da "bu cihazdakini kullan".
+const ACCOUNT_LINK_ENABLED = true;
+let _acct = {uid:null, providers:[], email:''};
+let _lastSavedJson = '', _saving = false;
 
-function cloudLinked(providerId) {
-  return !!(_cloudProfile && (_cloudProfile.linkedProviders || []).includes(providerId));
-}
+function cloudLinked(providerId){ return (_acct.providers||[]).includes(providerId); }
+function isAccountLinked(){ return cloudLinked('google.com') || cloudLinked('apple.com'); }
 
-// KAPALI: native giriş (@capacitor-firebase/authentication) oturumu Firebase
-// JS SDK'ya aktarılmıyor, bu yüzden Firestore istekleri yetkisiz kalıyor; iOS'ta
-// GoogleSignIn pod'u ve REVERSED_CLIENT_ID URL şeması da eksik. Düzeltilip
-// cihazda test edilene kadar Ayarlar'daki hesap bölümü gizli.
-const ACCOUNT_LINK_ENABLED = false;
-
-async function initCloudSync() {
-  if (!ACCOUNT_LINK_ENABLED) {
-    ['linkRow', 'acctLinkDesc', 'acctDeleteRow'].forEach(id => {
-      const el = document.getElementById(id); if (el) el.style.display = 'none';
-    });
+async function initCloudSync(){
+  if(!ACCOUNT_LINK_ENABLED){
+    ['linkRow','acctLinkDesc','acctDeleteRow'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; });
     return;
   }
-  if (!window.CloudAccount) return;
-  try {
-    // Daha önce hiç hesap bağlamadıysan burada hiçbir Firebase çağrısı
-    // yapılmaz — anonim oturum SADECE linkAccount() tetiklendiğinde açılır.
-    const user = await CloudAccount.getExistingUser();
-    if (!user) { syncLinkButtons(); return; }
-    const cloud = await CloudAccount.bootstrap();
-    _cloudProfile = cloud;
-    // Yerel ilerleme ile bulut yedeğini birleştir: her alanda "daha ileride
-    // olan" kazanır, hiçbir alanda geriye gidilmez.
-    mergeCloudProfile(cloud);
-    saveStats();
-    refreshWallet();
-    _cloudReady = true;
-    syncLinkButtons();
-    pushCloudState();
-  } catch (e) { /* çevrimdışı / Firebase hazır değil — sessizce yerelde devam */ }
-}
-
-// Bulut belgesini oyuncu kendisi yazabildiği için (Firestore kuralı yalnız
-// "kendi belgen" diyor) oradan gelen hiçbir şey para değerinde güvenilmez:
-//  * Elmas buluttan ALINMAZ — satın alınan elmaslar mağaza makbuzlarından
-//    (restorePurchases) yeniden kurulur; buluttaki sayı yalnız bilgi.
-//  * Sezon Bileti yalnız AYNI sezonun anahtarıyla gelirse açılır (geçen
-//    sezonun bileti yeni sezonu açmaz).
-//  * Gerçek parayla alınan (gate 'iap') kozmetikler buluttan alınmaz; mağaza
-//    geri yüklemesi verir. Nota/elmasla alınanlar birleştirilir.
-// (Hesap bağlama şu an kapalı — ACCOUNT_LINK_ENABLED — açılmadan önce güvenli.)
-function mergeCloudProfile(cloud) {
-  const iapGate = (it) => !!(it && it.gate && it.gate.type === 'iap');
-  if (cloud.owned) {
-    const themes = (cloud.owned.themes || []).filter(k => THEMES[k] && !iapGate(THEMES[k]));
-    const skins = (cloud.owned.skins || []).filter(id => { const sk = SKINS.find(x => x.id === id); return sk && !iapGate(sk); });
-    stats.owned.themes = Array.from(new Set([...(stats.owned.themes || []), ...themes]));
-    stats.owned.skins = Array.from(new Set([...(stats.owned.skins || []), ...skins]));
-  }
-  if (cloud.seasonPassKey && cloud.seasonPassKey === stats.seasonKey) stats.seasonPremium = true;
-}
-
-function pushCloudState() {
-  if (!_cloudReady || !window.CloudAccount) return;
-  CloudAccount.syncState({
-    gems: stats.gems || 0,
-    lifetimeGems: stats.lifetimeGems || 0,
-    owned: { themes: stats.owned.themes || [], skins: stats.owned.skins || [] },
-    seasonPassActive: !!stats.seasonPremium,
-    seasonPassKey: stats.seasonPremium ? (stats.seasonKey || '') : '',
-  }).catch(() => {});
-}
-
-async function linkAccount(which) {
-  if (!window.CloudAccount) return;
-  const btnId = which === 'google' ? 'linkGoogleBtn' : 'linkAppleBtn';
-  const btn = document.getElementById(btnId);
-  if (btn) btn.disabled = true;
-  const res = await (which === 'google' ? CloudAccount.linkGoogle() : CloudAccount.linkApple());
-  if (btn) btn.disabled = false;
-  if (!res.ok) { queueToast(t('account_link_err_toast')); return; }
-  if (res.restoredFromCloud) {
-    // Bu hesap başka bir cihazda zaten bağlıydı — oradaki bulut profilini
-    // (elmas/kozmetikler/sezon bileti) indirip yerelle birleştir.
-    const cloud = await CloudAccount.bootstrap();
-    mergeCloudProfile(cloud);
-    saveStats();
-    refreshWallet();
-    _cloudProfile = cloud;
-  } else {
-    _cloudProfile = _cloudProfile || {};
-  }
-  _cloudReady = true;
-  _cloudProfile.linkedProviders = res.linkedProviders || _cloudProfile.linkedProviders || [];
+  // Apple ile giriş yalnız iOS'ta ve web'de gösterilir (Android'de Google yeterli).
+  const plat = window.Capacitor && Capacitor.getPlatform ? Capacitor.getPlatform() : 'web';
+  const ac=document.getElementById('linkAppleCard'); if(ac && plat==='android') ac.style.display='none';
+  if(!window.CloudAccount){ syncLinkButtons(); return; }
+  try{ _acct = await CloudAccount.status(); }catch(e){}
   syncLinkButtons();
-  pushCloudState();
+  if(isAccountLinked()) saveProgress();
+}
+
+// Buluta giden ilerleme: tüm stats, cihaza özel/geçici alanlar hariç.
+const PROGRESS_SKIP = ['dsetCache','rewardLedger','installId','lastSeenTs'];
+function progressSnapshot(){
+  const o={};
+  for(const k in stats) if(!PROGRESS_SKIP.includes(k)) o[k]=stats[k];
+  o.__savedAt = Date.now();
+  return o;
+}
+async function saveProgress(force){
+  if(!window.CloudAccount || !isAccountLinked() || _saving) return false;
+  const snap = progressSnapshot();
+  const cmp = JSON.stringify(Object.assign({}, snap, {__savedAt:0}));
+  if(!force && cmp===_lastSavedJson) return true;
+  _saving=true;
+  try{ await CloudAccount.saveProgress(JSON.stringify(snap)); _lastSavedJson=cmp; return true; }
+  catch(e){ return false; }
+  finally{ _saving=false; }
+}
+function restoreProgress(p){
+  const keep={installId:stats.installId, lastSeenTs:stats.lastSeenTs};
+  Object.keys(stats).forEach(k=>{ delete stats[k]; });
+  Object.assign(stats, p, keep);
+  delete stats.__savedAt;
+  saveStats();
+  location.reload();
+}
+
+async function linkAccount(which){
+  if(!window.CloudAccount){ queueToast(t('account_link_err_toast')); return; }
+  const btn=document.getElementById(which==='google' ? 'linkGoogleBtn' : 'linkAppleBtn');
+  if(btn) btn.disabled=true;
+  const res = await CloudAccount.link(which);
+  if(btn) btn.disabled=false;
+  if(!res.ok){
+    if(!/popup-closed|cancel/i.test(res.error||'')) queueToast(t('account_link_err_toast'));
+    return;
+  }
+  _acct = {uid:res.uid, providers:res.providers||[], email:''};
+  try{ _acct = await CloudAccount.status(); }catch(e){}
+  syncLinkButtons();
+  // Bu hesap başka bir cihazda daha önce kullanıldıysa: buluttaki ilerleme.
+  let cloud=null;
+  if(res.switched){ try{ cloud = await CloudAccount.loadProgress(); }catch(e){} }
+  let p=null; try{ p = cloud && cloud.progress ? JSON.parse(cloud.progress) : null; }catch(e){}
+  if(p){
+    const msg = t('account_restore_msg', {best:Number(p.best||0).toFixed(2), notes:p.notes||0, gems:p.gems||0});
+    showDjConfirm(msg, ()=>restoreProgress(p), {yes:t('account_restore_yes'), no:t('account_restore_no')}, ()=>{ saveProgress(true); });
+    return;
+  }
+  await saveProgress(true);
   queueToast(t('account_linked_toast'));
 }
 
-async function deleteCloudAccount() {
-  if (!window.CloudAccount) return;
+async function deleteCloudAccount(){
+  if(!window.CloudAccount) return false;
   const res = await CloudAccount.deleteAccount();
-  if (!res.ok) { queueToast(t('account_link_err_toast')); return false; }
-  _cloudProfile = null;
-  _cloudReady = false;
+  if(!res.ok) return false;
+  try{ _acct = await CloudAccount.status(); }catch(e){ _acct={uid:null, providers:[], email:''}; }
+  _lastSavedJson='';
   syncLinkButtons();
   return true;
 }
 
-function syncLinkButtons() {
-  [['google', 'linkGoogleBtn', 'linkGoogleStatusText'], ['apple', 'linkAppleBtn', 'linkAppleStatusText']].forEach(([which, btnId, statusId]) => {
-    const providerId = which === 'google' ? 'google.com' : 'apple.com';
-    const linked = cloudLinked(providerId);
-    const btn = document.getElementById(btnId);
-    if (btn) btn.style.display = linked ? 'none' : '';
-    const status = document.getElementById(statusId);
-    if (status && linked) {
-      status.innerHTML = '<i class="gicon" data-icon="gem"></i> ' + (which === 'google' ? 'Google' : 'Apple') +
-        ' <span style="color:#6fe08a">' + t('account_linked_badge') + '</span>';
-    }
+function syncLinkButtons(){
+  [['google','linkGoogleBtn','linkGoogleStatusText','Google'],['apple','linkAppleBtn','linkAppleStatusText','Apple']].forEach(([which, btnId, statusId, label])=>{
+    const linked = cloudLinked(which==='google' ? 'google.com' : 'apple.com');
+    const btn=document.getElementById(btnId); if(btn) btn.style.display = linked ? 'none' : '';
+    const st=document.getElementById(statusId);
+    if(st) st.innerHTML = icon(which==='google' ? 'gem' : 'gem')+' '+label+(linked ? ' <span style="color:#6fe08a">'+t('account_linked_badge')+'</span>' : '');
   });
-  const anyLinked = cloudLinked('google.com') || cloudLinked('apple.com');
-  const delRow = document.getElementById('acctDeleteRow');
-  if (delRow) delRow.style.display = anyLinked ? '' : 'none';
+  const delRow=document.getElementById('acctDeleteRow'); if(delRow) delRow.style.display = isAccountLinked() ? '' : 'none';
+  const desc=document.getElementById('acctLinkDesc');
+  if(desc) desc.textContent = isAccountLinked() ? t('account_saved_desc') : t('account_link_desc');
 }
+
+// Hiç giriş yapmamış oyuncuya iki kez (5. ve 25. oyunda) nazikçe hatırlatılır.
+function maybeNudgeLogin(){
+  if(!ACCOUNT_LINK_ENABLED || isAccountLinked() || tutorialActive) return;
+  const g=stats.games||0, n=stats.loginNudges||0;
+  if(!((n===0 && g>=5) || (n===1 && g>=25))) return;
+  stats.loginNudges=n+1; saveStats();
+  setTimeout(()=>{ if(state==='over') showDjConfirm(t('account_nudge_msg'), ()=>goSettings(), {yes:t('account_nudge_yes'), no:t('btn_later')}); }, 1800);
+}
+
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden) saveProgress(); });
 
 window.CloudSync = {
   init: initCloudSync,
-  onGameOver() { pushCloudState(); },
-  linkGoogle() { linkAccount('google'); },
-  linkApple() { linkAccount('apple'); },
+  onGameOver(){ saveProgress(); maybeNudgeLogin(); },
+  linkGoogle(){ linkAccount('google'); },
+  linkApple(){ linkAccount('apple'); },
   deleteAccount: deleteCloudAccount,
+  isLinked: isAccountLinked,
 };

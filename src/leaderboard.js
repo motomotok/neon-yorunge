@@ -33,6 +33,8 @@ async function ensureUser() {
   return (await signInAnonymously(a)).user;
 }
 const db = () => getFirestore(getApp());
+// Hesap köprüsü (cloud-account.js) aynı oturumu kullanır.
+export { auth, ensureUser };
 const scores = (day) => collection(db(), 'dset', day, 'scores');
 const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
 

@@ -22,6 +22,8 @@ end
 
 target 'App' do
   capacitor_pods
+  # Google ile giriş (bkz. src/cloud-account.js)
+  pod 'CapacitorFirebaseAuthentication/Google', :path => '../../node_modules/@capacitor-firebase/authentication'
   # @capacitor-community/admob 6.2.0 pins Google-Mobile-Ads-SDK to exactly
   # 11.3.0, ama Google-Mobile-Ads-SDK'nın kendi podspec'i GoogleUserMessagingPlatform
   # (UMP, reklam onay/consent SDK'sı) için sadece ">= 1.1" gibi açık uçlu bir

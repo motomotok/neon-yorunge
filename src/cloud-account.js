@@ -1,31 +1,33 @@
 // Beat Orbit — bulut hesap köprüsü (KAYNAK dosya, esbuild ile
 // www/firebase-bundle.js olarak paketlenir, npm run build:cloud).
 // Oyunun geri kalanıyla (game/*.js, düz <script> dosyaları) global
-// `window.CloudAccount` üzerinden konuşur — bkz. game/cloud-sync.js
-// (gerçek oyun mantığı/stats birleştirme orada, burası sadece ince bir
-// Firebase sarmalayıcı).
+// `window.CloudAccount` üzerinden konuşur — bkz. game/cloud-sync.js.
 //
-// Google/Apple girişi BİLEREK native eklenti (@capacitor-firebase/authentication)
-// ile yapılıyor, Firebase JS SDK'nın signInWithPopup'ı DEĞİL — Google,
-// uygulama-içi WebView'lerden gelen OAuth girişlerini güvenlik gereği
-// reddediyor ("disallowed_useragent"). Native eklenti native tarayıcı/
-// sistem akışını kullanır ve oturumu otomatik olarak buradaki Firebase JS
-// SDK örneğiyle senkronize eder (capacitor.config.json'da skipNativeAuth
-// ayarlanmadığı sürece varsayılan budur).
+// Kimlik: oyunun TEK oturumu Firebase JS SDK'nın oturumudur (leaderboard.js
+// auth()). Oyuncu Günün Seti/Sıralama/Düello'ya ilk katkısında anonim bir
+// hesap alır. "Google/Apple ile giriş", o anonim hesaba Google/Apple kimliğini
+// BAĞLAR (linkWithCredential) — uid değişmez, skorlar/isim/düello kayıtları
+// aynı hesapta kalır. Aynı Google/Apple hesabı başka bir cihazda zaten
+// bağlıysa o hesaba geçilir (cihaz değiştirme) ve buluttaki ilerleme sorulur.
 //
-// NOT: Burada BİLEREK Cloud Functions yok (ücretsiz Spark planında kalmak
-// için) — bootstrap/syncState doğrudan Firestore okuma/yazma. Bu yüzden
-// hiçbir ödül (elmas vb.) bu dosyadan verilmiyor: istemci kendi belgesine
-// istediğini yazabildiği için sunucu tarafı doğrulama olmadan verilecek
-// her ödül sahtelenebilir. Bu katman SADECE "satın alımların/sezon biletin
-// cihaz değiştirince kaybolmasın" yedekleme amaçlı — bugün zaten
-// localStorage'ı değiştirebilen bir kullanıcının elinden daha fazlasını
-// almıyor, sadece cihazlar arası taşınabilirlik ekliyor.
+// Neden böyle: native eklentinin kendi oturumu JS SDK'ya aktarılmıyordu
+// (eski sürümde giriş bu yüzden hiç çalışmadı). Artık eklenti yalnız
+// Google/Apple'dan kimlik belgesi (idToken) almak için kullanılır
+// (skipNativeAuth), oturumu JS SDK açar. Web'de Firebase pop-up'ı kullanılır.
+//
+// İlerleme (stats) users/{uid}.progress alanında JSON metni olarak saklanır;
+// yalnız hesabın sahibi okuyup yazabilir (firestore.rules users/{uid}).
+// Cloud Functions YOK (ücretsiz Spark planı) — bu bir yedekleme/taşıma
+// deposudur, sunucu doğrulaması yapmaz.
 import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import {
+  GoogleAuthProvider, OAuthProvider, linkWithCredential, linkWithPopup, signInWithCredential,
+  deleteUser, signInAnonymously, revokeAccessToken,
+} from 'firebase/auth';
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
-import './leaderboard.js'; // Günün Seti skor tablosu (window.DailySetCloud)
+import { auth, ensureUser } from './leaderboard.js'; // + Günün Seti / Sıralama / Düello köprüleri
 
 const firebaseConfig = {
   apiKey: "AIzaSyDo3EeLjVneHCimdQszQQAiYo0CuSxFqBg",
@@ -38,146 +40,108 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-
 const isNative = () => Capacitor.isNativePlatform();
+let lastAppleAuthCode = null; // hesap silerken Apple token'ını iptal etmek için
 
-const authListeners = [];
-let currentUser = null;
-let lastAppleAuthCode = null; // hesap silme sırasında Apple token'ını iptal etmek için
+const providersOf = (u) => ((u && u.providerData) || []).map((p) => p.providerId);
+const inUse = (e) => /credential-already-in-use|account-exists-with-different-credential|email-already-in-use/i.test(((e && e.code) || '') + ' ' + ((e && e.message) || ''));
 
-FirebaseAuthentication.addListener('authStateChange', (change) => {
-  currentUser = change.user || null;
-  authListeners.forEach(fn => { try { fn(currentUser); } catch (e) {} });
-});
-
-// Boot'ta SADECE daha önce oturum açılmış mı diye bakar — yeni bir anonim
-// kullanıcı OLUŞTURMAZ. Böylece hiç hesap bağlamayan oyuncular için Firebase'e
-// hiçbir veri gönderilmez (bkz. privacy.html — "hesap bağlamazsan hiçbir şey
-// sunucuya gitmez" iddiası artık kodla birebir örtüşüyor).
-async function getExistingUser() {
-  const { user } = await FirebaseAuthentication.getCurrentUser();
-  currentUser = user || null;
-  return currentUser;
+// Mevcut oturum (yeni anonim hesap AÇMAZ).
+async function status() {
+  const a = auth();
+  await a.authStateReady();
+  const u = a.currentUser;
+  const p = u && (u.providerData || []).find((x) => x.providerId === 'google.com' || x.providerId === 'apple.com');
+  return { uid: u ? u.uid : null, providers: providersOf(u), email: (p && p.email) || '' };
 }
 
-// Sadece "Hesabımı bağla" akışı tetikler — linkWithX() çağrısı için önce bir
-// (anonim) oturum gerekiyor.
-async function ensureSignedIn() {
-  const { user } = await FirebaseAuthentication.getCurrentUser();
-  if (user) { currentUser = user; return user; }
-  const res = await FirebaseAuthentication.signInAnonymously();
-  currentUser = res.user;
-  return currentUser;
-}
-
-function userRef() {
-  if (!currentUser) throw new Error('not_signed_in');
-  return doc(db, 'users', currentUser.uid);
-}
-
-async function bootstrap() {
-  const snap = await getDoc(userRef());
-  const data = snap.exists() ? snap.data() : {};
-  return {
-    gems: data.gems || 0,
-    lifetimeGems: data.lifetimeGems || 0,
-    owned: data.owned || { themes: [], skins: [] },
-    seasonPassActive: !!data.seasonPassActive,
-    seasonPassKey: typeof data.seasonPassKey === 'string' ? data.seasonPassKey : '',
-    linkedProviders: data.linkedProviders || [],
-  };
-}
-
-async function syncState(d) {
-  d = d || {};
-  const patch = {};
-  if (typeof d.gems === 'number' && isFinite(d.gems)) patch.gems = Math.max(0, Math.floor(d.gems));
-  if (typeof d.lifetimeGems === 'number' && isFinite(d.lifetimeGems)) patch.lifetimeGems = Math.max(0, Math.floor(d.lifetimeGems));
-  if (d.owned && typeof d.owned === 'object') {
-    patch.owned = {
-      themes: Array.isArray(d.owned.themes) ? d.owned.themes.slice(0, 200) : [],
-      skins: Array.isArray(d.owned.skins) ? d.owned.skins.slice(0, 200) : [],
-    };
+// Native: eklentiden yalnız kimlik belgesi alınır, oturumu JS SDK açar.
+async function nativeCredential(which) {
+  if (which === 'google') {
+    const r = await FirebaseAuthentication.signInWithGoogle({ skipNativeAuth: true });
+    const c = (r && r.credential) || {};
+    return GoogleAuthProvider.credential(c.idToken || null, c.accessToken || null);
   }
-  if (typeof d.seasonPassActive === 'boolean') patch.seasonPassActive = d.seasonPassActive;
-  if (typeof d.seasonPassKey === 'string') patch.seasonPassKey = d.seasonPassKey.slice(0, 20);
-  await setDoc(userRef(), patch, { merge: true });
-  return { ok: true };
+  const r = await FirebaseAuthentication.signInWithApple({ skipNativeAuth: true });
+  const c = (r && r.credential) || {};
+  lastAppleAuthCode = c.authorizationCode || null;
+  return new OAuthProvider('apple.com').credential({ idToken: c.idToken, rawNonce: c.nonce });
+}
+function credFromError(which, e) {
+  return which === 'google' ? GoogleAuthProvider.credentialFromError(e) : OAuthProvider.credentialFromError(e);
 }
 
-async function linkProvider(which) {
+// Google/Apple'ı bağla. Dönen switched=true: bu kimlik başka bir cihazda zaten
+// bağlıydı, o hesaba geçildi (oyun buluttaki ilerlemeyi sorar).
+async function link(which) {
+  const a = auth();
+  let before = null;
   try {
-    await ensureSignedIn();
-    const linkFn = which === 'google' ? FirebaseAuthentication.linkWithGoogle : FirebaseAuthentication.linkWithApple;
-    const res = await linkFn();
-    if (which === 'apple' && res && res.credential && res.credential.authorizationCode) {
-      lastAppleAuthCode = res.credential.authorizationCode;
+    const user = await ensureUser();
+    before = user.uid;
+    if (isNative()) {
+      const cred = await nativeCredential(which);
+      try { await linkWithCredential(user, cred); }
+      catch (e) { if (!inUse(e)) throw e; await signInWithCredential(a, credFromError(which, e) || cred); }
+    } else {
+      const prov = which === 'google' ? new GoogleAuthProvider() : new OAuthProvider('apple.com');
+      if (which === 'apple') { prov.addScope('email'); prov.addScope('name'); }
+      try { await linkWithPopup(user, prov); }
+      catch (e) {
+        if (!inUse(e)) throw e;
+        const cred = credFromError(which, e);
+        if (!cred) throw e;
+        await signInWithCredential(a, cred);
+      }
     }
   } catch (e) {
-    // Bu Google/Apple hesabı DAHA ÖNCE başka bir cihazda bağlanmışsa, link
-    // isteği "zaten kullanımda" hatasıyla reddedilir — bu aslında beklenen
-    // "cihaz değiştirdim" senaryosu. Çözüm: anonim hesaba linklemeyi bırakıp
-    // doğrudan o sağlayıcıyla GİRİŞ yap — bu, önceki cihazdaki bulut profiline
-    // (elmas/kozmetik/sezon bileti) erişimi geri verir.
-    const msg = ((e && e.code) || '') + ' ' + ((e && e.message) || '');
-    const alreadyLinkedElsewhere = /credential-already-in-use|account-exists-with-different-credential/i.test(msg);
-    if (!alreadyLinkedElsewhere) return { ok: false, error: (e && e.message) || String(e) };
-    try {
-      const signFn = which === 'google' ? FirebaseAuthentication.signInWithGoogle : FirebaseAuthentication.signInWithApple;
-      const res2 = await signFn();
-      if (which === 'apple' && res2 && res2.credential && res2.credential.authorizationCode) {
-        lastAppleAuthCode = res2.credential.authorizationCode;
-      }
-    } catch (e2) {
-      return { ok: false, error: (e2 && e2.message) || String(e2) };
-    }
+    return { ok: false, error: (e && (e.code || e.message)) || String(e) };
   }
-  const { user } = await FirebaseAuthentication.getCurrentUser();
-  currentUser = user;
-  const providerId = which === 'google' ? 'google.com' : 'apple.com';
-  const ref = userRef();
-  const snap = await getDoc(ref);
-  const linked = (snap.exists() && snap.data().linkedProviders) || [];
-  if (!linked.includes(providerId)) linked.push(providerId);
-  await setDoc(ref, { linkedProviders: linked }, { merge: true });
-  return { ok: true, linkedProviders: linked, restoredFromCloud: snap.exists() };
+  const u = a.currentUser;
+  return { ok: true, switched: !!(u && before && u.uid !== before), uid: u ? u.uid : null, providers: providersOf(u) };
 }
 
-// Ayarlar → "Hesabımı Sil". Apple'ın 5.1.1(v) kuralı: hesap bağlamayı
-// destekleyen uygulamalar silmeyi de UYGULAMA İÇİNDEN başlatabilmeli.
-// Firestore belgesi + Firebase Auth kullanıcısı silinir; Apple ile son
-// girişten (bu oturumda) bir authorizationCode varsa token da iptal edilir
-// (uygulama kapatılıp yeniden açıldıktan günler sonra silinirse bu token
-// artık elde yok — bu durumda sadece hesap/veri silinir, ki asıl istenen de
-// budur; token'ın server tarafında ayrıca iptali App Store'un katı zorunluluğu
-// değil, "mümkünse yapılmalı" tavsiyesidir).
+const userRef = (uid) => doc(db, 'users', uid);
+async function saveProgress(json) {
+  const s = await status();
+  if (!s.uid) throw new Error('not_signed_in');
+  await setDoc(userRef(s.uid), { progress: String(json), savedAt: serverTimestamp(), pv: 1 }, { merge: true });
+  return true;
+}
+async function loadProgress() {
+  const s = await status();
+  if (!s.uid) return null;
+  const snap = await getDoc(userRef(s.uid));
+  if (!snap.exists()) return null;
+  const d = snap.data();
+  return typeof d.progress === 'string' ? { progress: d.progress, savedAt: d.savedAt && d.savedAt.toMillis ? d.savedAt.toMillis() : 0 } : null;
+}
+
+// Ayarlar → "Hesabımı Sil" (Apple 5.1.1(v): giriş sunan uygulama silmeyi de
+// uygulama içinden sunmalı). Bulut ilerlemesi + Firebase kullanıcısı silinir,
+// cihazda yeni bir anonim hesapla devam edilir. Firebase uzun süre önce
+// giriş yapılmışsa yeniden giriş isteyebilir (requires-recent-login).
 async function deleteAccount() {
   try {
-    const { user } = await FirebaseAuthentication.getCurrentUser();
-    if (!user) return { ok: true }; // zaten hesap yok
-    currentUser = user;
-    try { await deleteDoc(userRef()); } catch (e) {}
-    if (lastAppleAuthCode) {
-      try { await FirebaseAuthentication.revokeAccessToken({ token: lastAppleAuthCode }); } catch (e) {}
-      lastAppleAuthCode = null;
-    }
-    await FirebaseAuthentication.deleteUser();
-    currentUser = null;
+    const a = auth();
+    await a.authStateReady();
+    const u = a.currentUser;
+    if (!u) return { ok: true };
+    try { await deleteDoc(userRef(u.uid)); } catch (e) {}
+    if (lastAppleAuthCode) { try { await revokeAccessToken(a, lastAppleAuthCode); } catch (e) {} lastAppleAuthCode = null; }
+    await deleteUser(u);
+    try { await signInAnonymously(a); } catch (e) {}
     return { ok: true };
   } catch (e) {
-    return { ok: false, error: (e && e.message) || String(e) };
+    return { ok: false, error: (e && (e.code || e.message)) || String(e) };
   }
 }
 
 window.CloudAccount = {
   isNative,
-  ensureSignedIn,
-  getExistingUser,
-  getUser: () => currentUser,
-  onAuthChange(fn) { authListeners.push(fn); },
-  bootstrap,
-  syncState,
-  linkGoogle: () => linkProvider('google'),
-  linkApple: () => linkProvider('apple'),
+  status,
+  link,
+  saveProgress,
+  loadProgress,
   deleteAccount,
 };

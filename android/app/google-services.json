@@ -14,6 +14,22 @@
       },
       "oauth_client": [
         {
+          "client_id": "905630422658-1sg8j35j233fg602g848eaekfdaug32j.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.motomotok.neonyorunge",
+            "certificate_hash": "011c0e14b417f67e307386966138a21057f7c8ea"
+          }
+        },
+        {
+          "client_id": "905630422658-hsnj4nvmc9pc7iavpo6hr417htv95p9v.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.motomotok.neonyorunge",
+            "certificate_hash": "6f625138461fe0cd88b7cc520fefd38b85b4d169"
+          }
+        },
+        {
           "client_id": "905630422658-8rjgisn13j253ap12217mlb2bmg60al8.apps.googleusercontent.com",
           "client_type": 3
         }

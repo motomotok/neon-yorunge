@@ -15,6 +15,13 @@
     "AdMob": {
       "requestTrackingAuthorization": false,
       "initializeForTesting": false
+    },
+    "FirebaseAuthentication": {
+      "skipNativeAuth": true,
+      "providers": [
+        "google.com",
+        "apple.com"
+      ]
     }
   }
 }

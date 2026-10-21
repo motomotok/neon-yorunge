@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.66.0';
+const GAME_VERSION = '2.67.0';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -572,7 +572,7 @@ let stats = load('beatOrbitStats', {
   coreUnlocked:['core_root'],
   perksOwned:[], perksEquipped:[], balanceV2:false, balanceV2Refund:null,
   heatSeals:[], sealsOwned:[], seenIntro:[], risksCleared:0, rewardLedger:[],
-  playerName:'', nameChanges:0, myUid:'', gb:null, duel:null,
+  playerName:'', nameChanges:0, myUid:'', gb:null, duel:null, loginNudges:0,
   gems:0, lifetimeGems:0,
   // Günün Seti (bkz. dailyset.js)
   dset:null, dsetPending:null, dsetHist:[], dsetName:'', dsetCache:null, dsetRealSeen:0, dsetCrownDay:'', installId:'',
