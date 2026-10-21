@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.68.1';
+const GAME_VERSION = '2.69.0';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -386,7 +386,7 @@ const HEAT_SEALS = [
   {id:'earlyBoss',   icon:'flame',     cost:8,  bonus:0.20},  // bosslar %30 daha erken
   {id:'noShield',    icon:'shield',    cost:10, bonus:0.15},  // kalkan düşmez
 ];
-function heatModeAllowed(m){ return m==='classic' || m==='time'; }
+function heatModeAllowed(m){ return m==='daily' || m==='classic'; }
 function sealUnlocked(s){ return (stats.sealsOwned||[]).includes(s.id); }
 function buySeal(id){
   const s=HEAT_SEALS.find(x=>x.id===id);
@@ -581,6 +581,14 @@ let stats = load('beatOrbitStats', {
 // değiştirildi: alan/kuşanan oyuncu karşılığında Lo-Fi'yi alır.
 // 2.60: mühürler artık Çekirdekle alınıyor. 2.59'da takılmış olanlar bedava sahip sayılır.
 if((stats.heatSeals||[]).length && !(stats.sealsOwned||[]).length) stats.sealsOwned=[...stats.heatSeals];
+// 2.69: oyun öncesi takviyeler kaldırıldı — eldekiler satış fiyatından notaya
+// çevrilir (bir kez). Menü açılınca bilgi verilir (stats.boostRefundShown).
+if(!stats.boostRefundDone){
+  let refund=0;
+  for(const b of BOOSTS) refund += (stats.boosts && stats.boosts[b.id]||0) * b.price;
+  stats.boosts={}; stats.boostRefundDone=true;
+  if(refund>0){ stats.notes=(stats.notes||0)+refund; stats.boostRefund=refund; }
+}
 if((stats.owned.themes||[]).includes('tribalpulse')){
   stats.owned.themes = stats.owned.themes.filter(k=>k!=='tribalpulse');
   if(!stats.owned.themes.includes('lofichillhop')) stats.owned.themes.push('lofichillhop');
@@ -811,22 +819,22 @@ function ensureRivalLeague(){
 // kozmetiklerden ücretsiz birer tane / kalıcı özel kozmetik) — ekonomiyi
 // bozmasın diye SADECE en ucuz kozmetikler hediye ediliyor, pahalı/nadir
 // olanlara (prism, shadow, blackhole, quasar vb.) hiç dokunulmuyor.
-// 7. gün bir "ara zirve" (büyükçe bir takviye), 14. gün YALNIZCA bu
+// 7. gün bir "ara zirve" (büyükçe nota), 14. gün YALNIZCA bu
 // yoldan kazanılabilen özel 'loyalty_orb' ile büyük final — 15. günden
 // itibaren döngü 1'den tekrar başlar (loginCycleDay() modulo alır).
 const LOGIN_STREAK_REWARDS = [
   {type:'notes', amount:40},
-  {type:'boost', id:'luckystart', amount:3},
+  {type:'notes', amount:50},
   {type:'notes', amount:60},
-  {type:'boost', id:'slowstart', amount:3},
+  {type:'notes', amount:80},
   {type:'cosmetic', cat:'trails', id:'ribbon'},
   {type:'notes', amount:90},
-  {type:'boost', id:'shieldstart', amount:5},
+  {type:'notes', amount:300},
   {type:'notes', amount:120},
-  {type:'boost', id:'coinrush', amount:3},
+  {type:'notes', amount:140},
   {type:'cosmetic', cat:'trails', id:'sparkle'},
   {type:'notes', amount:160},
-  {type:'boost', id:'shieldstart', amount:4},
+  {type:'notes', amount:190},
   {type:'notes', amount:220},
   {type:'skin', id:'loyalty_orb', notes:400},
 ];
@@ -908,7 +916,6 @@ const ACHIEVEMENTS = [
   {id:'magnetmaster', icon:'magnet', nameKey:'ach_magnetmaster_name', descKey:'ach_magnetmaster_desc', reward:120, check:(s)=>s.magnets>=10},
   {id:'diamondhunter', icon:'gem', nameKey:'ach_diamondhunter_name', descKey:'ach_diamondhunter_desc', reward:150, check:(s)=>s.diamonds>=5},
   {id:'combo15', icon:'flame', nameKey:'ach_combo15_name', descKey:'ach_combo15_desc', reward:120, check:(s,c)=>c.session.streakMax>=15},
-  {id:'zenmaster', icon:'moon', nameKey:'ach_zenmaster_name', descKey:'ach_zenmaster_desc', reward:100, check:(s,c)=>c.mode==='zen' && c.elapsedSec>=120},
   {id:'dailyexplorer', icon:'calendar', nameKey:'ach_dailyexplorer_name', descKey:'ach_dailyexplorer_desc', reward:100, check:(s)=>s.dailyCount>=1},
   {id:'legend', icon:'trophy', nameKey:'ach_legend_name', descKey:'ach_legend_desc', reward:300, check:(s)=>s.best>=500},
   {id:'richling', icon:'coin', nameKey:'ach_richling_name', descKey:'ach_richling_desc', reward:150, check:(s)=>s.lifetimeNotes>=1000},
@@ -919,7 +926,7 @@ const ACHIEVEMENTS = [
   {id:'combo75', icon:'lightning', nameKey:'ach_combo75_name', descKey:'ach_combo75_desc', reward:400, check:(s,c)=>c.session.streakMax>=75},
   {id:'veteran', icon:'gamepad', nameKey:'ach_veteran_name', descKey:'ach_veteran_desc', reward:300, check:(s)=>s.games>=250},
   {id:'notemogul', icon:'sparkle', nameKey:'ach_notemogul_name', descKey:'ach_notemogul_desc', reward:500, check:(s)=>(s.lifetimeNotes||0)>=25000},
-  {id:'survivor', icon:'hourglass', nameKey:'ach_survivor_name', descKey:'ach_survivor_desc', reward:400, check:(s,c)=>c.mode==='classic' && c.elapsedSec>=300},
+  {id:'survivor', icon:'hourglass', nameKey:'ach_survivor_name', descKey:'ach_survivor_desc', reward:400, check:(s,c)=>(c.mode==='daily' || c.mode==='classic') && c.elapsedSec>=300},
   {id:'clefking', icon:'target', nameKey:'ach_clefking_name', descKey:'ach_clefking_desc', reward:400, check:(s,c)=>(c.session.diamonds||0)>=8},
   {id:'collector', icon:'palette', nameKey:'ach_collector_name', descKey:'ach_collector_desc', reward:200, check:(s)=>Object.values(s.owned).reduce((n,arr)=>n+arr.length,0)>=5},
 ];

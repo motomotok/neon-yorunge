@@ -112,7 +112,7 @@
     <div class="menuCorner right">
       <button class="menuDockBtn mini" data-go="language"><span class="dockFlag" id="langFlagIcon"></span><span data-i18n="nav_lang">Dil Seçin</span></button>
       <button class="menuDockBtn mini" data-go="settings"><i class="gicon" data-icon="gear"></i><span data-i18n="nav_settings">Ayarlar</span></button>
-      <button class="menuDockBtn mini" data-go="mode"><i class="gicon" data-icon="gamepad"></i><span data-i18n="nav_mode">Modlar</span></button>
+      <button class="menuDockBtn mini" data-go="dset"><i class="gicon" data-icon="calendar"></i><span data-i18n="nav_daily">Günlük</span></button>
       <button class="menuDockBtn mini" data-go="stats"><i class="gicon" data-icon="chart"></i><span data-i18n="nav_stats">İstatistik</span></button>
     </div>
     <div class="menuCenter">
@@ -141,20 +141,6 @@
       <div class="muted" id="streakLine">🔥 —</div>
       <div class="versionTag" id="versionTag"></div>
     </div>
-  </div>
-
-  <div class="screen" id="screen-mode">
-    <h2 data-i18n="mode_title">Mod Seç</h2>
-    <div class="modeGrid" id="modeGrid">
-      <div class="modeCard sel" data-mode="classic"><div class="mi gicon" data-icon="orbit"></div><div class="mn" data-i18n="mode_classic_name">Klasik</div><div class="md" data-i18n="mode_classic_desc">Canlarla sonsuz mod</div></div>
-      <div class="modeCard" data-mode="time"><div class="mi gicon" data-icon="clock"></div><div class="mn" data-i18n="mode_time_name">Zaman Yarışı</div><div class="md" data-i18n="mode_time_desc">60 sn'de en yüksek skor</div></div>
-      <div class="modeCard" data-mode="zen"><div class="mi gicon" data-icon="moon"></div><div class="mn" data-i18n="mode_zen_name">Zen</div><div class="md" data-i18n="mode_zen_desc">Asteroit yok, sadece topla</div></div>
-      <div class="modeCard" data-mode="daily"><div class="mi gicon" data-icon="calendar"></div><div class="mn" data-i18n="mode_daily_name">Günlük</div><div class="md" id="dailyStatus" data-i18n="mode_daily_desc">Herkes aynı düzen, tek deneme</div></div>
-    </div>
-    <div class="sub" style="margin-top:2px"><span data-i18n="boost_label">Takviye</span> <span style="opacity:.6" data-i18n="boost_sublabel">(mağazadan satın al)</span></div>
-    <div class="row2" id="boostRow"></div>
-    <button class="btn" id="modeStartBtn"><i class="gicon" data-icon="play"></i> <span data-i18n="menu_start">BAŞLA</span></button>
-    <button class="btn alt small" data-go="menu"><i class="gicon" data-icon="back"></i> <span data-i18n="btn_back">Geri</span></button>
   </div>
 
   <div class="screen fullpin" id="screen-howto">
@@ -405,7 +391,6 @@
         <div class="stab sel" data-tab="themes" data-i18n="tab_themes">Temalar</div>
         <div class="stab" data-tab="skins" data-i18n="tab_skins">Orblar</div>
         <div class="stab" data-tab="trails" data-i18n="tab_trails">İzler</div>
-        <div class="stab" data-tab="boosts" data-i18n="tab_boosts">Takviyeler</div>
         <div class="stab" data-tab="gems" data-i18n="currency_gem_name">Elmas</div>
       </div>
     </div>

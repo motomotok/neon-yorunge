@@ -38,17 +38,24 @@ export { auth, ensureUser };
 const scores = (day) => collection(db(), 'dset', day, 'scores');
 const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
 
-async function submit(day, name, total, runs) {
+// lg: Günün Seti ligi (oyuncunun düello kademesi, 'u' = rütbesiz). Herkes
+// yalnız kendi ligindeki oyuncularla aynı tabloda görünür (dizin: lg, total).
+async function submit(day, name, total, runs, lg) {
   const u = await ensureUser();
-  await setDoc(doc(db(), 'dset', day, 'scores', u.uid), { name, total, runs, ts: serverTimestamp() });
+  const data = { name, total, runs, ts: serverTimestamp() };
+  if (lg) data.lg = lg;
+  await setDoc(doc(db(), 'dset', day, 'scores', u.uid), data);
   return u.uid;
 }
-async function top(day, n) {
-  const snap = await getDocs(query(scores(day), orderBy('total', 'desc'), limit(n)));
+async function top(day, n, lg) {
+  const q = lg ? query(scores(day), where('lg', '==', lg), orderBy('total', 'desc'), limit(n))
+    : query(scores(day), orderBy('total', 'desc'), limit(n));
+  const snap = await getDocs(q);
   return snap.docs.map((d) => ({ uid: d.id, name: String(d.data().name || ''), total: +d.data().total || 0 }));
 }
-async function countAbove(day, total) {
-  const snap = await getCountFromServer(query(scores(day), where('total', '>', total)));
+async function countAbove(day, total, lg) {
+  const q = lg ? query(scores(day), where('lg', '==', lg), where('total', '>', total)) : query(scores(day), where('total', '>', total));
+  const snap = await getCountFromServer(q);
   return snap.data().count;
 }
 // Daha önce oturum açılmışsa uid; açılmamışsa null (yeni oturum AÇMAZ).
@@ -127,8 +134,8 @@ window.DuelCloud = {
 };
 
 window.DailySetCloud = {
-  submit: (day, name, total, runs) => withTimeout(submit(day, name, total, runs), 9000),
-  top: (day, n) => withTimeout(top(day, n), 7000),
-  countAbove: (day, total) => withTimeout(countAbove(day, total), 7000),
+  submit: (day, name, total, runs, lg) => withTimeout(submit(day, name, total, runs, lg), 9000),
+  top: (day, n, lg) => withTimeout(top(day, n, lg), 7000),
+  countAbove: (day, total, lg) => withTimeout(countAbove(day, total, lg), 7000),
   uid: () => withTimeout(uid(), 5000).catch(() => null),
 };

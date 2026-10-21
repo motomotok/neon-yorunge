@@ -73,6 +73,7 @@ function syncSupernovaTag(){
   el.textContent = gain>0 ? t('menu_supernova_tag',{n:gain}) : t('menu_upgrade_tag');
 }
 function goMenu(){ state='menu'; setHud(false); showScreen('menu');
+  if(stats.boostRefund>0 && stats.tutorialDone){ queueToast(t('boost_refund_toast',{n:stats.boostRefund})); stats.boostRefund=0; saveStats(); }
   ensureDailyEvent(); syncEventBanner(); syncLoginStreakDock(); syncSupernovaTag();
   // Denge 2 iadesi (bkz. data.js): bir kez söylenir.
   if(stats.balanceV2Refund){ const r=stats.balanceV2Refund; stats.balanceV2Refund=null; saveStats();
@@ -106,7 +107,7 @@ let _menuBootDone=false;
 function goHowto(){ state='howto'; setHud(false); showScreen('howto'); renderHowtoIcons(); }
 function goSettings(){ state='settings'; setHud(false); showScreen('settings'); syncSettings(); }
 function goStats(){ state='stats'; setHud(false); showScreen('stats'); syncStats(); }
-function goMode(){ state='mode'; setHud(false); showScreen('mode'); refreshDailyStatus(); renderBoostRow(); }
+function goMode(){ goDset(); }   // eski Modlar ekranı kaldırıldı
 // Mağaza her açılışta Temalar sekmesiyle ve en üstten başlar (son kalınan
 // sekmeyi hatırlamaz).
 function goShop(){ state='shop'; setHud(false); showScreen('shop'); shopTab='themes';
@@ -119,15 +120,18 @@ function goUpgrades(){ state='upgrades'; setHud(false); showScreen('upgrades'); 
   if(tutorialActive && typeof tutorialOnNav==='function') tutorialOnNav('upgrades');
 }
 
+// Oyunda iki oyun var: OYNA (Günün Seti — herkes aynı günlük harita, en iyi
+// 3 oyun günlük tabloya, her oyun Global Sıralama'ya) ve Düello. Eski modlar
+// (Klasik/Zaman/Zen) ve oyun öncesi takviyeler 2.69'da kaldırıldı.
 function startGame(m,d){
   notifyRecordPlayHour();
-  m = m || mode;
+  m = m==='duel' ? 'duel' : 'daily';
   if(AC && AC.state!=='running') acResume();
-  // Zorluk seçimi kaldırıldı: her mod tek, dengeli (normal) zorlukta oynanır.
+  // Zorluk seçimi yok: tek, dengeli (normal) zorluk.
   mode=m; diffKey='normal';
   diffCfg = DIFF[diffKey];
   // Günün Seti (bkz. dailyset.js): sınırsız deneme, herkes için aynı tohum.
-  // Takviyeler bu modda kullanılmaz (yarış eşit başlasın); kalıcı yetenekler geçerli.
+  // Kalıcı yetenekler, Süpernova ve Isı geçerli.
   let dsetDay=null;
   if(mode==='daily'){
     dsetDay = dsetEnsureDay().day;
@@ -136,10 +140,7 @@ function startGame(m,d){
     rngFn = mulberry32(duelMatch.seed);   // iki oyuncu aynı haritada
     metaOff = true;
   } else rngFn = Math.random;
-  if(mode!=='daily' && mode!=='duel' && pendingBoost && (stats.boosts[pendingBoost]||0)>0){
-    stats.boosts[pendingBoost]--; saveStats(); activeBoost=pendingBoost;
-  }
-  pendingBoost=null;
+  pendingBoost=null; activeBoost=null;
   resetGame(); state='play'; setHud(true); showScreen(null); showTutorialHint();
   if(dsetDay) session.dsetDay = dsetDay;
   beep(440,0.1,'sine',0.12);

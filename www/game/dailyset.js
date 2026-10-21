@@ -19,7 +19,7 @@ const DSET_BOTS_MAX = 11, DSET_REAL_FULL = 30;
 const DSET_BOT_BANDS = [[1.03,1.07],[0.96,1.0],[0.9,0.95],[0.83,0.88],[0.74,0.8],[0.64,0.7],
   [0.54,0.6],[0.44,0.5],[0.34,0.4],[0.25,0.3],[0.16,0.22]];
 const DSET_REWARDS = [
-  {gems:3, notes:500, shields:2},
+  {gems:4, notes:600},
   {gems:2, notes:300},
   {gems:1, notes:200},
 ];
@@ -81,18 +81,32 @@ function dsetComputeBotCount(){
 function dsetEnsureDay(){
   const key=dsetDayKey();
   const cur=stats.dset;
-  if(cur && cur.day===key) return cur;
+  if(cur && cur.day===key){
+    // 2.69 öncesi kurulmuş gün: lige yerleştir, skoru ligle birlikte yeniden gönder.
+    if(!cur.lg){ cur.lg=dsetLeague(); cur.sent=0; saveStats(); }
+    return cur;
+  }
   if(cur && cur.day && cur.top && cur.top.length){
     // Ödülü hiç verilemeyen daha eski bir gün varsa geçmişe yazılıp bırakılır.
     if(stats.dsetPending) dsetPushHist(stats.dsetPending.day, dsetTotal(stats.dsetPending.top));
     stats.dsetPending = cur;
   }
-  stats.dset = {day:key, top:[], runs:0, sent:0, ref:0, nbots:0};
+  stats.dset = {day:key, top:[], runs:0, sent:0, ref:0, nbots:0, lg:dsetLeague()};
   stats.dset.ref = dsetComputeRef();
   stats.dset.nbots = dsetComputeBotCount();
   saveStats();
   return stats.dset;
 }
+// Lig: oyuncu günün tablosunda yalnız kendi seviyesindekilerle yarışır (ekranda
+// lig adı geçmez — herkes "Günün Seti"ni görür). Düello kademesine göre
+// (Usta+Şampiyon birlikte); hiç düello oynamamış olan 'u'. Gün başında sabitlenir.
+function dsetLeague(){
+  const d=stats.duel;
+  if(!d || !(d.games>0) || d.d==null || typeof rankTier!=='function') return 'u';
+  const id=rankTier(d.d, d.lp||0).id;
+  return id==='champion' ? 'master' : id;
+}
+function dsetLg(d){ return (d && d.lg) || 'u'; }
 function dsetPushHist(day, total){
   stats.dsetHist = (stats.dsetHist||[]).filter(h=>h.day!==day);
   stats.dsetHist.push({day, total}); stats.dsetHist = stats.dsetHist.slice(-14);
@@ -158,29 +172,30 @@ function dsetSafeName(name, uid){
   if(!DSET_BAD_NAME.test(name.toLowerCase())) return name;
   return 'DJ'+(1000 + dsetStrHash(String(uid||name)) % 9000);
 }
-function dsetCachedReal(day){
+function dsetCachedReal(day, lg){
   const c=stats.dsetCache;
-  return (c && c.day===day) ? c.list : [];
+  return (c && c.day===day && (c.lg||'u')===(lg||'u')) ? c.list : [];
 }
 // Gerçek oyuncuları çeker (en fazla 90 sn'de bir), önbelleğe yazar.
-async function dsetFetchReal(day, force){
-  if(!window.DailySetCloud) return dsetCachedReal(day);
+async function dsetFetchReal(day, force, lg){
+  lg = lg || 'u';
+  if(!window.DailySetCloud) return dsetCachedReal(day, lg);
   const c=stats.dsetCache;
   // Firestore ücretsiz kotası (günde 50 bin okuma): ekran için 5 dk önbellek ve
   // 30 kayıt; yalnız ödül hesabında (günde bir) taze 50 kayıt okunur.
-  if(!force && c && c.day===day && Date.now()-(c.at||0) < 300000) return c.list;
+  if(!force && c && c.day===day && (c.lg||'u')===lg && Date.now()-(c.at||0) < 300000) return c.list;
   if(_dsetFetching) return _dsetFetching;
   _dsetFetching = (async ()=>{
     try{
       if(!_dsetMyUid) _dsetMyUid = await DailySetCloud.uid();
-      const list = await DailySetCloud.top(day, force ? 50 : 30);
-      stats.dsetCache = {day, list, at:Date.now()};
+      const list = await DailySetCloud.top(day, force ? 50 : 30, lg);
+      stats.dsetCache = {day, lg, list, at:Date.now()};
       const others = list.filter(p=>p.uid!==_dsetMyUid).length;
       // Ertesi günün bot sayısı buna göre (bkz. dsetComputeBotCount).
       if(day===dsetDayKey()) stats.dsetRealSeen = others;
       saveStats();
       return list;
-    }catch(e){ return dsetCachedReal(day); }
+    }catch(e){ return dsetCachedReal(day, lg); }
     finally{ _dsetFetching=null; }
   })();
   return _dsetFetching;
@@ -191,7 +206,7 @@ async function dsetSubmit(){
   const total=dsetTotal(d.top);
   if(!(total>0) || total<=(d.sent||0)) return;
   try{
-    _dsetMyUid = await DailySetCloud.submit(d.day, dsetPlayerName(), total, Math.min(500, d.runs));
+    _dsetMyUid = await DailySetCloud.submit(d.day, dsetPlayerName(), total, Math.min(500, d.runs), dsetLg(d));
     if(stats.dset===d){ d.sent=total; saveStats(); }
   }catch(e){}
 }
@@ -215,7 +230,7 @@ function dsetRecordRun(day, score){
 // Oyun sonu ekranı için tek satır: toplam, sıra, bir üsttekine kalan.
 function dsetOverText(res){
   const d=stats.dset; if(!d) return '';
-  const b=dsetBuildBoard(d, dsetCachedReal(d.day), dsetDayFrac(d.day));
+  const b=dsetBuildBoard(d, dsetCachedReal(d.day, dsetLg(d)), dsetDayFrac(d.day));
   if(!b.me) return '';
   let s=t('dset_over_line',{total:dsetFmt(b.me.total), rank:b.me.rank});
   if(res && res.counted && res.before>0) s+=' · +'+dsetFmt(res.after-res.before);
@@ -241,7 +256,6 @@ function dsetRewardText(rw){
 function dsetGrant(rw){
   if(rw.notes){ stats.notes=(stats.notes||0)+rw.notes; stats.lifetimeNotes=(stats.lifetimeNotes||0)+rw.notes; }
   if(rw.gems){ stats.gems=(stats.gems||0)+rw.gems; stats.lifetimeGems=(stats.lifetimeGems||0)+rw.gems; }
-  if(rw.shields) stats.boosts.shieldstart=(stats.boosts.shieldstart||0)+rw.shields;
   refreshWallet();
 }
 // Bekleyen ödül varsa verir ve DJ Vinil söyler. Diyalog gösterdiyse true.
@@ -251,7 +265,7 @@ async function dsetClaimPending(){
   if(!p || _dsetClaiming) return false;
   _dsetClaiming=true;
   try{
-    const real = await dsetFetchReal(p.day, true);
+    const real = await dsetFetchReal(p.day, true, dsetLg(p));
     if(stats.dsetPending!==p) return false;
     const b=dsetBuildBoard(p, real, 1);
     if(!b.me){ stats.dsetPending=null; saveStats(); return false; }
@@ -277,7 +291,7 @@ let _dsetTimer=null;
 function goDset(){
   state='dset'; setHud(false); showScreen('dset');
   dsetEnsureDay(); renderDset();
-  dsetFetchReal(stats.dset.day).then(()=>{ if(state==='dset') renderDset(); });
+  dsetFetchReal(stats.dset.day, false, dsetLg(stats.dset)).then(()=>{ if(state==='dset') renderDset(); });
   dsetSubmit();
   clearInterval(_dsetTimer);
   _dsetTimer=setInterval(()=>{ if(state!=='dset'){ clearInterval(_dsetTimer); return; } renderDset(); }, 20000);
@@ -289,7 +303,7 @@ function dsetTimeLeftText(){
 function dsetEsc(s){ return String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function renderDset(){
   const d=dsetEnsureDay();
-  const b=dsetBuildBoard(d, dsetCachedReal(d.day), dsetDayFrac(d.day));
+  const b=dsetBuildBoard(d, dsetCachedReal(d.day, dsetLg(d)), dsetDayFrac(d.day));
   document.getElementById('dsTimer').innerHTML=icon('hourglass')+' '+dsetTimeLeftText();
   const crown = stats.dsetCrownDay===d.day ? ' <span class="dsCrown">👑 '+t('dset_crown')+'</span>' : '';
   // Kürsü: 2 - 1 - 3
@@ -338,13 +352,13 @@ function syncDsetChip(){
   const el=document.getElementById('menuSetChip'); if(!el) return;
   if(!stats.tutorialDone){ el.style.display='none'; return; }
   const d=dsetEnsureDay();
-  const b=dsetBuildBoard(d, dsetCachedReal(d.day), dsetDayFrac(d.day));
+  const b=dsetBuildBoard(d, dsetCachedReal(d.day, dsetLg(d)), dsetDayFrac(d.day));
   el.style.display='';
   document.getElementById('menuSetText').textContent = b.me ? t('dset_your_rank',{rank:b.me.rank}) : t('dset_chip_sub');
 }
 // Mod ekranındaki kartın alt yazısı.
 function dsetModeStatus(){
   const d=dsetEnsureDay();
-  const b=dsetBuildBoard(d, dsetCachedReal(d.day), dsetDayFrac(d.day));
+  const b=dsetBuildBoard(d, dsetCachedReal(d.day, dsetLg(d)), dsetDayFrac(d.day));
   return b.me ? t('dset_chip_rank',{rank:b.me.rank}) : t('mode_daily_desc');
 }

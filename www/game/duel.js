@@ -188,6 +188,7 @@ async function duelCloudPool(mmr){
   _duelPool.b=b; _duelPool.at=Date.now(); _duelPool.list=list;
   return list;
 }
+function duelNameKey(n){ return String(n||'').trim().replace(/\s+/g,' ').toLocaleLowerCase('tr'); }
 function duelPick(cands){
   const sum=cands.reduce((a,c)=>a+c.w,0); if(!(sum>0)) return null;
   let r=Math.random()*sum;
@@ -196,13 +197,18 @@ function duelPick(cands){
 }
 async function duelFindOpp(dd){
   const mine=stats.myUid, seen=dd.seen||[], now=Date.now();
+  // Birebir aynı isim (büyük/küçük harf ve baş/son boşluk hariç) hiç çıkmaz:
+  // oyuncu başka cihazdan/giriş yapmadan oynadığı kendi kaydıyla eşleşmesin.
+  // "Ali" ile "Ali1", "Aslan Ali" farklı sayılır.
+  const myKey=duelNameKey(playerName()), sameName=(n)=>duelNameKey(n)===myKey;
   const near=(m)=>Math.exp(-Math.abs(m-dd.mmr)/120);
-  const cloud=(await duelCloudPool(dd.mmr)).filter(g=>g.uid!==mine);
+  const cloud=(await duelCloudPool(dd.mmr)).filter(g=>g.uid!==mine && !sameName(g.name));
   const cands=cloud.map(g=>({g, w: near(g.mmr) * (1 + 2*Math.exp(-(now-(g.at||0))/864e5)) * (seen.includes(g.uid)?0.12:1)}));
   // Başlangıç kadrosu, gerçek kayıt azaldıkça devreye girer.
   const seedW = cloud.length>=8 ? 0 : cloud.length>=4 ? 0.25 : cloud.length>=1 ? 0.5 : 1;
   if(seedW>0){
     DUEL_SEEDS.forEach(s=>{
+      if(sameName(s.name)) return;
       // Usta+ oyuncuya en üst kadro kendi seviyesine çekilir.
       const m = dd.mmr>1790 && s.mmr>1620 ? dd.mmr-120+Math.random()*240 : s.mmr;
       cands.push({seed:s, m, w: near(m)*seedW*(seen.includes('bot_'+s.id)?0.12:1)});
@@ -214,7 +220,7 @@ async function duelFindOpp(dd){
   if(!win.length) win=cands.filter(c=>dm(c)<=350);
   if(!win.length && cands.length) win=[cands.reduce((a,c)=>dm(c)<dm(a)?c:a)];
   const c=duelPick(win);
-  if(!c) return duelMakeBot(DUEL_SEEDS.reduce((a,x)=>Math.abs(x.mmr-dd.mmr)<Math.abs(a.mmr-dd.mmr)?x:a));
+  if(!c) return duelMakeBot(DUEL_SEEDS.filter(x=>!sameName(x.name)).reduce((a,x)=>Math.abs(x.mmr-dd.mmr)<Math.abs(a.mmr-dd.mmr)?x:a));
   if(c.g) return Object.assign({}, c.g, {kind:'ghost'});
   return duelMakeBot(c.seed, c.m);
 }

@@ -70,10 +70,11 @@ service cloud.firestore {
       allow create, update: if request.auth != null && request.auth.uid == uid
         && day.matches('^20[0-9]{2}-[01][0-9]-[0-3][0-9]$')
         && dayNear(day)
-        && request.resource.data.keys().hasOnly(['name', 'total', 'runs', 'ts'])
+        && request.resource.data.keys().hasOnly(['name', 'total', 'runs', 'ts', 'lg'])
+        && (!('lg' in request.resource.data) || request.resource.data.lg in ['u', 'bronze', 'silver', 'gold', 'platinum', 'diamond', 'master'])
         && nameOk(request.resource.data.name)
         && request.resource.data.total is number
-        && request.resource.data.total >= 0 && request.resource.data.total <= 300000
+        && request.resource.data.total >= 0 && request.resource.data.total <= 6000000
         && request.resource.data.runs is int
         && request.resource.data.runs >= 1 && request.resource.data.runs <= 500
         && request.resource.data.ts == request.time

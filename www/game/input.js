@@ -1,16 +1,5 @@
 // Tüm DOM olay bağlamaları (butonlar, dokunma/klavye girişi) ve erişilebilirlik
 // sınıflarının uygulanması. Yeni bir buton eklerken listener'ı buraya ekle.
-let pendingMode='classic';
-document.querySelectorAll('.modeCard').forEach(el=>{
-  el.addEventListener('click', ()=>{
-    // Günün Seti kendi ekranında (sıralama + OYNA) açılır.
-    if(el.dataset.mode==='daily'){ beep(500,0.06,'sine',0.1); goDset(); return; }
-    pendingMode=el.dataset.mode;
-    document.querySelectorAll('.modeCard').forEach(x=>x.classList.toggle('sel', x===el));
-    beep(500,0.06,'sine',0.1); refreshDailyStatus();
-  });
-});
-document.getElementById('modeStartBtn').addEventListener('click', ()=>startGame(pendingMode));
 
 document.querySelectorAll('#shopTabs .stab').forEach(el=>{
   el.addEventListener('click', ()=>{ shopTab=el.dataset.tab; renderShopTab(); });
@@ -37,7 +26,7 @@ document.querySelectorAll('[data-go]').forEach(b=>{
       // Tutorial zaten sürüyorsa asla baştan başlatma (eskiden son adımda
       // BAŞLA'ya basılınca tutorial yeniden başlıyordu).
       if(tutorialActive) return;
-      const go=()=>{ if(!stats.tutorialDone && typeof startTutorial==='function') startTutorial(); else startGame('classic','normal'); };
+      const go=()=>{ if(!stats.tutorialDone && typeof startTutorial==='function') startTutorial(); else startGame('daily'); };
       go();
     }
     else if(g==='menu') goMenu();
@@ -201,7 +190,7 @@ window.addEventListener('keydown', e=>{
     // dispatcher korumasından geçmiyor, script dışına çıkılabilir
     // (ör. oyun-sonu adımında SPACE'e basılırsa gerçek bir oyun başlardı).
     if(tutorialActive) return;
-    if(state==='menu') goMode();
+    if(state==='menu') startGame('daily');
     else if(state==='over') startGame();
     else if(state==='play') pauseGame();     // SPACE oyunda duraklatır, duraklatmada devam ettirir
     else if(state==='pause') resumeGame();
