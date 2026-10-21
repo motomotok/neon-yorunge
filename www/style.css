@@ -272,6 +272,16 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
 .menuCenter{position:absolute;top:78%;left:50%;transform:translate(-50%,-50%);z-index:2;
   display:flex;flex-direction:column;align-items:center;gap:10px;}
 .menuStartBtn{width:min(210px,58vw);padding:15px 14px;}
+/* 2.69.2: iki ana oyun yan yana, eşit ağırlıkta. */
+.menuPlayRow{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:min(360px,calc(100vw - 32px));}
+.menuPlayBtn{width:auto!important;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:11px 8px!important;min-height:76px;}
+.menuPlayBtn .gicon{width:22px;height:22px;margin:0 0 1px;}
+.menuPlayBtn b{font-family:var(--font-display);text-transform:uppercase;font-size:18px;letter-spacing:1px;line-height:1.05;}
+.menuPlayBtn small{font-family:var(--font-ui);font-size:10.5px;font-weight:700;opacity:.8;letter-spacing:.2px;}
+.menuDuelBtn{background:linear-gradient(160deg,#ffb45c,#ff6a2a 60%,#e2401f)!important;color:#2a0d00!important;border-color:rgba(255,220,170,.6)!important;
+  box-shadow:0 0 22px -4px rgba(255,120,40,.75), inset 0 0 0 1px rgba(255,255,255,.12)!important;}
+.menuSocialRow .menuUpgradeBtn{width:auto;padding:9px 18px;font-size:14px;border-radius:999px;font-family:var(--font-ui);font-weight:800;}
+.menuUpgradeTag:not(.supernova){display:none;}
 
 /* Yükselt: kalıcı ilerleme döngüsünün kalbi — BAŞLA'nın hemen altında,
    farklı (mor) renkte ve kendi ayrı, daha yavaş nabzıyla öne çıkarılıyor. */
@@ -1445,6 +1455,10 @@ h1 .gicon,h2 .gicon{color:var(--star);}
 /* Nasıl Oynanır: risk balonları bölümü */
 .htSideTag.r{background:linear-gradient(135deg,#c46bff,#7a3bd1);color:#fff;}
 .htSideTitle.risk{color:#d49bff;}
+.htSideTag.du{background:linear-gradient(135deg,#ffb45c,#ff5a2a);color:#2a0d00;}
+.htSideTitle.du{color:#ffb070;} .htVal.du{color:#ffc48a;background:rgba(255,138,61,.14);}
+.htIco{width:30px;height:30px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(255,138,61,.12);color:#ffb070;}
+.htIco .gicon{width:17px;height:17px;}
 .htVal.risk{color:#d49bff;}
 .htRiskNote{font-size:11px;opacity:.65;margin:6px 4px 0;line-height:1.4;}
 /* 2.60: tanıtım kartı üstteyken flaş yazısı kartın altına kayar (çakışmasın) */
@@ -1486,6 +1500,17 @@ body.introOn #levelFlash{padding-top:calc(env(safe-area-inset-top) + 252px);}
 .drInfo span{font-weight:700;font-size:13px;opacity:.9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .drInfo small{font-size:11px;opacity:.65;}
 .drBadge{position:relative;}
+/* 2.69.2: yuvalar + rütbe kartı tek satır, aynı yükseklik */
+.duelTopRow{display:flex;align-items:stretch;gap:8px;width:100%;max-width:440px;margin:0 auto 8px;}
+.duelTopRow .perkSlots{margin:0;gap:6px;flex:none;}
+.duelTopRow .perkSlot{flex:none;width:62px;height:88px;}
+.duelTopRow .duelRankCard{flex:1;min-width:0;height:88px;margin:0;padding:6px 10px;gap:9px;max-width:none;}
+.duelTopRow .drBadge{width:44px;height:44px;}
+.duelTopRow .drInfo b{font-size:13.5px;line-height:1.1;white-space:normal;overflow-wrap:anywhere;}
+.duelTopRow .drInfo{gap:2px;justify-content:center;}
+.duelTopRow .drInfo small{font-size:10.5px;opacity:.75;}
+.duelTopRow .drBar{min-width:0;}
+@media (max-width:360px){ .duelTopRow .perkSlot{width:54px;} .duelTopRow .drBadge{width:36px;height:36px;} }
 .drBadge>.drDiv{position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);font-style:normal;font-family:var(--font-display);font-size:10px;line-height:1;
   padding:2px 5px;border-radius:6px;background:#0b0f1f;color:var(--tc);border:1px solid var(--tc);}
 .drBadge.sm{width:38px;height:38px;} .drBadge.sm .gicon{width:19px;height:19px;}

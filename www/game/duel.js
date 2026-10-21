@@ -131,9 +131,9 @@ function renderDuelLobby(){
   const wr = d.games ? Math.round(d.wins/d.games*100) : 0;
   document.getElementById('duelRankCard').innerHTML =
     `${rankBadgeHtml(d.d, d.lp)}
-     <div class="drInfo"><b style="color:${rankTier(d.d,d.lp).col}">${rankName(d.d, d.lp)}</b><span>${dsetEsc(playerName())}</span>
+     <div class="drInfo"><b style="color:${rankTier(d.d,d.lp).col}">${rankName(d.d, d.lp)}</b>
      ${duelLpBar(d.lp, d.d)}
-     <small>${t('duel_record',{w:d.wins, l:d.losses})}${d.games?` · %${wr}`:''}${d.streak>=2?` · ${t('duel_streak',{n:d.streak})}`:''}</small>
+     <small>${t('duel_record',{w:d.wins, l:d.losses})}${d.games?` · %${wr}`:''}</small>
      ${d.shield>0?`<small class="drShield">${icon('shield')} ${t('duel_shield',{n:d.shield})}</small>`:''}</div>`;
   const slots=document.getElementById('duelSlots');
   slots.innerHTML='';
@@ -161,9 +161,9 @@ function renderDuelLobby(){
     });
     grid.appendChild(card);
   });
-  // Son maçlar: gelen/giden LP.
+  // Son 5 maç: gelen/giden LP.
   const h=document.getElementById('duelHist');
-  h.innerHTML = d.hist.length ? d.hist.map(x=>
+  h.innerHTML = d.hist.length ? d.hist.slice(0,5).map(x=>
     `<div class="dhRow ${x.w?'win':'lose'}"><span class="dhRes">${t(x.w?'duel_hist_w':'duel_hist_l')}</span>
       <span class="dhOpp"><b>${dsetEsc(x.n)}</b><small>${x.or||''}</small></span>
       <span class="dhWhy">${(x.why||x.ff)?t('duel_hwhy_'+(x.why||'ff')):''}</span>

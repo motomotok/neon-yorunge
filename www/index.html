@@ -115,14 +115,15 @@
       <button class="menuDockBtn mini" data-go="stats"><i class="gicon" data-icon="chart"></i><span data-i18n="nav_stats">İstatistik</span></button>
     </div>
     <div class="menuCenter">
+      <!-- İki oyun: solda Skor Avı (günlük ödüllü sıralama), sağda Düello. -->
       <div class="menuSocialRow">
         <button class="menuSocialBtn rank" data-go="ranking"><i class="gicon" data-icon="trophy"></i><span data-i18n="nav_rank">Sıralama</span></button>
-        <button class="menuSocialBtn duel" data-go="duel"><i class="gicon" data-icon="lightning"></i><span data-i18n="nav_duel">Düello</span></button>
+        <button class="menuSocialBtn menuUpgradeBtn" data-go="upgrades"><i class="gicon" data-icon="atom"></i><span data-i18n="menu_upgrades">YETENEKLER</span></button>
       </div>
-      <button class="btn menuStartBtn" data-go="quickstart"><i class="gicon" data-icon="play"></i> <span data-i18n="menu_start">BAŞLA</span></button>
-      <div class="menuUpgradeWrap">
-        <button class="btn menuUpgradeBtn" data-go="upgrades"><i class="gicon" data-icon="lightning"></i> <span data-i18n="menu_upgrades">YETENEKLER</span></button>
-        <div class="menuUpgradeTag" data-i18n="menu_upgrade_tag">💪 Her kayıpta daha güçlü oyna</div>
+      <div class="menuUpgradeTag" data-i18n="menu_upgrade_tag"></div>
+      <div class="menuPlayRow">
+        <button class="btn menuStartBtn menuPlayBtn" data-go="quickstart"><i class="gicon" data-icon="play"></i><b data-i18n="menu_play_score">SKOR AVI</b><small data-i18n="menu_play_score_sub">Günlük ödüllü yarış</small></button>
+        <button class="btn menuDuelBtn menuPlayBtn" data-go="duel"><i class="gicon" data-icon="lightning"></i><b data-i18n="nav_duel">DÜELLO</b><small data-i18n="menu_play_duel_sub">1'e 1 · Dereceli</small></button>
       </div>
       <div class="menuEventChip" id="menuEventChip" data-go="shop" style="display:none">
         <span class="ic" id="menuEventIcon"></span> <span id="menuEventText"></span>
@@ -204,14 +205,20 @@
         <p class="htRiskNote" data-i18n="ht_risk_note"></p>
       </div>
 
+      <div class="htSide duel">
+        <div class="htSideHead"><span class="htSideTag du"><i class="gicon" data-icon="lightning"></i></span><span class="htSideLbl" data-i18n="ht_duel_lbl">DÜELLO</span><span class="htSideTitle du" data-i18n="ht_duel_title">1'e 1 · 90 saniye</span></div>
+        <div class="htTrack"><span class="htNo">D1</span><span class="htIco"><i class="gicon" data-icon="shield"></i></span><span class="htName"><span data-i18n="ht_duel_fair_n"></span><small data-i18n="ht_duel_fair_d"></small></span></div>
+        <div class="htTrack"><span class="htNo">D2</span><canvas class="howtoIcon" width="34" height="34" data-type="attackOrb"></canvas><span class="htName"><span data-i18n="it_attackOrb_n"></span><small data-i18n="ht_duel_atk_d"></small></span><span class="htVal du">⚔</span></div>
+        <div class="htTrack"><span class="htNo">D3</span><span class="htIco"><i class="gicon" data-icon="trophy"></i></span><span class="htName"><span data-i18n="ht_duel_win_n"></span><small data-i18n="ht_duel_win_d"></small></span></div>
+        <div class="htTrack"><span class="htNo">D4</span><span class="htIco"><i class="gicon" data-icon="chart"></i></span><span class="htName"><span data-i18n="ht_duel_rank_n"></span><small data-i18n="ht_duel_rank_d"></small></span><span class="htVal du">LP</span></div>
+      </div>
+
       <div class="htSide liner">
         <div class="htSideHead"><span class="htSideTag d"><i class="gicon" data-icon="book"></i></span><span class="htSideLbl" data-i18n="ht_liner">KAPAK NOTLARI</span></div>
         <div class="htBoss"><i class="gicon" data-icon="flame"></i><div><b data-i18n="ht_boss_title">Boss Dalgası</b><p data-i18n="ht_boss_text"></p></div></div>
         <div class="htModes">
-          <div class="htMode"><i class="gicon" data-icon="orbit"></i><b data-i18n="mode_classic_name">Klasik</b><small data-i18n="mode_classic_desc"></small></div>
-          <div class="htMode"><i class="gicon" data-icon="clock"></i><b data-i18n="mode_time_name">Zaman Yarışı</b><small data-i18n="mode_time_desc"></small></div>
-          <div class="htMode"><i class="gicon" data-icon="moon"></i><b data-i18n="mode_zen_name">Zen</b><small data-i18n="mode_zen_desc"></small></div>
-          <div class="htMode"><i class="gicon" data-icon="calendar"></i><b data-i18n="mode_daily_name">Günlük</b><small data-i18n="mode_daily_desc"></small></div>
+          <div class="htMode"><i class="gicon" data-icon="play"></i><b data-i18n="menu_play_score">Skor Avı</b><small data-i18n="ht_play_desc"></small></div>
+          <div class="htMode"><i class="gicon" data-icon="lightning"></i><b data-i18n="nav_duel">Düello</b><small data-i18n="ht_duel_desc"></small></div>
         </div>
         <p class="htTip"><i class="gicon" data-icon="sparkle"></i> <span data-i18n="ht_tip"></span></p>
       </div>
@@ -471,11 +478,10 @@
   <div class="screen fullpin" id="screen-duel">
     <div class="screenHead">
       <h2><i class="gicon" data-icon="lightning"></i> <span data-i18n="duel_title">Düello</span></h2>
-      <div class="duelRankCard" id="duelRankCard"></div>
     </div>
     <div class="screenBody">
       <div class="perkSlotsTitle" data-i18n="duel_slots_title">Düello Yuvaları</div>
-      <div class="perkSlots" id="duelSlots"></div>
+      <div class="duelTopRow"><div class="perkSlots" id="duelSlots"></div><div class="duelRankCard" id="duelRankCard"></div></div>
       <div class="sub perkIntro" data-i18n="duel_slots_hint"></div>
       <div class="shopGrid" id="duelPerkGrid"></div>
       <div class="perkSlotsTitle" data-i18n="duel_history">Son Maçlar</div>
