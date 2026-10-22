@@ -63,14 +63,16 @@ function telemetrySummary(){
 let _lastOn = false;
 function telemetryBeat(force){
   if(!window.Telemetry || !analyticsOn() || document.hidden) return;
-  // Zaten "oyunda" yazılmışsa (ör. reklamdan dönüş) 45 sn içinde tekrar yazmaz.
-  if(Date.now()-_lastBeat < (force && !_lastOn ? 0 : force ? 45000 : BEAT_MS-5000)) return;
+  // Zaten "oyunda" yazılmışsa (ör. reklamdan dönüş) yalnız 30 dk'da bir yeniler.
+  if(_lastOn && Date.now()-_lastBeat < BEAT_MS-5000) return;
   _lastBeat=Date.now(); _lastOn=true;
   Telemetry.beat(Object.assign(telemetrySummary(), {on:true})).catch(()=>{});
 }
 // Oturum sonu: güncel istatistikle "çıktı" yazılır (bir kez).
 function telemetryEnd(){
   if(!window.Telemetry || !analyticsOn() || !_lastOn) return;
+  // Reklam tam ekrandayken oyun arka plana düşer; bu oturum sonu değildir.
+  if(window.Ads && Ads.isShowing && Ads.isShowing()) return;
   _lastOn=false; _lastBeat=Date.now();
   Telemetry.beat(Object.assign(telemetrySummary(), {on:false})).catch(()=>{});
 }
