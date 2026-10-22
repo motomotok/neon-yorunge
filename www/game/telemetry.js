@@ -7,8 +7,10 @@
 // YALNIZ oyuncu kutuyu işaretlediyse (açık rıza, varsayılan kapalı) gider.
 // İzin Ayarlar → Bilgi → Gizlilik & Yasal → "Veri İzinleri"nden değişir.
 const KVKK_VERSION = 1;
-const BEAT_MS = 60000;
-let _kvkkResolve = null, _lastBeat = 0;
+// MALİYET: oyun açıkken 2 dakikada bir tek yazma (izin verenlerde).
+// Admin paneli "son 3 dakikada görülen"i şu an oynuyor sayar.
+const BEAT_MS = 120000, GIFT_CHECK_MS = 10*60000;
+let _kvkkResolve = null, _lastBeat = 0, _lastGiftCheck = 0;
 
 function analyticsOn(){ return stats.kvkkV>=KVKK_VERSION && !!stats.analytics; }
 
@@ -58,7 +60,8 @@ function telemetrySummary(){
 }
 function telemetryBeat(force){
   if(!window.Telemetry || !analyticsOn() || document.hidden) return;
-  if(!force && Date.now()-_lastBeat < BEAT_MS-2000) return;
+  // force (açılış, izin, uygulamaya dönüş) bile en az 45 sn arayla yazar.
+  if(Date.now()-_lastBeat < (force ? 45000 : BEAT_MS-2000)) return;
   _lastBeat=Date.now();
   Telemetry.beat(telemetrySummary()).catch(()=>{});
 }
@@ -67,8 +70,9 @@ function telemetryBeat(force){
 // (aynı hediye iki cihazda/iki kez alınamasın). stats.giftsDone yedek kontrol.
 let _giftBusy=false;
 async function checkGifts(){
-  if(!window.Telemetry || _giftBusy) return;
-  _giftBusy=true;
+  // Hediye sorgusu açılışta ve en fazla 10 dakikada bir (her geri dönüşte değil).
+  if(!window.Telemetry || _giftBusy || Date.now()-_lastGiftCheck < GIFT_CHECK_MS) return;
+  _giftBusy=true; _lastGiftCheck=Date.now();
   try{
     const list=await Telemetry.gifts();
     const done=stats.giftsDone||(stats.giftsDone=[]);
@@ -104,7 +108,7 @@ function initTelemetry(){
   // Oynama süresi: yalnız oyun ekranı açık ve uygulama öndeyken sayılır
   // (stats oyun sonunda zaten kaydediliyor).
   setInterval(()=>{ if(state==='play' && !document.hidden) stats.playSec=(stats.playSec||0)+1; }, 1000);
-  setInterval(()=>telemetryBeat(false), 15000);
+  setInterval(()=>telemetryBeat(false), 20000);
   document.addEventListener('visibilitychange', ()=>{
     if(document.hidden) return;
     telemetryBeat(true); checkGifts();

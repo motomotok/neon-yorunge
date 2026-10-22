@@ -115,22 +115,22 @@ pre{white-space:pre-wrap;word-break:break-word;background:#080a14;border:1px sol
     <div class="grid" id="kpis"></div>
     <div class="lists" style="margin-top:12px">
       <div class="card"><h2 style="margin-top:0"><span class="dot on"></span>Şu an oynayanlar</h2><div id="onlineList" class="muted">—</div></div>
-      <div class="card"><h2 style="margin-top:0">Platform</h2><div class="bars" id="platBars"></div><h2>Sürüm (son 7 gün)</h2><div class="bars" id="verBars"></div></div>
+      <div class="card"><h2 style="margin-top:0">Platform (tüm oyuncular)</h2><div class="bars" id="platBars"></div><h2>Şu an oynayanlar: platform</h2><div class="bars" id="livePlatBars"></div><h2>Şu an oynayanlar: sürüm</h2><div class="bars" id="verBars"></div></div>
       <div class="card"><h2 style="margin-top:0">Düello rankları</h2><div class="bars" id="tierBars"></div></div>
     </div>
-    <p class="hint">"Oyuncular" sayıları yalnız KVKK ekranında istatistik izni veren oyuncuları kapsar. "Sıralamadaki oyuncu" ve "Düello oyuncusu", izinden bağımsız olarak skor tablolarına kayıt atanların sayısıdır. Şu an oynayan: son 2 dakikada oyunu açık olanlar (canlı).</p>
+    <p class="hint">"Oyuncular" sayıları yalnız KVKK ekranında istatistik izni veren oyuncuları kapsar. "Sıralamadaki oyuncu" ve "Düello oyuncusu", izinden bağımsız olarak skor tablolarına kayıt atanların sayısıdır. Şu an oynayan: son 3 dakikada oyunu açık olanlar; panel ekrandayken dakikada bir yenilenir, arka plandayken veri çekmez.</p>
   </section>
 
   <section data-sec="oyuncular" class="hidden">
     <div class="row" style="margin-bottom:10px">
       <input type="text" id="pSearch" placeholder="İsim ya da oyuncu ID ara…" style="flex:1;min-width:180px">
       <select id="pFilter">
-        <option value="">Hepsi</option><option value="online">Şu an oynayan</option><option value="today">Bugün</option>
+        <option value="">Hepsi</option><option value="online">Şu an oynayan</option><option value="p:android">🤖 Android</option><option value="p:ios">🍎 iOS</option><option value="p:web">🌐 Web</option><option value="today">Bugün</option>
         <option value="linked">Hesabı bağlı</option><option value="noads">Reklamsız</option><option value="pass">Sezon bileti</option>
       </select>
     </div>
     <div class="tblWrap"><table id="pTable"><thead></thead><tbody></tbody></table></div>
-    <p class="hint" id="pHint"></p>
+    <div class="row" style="margin-top:8px"><span class="hint sp" id="pHint" style="margin:0"></span><button class="btn sm hidden" id="pMore">200 oyuncu daha yükle</button></div>
   </section>
 
   <section data-sec="siralama" class="hidden">
@@ -165,7 +165,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#080a14;border:1px sol
       </div>
       <p class="hint">Oyuncu ID, oyunda Ayarlar → Bilgi → Gizlilik &amp; Yasal → Veri İzinleri penceresinin altında yazar; ya da Oyuncular listesinden bir satıra tıkla. Hediye, oyuncu oyunu bir sonraki açışında (ya da uygulamaya geri döndüğünde) "🎁 Hediye geldi" bildirimiyle hesabına eklenir.</p>
     </div>
-    <h2>Gönderilenler</h2>
+    <h2>Son gönderilen 30 hediye</h2>
     <div class="tblWrap"><table id="gTable"><thead><tr><th>Tarih</th><th>Oyuncu</th><th>Hediye</th><th>Not</th><th>Durum</th><th></th></tr></thead><tbody></tbody></table></div>
   </section>
 </div>
@@ -177,7 +177,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#080a14;border:1px sol
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
 import {
-  getFirestore, collection, doc, query, where, orderBy, limit, getDocs, getDoc, onSnapshot,
+  getFirestore, collection, doc, query, where, orderBy, limit, getDocs, getDoc, startAfter,
   getCountFromServer, getAggregateFromServer, sum, writeBatch, serverTimestamp, Timestamp, deleteDoc,
 } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 
@@ -195,7 +195,7 @@ const db = getFirestore(app);
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmt = (n) => (n == null ? '—' : Number(n).toLocaleString('tr-TR'));
-const ONLINE_MS = 2 * 60000, TZ = 3 * 3600000, DAY = 86400000;
+const ONLINE_MS = 3 * 60000, TZ = 3 * 3600000, DAY = 86400000;
 const toMs = (ts) => (ts && ts.toMillis ? ts.toMillis() : 0);
 const todayStart = () => { const n = Date.now() + TZ; return n - (n % DAY) - TZ; };
 function ago(ms) {
@@ -235,23 +235,31 @@ onAuthStateChanged(auth, async (u) => {
 });
 
 // ---------- Sekmeler ----------
+// MALİYET KURALI: her sekme verisini yalnız açıldığında ve bir kez çeker
+// (Yenile'ye basınca tekrar). Özet yalnız "sayım" sorguları kullanır: her
+// sayım, sonuç kaç olursa olsun ~1 okuma (1000 kayıtta 1) sayılır.
 let curTab = 'ozet';
+const loaded = {};
+function openTab(tab) {
+  if (tab === 'oyuncular' && !loaded.players) loadPlayers();
+  if (tab === 'siralama' && !loaded.rank) loadRankings();
+  if (tab === 'hediyeler' && !loaded.gifts) loadGifts();
+  if (tab === 'hatalar' && !loaded.errors) loadErrors();
+}
 document.querySelectorAll('#tabs button').forEach((b) => b.onclick = () => {
   curTab = b.dataset.tab;
   document.querySelectorAll('#tabs button').forEach((x) => x.classList.toggle('on', x === b));
   document.querySelectorAll('section[data-sec]').forEach((s) => s.classList.toggle('hidden', s.dataset.sec !== curTab));
-  if (curTab === 'siralama' && !loaded.rank) loadRankings();
-  if (curTab === 'hediyeler' && !loaded.gifts) loadGifts();
+  openTab(curTab);
 });
-const loaded = {};
-$('#refreshBtn').onclick = () => { loaded.rank = loaded.gifts = false; loadAll(); if (curTab === 'siralama') loadRankings(); if (curTab === 'hediyeler') loadGifts(); };
+$('#refreshBtn').onclick = () => { loaded.players = loaded.rank = loaded.gifts = loaded.errors = false; loadAll(); openTab(curTab); };
 
 // ---------- Veri ----------
-let players = [];
+let players = [], livePlayers = [];
 async function loadAll() {
   $('#updated').textContent = 'yükleniyor…';
   try {
-    await Promise.all([loadKpis(), loadPlayers(), loadErrors()]);
+    await loadKpis();
     startLive();
     cleanup();
     $('#updated').textContent = 'güncellendi ' + new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
@@ -262,8 +270,10 @@ async function loadAll() {
 }
 
 // Saklama süreleri (privacy.html'de yazıyor): hatalar 90 gün, 12 ay
-// görünmeyen oyuncu özeti silinir. Panel her açılışta sessizce temizler.
+// görünmeyen oyuncu özeti silinir. Günde bir kez (bu tarayıcıda) çalışır.
 async function cleanup() {
+  const today = new Date().toDateString();
+  try { if (localStorage.getItem('boCleanup') === today) return; localStorage.setItem('boCleanup', today); } catch (e) {}
   const old = async (q) => {
     const s = await getDocs(q);
     if (!s.size) return;
@@ -276,78 +286,94 @@ async function cleanup() {
 }
 
 const cnt = async (q) => { try { return (await getCountFromServer(q)).data().count; } catch (e) { return null; } };
+const TIER_IDS = ['bronze', 'silver', 'gold', 'platinum', 'diamond', 'master', 'champion'];
 async function loadKpis() {
   const P = collection(db, 'players');
   const t0 = Timestamp.fromMillis(todayStart()), t7 = Timestamp.fromMillis(Date.now() - 7 * DAY);
-  const [total, today, week, newToday, linked, noads, pass, lbAll, duels, err24, agg] = await Promise.all([
+  const [total, today, week, newToday, linked, noads, pass, lbAll, duels, err24, agg, pa, pi, pw, ...tiers] = await Promise.all([
     cnt(P), cnt(query(P, where('lastSeen', '>=', t0))), cnt(query(P, where('lastSeen', '>=', t7))),
     cnt(query(P, where('since', '>=', todayStart()))), cnt(query(P, where('linked', '==', true))),
     cnt(query(P, where('noads', '==', true))), cnt(query(P, where('pass', '==', true))),
     cnt(collection(db, 'lb', 'all', 'scores')), cnt(collection(db, 'duels')),
     cnt(query(collection(db, 'errors'), where('ts', '>=', Timestamp.fromMillis(Date.now() - DAY)))),
     getAggregateFromServer(P, { games: sum('games'), mins: sum('mins') }).then((r) => r.data()).catch(() => ({})),
+    cnt(query(P, where('plat', '==', 'android'))), cnt(query(P, where('plat', '==', 'ios'))), cnt(query(P, where('plat', '==', 'web'))),
+    ...TIER_IDS.map((id) => cnt(query(P, where('tier', '>=', id), where('tier', '<=', id + '')))),
   ]);
+  const pct = (n) => (total ? ' <small class="muted">%' + Math.round(100 * (n || 0) / total) + '</small>' : '');
   const k = [
     ['live', 'Şu an oynayan', '<span id="liveN">…</span>'],
-    ['', 'Oyuncu (izinli)', fmt(total)], ['', 'Bugün oynayan', fmt(today)], ['', 'Son 7 gün', fmt(week)],
+    ['', 'Oyuncu (izinli)', fmt(total)],
+    ['', '🤖 Android', fmt(pa) + pct(pa)], ['', '🍎 iOS', fmt(pi) + pct(pi)], ['', '🌐 Web', fmt(pw) + pct(pw)],
+    ['', 'Bugün oynayan', fmt(today)], ['', 'Son 7 gün', fmt(week)],
     ['', 'Bugün yeni', fmt(newToday)], ['', 'Toplam oyun (deneme)', fmt(agg.games)],
     ['', 'Toplam oynama', agg.mins != null ? fmt(Math.round(agg.mins / 60)) + ' saat' : '—'],
     ['', 'Ortalama oyuncu başı', total ? fmt(Math.round((agg.mins || 0) / total)) + ' dk' : '—'],
-    ['', 'Hesabı bağlı', fmt(linked) + (total ? ' <small class="muted">%' + Math.round(100 * linked / total) + '</small>' : '')],
+    ['', 'Hesabı bağlı', fmt(linked) + pct(linked)],
     ['', 'Reklamsız', fmt(noads)], ['', 'Sezon bileti', fmt(pass)],
     ['', 'Sıralamadaki oyuncu', fmt(lbAll)], ['', 'Düello oyuncusu', fmt(duels)],
     ['', 'Hata (24 saat)', fmt(err24)],
   ];
   $('#kpis').innerHTML = k.map(([c, l, v]) => `<div class="card kpi ${c}"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+  $('#errBadge').innerHTML = err24 ? `<span class="tag bad">${err24}</span>` : '';
+  bars('#platBars', { Android: pa || 0, iOS: pi || 0, Web: pw || 0 });
+  const tb = {}; TIER_IDS.forEach((id, i) => { if (tiers[i]) tb[TIER_TR[id]] = tiers[i]; });
+  bars('#tierBars', tb);
 }
 
 function bars(el, counts) {
   const ent = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 8);
   const max = Math.max(1, ...ent.map((e) => e[1]));
-  $(el).innerHTML = ent.length ? ent.map(([k, v]) => `<div class="b"><span>${esc(k)}</span><i style="width:${Math.max(4, 160 * v / max)}px"></i><span>${fmt(v)}</span></div>`).join('') : '<span class="muted">Henüz veri yok</span>';
+  $(el).innerHTML = ent.some((e) => e[1]) ? ent.map(([k, v]) => `<div class="b"><span>${esc(k)}</span><i style="width:${Math.max(4, 160 * v / max)}px"></i><span>${fmt(v)}</span></div>`).join('') : '<span class="muted">Henüz veri yok</span>';
 }
 
-async function loadPlayers() {
-  const s = await getDocs(query(collection(db, 'players'), orderBy('lastSeen', 'desc'), limit(500)));
-  players = s.docs.map((d) => Object.assign({ uid: d.id }, d.data(), { seen: toMs(d.data().lastSeen) }));
-  const plat = {}, ver = {}, tier = {};
-  const wk = Date.now() - 7 * DAY;
-  for (const p of players) {
-    plat[PLAT_TR[p.plat] || p.plat || '?'] = (plat[PLAT_TR[p.plat] || p.plat || '?'] || 0) + 1;
-    if (p.seen >= wk) ver[p.ver || '?'] = (ver[p.ver || '?'] || 0) + 1;
-    if (p.tier) { const t = TIER_TR[p.tier.split(' ')[0]] || p.tier; tier[t] = (tier[t] || 0) + 1; }
-  }
-  bars('#platBars', plat); bars('#verBars', ver); bars('#tierBars', tier);
-  $('#pHint').textContent = players.length >= 500 ? 'Son görülen 500 oyuncu gösteriliyor.' : players.length + ' oyuncu.';
+// Oyuncu listesi: sayfa sayfa (200'er), yalnız sekme açılınca.
+const PAGE = 200;
+let lastPlayerDoc = null;
+async function loadPlayers(more) {
+  loaded.players = true;
+  const cons = [orderBy('lastSeen', 'desc'), limit(PAGE)];
+  if (more && lastPlayerDoc) cons.splice(1, 0, startAfter(lastPlayerDoc));
+  const s = await getDocs(query(collection(db, 'players'), ...cons));
+  const rows = s.docs.map((d) => Object.assign({ uid: d.id }, d.data(), { seen: toMs(d.data().lastSeen) }));
+  players = more ? players.concat(rows) : rows;
+  lastPlayerDoc = s.docs.length ? s.docs[s.docs.length - 1] : lastPlayerDoc;
+  markLive();
+  $('#pHint').textContent = players.length + ' oyuncu yüklendi (son görülene göre).';
+  $('#pMore').classList.toggle('hidden', s.docs.length < PAGE);
   renderPlayers();
 }
 
-// Canlı: son 2 dakikada sinyal gönderenler (her 30 sn'de eşik yenilenir).
-let unsubLive = null, liveTimer = null;
-function startLive() {
-  stopLive();
-  const sub = () => {
-    if (unsubLive) unsubLive();
-    unsubLive = onSnapshot(query(collection(db, 'players'), where('lastSeen', '>=', Timestamp.fromMillis(Date.now() - ONLINE_MS))), (snap) => {
-      const list = snap.docs.map((d) => Object.assign({ uid: d.id }, d.data()));
-      const n = $('#liveN'); if (n) n.textContent = list.length;
-      $('#onlineList').innerHTML = list.length
-        ? list.map((p) => `<div class="b" style="margin:4px 0"><span class="dot on"></span><b>${esc(p.name || 'İsimsiz')}</b> <span class="muted">· ${esc(PLAT_TR[p.plat] || p.plat)} · en iyi ${fmt(p.best)} · ${fmt(p.mins)} dk</span></div>`).join('')
-        : '<span class="muted">Şu an kimse oynamıyor</span>';
-      const ids = new Set(list.map((p) => p.uid));
-      for (const p of players) p.live = ids.has(p.uid);
-      if (curTab === 'oyuncular') renderPlayers();
-    }, () => {});
-  };
-  sub(); liveTimer = setInterval(sub, 30000);
+// Canlı: oyun açıkken her oyuncu 2 dakikada bir sinyal yollar. Panel,
+// SADECE sekme ekrandayken dakikada bir "son 3 dakikada görülenleri" okur
+// (okuma = o an oynayan kişi sayısı). Sekme arka plandaysa hiç okumaz.
+let liveTimer = null;
+async function pollLive() {
+  if (document.hidden || !auth.currentUser) return;
+  try {
+    const s = await getDocs(query(collection(db, 'players'), where('lastSeen', '>=', Timestamp.fromMillis(Date.now() - ONLINE_MS))));
+    livePlayers = s.docs.map((d) => Object.assign({ uid: d.id }, d.data()));
+  } catch (e) { return; }
+  const n = $('#liveN'); if (n) n.textContent = livePlayers.length;
+  $('#onlineList').innerHTML = livePlayers.length
+    ? livePlayers.map((p) => `<div class="b" style="margin:4px 0"><span class="dot on"></span><b>${esc(p.name || 'İsimsiz')}</b> <span class="muted">· ${esc(PLAT_TR[p.plat] || p.plat)} · v${esc(p.ver || '?')} · en iyi ${fmt(p.best)} · ${fmt(p.mins)} dk</span></div>`).join('')
+    : '<span class="muted">Şu an kimse oynamıyor</span>';
+  const pv = {}, vv = {};
+  for (const p of livePlayers) { const k = PLAT_TR[p.plat] || p.plat || '?'; pv[k] = (pv[k] || 0) + 1; vv[p.ver || '?'] = (vv[p.ver || '?'] || 0) + 1; }
+  bars('#livePlatBars', pv); bars('#verBars', vv);
+  markLive();
+  if (curTab === 'oyuncular') renderPlayers();
 }
-function stopLive() { if (unsubLive) unsubLive(); unsubLive = null; clearInterval(liveTimer); }
+function markLive() { const ids = new Set(livePlayers.map((p) => p.uid)); for (const p of players) p.live = ids.has(p.uid); }
+function startLive() { stopLive(); pollLive(); liveTimer = setInterval(pollLive, 60000); }
+function stopLive() { clearInterval(liveTimer); liveTimer = null; }
+document.addEventListener('visibilitychange', () => { if (!document.hidden && liveTimer) pollLive(); });
 
 // ---------- Oyuncu tablosu ----------
 const COLS = [
   ['', 'live', (p) => `<span class="dot ${p.live ? 'on' : ''}"></span>`],
   ['Ad', 'name', (p) => esc(p.name || 'İsimsiz')],
-  ['Platform', 'plat', (p) => esc(PLAT_TR[p.plat] || p.plat || '')],
+  ['Platform', 'plat', (p) => ({ android: '🤖 ', ios: '🍎 ', web: '🌐 ' }[p.plat] || '') + esc(PLAT_TR[p.plat] || p.plat || '')],
   ['Sürüm', 'ver', (p) => esc(p.ver || '')],
   ['Oyun', 'games', (p) => fmt(p.games), 1],
   ['En iyi', 'best', (p) => fmt(p.best), 1],
@@ -365,6 +391,7 @@ function renderPlayers() {
   if (f === 'online') list = list.filter((p) => p.live);
   if (f === 'today') list = list.filter((p) => p.seen >= t0);
   if (f === 'linked' || f === 'noads' || f === 'pass') list = list.filter((p) => p[f]);
+  if (f.startsWith('p:')) list = list.filter((p) => p.plat === f.slice(2));
   list.sort((a, b) => { const x = a[sortKey], y = b[sortKey]; const r = typeof x === 'string' || typeof y === 'string' ? String(x || '').localeCompare(String(y || ''), 'tr') : (+x || 0) - (+y || 0); return sortAsc ? r : -r; });
   $('#pTable thead').innerHTML = '<tr>' + COLS.map(([h, k]) => `<th data-k="${k}" class="${k === sortKey ? 'sorted' + (sortAsc ? ' asc' : '') : ''}">${h}</th>`).join('') + '<th></th></tr>';
   $('#pTable tbody').innerHTML = list.map((p) => '<tr data-uid="' + esc(p.uid) + '">' + COLS.map(([, , fn, num]) => `<td class="${num ? 'num' : ''}">${fn(p)}</td>`).join('') + '<td><button class="btn sm" data-gift="' + esc(p.uid) + '">🎁</button></td></tr>').join('')
@@ -377,6 +404,7 @@ $('#pTable').addEventListener('click', (e) => {
   if (tr) openPlayer(tr.dataset.uid, !!e.target.closest('[data-gift]'));
 });
 $('#pSearch').oninput = renderPlayers; $('#pFilter').onchange = renderPlayers;
+$('#pMore').onclick = () => loadPlayers(true);
 
 function openPlayer(uid, focusGift) {
   const p = players.find((x) => x.uid === uid) || { uid };
@@ -437,7 +465,7 @@ $('#gSend').onclick = async () => {
 };
 async function loadGifts() {
   loaded.gifts = true;
-  const s = await getDocs(query(collection(db, 'giftlog'), orderBy('ts', 'desc'), limit(100)));
+  const s = await getDocs(query(collection(db, 'giftlog'), orderBy('ts', 'desc'), limit(30)));
   const logs = s.docs.map((d) => Object.assign({ id: d.id }, d.data()));
   const states = await Promise.all(logs.map((g) => getDoc(doc(db, 'gifts', g.uid, 'items', g.id)).then((x) => (x.exists() ? x.data() : null)).catch(() => null)));
   $('#gTable tbody').innerHTML = logs.map((g, i) => {
@@ -482,8 +510,9 @@ async function loadRankings() {
 // ---------- Hatalar ----------
 let errs = [];
 async function loadErrors() {
+  loaded.errors = true;
   const days = +$('#eRange').value;
-  const s = await getDocs(query(collection(db, 'errors'), where('ts', '>=', Timestamp.fromMillis(Date.now() - days * DAY)), orderBy('ts', 'desc'), limit(1000)));
+  const s = await getDocs(query(collection(db, 'errors'), where('ts', '>=', Timestamp.fromMillis(Date.now() - days * DAY)), orderBy('ts', 'desc'), limit(300)));
   errs = s.docs.map((d) => Object.assign({ id: d.id }, d.data(), { t: toMs(d.data().ts) }));
   const vers = [...new Set(errs.map((e) => e.ver).filter(Boolean))].sort().reverse();
   const cur = $('#eVer').value;
@@ -504,7 +533,6 @@ function errGroups() {
 }
 function renderErrors() {
   const gs = errGroups();
-  $('#errBadge').innerHTML = errs.length ? `<span class="tag bad">${gs.length}</span>` : '';
   $('#errList').innerHTML = gs.length ? gs.map((g, i) => `
     <details class="card errG"><summary>
       <div class="row"><span class="msg sp">${esc(g.msg)}</span><span class="tag bad">${g.n}×</span><span class="tag">${g.users.size} kişi</span></div>
