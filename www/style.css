@@ -1257,6 +1257,9 @@ h1 .gicon,h2 .gicon{color:var(--star);}
 .bpReward .bpAmt{display:flex;align-items:center;gap:4px;}
 .bpReward .bpAmt .gicon{width:15px;height:15px;}
 .bpCos .gicon{width:15px;height:15px;color:#ff9ad5;}
+.bpReward .bpCol{display:flex;flex-direction:column;align-items:center;gap:1px;}
+.bpReward.hasGem .bpAmt{font-size:11.5px;line-height:1.1;}
+.bpReward .bpGem{color:#8fe9ff;} .bpReward .bpGem .gicon{width:13px;height:13px;color:#7fe0ff;}
 .bpReward.premium{background:linear-gradient(180deg,rgba(255,210,74,.12),rgba(255,210,74,.03));border-color:rgba(255,210,74,.28);color:#ffe9b0;}
 .bpState{position:absolute;top:-7px;right:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;display:flex;align-items:center;justify-content:center;
   font-size:9.5px;font-weight:900;letter-spacing:.4px;}

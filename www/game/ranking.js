@@ -11,7 +11,7 @@
 // gelen de zirveye çıkabilsin) ve "Tüm Zamanlar". Yalnız Klasik mod sayılır,
 // Isı mühürleri dahil (risk almak ödüllendirilir). Rekor kırınca sessizce
 // gönderilir (bkz. src/leaderboard.js GlobalBoard, firestore.rules lb/...).
-const NAME_CHANGE_GEMS = 100;
+const NAME_CHANGE_GEMS = 50;
 const NAME_RE = /^[\p{L}\p{N} _.\-]{3,16}$/u;
 // Uygunsuz kelimeler: harfler sadeleştirilip (Türkçe karakterler, 0→o, 1→i…,
 // boşluk/noktalama atılır) kök aranır.

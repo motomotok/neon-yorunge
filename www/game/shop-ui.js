@@ -319,15 +319,17 @@ function syncEventBanner(){
 // (kullanıcı talebi) — sadece kart soluk/tıklanamaz kalıyor, içerik gizlenmiyor.
 function loginRewardIconLabel(r){
   if(r.type==='notes') return {ic:icon('coin'), label:'+'+r.amount};
+  if(r.type==='gems') return {ic:icon('gem'), label:'+'+r.amount};
   if(r.type==='boost'){ const b=BOOSTS.find(x=>x.id===r.id); return {ic:icon(b?b.icon:'shield'), label:'×'+r.amount}; }
   if(r.type==='cosmetic') return {ic:icon('gift'), label:t('login_gift_badge')};
   return {ic:icon('gem'), label:t('login_special_badge')}; // skin (final gün)
 }
 function loginRewardDesc(r){
   if(r.type==='notes') return t('login_toast_stardust',{amount:r.amount});
+  if(r.type==='gems') return t('login_toast_gems',{gems:r.amount, notes:r.notes||0});
   if(r.type==='boost'){ const b=BOOSTS.find(x=>x.id===r.id); return t('login_toast_boost',{amount:r.amount, name:b?t(b.nameKey):''}); }
   if(r.type==='cosmetic') return t('login_toast_cosmetic',{name:t(cosmeticItemName(r.cat,r.id))});
-  return t('login_toast_skin');
+  return t('login_toast_skin')+(r.gems ? ' +'+r.gems+' '+icon('gem') : '');
 }
 function cosmeticItemName(cat, id){
   const list = cat==='trails'?TRAILS : cat==='rings'?RINGSTYLES : cat==='suns'?SUNS : SKINS;
@@ -337,6 +339,7 @@ function cosmeticItemName(cat, id){
 // Ödülün büyük görseli (plak etiketinde) ve adı.
 function loginRewardHero(r){
   if(r.type==='notes') return {ic:`<img src="img/items/coin.png" alt="">`, amt:'+'+r.amount, name:t('login_toast_stardust',{amount:r.amount}).replace(/^[^:：]*[:：]\s*/,'')};
+  if(r.type==='gems') return {ic:icon('gem'), amt:'+'+r.amount, name:t('login_toast_gems',{gems:r.amount, notes:r.notes||0}).replace(/^[^:：]*[:：]\s*/,'')};
   if(r.type==='boost'){ const b=BOOSTS.find(x=>x.id===r.id); return {ic:icon(b?b.icon:'shield'), amt:'×'+r.amount, name:(b?t(b.nameKey):'')+' ×'+r.amount}; }
   if(r.type==='cosmetic') return {ic:icon('gift'), amt:'', name:t(cosmeticItemName(r.cat,r.id))};
   const sk=SKINS.find(x=>x.id===r.id);

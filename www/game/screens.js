@@ -86,7 +86,7 @@ function goMenu(){ state='menu'; setHud(false); showScreen('menu');
   document.getElementById('powerLevelLine').textContent='⚡ '+totalPowerLevel()+'/'+Object.values(META_UPGRADES).reduce((n,u)=>n+u.tiers.length,0);
   document.getElementById('runCountLine').textContent=t('run_count_line',{n:stats.games+1});
   ensureTodayQuest(); const q=currentQuest();
-  document.getElementById('questLine').textContent=t('quest_line',{text:t(q.textKey)})+(stats.questDone?' ✅':'');
+  document.getElementById('questLine').textContent=t('quest_line',{text:t(q.textKey)})+(stats.questDone?' ✅':' (+'+QUEST_GEMS+' 💎)');
   ensureRival();
   // Türkçe hâl eki (turkishAccusative) sadece 'tr' dilinde geçerli bir gramer
   // kuralı — diğer dillerde düz isim kullanılıyor (bkz. i18n mimarisi).
@@ -257,7 +257,8 @@ function gameOver(reason){
   ensureTodayQuest();
   const q=currentQuest();
   if(ranked && !stats.questDone && q.check(session,{elapsedSec, level})){
-    stats.questDone=true; queueToast(t('toast_quest_done',{text:t(q.textKey)}));
+    stats.questDone=true; addGems(QUEST_GEMS);
+    queueToast(t('toast_quest_done',{text:t(q.textKey)})+' +'+QUEST_GEMS+' '+icon('gem'));
   }
   // Zen'de yalnız skora bağlı olmayan başarımlar (ör. Zen Ustası) açılabilir.
   checkAchievements(ranked ? {runScore, level, session, mode, elapsedSec}

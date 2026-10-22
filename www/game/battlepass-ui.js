@@ -48,15 +48,17 @@ function renderBattlepass(){
   const chip=(i, tier, track)=>{
     const prem = track==='premium';
     const amount = prem ? tier.premium : tier.free;
+    const gems = prem ? (tier.gems||0) : (tier.freeGems||0);
     const claimed = (prem ? stats.seasonClaimedPremium : stats.seasonClaimedFree).includes(i);
     const reached = xp >= tier.xp;
     const locked = prem && !stats.seasonPremium;
     const st = claimed ? 'claimed' : (reached && !locked) ? 'claimable' : 'locked';
     const b=document.createElement('button');
-    b.className = 'bpReward '+track+' '+st;
+    b.className = 'bpReward '+track+' '+st+(gems?' hasGem':'');
     const extra = prem && tier.cosmeticSlot ? `<span class="bpCos">${icon('palette')}</span>` : '';
     const lockIc = locked ? icon('ticket') : icon('lock');
-    b.innerHTML = `<span class="bpAmt">${icon('coin')} ${amount}</span>${extra}`
+    const gemLine = gems ? `<span class="bpAmt bpGem">${icon('gem')} ${gems}</span>` : '';
+    b.innerHTML = `<span class="bpCol"><span class="bpAmt">${icon('coin')} ${amount}</span>${gemLine}</span>${extra}`
       + (st==='claimed' ? `<span class="bpState ok">${icon('check')}</span>`
         : st==='claimable' ? `<span class="bpState go">${t('bp_claim')}</span>`
         : `<span class="bpState lk">${lockIc}</span>`);

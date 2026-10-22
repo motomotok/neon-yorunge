@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.71.2';
+const GAME_VERSION = '2.72.0';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -14,19 +14,19 @@ const GAME_VERSION = '2.71.2';
 // (applyTheme()'ün THEMES.neon fallback'i buna bağlı).
 const THEMES = {
   neon:           {nameKey:'theme_neon',           star:'#ffcf7a', gold:'#ffe9b0', peril:'#ff5a3c', player:'#2fe6c4', sun:'#f2c98a', bg0:'#170a08', bg1:'#2b120d', sf:'#ffb98a', gate:{type:'free'}},
-  synthbeats:     {nameKey:'theme_synthbeats',      star:'#19e3ff', gold:'#baf7ff', peril:'#ff2f8a', player:'#19e3ff', sun:'#ff2f8a', bg0:'#030308', bg1:'#0c0718', sf:'#7fe9ff', gate:{type:'coin_or_gem', price:3200, gemPrice:35}},
-  urbansounds:    {nameKey:'theme_urbansounds',     star:'#ffb454', gold:'#ffd24a', peril:'#ff2fa0', player:'#3de8d0', sun:'#ff8a3d', bg0:'#0a0604', bg1:'#1a0f08', sf:'#ffb27a', gate:{type:'coin_or_gem', price:4000, gemPrice:45}},
+  synthbeats:     {nameKey:'theme_synthbeats',      star:'#19e3ff', gold:'#baf7ff', peril:'#ff2f8a', player:'#19e3ff', sun:'#ff2f8a', bg0:'#030308', bg1:'#0c0718', sf:'#7fe9ff', gate:{type:'coin_or_gem', price:3200, gemPrice:100}},
+  urbansounds:    {nameKey:'theme_urbansounds',     star:'#ffb454', gold:'#ffd24a', peril:'#ff2fa0', player:'#3de8d0', sun:'#ff8a3d', bg0:'#0a0604', bg1:'#1a0f08', sf:'#ffb27a', gate:{type:'coin_or_gem', price:4000, gemPrice:120}},
   // Kozmik Ses Dalgası BİLEREK sadece Elmas — en üst temalı dünya, notayla
   // asla açılmıyor (premium para biriminin "sadece elmasla" ucu burası).
-  cosmicsoundwave:{nameKey:'theme_cosmicsoundwave', star:'#7fe8ff', gold:'#ffe9a8', peril:'#ff8a3d', player:'#2fe6c4', sun:'#6a8fff', bg0:'#03040f', bg1:'#0a0f2e', sf:'#8fb0ff', gate:{type:'gem', price:70}},
+  cosmicsoundwave:{nameKey:'theme_cosmicsoundwave', star:'#7fe8ff', gold:'#ffe9a8', peril:'#ff8a3d', player:'#2fe6c4', sun:'#6a8fff', bg0:'#03040f', bg1:'#0a0f2e', sf:'#8fb0ff', gate:{type:'gem', price:250}},
   // Kullanıcının Gemini konseptlerinden (2026-10-16): lo-fi oda ve cehennem.
-  lofichillhop:   {nameKey:'theme_lofichillhop',    star:'#8fe3d8', gold:'#ffe1c8', peril:'#ff6a5a', player:'#5fe8d6', sun:'#e9b39c', bg0:'#120b09', bg1:'#2a1c17', sf:'#f2c6b4', gate:{type:'coin_or_gem', price:4800, gemPrice:50}},
-  hellsanthem:    {nameKey:'theme_hellsanthem',     star:'#ffb066', gold:'#ffd28a', peril:'#ff3a1a', player:'#ffcf4a', sun:'#ff5a1a', bg0:'#0d0303', bg1:'#2a0806', sf:'#ff9a5a', gate:{type:'gem', price:80}},
+  lofichillhop:   {nameKey:'theme_lofichillhop',    star:'#8fe3d8', gold:'#ffe1c8', peril:'#ff6a5a', player:'#5fe8d6', sun:'#e9b39c', bg0:'#120b09', bg1:'#2a1c17', sf:'#f2c6b4', gate:{type:'coin_or_gem', price:4800, gemPrice:140}},
+  hellsanthem:    {nameKey:'theme_hellsanthem',     star:'#ffb066', gold:'#ffd28a', peril:'#ff3a1a', player:'#ffcf4a', sun:'#ff5a1a', bg0:'#0d0303', bg1:'#2a0806', sf:'#ff9a5a', gate:{type:'gem', price:300}},
   // Konsept sayfasından seçilen 4 plak (2026-10-16).
-  candydrip:      {nameKey:'theme_candydrip',       star:'#ff4fa8', gold:'#fff3a0', peril:'#7a2cff', player:'#41d7f0', sun:'#ff5fae', bg0:'#0d0616', bg1:'#2b1440', sf:'#ffb3dc', gate:{type:'coin_or_gem', price:3600, gemPrice:40}},
-  steamfunk:      {nameKey:'theme_steamfunk',       star:'#ffcf6a', gold:'#ffe7a8', peril:'#ff4a2a', player:'#5fe8d6', sun:'#e0a050', bg0:'#0c0704', bg1:'#2a1a0e', sf:'#f3c98a', gate:{type:'coin_or_gem', price:5200, gemPrice:55}},
-  cybercircuit:   {nameKey:'theme_cybercircuit',    star:'#2ee6ff', gold:'#d8fbff', peril:'#ff3df0', player:'#2ee6ff', sun:'#ff3df0', bg0:'#04020d', bg1:'#120a30', sf:'#8fe9ff', gate:{type:'coin_or_gem', price:5600, gemPrice:60}},
-  crystalrune:    {nameKey:'theme_crystalrune',     star:'#ffc56a', gold:'#fff0b8', peril:'#ff4f7a', player:'#7ff3ff', sun:'#f0a640', bg0:'#03070f', bg1:'#0f2244', sf:'#9fdcff', gate:{type:'gem', price:90}},
+  candydrip:      {nameKey:'theme_candydrip',       star:'#ff4fa8', gold:'#fff3a0', peril:'#7a2cff', player:'#41d7f0', sun:'#ff5fae', bg0:'#0d0616', bg1:'#2b1440', sf:'#ffb3dc', gate:{type:'coin_or_gem', price:3600, gemPrice:110}},
+  steamfunk:      {nameKey:'theme_steamfunk',       star:'#ffcf6a', gold:'#ffe7a8', peril:'#ff4a2a', player:'#5fe8d6', sun:'#e0a050', bg0:'#0c0704', bg1:'#2a1a0e', sf:'#f3c98a', gate:{type:'coin_or_gem', price:5200, gemPrice:160}},
+  cybercircuit:   {nameKey:'theme_cybercircuit',    star:'#2ee6ff', gold:'#d8fbff', peril:'#ff3df0', player:'#2ee6ff', sun:'#ff3df0', bg0:'#04020d', bg1:'#120a30', sf:'#8fe9ff', gate:{type:'coin_or_gem', price:5600, gemPrice:180}},
+  crystalrune:    {nameKey:'theme_crystalrune',     star:'#ffc56a', gold:'#fff0b8', peril:'#ff4f7a', player:'#7ff3ff', sun:'#f0a640', bg0:'#03070f', bg1:'#0f2244', sf:'#9fdcff', gate:{type:'gem', price:350}},
 };
 let T = THEMES.neon;
 // Her temanın plak etiketi (konsept görsellerinden kesildi). 3D modda
@@ -81,17 +81,18 @@ const SKINS = [
   {id:'silver',  nameKey:'skin_pena_silver',  img:'img/penas/default/silver.png',  color:'#d8e4ea', gate:{type:'coin', price:4600}},
   // Premium pena'lar artık doğrudan gerçek-para IAP değil, Elmas (premium
   // para birimi) ile satılıyor — Elmas'ın kendisi gems_* paketleriyle
-  // gerçek parayla alınıyor (bkz. gem-shop.js). Fiyat kademeleri eski
-  // ₺14.99/19.99/24.99/29.99 TL karşılıklarına denk gelecek şekilde seçildi.
-  {id:'pena_fire',      nameKey:'skin_pena_fire',      img:'img/penas/premium/fire.png',      color:'#ff6a1a', gate:{type:'gem', price:30}},
-  {id:'pena_ice',       nameKey:'skin_pena_ice',       img:'img/penas/premium/ice.png',       color:'#6fd8ff', gate:{type:'gem', price:30}},
-  {id:'pena_toxic',     nameKey:'skin_pena_toxic',     img:'img/penas/premium/toxic.png',     color:'#9aff3d', gate:{type:'gem', price:30}},
-  {id:'pena_lightning', nameKey:'skin_pena_lightning', img:'img/penas/premium/lightning.png', color:'#ffd23d', gate:{type:'gem', price:40}},
-  {id:'pena_galaxy',    nameKey:'skin_pena_galaxy',    img:'img/penas/premium/galaxy.png',    color:'#8a5bff', gate:{type:'gem', price:40}},
-  {id:'pena_pinkswirl', nameKey:'skin_pena_pinkswirl', img:'img/penas/premium/pinkswirl.png', color:'#ff4fa0', gate:{type:'gem', price:40}},
-  {id:'pena_wood',      nameKey:'skin_pena_wood',      img:'img/penas/premium/wood.png',      color:'#8a6a3d', gate:{type:'gem', price:50}},
-  {id:'pena_lion',      nameKey:'skin_pena_lion',      img:'img/penas/premium/lion.png',      color:'#9a9aa0', gate:{type:'gem', price:50}},
-  {id:'pena_diamond',   nameKey:'skin_pena_diamond',   img:'img/penas/premium/diamond.png',   color:'#eaf6ff', gate:{type:'gem', price:60}},
+  // gerçek parayla alınıyor (bkz. gem-shop.js). Fiyatlar (2.72): 100 Elmas
+  // ≈ ₺50 / $1 → pena 80-200, elmasla temalar 100-350 Elmas (≈ $1-3.5);
+  // ücretsiz elmas kaynakları (günlük görev, giriş serisi, sezon) ayda ~150.
+  {id:'pena_fire',      nameKey:'skin_pena_fire',      img:'img/penas/premium/fire.png',      color:'#ff6a1a', gate:{type:'gem', price:80}},
+  {id:'pena_ice',       nameKey:'skin_pena_ice',       img:'img/penas/premium/ice.png',       color:'#6fd8ff', gate:{type:'gem', price:80}},
+  {id:'pena_toxic',     nameKey:'skin_pena_toxic',     img:'img/penas/premium/toxic.png',     color:'#9aff3d', gate:{type:'gem', price:80}},
+  {id:'pena_lightning', nameKey:'skin_pena_lightning', img:'img/penas/premium/lightning.png', color:'#ffd23d', gate:{type:'gem', price:120}},
+  {id:'pena_galaxy',    nameKey:'skin_pena_galaxy',    img:'img/penas/premium/galaxy.png',    color:'#8a5bff', gate:{type:'gem', price:120}},
+  {id:'pena_pinkswirl', nameKey:'skin_pena_pinkswirl', img:'img/penas/premium/pinkswirl.png', color:'#ff4fa0', gate:{type:'gem', price:120}},
+  {id:'pena_wood',      nameKey:'skin_pena_wood',      img:'img/penas/premium/wood.png',      color:'#8a6a3d', gate:{type:'gem', price:160}},
+  {id:'pena_lion',      nameKey:'skin_pena_lion',      img:'img/penas/premium/lion.png',      color:'#9a9aa0', gate:{type:'gem', price:160}},
+  {id:'pena_diamond',   nameKey:'skin_pena_diamond',   img:'img/penas/premium/diamond.png',   color:'#eaf6ff', gate:{type:'gem', price:200}},
   {id:'season1_orb', nameKey:'skin_season1orb', img:'img/penas/default/gold.png',    color:'#ffcf3d', gate:{type:'seasonpass', season:1}},
   {id:'season2_orb', nameKey:'skin_season2orb', img:'img/penas/premium/fire.png',    color:'#ff6a1a', gate:{type:'seasonpass', season:2}},
   // 7 Günlük Giriş Serisi'nin tamamlanma ödülü — ne mağazadan ne sezon
@@ -717,6 +718,12 @@ function rewardLedgerAdd(kind, before, extra){
   }
   stats.rewardLedger = (stats.rewardLedger||[]).concat([e]).slice(-40);
 }
+// Oyun içi ödüllerden gelen elmas (sezon, günlük görev, giriş serisi).
+function addGems(n){
+  if(!(n>0)) return;
+  stats.gems=(stats.gems||0)+n; stats.lifetimeGems=(stats.lifetimeGems||0)+n;
+  if(typeof refreshWallet==='function') refreshWallet();
+}
 function rewardSnapshot(){ return {notes:stats.notes||0, gems:stats.gems||0, boosts:Object.assign({}, stats.boosts||{})}; }
 function clockRollbackCheck(){
   const now=Date.now(), last=stats.lastSeenTs||0;
@@ -820,7 +827,7 @@ function ensureRivalLeague(){
 // kozmetiklerden ücretsiz birer tane / kalıcı özel kozmetik) — ekonomiyi
 // bozmasın diye SADECE en ucuz kozmetikler hediye ediliyor, pahalı/nadir
 // olanlara (prism, shadow, blackhole, quasar vb.) hiç dokunulmuyor.
-// 7. gün bir "ara zirve" (büyükçe nota), 14. gün YALNIZCA bu
+// 7. gün bir "ara zirve" (büyükçe nota + 10 elmas), 14. gün (+20 elmas) YALNIZCA bu
 // yoldan kazanılabilen özel 'loyalty_orb' ile büyük final — 15. günden
 // itibaren döngü 1'den tekrar başlar (loginCycleDay() modulo alır).
 const LOGIN_STREAK_REWARDS = [
@@ -830,14 +837,14 @@ const LOGIN_STREAK_REWARDS = [
   {type:'notes', amount:80},
   {type:'cosmetic', cat:'trails', id:'ribbon'},
   {type:'notes', amount:90},
-  {type:'notes', amount:300},
+  {type:'gems', amount:10, notes:300},
   {type:'notes', amount:120},
   {type:'notes', amount:140},
   {type:'cosmetic', cat:'trails', id:'sparkle'},
   {type:'notes', amount:160},
   {type:'notes', amount:190},
   {type:'notes', amount:220},
-  {type:'skin', id:'loyalty_orb', notes:400},
+  {type:'skin', id:'loyalty_orb', notes:400, gems:20},
 ];
 function loginCycleDay(){ return ((Math.max(1,stats.loginStreak||1)-1)%LOGIN_STREAK_REWARDS.length)+1; }
 // Bugünün ödülü zaten alınmış mı? Seri sayacı (loginStreak) her gün
@@ -848,12 +855,13 @@ function loginCycleDay(){ return ((Math.max(1,stats.loginStreak||1)-1)%LOGIN_STR
 function loginRewardClaimedToday(){ return stats.lastClaimedRewardDate===todayStr(); }
 function grantLoginStreakReward(r){
   if(r.type==='notes') addNotes(r.amount);
+  else if(r.type==='gems'){ addGems(r.amount); if(r.notes) addNotes(r.notes); }
   else if(r.type==='boost') stats.boosts[r.id]=(stats.boosts[r.id]||0)+r.amount;
   else if(r.type==='cosmetic'){
     if(!stats.owned[r.cat].includes(r.id)) stats.owned[r.cat].push(r.id);
   } else if(r.type==='skin'){
     if(!stats.owned.skins.includes(r.id)) stats.owned.skins.push(r.id);
-    addNotes(r.notes);
+    addNotes(r.notes); addGems(r.gems||0);
   }
 }
 // Takvim ekranındaki "bugün" kartına dokununca çağrılır. Zaten alınmışsa
@@ -894,6 +902,7 @@ function handleDailyReturn(){
   saveStats();
 }
 
+const QUEST_GEMS = 3;   // günlük görev ödülü (elmas)
 const QUEST_POOL = [
   {id:'magnet3', textKey:'quest_magnet3', check:s=>s.magnets>=3},
   {id:'survive90', textKey:'quest_survive90', check:(s,c)=>c.elapsedSec>=90 && s.hits===0},
@@ -1051,17 +1060,19 @@ function activeSeason(d){
 // Premium (Sezon Bileti) çizgisi kademe kademe ARTAR — her kademede ücretsiz
 // çizginin belirgin üstünde, son kademeler kozmetikle birlikte en değerlisi;
 // bilete para vermenin anlamı olsun (eskiden hepsi düz 1000'di).
+// Elmas (2.72): premium çizgi toplam 250 (₺49.99'luk bilet → ₺99.99'luk
+// paket kadar elmas), ücretsiz çizgi tadımlık 20.
 const SEASON_TIERS = [
   {xp:100,  free:300,  premium:800},
-  {xp:200,  free:400,  premium:1100},
-  {xp:400,  free:500,  premium:1400},
-  {xp:700,  free:600,  premium:1800},
+  {xp:200,  free:400,  premium:1100, gems:15},
+  {xp:400,  free:500,  premium:1400, freeGems:5},
+  {xp:700,  free:600,  premium:1800, gems:25},
   {xp:1100, free:700,  premium:2300},
-  {xp:1600, free:900,  premium:2900},
-  {xp:2200, free:1100, premium:3600},
-  {xp:2900, free:1300, premium:4500},
+  {xp:1600, free:900,  premium:2900, gems:40},
+  {xp:2200, free:1100, premium:3600, freeGems:15},
+  {xp:2900, free:1300, premium:4500, gems:60},
   {xp:3700, free:1600, premium:5500, cosmeticSlot:'trails'},
-  {xp:4600, free:2000, premium:7000, cosmeticSlot:'skins'},
+  {xp:4600, free:2000, premium:7000, gems:110, cosmeticSlot:'skins'},
 ];
 function ensureSeason(){
   const k = 'S'+activeSeason().id;
@@ -1093,11 +1104,11 @@ function claimSeasonTier(index, track){
   if(stats.seasonXp < tier.xp) return false;
   if(track==='free'){
     if(stats.seasonClaimedFree.includes(index)) return false;
-    addNotes(tier.free); stats.seasonClaimedFree.push(index);
+    addNotes(tier.free); addGems(tier.freeGems||0); stats.seasonClaimedFree.push(index);
   } else {
     if(!stats.seasonPremium) return false;
     if(stats.seasonClaimedPremium.includes(index)) return false;
-    addNotes(tier.premium); stats.seasonClaimedPremium.push(index);
+    addNotes(tier.premium); addGems(tier.gems||0); stats.seasonClaimedPremium.push(index);
     if(tier.cosmeticSlot){
       const cosmetic = seasonCosmeticFor(tier.cosmeticSlot);
       if(cosmetic && !stats.owned[tier.cosmeticSlot].includes(cosmetic.id)) stats.owned[tier.cosmeticSlot].push(cosmetic.id);
