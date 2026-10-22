@@ -12,18 +12,36 @@ const KVKK_VERSION = 1;
 // uzun açık kalırsa yarım saatte bir tek yazma daha. Admin paneli "on:true
 // ve son 35 dk içinde" olanı şu an oynuyor sayar.
 const BEAT_MS = 30*60000, GIFT_CHECK_MS = 10*60000;
-let _kvkkResolve = null, _lastBeat = 0, _lastGiftCheck = 0;
+let _lastBeat = 0, _lastGiftCheck = 0;
 
 function analyticsOn(){ return stats.kvkkV>=KVKK_VERSION && !!stats.analytics; }
 
-// Açılışta: izin hiç sorulmadıysa pencereyi açar, kapanınca çözülür.
+// Açılışta: izin hiç sorulmadıysa ekranın altında küçük bir şerit çıkar
+// (oyunu kapatmaz, beklemez). Yalnız ana menüdeyken görünür; oyuncu karar
+// verene kadar her menüye dönüşte yeniden belirir. "Kabul et" büyük/parlak,
+// "Reddet" küçük; "Ayarlar" ayrıntılı pencereyi (kvkkOverlay) açar.
+// Not: kutu önceden işaretli gelmez, Reddet her zaman görünür — KVKK/GDPR'de
+// geçerli onay için şart.
 function kvkkMaybeAsk(){
-  if(stats.kvkkV>=KVKK_VERSION) return Promise.resolve(false);
-  // Oyun sırasında açılmasın: oyuncu ana menüye dönene kadar bekler.
-  return new Promise(res=>{
-    const tryOpen=()=>{ if(state!=='menu') return setTimeout(tryOpen, 700); _kvkkResolve=res; openKvkk(true); };
-    tryOpen();
-  });
+  if(stats.kvkkV>=KVKK_VERSION) return false;
+  const bar=document.getElementById('kvkkBar');
+  const sync=()=>{
+    if(stats.kvkkV>=KVKK_VERSION){ bar.style.display='none'; clearInterval(_kvkkBarTimer); return; }
+    const show = state==='menu' && document.getElementById('kvkkOverlay').style.display!=='flex';
+    bar.style.display = show ? 'flex' : 'none';
+  };
+  _kvkkBarTimer=setInterval(sync, 400); sync();
+  return true;
+}
+let _kvkkBarTimer=null;
+function kvkkDecide(on){
+  const was=analyticsOn();
+  stats.kvkkV=KVKK_VERSION; stats.analytics=!!on;
+  if(!stats.firstSeen) stats.firstSeen=Date.now();
+  saveStats();
+  document.getElementById('kvkkBar').style.display='none';
+  if(on) telemetryBeat(true);
+  else if(was && window.Telemetry){ _lastOn=false; Telemetry.forget().catch(()=>{}); }
 }
 function openKvkk(first){
   const ov=document.getElementById('kvkkOverlay'); if(!ov) return;
@@ -33,15 +51,8 @@ function openKvkk(first){
   ov.style.display='flex';
 }
 function closeKvkk(){
-  const on=document.getElementById('kvkkStatsSw').classList.contains('on');
-  const was=analyticsOn();
-  stats.kvkkV=KVKK_VERSION; stats.analytics=on;
-  if(!stats.firstSeen) stats.firstSeen=Date.now();
-  saveStats();
   document.getElementById('kvkkOverlay').style.display='none';
-  if(on) telemetryBeat(true);
-  else if(was && window.Telemetry){ _lastOn=false; Telemetry.forget().catch(()=>{}); }
-  if(_kvkkResolve){ const r=_kvkkResolve; _kvkkResolve=null; r(true); }
+  kvkkDecide(document.getElementById('kvkkStatsSw').classList.contains('on'));
 }
 
 function telemetrySummary(){
@@ -112,6 +123,9 @@ function initTelemetry(){
     e.stopPropagation(); document.getElementById('kvkkStatsSw').classList.toggle('on'); beep(500,0.05,'sine',0.08);
   });
   document.getElementById('kvkkOkBtn').addEventListener('click', e=>{ e.stopPropagation(); closeKvkk(); });
+  document.getElementById('kvkkBarYes').addEventListener('click', e=>{ e.stopPropagation(); beep(700,0.06,'sine',0.1); kvkkDecide(true); queueToast(t('kvkk_thanks')); });
+  document.getElementById('kvkkBarNo').addEventListener('click', e=>{ e.stopPropagation(); kvkkDecide(false); });
+  document.getElementById('kvkkBarMore').addEventListener('click', e=>{ e.preventDefault(); e.stopPropagation(); openKvkk(stats.kvkkV<KVKK_VERSION); });
   document.getElementById('kvkkPolicyBtn').addEventListener('click', e=>{ e.stopPropagation(); openDocPage('privacy.html'); });
   document.getElementById('kvkkBtn').addEventListener('click', e=>{
     e.stopPropagation(); document.getElementById('infoPopupOverlay').style.display='none'; openKvkk(false);

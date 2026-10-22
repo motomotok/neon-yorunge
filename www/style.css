@@ -1632,3 +1632,15 @@ body.duel #walletChip, body.duel #walletEndHud{display:none;}
 .kvkkOpt{display:flex;align-items:center;gap:12px;justify-content:space-between;text-align:start;font-size:13px;font-weight:700;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.05);cursor:pointer;}
 .kvkkHint{font-size:11px;opacity:.6;line-height:1.35;}
 .kvkkId{font-size:10px;opacity:.45;word-break:break-all;min-height:12px;user-select:text;-webkit-user-select:text;}
+
+/* KVKK alt şeridi: oyunu kapatmaz, yalnız altta küçük bir kart. */
+#kvkkBar{position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));max-width:480px;margin:0 auto;z-index:30;
+  flex-direction:column;gap:8px;padding:10px 12px;border-radius:16px;background:rgba(14,16,34,.96);border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 10px 30px rgba(0,0,0,.55);animation:kvkkUp .35s ease-out;}
+@keyframes kvkkUp{from{transform:translateY(120%);opacity:0}to{transform:none;opacity:1}}
+.kvkkBarTxt{font-size:12px;line-height:1.35;opacity:.92;text-align:start;}
+.kvkkBarTxt a{color:var(--star,#6fe8ff);font-weight:700;text-decoration:underline;white-space:nowrap;}
+.kvkkBarBtns{display:flex;align-items:center;gap:10px;}
+#kvkkBarNo{background:none;border:0;color:inherit;opacity:.55;font-size:11px;padding:6px 8px;cursor:pointer;font-family:inherit;}
+#kvkkBarYes{flex:1;margin:0;padding:11px 14px;font-size:15px;font-weight:800;box-shadow:0 0 18px rgba(255,201,74,.45);animation:kvkkGlow 1.8s ease-in-out infinite;}
+@keyframes kvkkGlow{50%{box-shadow:0 0 28px rgba(255,201,74,.75)}}

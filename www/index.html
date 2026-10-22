@@ -635,6 +635,14 @@
   </div>
 </div>
 
+<!-- KVKK alt şeridi (bkz. game/telemetry.js kvkkMaybeAsk) -->
+<div id="kvkkBar" style="display:none" role="dialog" aria-live="polite">
+  <div class="kvkkBarTxt"><i class="gicon" data-icon="lock"></i> <span data-i18n="kvkk_banner">Oyunu senin için daha iyi yapmak istiyoruz. Anonim oyun istatistiklerini kullanmamıza izin verir misin?</span> <a href="#" id="kvkkBarMore" data-i18n="kvkk_settings">Ayarlar</a></div>
+  <div class="kvkkBarBtns">
+    <button id="kvkkBarNo" data-i18n="kvkk_reject">Reddet</button>
+    <button class="btn" id="kvkkBarYes"><i class="gicon" data-icon="check"></i> <span data-i18n="kvkk_accept">Kabul et</span></button>
+  </div>
+</div>
 <!-- KVKK / veri izni penceresi (bkz. game/telemetry.js) -->
 <div id="kvkkOverlay" style="display:none">
   <div class="card kvkkCard">

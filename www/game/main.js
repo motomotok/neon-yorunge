@@ -31,14 +31,14 @@ setTimeout(()=>Ads.init(), _splashUp ? 3200 : 0);
 // Sonra dünkü Günün Seti ödülü (DJ Vinil söyler), en son bildirim izni.
 setTimeout(async ()=>{
   // KVKK bilgilendirmesi (ilk açılışta bir kez) diğer tüm sorulardan önce.
-  const askedKvkk = await kvkkMaybeAsk();
+  const askedKvkk = kvkkMaybeAsk();
   telemetryBeat(true);
-  const askedUpdate = askedKvkk || await updateMaybePrompt();
+  const askedUpdate = await updateMaybePrompt();
   notifyReschedule();
   let asked = askedUpdate;
   if(!asked && state==='menu') asked = await dsetClaimPending().catch(()=>false);
   _menuBootDone = true;
-  if(!asked && state==='menu') notifyMaybeAsk('launch');
+  if(!asked && !askedKvkk && state==='menu') notifyMaybeAsk('launch');
 }, _splashUp ? 4800 : 1500);
 syncAdButtons();
 // Satın alma butonları mağaza fiyatı gelene kadar gizli başlar (bkz. syncPremiumUI).
