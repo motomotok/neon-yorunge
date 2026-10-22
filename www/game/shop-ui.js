@@ -609,8 +609,7 @@ function renderShopGrid(category){
       const ach=ACHIEVEMENTS.find(a=>a.id===item.gate.id);
       priceHtml=`<div class="price lockreq">${icon('lock')} ${ach?t(ach.nameKey):''}</div>`;
     } else if(!unlocked && item.gate.type==='seasonpass'){
-      const sName = SEASONS.find(s=>s.id===item.gate.season);
-      priceHtml=`<div class="price lockreq">${icon('ticket')} ${sName?t('season_reward_badge',{name:t(sName.nameKey)}):t('season_reward_generic')}</div>`;
+      priceHtml=`<div class="price lockreq">${icon('ticket')} ${item.gate.season?t('season_reward_badge',{name:seasonName(seasonById(item.gate.season))}):t('season_reward_generic')}</div>`;
     } else if(!unlocked && item.gate.type==='streak'){
       priceHtml=`<div class="price lockreq">${icon('calendar')} ${t('streak_reward_badge')}</div>`;
     } else if(!unlocked && item.gate.type==='gem'){

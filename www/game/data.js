@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.72.0';
+const GAME_VERSION = '2.73.0';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -23,8 +23,8 @@ const THEMES = {
   lofichillhop:   {nameKey:'theme_lofichillhop',    star:'#8fe3d8', gold:'#ffe1c8', peril:'#ff6a5a', player:'#5fe8d6', sun:'#e9b39c', bg0:'#120b09', bg1:'#2a1c17', sf:'#f2c6b4', gate:{type:'coin_or_gem', price:4800, gemPrice:140}},
   hellsanthem:    {nameKey:'theme_hellsanthem',     star:'#ffb066', gold:'#ffd28a', peril:'#ff3a1a', player:'#ffcf4a', sun:'#ff5a1a', bg0:'#0d0303', bg1:'#2a0806', sf:'#ff9a5a', gate:{type:'gem', price:300}},
   // Konsept sayfasından seçilen 4 plak (2026-10-16).
-  candydrip:      {nameKey:'theme_candydrip',       star:'#ff4fa8', gold:'#fff3a0', peril:'#7a2cff', player:'#41d7f0', sun:'#ff5fae', bg0:'#0d0616', bg1:'#2b1440', sf:'#ffb3dc', gate:{type:'coin_or_gem', price:3600, gemPrice:110}},
-  steamfunk:      {nameKey:'theme_steamfunk',       star:'#ffcf6a', gold:'#ffe7a8', peril:'#ff4a2a', player:'#5fe8d6', sun:'#e0a050', bg0:'#0c0704', bg1:'#2a1a0e', sf:'#f3c98a', gate:{type:'coin_or_gem', price:5200, gemPrice:160}},
+  candydrip:      {nameKey:'theme_candydrip',       star:'#ff4fa8', gold:'#fff3a0', peril:'#7a2cff', player:'#41d7f0', sun:'#ff5fae', bg0:'#0d0616', bg1:'#2b1440', sf:'#ffb3dc', gate:{type:'coin_or_gem', price:3600, gemPrice:300}},
+  steamfunk:      {nameKey:'theme_steamfunk',       star:'#ffcf6a', gold:'#ffe7a8', peril:'#ff4a2a', player:'#5fe8d6', sun:'#e0a050', bg0:'#0c0704', bg1:'#2a1a0e', sf:'#f3c98a', gate:{type:'coin_or_gem', price:5200, gemPrice:200}},
   cybercircuit:   {nameKey:'theme_cybercircuit',    star:'#2ee6ff', gold:'#d8fbff', peril:'#ff3df0', player:'#2ee6ff', sun:'#ff3df0', bg0:'#04020d', bg1:'#120a30', sf:'#8fe9ff', gate:{type:'coin_or_gem', price:5600, gemPrice:180}},
   crystalrune:    {nameKey:'theme_crystalrune',     star:'#ffc56a', gold:'#fff0b8', peril:'#ff4f7a', player:'#7ff3ff', sun:'#f0a640', bg0:'#03070f', bg1:'#0f2244', sf:'#9fdcff', gate:{type:'gem', price:350}},
 };
@@ -953,7 +953,19 @@ function addNotes(n){
   stats.notes += n; stats.lifetimeNotes = (stats.lifetimeNotes||0) + n;
   refreshWallet();
 }
-function addSeasonXp(n){ stats.seasonXp += Math.round(n*seasonXpEventMult()); }
+function addSeasonXp(n){ stats.seasonXp += Math.round(n*seasonXpEventMult()); seasonBonusCheck(); }
+// Son kademeden sonra: her SEASON_BONUS_XP için bir kez +SEASON_BONUS_NOTES (otomatik).
+function seasonBonusEarned(){
+  const top=SEASON_TIERS[SEASON_TIERS.length-1].xp;
+  return Math.max(0, Math.floor((stats.seasonXp-top)/SEASON_BONUS_XP));
+}
+function seasonBonusCheck(){
+  const earned=seasonBonusEarned();
+  while((stats.seasonBonus||0) < earned){
+    stats.seasonBonus=(stats.seasonBonus||0)+1; addNotes(SEASON_BONUS_NOTES);
+    if(typeof queueToast==='function') queueToast(t('toast_season_bonus',{notes:SEASON_BONUS_NOTES}));
+  }
+}
 
 const REWARD_AD_COINS = 150, DAILY_AD_REWARD_CAP = 10;
 // AdMob'un ödüllü reklamlar için resmi olarak dayattığı sabit bir
@@ -1032,24 +1044,36 @@ function syncAdButtons(){
 // başlatıldı — eski S1/S2 pencereleri gerçek kullanıcı trafiği olmadan
 // geçmişti. 'season1_orb'/'season1_trail'/'season1_ring' kozmetikleri aynen
 // kalıyor, sadece bu sezonun ÖDÜLÜ olarak yeniden devreye giriyor.
-const SEASONS = [
-  {id:1, nameKey:'season1_name', start:'2026-10-01', days:30},
-];
+// 2.73: sezonlar artık elle eklenmiyor — 1 Ekim 2026'dan itibaren her
+// SEASON_DAYS günde bir otomatik yeni sezon (Clash Royale Pass Royale gibi).
+// Her sezonun bileti ayrı Play/App Store ürünü: season_pass_s<id>
+// (03_MAGAZA_ARACLARI/google_play/iap_create.js ileriki sezonları önceden kurar).
+const SEASON_EPOCH = '2026-10-01', SEASON_DAYS = 60;
 function seasonDayIndex(startStr, d){
   const start = new Date(startStr+'T00:00:00');
   return Math.floor((d-start)/86400000);
 }
+function seasonById(id){
+  const s=new Date(SEASON_EPOCH+'T00:00:00'); s.setDate(s.getDate()+(id-1)*SEASON_DAYS);
+  const p=n=>String(n).padStart(2,'0');
+  return {id, start:`${s.getFullYear()}-${p(s.getMonth()+1)}-${p(s.getDate())}`, days:SEASON_DAYS};
+}
 function activeSeason(d){
   d = d || gameNow();
-  for(let i=0;i<SEASONS.length;i++){
-    const s=SEASONS[i];
-    const idx=seasonDayIndex(s.start, d);
-    const isLast = i===SEASONS.length-1;
-    if(idx>=0 && (isLast || idx<s.days)) return s;
-  }
-  return SEASONS[0];
+  const idx = Math.max(0, seasonDayIndex(SEASON_EPOCH, d));
+  return seasonById(Math.floor(idx/SEASON_DAYS)+1);
 }
-// XP eşikleri normal ilerlemeye göre %50 artırıldı (bkz. proje talebi) —
+function seasonName(s){ return t('season_n_name',{n:s.id}); }
+// 2.73 (Clash Royale gibi): XP skorun yüzdesi değil, MAÇ BAŞINA neredeyse
+// sabit — Skor Avı 10-20 (skora göre küçük bonus, bkz. seasonXpForRun),
+// düello galibiyet 20 / mağlubiyet 10. Böylece sezonu bitirmek oynanan süreye
+// bağlı, upgrade'lerle 17 bin yapan oyuncu 11 oyunda bitiremiyor.
+// Hedef: 60 günlük sezon; günde ~6 Skor Avı + ~4 düello oynayan iyi oyuncu
+// (~150 XP/gün) ~45 günde bitirir, günde 3-4 oyun oynayan ~%60'ına varır.
+// Son kademeden sonra her SEASON_BONUS_XP'de +SEASON_BONUS_NOTES nota (bonus kademe).
+const SEASON_BONUS_XP = 600, SEASON_BONUS_NOTES = 300;
+function seasonXpForRun(score){ return 10 + Math.min(10, Math.floor((score||0)/250)); }
+// (eski) XP eşikleri normal ilerlemeye göre %50 artırıldı (bkz. proje talebi) —
 // ödül miktarları (free/premium) değişmedi, sadece kademelere ulaşmak
 // daha uzun sürüyor.
 // XP eşikleri, bir oyundan kazanılan XP'nin skorun 1/40'ı olmasıyla
@@ -1063,21 +1087,21 @@ function activeSeason(d){
 // Elmas (2.72): premium çizgi toplam 250 (₺49.99'luk bilet → ₺99.99'luk
 // paket kadar elmas), ücretsiz çizgi tadımlık 20.
 const SEASON_TIERS = [
-  {xp:100,  free:300,  premium:800},
-  {xp:200,  free:400,  premium:1100, gems:15},
-  {xp:400,  free:500,  premium:1400, freeGems:5},
-  {xp:700,  free:600,  premium:1800, gems:25},
-  {xp:1100, free:700,  premium:2300},
-  {xp:1600, free:900,  premium:2900, gems:40},
-  {xp:2200, free:1100, premium:3600, freeGems:15},
-  {xp:2900, free:1300, premium:4500, gems:60},
-  {xp:3700, free:1600, premium:5500, cosmeticSlot:'trails'},
-  {xp:4600, free:2000, premium:7000, gems:110, cosmeticSlot:'skins'},
+  {xp:300, free:300,  premium:800},
+  {xp:700, free:400,  premium:1100, gems:15},
+  {xp:1200, free:500,  premium:1400, freeGems:5},
+  {xp:1750, free:600,  premium:1800, gems:25},
+  {xp:2350, free:700,  premium:2300},
+  {xp:3000, free:900,  premium:2900, gems:40},
+  {xp:3700, free:1100, premium:3600, freeGems:15},
+  {xp:4500, free:1300, premium:4500, gems:60},
+  {xp:5500, free:1600, premium:5500, cosmeticSlot:'trails'},
+  {xp:6750, free:2000, premium:7000, gems:110, cosmeticSlot:'skins'},
 ];
 function ensureSeason(){
   const k = 'S'+activeSeason().id;
   if(stats.seasonKey!==k){
-    stats.seasonKey=k; stats.seasonXp=0; stats.seasonPremium=false;
+    stats.seasonKey=k; stats.seasonXp=0; stats.seasonPremium=false; stats.seasonBonus=0;
     stats.seasonClaimedFree=[]; stats.seasonClaimedPremium=[];
     saveStats();
   }

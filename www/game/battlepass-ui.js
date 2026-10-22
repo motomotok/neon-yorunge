@@ -31,16 +31,19 @@ function renderBattlepass(){
   const s = activeSeason();
   const daysLeft = Math.max(0, s.days - seasonDayIndex(s.start, gameNow()));
   const xp = stats.seasonXp;
-  document.getElementById('seasonXpLine').textContent = t('season_xp_line',{xp, name:t(s.nameKey), days:daysLeft});
-  document.getElementById('bpSeasonName').textContent = t(s.nameKey);
+  document.getElementById('seasonXpLine').textContent = t('season_xp_line',{xp, name:seasonName(s), days:daysLeft});
+  document.getElementById('bpSeasonName').textContent = seasonName(s);
   document.getElementById('bpDays').innerHTML = icon('clock')+' '+t('bp_days_left',{n:daysLeft});
   let reachedN = 0; SEASON_TIERS.forEach(tr=>{ if(xp>=tr.xp) reachedN++; });
   document.getElementById('bpTierNow').textContent = reachedN;
   const next = SEASON_TIERS[reachedN], prevXp = reachedN>0 ? SEASON_TIERS[reachedN-1].xp : 0;
-  const frac = next ? Math.max(0, Math.min(1, (xp-prevXp)/(next.xp-prevXp))) : 1;
+  // Hepsi açıldıysa çubuk bir sonraki bonus kademeyi (+nota) gösterir.
+  const top=SEASON_TIERS[SEASON_TIERS.length-1].xp, bIn=Math.max(0,xp-top)%SEASON_BONUS_XP;
+  const frac = next ? Math.max(0, Math.min(1, (xp-prevXp)/(next.xp-prevXp))) : bIn/SEASON_BONUS_XP;
   document.getElementById('bpBarFill').style.width = (frac*100).toFixed(1)+'%';
-  document.getElementById('bpBarTxt').textContent = next ? `${xp} / ${next.xp} XP` : `${xp} XP`;
-  document.getElementById('bpNextLine').textContent = next ? t('bp_next_xp',{n:next.xp-xp, tier:reachedN+1}) : t('bp_all_done');
+  document.getElementById('bpBarTxt').textContent = next ? `${xp} / ${next.xp} XP` : `${bIn} / ${SEASON_BONUS_XP} XP`;
+  document.getElementById('bpNextLine').textContent = next ? t('bp_next_xp',{n:next.xp-xp, tier:reachedN+1})
+    : t('bp_bonus_next',{n:SEASON_BONUS_XP-bIn, notes:SEASON_BONUS_NOTES});
   syncSeasonPassUI();
 
   const wrap=document.getElementById('battlepassTiers'); wrap.innerHTML='';

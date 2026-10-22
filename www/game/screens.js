@@ -272,7 +272,7 @@ function gameOver(reason){
   // Bölen 8'den 40'a çıkarıldı: eskiden 2 oyunda 5. kademeye varılabiliyordu
   // (aşırı hızlı), artık ~2 oyunda 2. kademeye, ~10-12 oyunda 5. kademeye
   // ulaşılacak şekilde (bkz. SEASON_TIERS'teki yorum).
-  if(ranked) addSeasonXp(Math.max(1, Math.floor(runScore/40)));
+  if(ranked) addSeasonXp(seasonXpForRun(runScore));
   ensureRival();
   saveStats();
   if(window.CloudSync) CloudSync.onGameOver();

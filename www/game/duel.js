@@ -460,6 +460,8 @@ function duelGameOver(reason){
   // Küçük nota ödülü (maç başına), kaydı yükle.
   const reward = win ? 40 : 12;
   addNotes(reward);
+  // Sezon XP'si (Clash Royale'deki taç gibi): pes etmek XP vermez.
+  if(reason!=='ff'){ ensureSeason(); addSeasonXp(win ? 20 : 10); }
   _duelRec.samples.push([+Math.min(tt,DUEL_SECS).toFixed(1), myScore, Math.max(0,hp), player.shieldHits>0?1:0]);
   if(iDied) _duelRec.died=+tt.toFixed(1);
   saveStats();
