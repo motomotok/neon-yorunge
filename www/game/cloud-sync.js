@@ -57,14 +57,30 @@ function restoreProgress(p){
   location.reload();
 }
 
+let _linking = false;
 async function linkAccount(which){
   if(!window.CloudAccount){ queueToast(t('account_link_err_toast')); return; }
+  // Giriş sürerken ikinci dokunuş "boş tuş" gibi kalmasın: oyuncuya söyle.
+  if(_linking){ queueToast(t('account_linking_busy')); return; }
+  _linking = true;
   const btn=document.getElementById(which==='google' ? 'linkGoogleBtn' : 'linkAppleBtn');
-  if(btn) btn.disabled=true;
-  const res = await CloudAccount.link(which);
-  if(btn) btn.disabled=false;
+  const label = btn ? btn.textContent : '';
+  if(btn){ btn.disabled=true; btn.textContent=t('account_linking'); }
+  let res;
+  try{
+    // Google penceresi bazen hiç dönmüyor: 45 sn sonra vazgeç, düğme kilitli kalmasın.
+    res = await Promise.race([CloudAccount.link(which),
+      new Promise(r=>setTimeout(()=>r({ok:false, error:'timeout'}), 45000))]);
+  } catch(e){ res = {ok:false, error:String(e && (e.code||e.message) || e)}; }
+  finally{ _linking=false; if(btn){ btn.disabled=false; btn.textContent=label; } }
   if(!res.ok){
-    if(!/popup-closed|cancel/i.test(res.error||'')) queueToast(t('account_link_err_toast'));
+    // Hata dönse bile Firebase'de bağlanmış olabilir (eskiden oyun ancak
+    // yeniden açılınca "girişli" görünüyordu): gerçek durumu oku.
+    try{ _acct = await CloudAccount.status(); }catch(e){}
+    syncLinkButtons();
+    if(isAccountLinked()){ await saveProgress(true); queueToast(t('account_linked_toast')); return; }
+    if(window.CrashReport) CrashReport.log('account link failed: '+which+' '+res.error);
+    if(!/popup-closed|cancel/i.test(res.error||'')) queueToast(t('account_link_err_toast')+' ('+String(res.error||'').replace(/^auth\//,'').slice(0,40)+')');
     return;
   }
   _acct = {uid:res.uid, providers:res.providers||[], email:''};
@@ -115,7 +131,13 @@ function maybeNudgeLogin(){
   setTimeout(()=>{ if(state==='over') showDjConfirm(t('account_nudge_msg'), ()=>goSettings(), {yes:t('account_nudge_yes'), no:t('btn_later')}); }, 1800);
 }
 
-document.addEventListener('visibilitychange', ()=>{ if(document.hidden) saveProgress(); });
+document.addEventListener('visibilitychange', ()=>{
+  if(document.hidden){ saveProgress(); return; }
+  // Google/Apple penceresinden dönünce giriş durumunu tazele.
+  if(ACCOUNT_LINK_ENABLED && window.CloudAccount && !_linking){
+    CloudAccount.status().then(s=>{ _acct=s; syncLinkButtons(); }).catch(()=>{});
+  }
+});
 
 window.CloudSync = {
   init: initCloudSync,

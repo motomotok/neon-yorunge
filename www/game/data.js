@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.73.1';
+const GAME_VERSION = '2.73.2';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -456,12 +456,9 @@ function performPrestige(){
   return gain;
 }
 
-// TEST MODU: true iken mağazadaki tüm kozmetikler (tema, pena — premium
-// dahil —, iz, güneş, halka, sezon/seri ödülleri) ücretsiz ve açık.
-// İleride: premium içerik gerçek parayla alınan bir "elmas" para birimiyle
-// (LoL'deki RP gibi), diğerleri notayla satılacak — o zaman false yapılır.
-// Yetenekler/Çekirdek Ağacı (ilerleme mekaniği) bundan etkilenmez.
-const TEST_FREE_UNLOCK = true;
+// TEST MODU: true iken mağazadaki tüm kozmetikler ücretsiz ve açık olur.
+// Mağazada gerçek satış (nota / elmas) olduğu için KAPALI kalmalı (2.73.2).
+const TEST_FREE_UNLOCK = false;
 function isUnlockedItem(category, item){
   if(TEST_FREE_UNLOCK) return true;
   if(item.gate.type==='free') return true;
@@ -596,6 +593,21 @@ if((stats.owned.themes||[]).includes('tribalpulse')){
   if(!stats.owned.themes.includes('lofichillhop')) stats.owned.themes.push('lofichillhop');
 }
 if(cfg.theme==='tribalpulse') cfg.theme='lofichillhop';
+// Takılı kozmetik oyuncuya ait değilse (ör. test modunda ücretsiz takılmıştı)
+// varsayılana döner — kilitli bir eşya kullanılmaya devam etmesin.
+(function enforceOwnedCosmetics(){
+  const chk=(cat, list, key, def)=>{
+    const it=list.find(x=>x.id===cfg[key]);
+    if(!it || !isUnlockedItem(cat, it)) cfg[key]=def;
+  };
+  const themes=Object.keys(THEMES).map(k=>Object.assign({id:k}, THEMES[k]));
+  chk('themes', themes, 'theme', 'neon');
+  chk('skins', SKINS, 'skin', SKINS[0].id);
+  chk('trails', TRAILS, 'trail', 'classic');
+  chk('suns', SUNS, 'sun', 'classic');
+  chk('rings', RINGSTYLES, 'ringStyle', 'classic');
+  // saveCfg() burada çağrılamaz (_dirtyCfg aşağıda tanımlı); kontrol her açılışta yapılır.
+})();
 // Denge 2 (2026-10-19): can 8×+2 -> 3×+1, kalkan 4 -> 2 kademe, Zırh dalı 5 -> 3
 // düğüm. Eski kademeler yeni tavana indirilir; eski fiyatla ödenen fark nota,
 // kaldırılan düğümler çekirdek olarak iade edilir (kimse kayıp yaşamasın).

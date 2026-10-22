@@ -41,6 +41,7 @@
     // (productId() her çağrıda TAZE okunur — geçen sezonun bileti bu sezonu
     // açmaz, bkz. dosya başındaki not).
     IAP.onVerified((receipt) => { if (receiptHasProduct(receipt, productId())) onOwned && onOwned(); });
+    IAP.onApproved((t) => { if (IAP.txProducts(t).indexOf(productId()) !== -1) onOwned && onOwned(); });
     IAP.bindStoreHandlers();
   }
 

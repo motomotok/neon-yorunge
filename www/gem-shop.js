@@ -29,8 +29,13 @@
 
     store.when().productUpdated((p) => {
       if (PRODUCT_IDS.indexOf(p.id) === -1) return;
-      if (p.owned) { onPurchased && onPurchased(p.id, AMOUNTS[p.id]); }
-      else if (p.pricing && p.pricing.price) { onPriceReady && onPriceReady(p.id, p.pricing.price); }
+      if (p.pricing && p.pricing.price) { onPriceReady && onPriceReady(p.id, p.pricing.price); }
+    });
+    // Elmas onay anında eklenir (bkz. iap-core.js); txId ile tek sefer.
+    IAP.onApproved((t) => {
+      IAP.txProducts(t).forEach((id) => {
+        if (PRODUCT_IDS.indexOf(id) !== -1) onPurchased && onPurchased(id, AMOUNTS[id], IAP.txId(t));
+      });
     });
     IAP.bindStoreHandlers();
   }

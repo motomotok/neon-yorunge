@@ -57,19 +57,23 @@ function initIAP(){
   _iapInitDone = true;
   if(window.Premium){
     Premium.register(
-      ()=>{ if(!stats.premiumNoAds){ stats.premiumNoAds=true; saveStats(); queueToast(t('toast_premium_active')); } syncPremiumUI(); },
+      ()=>{ if(!stats.premiumNoAds){ stats.premiumNoAds=true; saveStats(); queueToast(t('toast_premium_active')); } syncPremiumUI(); if(typeof syncAdButtons==='function') syncAdButtons(); },
       (price)=>{ syncPremiumUI(price); }
     );
   }
   if(window.SeasonPass){
     SeasonPass.register(
-      ()=>{ ensureSeason(); stats.seasonPremium=true; saveStats(); queueToast(t('toast_seasonpass_active')); syncSeasonPassUI(); },
+      ()=>{ ensureSeason(); if(stats.seasonPremium){ syncSeasonPassUI(); return; } stats.seasonPremium=true; saveStats(); queueToast(t('toast_seasonpass_active')); syncSeasonPassUI(); },
       (price)=>{ syncSeasonPassUI(price); }
     );
   }
   if(window.GemShop){
     GemShop.register(
-      (productId, amount)=>{
+      (productId, amount, txId)=>{
+        // Aynı işlem bir daha gelirse (uygulama yeniden açıldı vb.) tekrar ekleme.
+        const done = stats.iapDone || (stats.iapDone=[]);
+        if(txId && done.includes(txId)) return;
+        if(txId){ done.push(txId); if(done.length>100) done.splice(0, done.length-100); }
         stats.gems=(stats.gems||0)+amount; stats.lifetimeGems=(stats.lifetimeGems||0)+amount;
         saveStats(); refreshWallet();
         queueToast(t('gems_purchased_toast',{n:amount}));

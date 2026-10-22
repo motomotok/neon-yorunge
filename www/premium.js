@@ -24,6 +24,8 @@
       if (p.owned) { onOwned && onOwned(); }
       else if (p.pricing && p.pricing.price) { onPriceReady && onPriceReady(p.pricing.price); }
     });
+    // Satın alınır alınmaz (yeniden açmayı beklemeden) reklamsız olur.
+    IAP.onApproved((t) => { if (IAP.txProducts(t).indexOf(PRODUCT_ID) !== -1) onOwned && onOwned(); });
     IAP.bindStoreHandlers();
   }
 
