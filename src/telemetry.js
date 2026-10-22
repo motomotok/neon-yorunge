@@ -40,7 +40,7 @@ async function beat(s) {
     games: int(s.games, 1e7), best: int(s.best, 2e6), mins: int(s.mins, 1e7),
     mmr: int(s.mmr, 4000), tier: str(s.tier, 16), duels: int(s.duels, 1e6),
     gems: int(s.gems, 1e7), notes: int(s.notes, 1e9), lvl: int(s.lvl, 1e4),
-    linked: !!s.linked, noads: !!s.noads, pass: !!s.pass,
+    linked: !!s.linked, noads: !!s.noads, pass: !!s.pass, on: s.on !== false,
     since: int(s.since, 1e13), lastSeen: serverTimestamp(),
   }, { merge: true });
   return u.uid;

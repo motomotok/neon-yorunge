@@ -118,7 +118,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#080a14;border:1px sol
       <div class="card"><h2 style="margin-top:0">Platform (tüm oyuncular)</h2><div class="bars" id="platBars"></div><h2>Şu an oynayanlar: platform</h2><div class="bars" id="livePlatBars"></div><h2>Şu an oynayanlar: sürüm</h2><div class="bars" id="verBars"></div></div>
       <div class="card"><h2 style="margin-top:0">Düello rankları</h2><div class="bars" id="tierBars"></div></div>
     </div>
-    <p class="hint">"Oyuncular" sayıları yalnız KVKK ekranında istatistik izni veren oyuncuları kapsar. "Sıralamadaki oyuncu" ve "Düello oyuncusu", izinden bağımsız olarak skor tablolarına kayıt atanların sayısıdır. Şu an oynayan: son 3 dakikada oyunu açık olanlar; panel ekrandayken dakikada bir yenilenir, arka plandayken veri çekmez.</p>
+    <p class="hint">"Oyuncular" sayıları yalnız KVKK ekranında istatistik izni veren oyuncuları kapsar. "Sıralamadaki oyuncu" ve "Düello oyuncusu", izinden bağımsız olarak skor tablolarına kayıt atanların sayısıdır. Şu an oynayan: oyunu şu an açık olanlar. Panel kendiliğinden veri çekmez; yalnız açılışta ve "Yenile"ye basınca günceller.</p>
   </section>
 
   <section data-sec="oyuncular" class="hidden">
@@ -195,7 +195,7 @@ const db = getFirestore(app);
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmt = (n) => (n == null ? '—' : Number(n).toLocaleString('tr-TR'));
-const ONLINE_MS = 3 * 60000, TZ = 3 * 3600000, DAY = 86400000;
+const ONLINE_MS = 35 * 60000, TZ = 3 * 3600000, DAY = 86400000;
 const toMs = (ts) => (ts && ts.toMillis ? ts.toMillis() : 0);
 const todayStart = () => { const n = Date.now() + TZ; return n - (n % DAY) - TZ; };
 function ago(ms) {
@@ -344,15 +344,17 @@ async function loadPlayers(more) {
   renderPlayers();
 }
 
-// Canlı: oyun açıkken her oyuncu 2 dakikada bir sinyal yollar. Panel,
-// SADECE sekme ekrandayken dakikada bir "son 3 dakikada görülenleri" okur
-// (okuma = o an oynayan kişi sayısı). Sekme arka plandaysa hiç okumaz.
-let liveTimer = null;
+// Şu an oynayan: oyuncu oyunu açınca on:true, kapatınca on:false yazar (30
+// dk'dan uzun oturumda yarım saatte bir tekrar). Panel OTOMATİK OKUMAZ:
+// yalnız açılışta ve "Yenile"ye basınca son 35 dk'da yazanları bir kez okur.
+// on alanı olmayan eski sürümler (2.74.0, dakikada bir yazar) son 3 dk'ya bakılır.
 async function pollLive() {
-  if (document.hidden || !auth.currentUser) return;
+  if (!auth.currentUser) return;
   try {
     const s = await getDocs(query(collection(db, 'players'), where('lastSeen', '>=', Timestamp.fromMillis(Date.now() - ONLINE_MS))));
-    livePlayers = s.docs.map((d) => Object.assign({ uid: d.id }, d.data()));
+    const t3 = Date.now() - 3 * 60000;
+    livePlayers = s.docs.map((d) => Object.assign({ uid: d.id }, d.data()))
+      .filter((p) => p.on === true || (p.on === undefined && toMs(p.lastSeen) >= t3));
   } catch (e) { return; }
   const n = $('#liveN'); if (n) n.textContent = livePlayers.length;
   $('#onlineList').innerHTML = livePlayers.length
@@ -365,9 +367,8 @@ async function pollLive() {
   if (curTab === 'oyuncular') renderPlayers();
 }
 function markLive() { const ids = new Set(livePlayers.map((p) => p.uid)); for (const p of players) p.live = ids.has(p.uid); }
-function startLive() { stopLive(); pollLive(); liveTimer = setInterval(pollLive, 60000); }
-function stopLive() { clearInterval(liveTimer); liveTimer = null; }
-document.addEventListener('visibilitychange', () => { if (!document.hidden && liveTimer) pollLive(); });
+function startLive() { pollLive(); }
+function stopLive() {}
 
 // ---------- Oyuncu tablosu ----------
 const COLS = [

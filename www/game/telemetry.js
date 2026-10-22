@@ -7,9 +7,11 @@
 // YALNIZ oyuncu kutuyu işaretlediyse (açık rıza, varsayılan kapalı) gider.
 // İzin Ayarlar → Bilgi → Gizlilik & Yasal → "Veri İzinleri"nden değişir.
 const KVKK_VERSION = 1;
-// MALİYET: oyun açıkken 2 dakikada bir tek yazma (izin verenlerde).
-// Admin paneli "son 3 dakikada görülen"i şu an oynuyor sayar.
-const BEAT_MS = 120000, GIFT_CHECK_MS = 10*60000;
+// MALİYET: periyodik sinyal YOK. İzin veren oyuncu yalnız oyunu açınca
+// (on:true) ve kapatınca/arka plana atınca (on:false) yazar; oyun 30 dk'dan
+// uzun açık kalırsa yarım saatte bir tek yazma daha. Admin paneli "on:true
+// ve son 35 dk içinde" olanı şu an oynuyor sayar.
+const BEAT_MS = 30*60000, GIFT_CHECK_MS = 10*60000;
 let _kvkkResolve = null, _lastBeat = 0, _lastGiftCheck = 0;
 
 function analyticsOn(){ return stats.kvkkV>=KVKK_VERSION && !!stats.analytics; }
@@ -38,7 +40,7 @@ function closeKvkk(){
   saveStats();
   document.getElementById('kvkkOverlay').style.display='none';
   if(on) telemetryBeat(true);
-  else if(was && window.Telemetry) Telemetry.forget().catch(()=>{});
+  else if(was && window.Telemetry){ _lastOn=false; Telemetry.forget().catch(()=>{}); }
   if(_kvkkResolve){ const r=_kvkkResolve; _kvkkResolve=null; r(true); }
 }
 
@@ -58,12 +60,19 @@ function telemetrySummary(){
     noads: !!stats.premiumNoAds, pass: !!stats.seasonPremium, since: stats.firstSeen||0,
   };
 }
+let _lastOn = false;
 function telemetryBeat(force){
   if(!window.Telemetry || !analyticsOn() || document.hidden) return;
-  // force (açılış, izin, uygulamaya dönüş) bile en az 45 sn arayla yazar.
-  if(Date.now()-_lastBeat < (force ? 45000 : BEAT_MS-2000)) return;
-  _lastBeat=Date.now();
-  Telemetry.beat(telemetrySummary()).catch(()=>{});
+  // Zaten "oyunda" yazılmışsa (ör. reklamdan dönüş) 45 sn içinde tekrar yazmaz.
+  if(Date.now()-_lastBeat < (force && !_lastOn ? 0 : force ? 45000 : BEAT_MS-5000)) return;
+  _lastBeat=Date.now(); _lastOn=true;
+  Telemetry.beat(Object.assign(telemetrySummary(), {on:true})).catch(()=>{});
+}
+// Oturum sonu: güncel istatistikle "çıktı" yazılır (bir kez).
+function telemetryEnd(){
+  if(!window.Telemetry || !analyticsOn() || !_lastOn) return;
+  _lastOn=false; _lastBeat=Date.now();
+  Telemetry.beat(Object.assign(telemetrySummary(), {on:false})).catch(()=>{});
 }
 
 // Admin panelinden gelen hediyeler: önce "alındı" işaretlenir, sonra verilir
@@ -108,9 +117,9 @@ function initTelemetry(){
   // Oynama süresi: yalnız oyun ekranı açık ve uygulama öndeyken sayılır
   // (stats oyun sonunda zaten kaydediliyor).
   setInterval(()=>{ if(state==='play' && !document.hidden) stats.playSec=(stats.playSec||0)+1; }, 1000);
-  setInterval(()=>telemetryBeat(false), 20000);
+  setInterval(()=>telemetryBeat(false), 60000);
   document.addEventListener('visibilitychange', ()=>{
-    if(document.hidden) return;
+    if(document.hidden){ telemetryEnd(); return; }
     telemetryBeat(true); checkGifts();
   });
   setTimeout(checkGifts, 6000);
