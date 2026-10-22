@@ -20,6 +20,7 @@ const ClampShader = {
     void main(){ vec4 c=texture2D(tDiffuse,vUv); c.rgb=min(max(c.rgb,vec3(0.0)),vec3(uMax)); gl_FragColor=c; }`,
 };
 import { World, DISC_R, TOP_Y } from './world.js';
+import { setTexScale } from './textures.js';
 import { Entities } from './entities.js';
 import { resolveSlot, loadErrors } from './assets.js';
 
@@ -104,6 +105,7 @@ function init(opts){
     renderer = new THREE.WebGLRenderer({canvas:opts.canvas, antialias:false, alpha:false, powerPreference:'high-performance'});
   }catch(e){ console.warn('[Render3D] WebGL başlatılamadı', e); return false; }
   gpuTier = detectTier(renderer.getContext());
+  setTexScale(gpuTier === 'low' ? 0.5 : 1);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NeutralToneMapping;
   renderer.toneMappingExposure = manifest.exposure || 1.05;
@@ -393,4 +395,6 @@ function info(){
     gpuMem: renderer ? Object.assign({}, renderer.info.memory) : null, themeMs: world && world.themeScene ? world.themeScene.buildMs : null};
 }
 
-window.Render3D = { supported, init, warm, resize, render, setQuality, info, fail, menuAnchors, playerScreen };
+// Parlamayı (bloom) çalışırken aç/kapat — ölçüm ve takılma koruması için.
+function setBloom(on){ if(!renderer) return; bloomCut = !on; buildComposer(QUALITY[qualityLive]); resize(W, H, base); }
+window.Render3D = { supported, init, warm, resize, render, setQuality, info, fail, menuAnchors, playerScreen, setBloom };

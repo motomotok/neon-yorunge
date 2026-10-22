@@ -9,14 +9,14 @@
 //   cybercircuit → sonradan eklenen Gemini konseptleri (aşağıda)
 // Tüm ölçüler "base" biriminde (bkz. world.js), sahne world.root altına eklenir.
 import * as THREE from 'three';
-import { glowTexture } from './textures.js';
+import { glowTexture, scaledCanvas } from './textures.js';
 import { loadTexture } from './assets.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 const DISC_R = 0.44, TOP_Y = 0.012, RING_K = [0.19, 0.285, 0.38];
 const ADD = THREE.AdditiveBlending;
 
-function canvas(w, h){ const c = document.createElement('canvas'); c.width = w; c.height = h || w; return c; }
+function canvas(w, h){ return scaledCanvas(w, h); }   // düşük GPU'da 1024'lükler yarı boy (bkz. textures.js)
 function tex(c, wrap){
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
   if(wrap){ t.wrapS = THREE.RepeatWrapping; }

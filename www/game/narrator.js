@@ -63,8 +63,7 @@ function narratorHide(){
 }
 
 // ---- Hikâye anı: ilk boss dalgası temizlendikten sonra ----
-// Oyun 'story' durumunda donar (update çalışmaz, dokunma/duraklat etkisiz),
-// DJ Vinil ileriye dönük bir meydan okuma yazar. Okunmadan devam edilemez.
+// İlk boss temizlenince kısa bir DJ Vinil bildirimi (oyunu durdurmaz; eskiden 'story' durumunda donardı).
 // Bayrak (stats.firstBossStory) sadece mesaj gerçekten gösterilince konur:
 // oyuncu o arada ölürse bir sonraki boss temizliğinde tekrar denenir.
 function narratorFirstBossStory(tries){
@@ -76,12 +75,6 @@ function narratorFirstBossStory(tries){
   }
   if(state!=='play') return;
   stats.firstBossStory = true; saveStats();
-  state = 'story';
-  narratorSay(t('story_boss1'), {
-    cta: t('story_boss1_cta'), skippable:false,
-    onCta: ()=>{
-      narratorHide();
-      if(state==='story'){ state='play'; player.invulT = INVUL; }
-    },
-  });
+  // Eskiden oyunu durdurup uzun bir konuşma açıyordu; artık oyunu bölmeyen kısa bildirim.
+  queueToast('🎧 '+t('story_boss1'));
 }

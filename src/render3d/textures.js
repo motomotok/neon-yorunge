@@ -4,11 +4,25 @@
 // 3D mod eksiksiz çalışır; asset geldikçe bunların yerini alır.
 import * as THREE from 'three';
 
-function canvas(size){
+// Düşük seviyeli GPU'da (Mali-G52 vb.) büyük prosedürel dokular yarı
+// çözünürlükte üretilir: 1024'lük doku mipmap'leriyle ~5.6 MB GPU belleği
+// tutuyordu ve Redmi Note 9'da bellek dolunca ~100 ms'lik takılmalar
+// oluyordu. Çizim kodu değişmez: tuval küçülür, 2D bağlam aynı oranda
+// ölçeklenir (koordinatlar mantıksal boyutta kalır).
+let TEX_K = 1;
+export function setTexScale(k){ TEX_K = k; }
+export function scaledCanvas(w, h){
+  h = h || w;
+  const k = Math.max(w, h) >= 1024 ? TEX_K : 1;
   const c = document.createElement('canvas');
-  c.width = c.height = size;
+  c.width = Math.round(w*k); c.height = Math.round(h*k);
+  if(k !== 1){
+    const get = c.getContext.bind(c); let ctx = null;
+    c.getContext = (type, o) => { if(ctx) return ctx; ctx = get(type, o); if(ctx && type === '2d') ctx.scale(k, k); return ctx; };
+  }
   return c;
 }
+function canvas(size){ return scaledCanvas(size); }
 function toTex(c, srgb=true){
   const t = new THREE.CanvasTexture(c);
   if(srgb) t.colorSpace = THREE.SRGBColorSpace;

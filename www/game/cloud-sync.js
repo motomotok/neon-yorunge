@@ -125,7 +125,7 @@ function syncLinkButtons(){
 function maybeNudgeLogin(){
   if(!ACCOUNT_LINK_ENABLED || isAccountLinked() || tutorialActive) return;
   const g=stats.games||0, n=stats.loginNudges||0;
-  if(!((n===0 && g>=5) || (n===1 && g>=25))) return;
+  if(!(n===0 && g>=5)) return;   // tek sefer (DJ Vinil daha az konuşsun)
   stats.loginNudges=n+1; saveStats();
   window._djNudgeAt=Date.now();
   setTimeout(()=>{ if(state==='over') showDjConfirm(t('account_nudge_msg'), ()=>goSettings(), {yes:t('account_nudge_yes'), no:t('btn_later')}); }, 1800);
