@@ -1622,3 +1622,13 @@ body.duel #walletChip, body.duel #walletEndHud{display:none;}
 .doStats{font-size:12px;opacity:.75;}
 .doTierUp{font-weight:800;color:#ffc94a;} .doTierUp .gicon{width:16px;height:16px;vertical-align:-3px;}
 .doReward{font-weight:800;} .doReward .gicon{width:15px;height:15px;vertical-align:-2px;}
+
+/* KVKK / veri izni penceresi (game/telemetry.js) */
+#kvkkOverlay{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(2,3,10,.82);padding:20px;}
+.kvkkCard{max-width:330px;width:100%;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:stretch;}
+.kvkkIcon{font-size:30px;}
+.kvkkTitle{font-size:17px;font-weight:800;}
+.kvkkBody{margin:0;font-size:13px;line-height:1.45;text-align:start;opacity:.9;}
+.kvkkOpt{display:flex;align-items:center;gap:12px;justify-content:space-between;text-align:start;font-size:13px;font-weight:700;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.05);cursor:pointer;}
+.kvkkHint{font-size:11px;opacity:.6;line-height:1.35;}
+.kvkkId{font-size:10px;opacity:.45;word-break:break-all;min-height:12px;user-select:text;-webkit-user-select:text;}

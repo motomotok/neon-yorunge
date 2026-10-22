@@ -26,11 +26,15 @@ function auth() {
   } else _auth = getAuth(app);
   return _auth;
 }
+// Aynı anda gelen çağrılar (ör. açılışta hata kaydı + istatistik) tek bir
+// anonim hesapta buluşur; yoksa iki hesap açılıp ilk yazma boşa düşüyordu.
+let _signingIn = null;
 async function ensureUser() {
   const a = auth();
   await a.authStateReady();
   if (a.currentUser) return a.currentUser;
-  return (await signInAnonymously(a)).user;
+  if (!_signingIn) _signingIn = signInAnonymously(a).then((r) => r.user).finally(() => { _signingIn = null; });
+  return _signingIn;
 }
 const db = () => getFirestore(getApp());
 // Hesap köprüsü (cloud-account.js) aynı oturumu kullanır.

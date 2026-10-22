@@ -628,9 +628,27 @@
   <div class="card" style="max-width:300px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center;">
     <div style="font-size:16px;font-weight:800;"><i class="gicon" data-icon="scale"></i> <span data-i18n="legal_title">Gizlilik &amp; Yasal</span></div>
     <button class="btn alt small" id="privacyBtn"><i class="gicon" data-icon="lock"></i> <span data-i18n="privacy_btn">Gizlilik Politikası</span></button>
+    <button class="btn alt small" id="kvkkBtn"><i class="gicon" data-icon="lock"></i> <span data-i18n="kvkk_btn">Veri İzinleri</span></button>
     <button class="btn alt small" id="adConsentBtn"><i class="gicon" data-icon="clipboard"></i> <span data-i18n="adconsent_btn">Reklam Onayını Yönet</span></button>
     <button class="btn alt small" id="licensesBtn"><i class="gicon" data-icon="doc"></i> <span data-i18n="licenses_btn">Açık Kaynak Lisansları</span></button>
     <button class="btn small" id="infoPopupCloseBtn" style="margin-top:4px" data-i18n="close_btn">Kapat</button>
+  </div>
+</div>
+
+<!-- KVKK / veri izni penceresi (bkz. game/telemetry.js) -->
+<div id="kvkkOverlay" style="display:none">
+  <div class="card kvkkCard">
+    <div class="kvkkIcon"><i class="gicon" data-icon="lock"></i></div>
+    <div class="kvkkTitle" data-i18n="kvkk_title">Gizliliğin</div>
+    <div class="sub kvkkBody" data-i18n="kvkk_body">Oyunu daha iyi yapabilmek için hata kayıtlarını anonim olarak işliyoruz.</div>
+    <div class="kvkkOpt" id="kvkkStatsRow" role="switch">
+      <span data-i18n="kvkk_stats_opt">Oyun istatistiklerim anonim olarak işlenebilir</span>
+      <div class="sw" id="kvkkStatsSw"></div>
+    </div>
+    <div class="kvkkHint" data-i18n="kvkk_change_hint">İznini istediğin zaman Ayarlar → Bilgi → Gizlilik &amp; Yasal'dan değiştirebilirsin.</div>
+    <button class="btn alt small" id="kvkkPolicyBtn"><i class="gicon" data-icon="doc"></i> <span data-i18n="kvkk_policy">Aydınlatma Metni</span></button>
+    <button class="btn small" id="kvkkOkBtn"><i class="gicon" data-icon="check"></i> <span data-i18n="kvkk_ok">Devam</span></button>
+    <div class="kvkkId" id="kvkkId"></div>
   </div>
 </div>
 
@@ -666,6 +684,7 @@
 <script src="game/tutorial.js"></script>
 <script src="game/guide.js"></script>
 <script src="game/cloud-sync.js"></script>
+<script src="game/telemetry.js"></script>
 <script src="game/input.js"></script>
 <script src="game/main.js"></script>
 <script src="game/splash.js"></script>

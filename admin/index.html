@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Beat Orbit Yönetim</title>
+<!--
+  Beat Orbit admin paneli (Firebase Hosting → https://sentaks.web.app).
+  Güvenlik sayfada DEĞİL, firestore.rules isAdmin() kuralında: yalnız
+  geliştiricinin Google hesabı players/errors/gifts koleksiyonlarını okuyup
+  yazabilir. Bu sayfayı başkası açsa bile giriş yapsa da veri gelmez.
+  Veri kaynakları: src/telemetry.js (oyuncu özeti, hatalar, hediyeler),
+  src/leaderboard.js (lb, duels, dset — zaten herkese açık okunur).
+-->
+<style>
+:root{
+  --bg:#0b0d1a; --panel:#141830; --panel2:#1b2040; --line:#262c52; --text:#eef0ff; --dim:#8d93bd;
+  --accent:#ff9a3c; --accent2:#ffc94a; --ok:#5fe08a; --bad:#ff5f6f; --info:#6fc8ff; --vinyl:#2a1b10;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--info)}
+.wrap{max-width:1180px;margin:0 auto;padding:16px}
+header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.logo{width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 50% 50%,var(--accent) 0 14%,#111 15% 22%,#2b2b2b 23% 24%,#111 25% 40%,#2b2b2b 41% 42%,#111 43% 100%);box-shadow:0 0 0 2px #3a2a18}
+h1{font-size:18px;margin:0;flex:1;min-width:150px}
+h1 small{display:block;font-size:12px;color:var(--dim);font-weight:500}
+.btn{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.pri{background:linear-gradient(180deg,var(--accent2),var(--accent));color:#24140a;border:0;font-weight:800}
+.btn.bad{border-color:#5a2630;color:#ffb3bb}
+.btn.sm{padding:4px 9px;font-size:12px;border-radius:8px}
+.btn:disabled{opacity:.5;cursor:default}
+nav{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px}
+nav button{background:none;border:1px solid var(--line);border-radius:999px;padding:7px 14px;cursor:pointer;color:var(--dim);white-space:nowrap}
+nav button.on{background:var(--panel2);color:var(--text);border-color:var(--accent)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}
+.kpi .v{font-size:26px;font-weight:800;letter-spacing:-.5px}
+.kpi .l{color:var(--dim);font-size:12px}
+.kpi.live .v{color:var(--ok)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#3a3f66;margin-right:6px;vertical-align:middle}
+.dot.on{background:var(--ok);box-shadow:0 0 8px var(--ok);animation:pulse 1.6s infinite}
+@keyframes pulse{50%{opacity:.45}}
+h2{font-size:15px;margin:18px 0 8px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.sp{flex:1}
+input[type=text],input[type=number],select,textarea{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-width:0}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+.tblWrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--dim);font-weight:600;position:sticky;top:0;background:var(--panel);cursor:pointer;user-select:none}
+th.sorted::after{content:" ▾"}
+th.sorted.asc::after{content:" ▴"}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:rgba(255,255,255,.03)}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+.tag{display:inline-block;padding:1px 7px;border-radius:999px;font-size:11px;background:var(--panel2);border:1px solid var(--line)}
+.tag.ok{color:var(--ok);border-color:#24553a}
+.tag.bad{color:var(--bad);border-color:#5a2630}
+.tag.gold{color:var(--accent2);border-color:#5a4a1a}
+.muted{color:var(--dim)}
+.bars .b{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:13px}
+.bars .b i{display:block;height:9px;border-radius:5px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.bars .b span:first-child{width:80px;color:var(--dim)}
+#login{max-width:380px;margin:12vh auto;text-align:center}
+#login .logo{width:72px;height:72px;margin:0 auto 14px}
+.err{color:var(--bad);margin-top:10px;min-height:20px}
+.drawer{position:fixed;inset:0;background:rgba(3,4,12,.7);display:none;align-items:flex-end;justify-content:center;z-index:20}
+.drawer.on{display:flex}
+.drawer .card{width:min(560px,100%);max-height:88vh;overflow:auto;border-radius:18px 18px 0 0}
+@media(min-width:700px){.drawer{align-items:center}.drawer .card{border-radius:18px}}
+.kv{display:grid;grid-template-columns:130px 1fr;gap:4px 10px;font-size:13px;margin:10px 0}
+.kv b{color:var(--dim);font-weight:500}
+.mono{font-family:ui-monospace,Consolas,monospace;font-size:12px;word-break:break-all}
+pre{white-space:pre-wrap;word-break:break-word;background:#080a14;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:11.5px;max-height:260px;overflow:auto;margin:8px 0 0}
+.errG{margin-bottom:10px}
+.errG summary{cursor:pointer;list-style:none}
+.errG summary::-webkit-details-marker{display:none}
+.errG .msg{font-weight:700;word-break:break-word}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--accent);padding:10px 16px;border-radius:12px;z-index:30;display:none}
+.lists{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.hint{font-size:12px;color:var(--dim);margin-top:6px}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div id="login" class="card">
+  <div class="logo"></div>
+  <h1 style="flex:none">Beat Orbit Yönetim</h1>
+  <p class="muted">Bu panel yalnız geliştirici hesabıyla açılır.</p>
+  <button class="btn pri" id="loginBtn">Google ile giriş yap</button>
+  <div class="err" id="loginErr"></div>
+</div>
+
+<div class="wrap hidden" id="app">
+  <header>
+    <div class="logo"></div>
+    <h1>Beat Orbit Yönetim <small id="updated">yükleniyor…</small></h1>
+    <button class="btn" id="refreshBtn">↻ Yenile</button>
+    <button class="btn" id="logoutBtn">Çıkış</button>
+  </header>
+  <nav id="tabs">
+    <button data-tab="ozet" class="on">Özet</button>
+    <button data-tab="oyuncular">Oyuncular</button>
+    <button data-tab="siralama">Sıralamalar</button>
+    <button data-tab="hatalar">Hatalar <span id="errBadge"></span></button>
+    <button data-tab="hediyeler">Hediyeler</button>
+  </nav>
+
+  <section data-sec="ozet">
+    <div class="grid" id="kpis"></div>
+    <div class="lists" style="margin-top:12px">
+      <div class="card"><h2 style="margin-top:0"><span class="dot on"></span>Şu an oynayanlar</h2><div id="onlineList" class="muted">—</div></div>
+      <div class="card"><h2 style="margin-top:0">Platform</h2><div class="bars" id="platBars"></div><h2>Sürüm (son 7 gün)</h2><div class="bars" id="verBars"></div></div>
+      <div class="card"><h2 style="margin-top:0">Düello rankları</h2><div class="bars" id="tierBars"></div></div>
+    </div>
+    <p class="hint">"Oyuncular" sayıları yalnız KVKK ekranında istatistik izni veren oyuncuları kapsar. "Sıralamadaki oyuncu" ve "Düello oyuncusu", izinden bağımsız olarak skor tablolarına kayıt atanların sayısıdır. Şu an oynayan: son 2 dakikada oyunu açık olanlar (canlı).</p>
+  </section>
+
+  <section data-sec="oyuncular" class="hidden">
+    <div class="row" style="margin-bottom:10px">
+      <input type="text" id="pSearch" placeholder="İsim ya da oyuncu ID ara…" style="flex:1;min-width:180px">
+      <select id="pFilter">
+        <option value="">Hepsi</option><option value="online">Şu an oynayan</option><option value="today">Bugün</option>
+        <option value="linked">Hesabı bağlı</option><option value="noads">Reklamsız</option><option value="pass">Sezon bileti</option>
+      </select>
+    </div>
+    <div class="tblWrap"><table id="pTable"><thead></thead><tbody></tbody></table></div>
+    <p class="hint" id="pHint"></p>
+  </section>
+
+  <section data-sec="siralama" class="hidden">
+    <div class="lists">
+      <div class="card"><h2 style="margin-top:0">Global sıralama (tüm zamanlar)</h2><div id="lbAll"></div></div>
+      <div class="card"><h2 style="margin-top:0">Bu hafta <span class="muted" id="wkId"></span></h2><div id="lbWeek"></div></div>
+      <div class="card"><h2 style="margin-top:0">Düello (MMR)</h2><div id="lbDuel"></div></div>
+      <div class="card"><h2 style="margin-top:0">Günün Seti <span class="muted" id="dayId"></span></h2><div id="lbDay"></div></div>
+    </div>
+  </section>
+
+  <section data-sec="hatalar" class="hidden">
+    <div class="row" style="margin-bottom:10px">
+      <select id="eRange"><option value="1">Son 24 saat</option><option value="7" selected>Son 7 gün</option><option value="30">Son 30 gün</option></select>
+      <select id="eVer"><option value="">Tüm sürümler</option></select>
+      <span class="sp"></span>
+      <button class="btn" id="copyErrBtn">📋 Claude için kopyala</button>
+    </div>
+    <div id="errList"></div>
+    <p class="hint">Oyun kodundaki hatalar burada. Uygulamanın tamamen çöktüğü (native) kayıtlar Firebase Console → Crashlytics'te. "Claude için kopyala" ile listeyi kopyalayıp Claude'a yapıştırırsan hataları bulup düzeltir. Düzeltilen bir hatayı "Sil" ile temizleyebilirsin.</p>
+  </section>
+
+  <section data-sec="hediyeler" class="hidden">
+    <div class="card">
+      <h2 style="margin-top:0">🎁 Hediye gönder</h2>
+      <div class="row">
+        <input type="text" id="gUid" placeholder="Oyuncu ID" style="flex:2;min-width:220px">
+        <select id="gType"><option value="gems">Elmas</option><option value="notes">Nota</option><option value="noads">Reklamsız</option></select>
+        <input type="number" id="gAmount" value="100" min="1" max="100000" style="width:110px">
+        <input type="text" id="gNote" placeholder="Not (sadece sen görürsün)" style="flex:2;min-width:160px">
+        <button class="btn pri" id="gSend">Gönder</button>
+      </div>
+      <p class="hint">Oyuncu ID, oyunda Ayarlar → Bilgi → Gizlilik &amp; Yasal → Veri İzinleri penceresinin altında yazar; ya da Oyuncular listesinden bir satıra tıkla. Hediye, oyuncu oyunu bir sonraki açışında (ya da uygulamaya geri döndüğünde) "🎁 Hediye geldi" bildirimiyle hesabına eklenir.</p>
+    </div>
+    <h2>Gönderilenler</h2>
+    <div class="tblWrap"><table id="gTable"><thead><tr><th>Tarih</th><th>Oyuncu</th><th>Hediye</th><th>Not</th><th>Durum</th><th></th></tr></thead><tbody></tbody></table></div>
+  </section>
+</div>
+
+<div class="drawer" id="drawer"><div class="card" id="drawerBody"></div></div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
+import {
+  getFirestore, collection, doc, query, where, orderBy, limit, getDocs, getDoc, onSnapshot,
+  getCountFromServer, getAggregateFromServer, sum, writeBatch, serverTimestamp, Timestamp, deleteDoc,
+} from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
+
+const ADMIN_EMAIL = 'aliaslan625@gmail.com';
+const app = initializeApp({
+  apiKey: 'AIzaSyDo3EeLjVneHCimdQszQQAiYo0CuSxFqBg',
+  authDomain: 'sentaks.firebaseapp.com',
+  projectId: 'sentaks',
+  storageBucket: 'sentaks.firebasestorage.app',
+  messagingSenderId: '905630422658',
+  appId: '1:905630422658:web:446ea151ae3b523e17069b',
+});
+const auth = getAuth(app);
+const db = getFirestore(app);
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = (n) => (n == null ? '—' : Number(n).toLocaleString('tr-TR'));
+const ONLINE_MS = 2 * 60000, TZ = 3 * 3600000, DAY = 86400000;
+const toMs = (ts) => (ts && ts.toMillis ? ts.toMillis() : 0);
+const todayStart = () => { const n = Date.now() + TZ; return n - (n % DAY) - TZ; };
+function ago(ms) {
+  if (!ms) return '—';
+  const s = Math.max(0, (Date.now() - ms) / 1000);
+  if (s < 90) return 'şimdi';
+  if (s < 3600) return Math.round(s / 60) + ' dk önce';
+  if (s < 86400) return Math.round(s / 3600) + ' sa önce';
+  return Math.round(s / 86400) + ' gün önce';
+}
+const dt = (ms) => (ms ? new Date(ms).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—');
+function toast(t) { const el = $('#toast'); el.textContent = t; el.style.display = 'block'; clearTimeout(toast._t); toast._t = setTimeout(() => { el.style.display = 'none'; }, 2600); }
+const TIER_TR = { bronze: 'Bronz', silver: 'Gümüş', gold: 'Altın', platinum: 'Platin', diamond: 'Elmas', master: 'Usta', champion: 'Şampiyon' };
+const tierTr = (t) => { if (!t) return '—'; const [id, div] = t.split(' '); return (TIER_TR[id] || id) + (div ? ' ' + div : ''); };
+const PLAT_TR = { android: 'Android', ios: 'iOS', web: 'Web' };
+function duelTier(d, lp) {
+  const ids = ['bronze', 'silver', 'gold', 'platinum', 'diamond'];
+  if (d >= 20) return lp >= 400 ? 'champion' : 'master';
+  return ids[Math.floor(d / 4)] + ' ' + ['', 'I', 'II', 'III', 'IV'][4 - (d % 4)];
+}
+
+// ---------- Giriş ----------
+$('#loginBtn').onclick = async () => {
+  $('#loginErr').textContent = '';
+  try { await signInWithPopup(auth, new GoogleAuthProvider()); }
+  catch (e) { $('#loginErr').textContent = 'Giriş olmadı: ' + (e.code || e.message); }
+};
+$('#logoutBtn').onclick = () => signOut(auth);
+onAuthStateChanged(auth, async (u) => {
+  if (!u) { $('#login').classList.remove('hidden'); $('#app').classList.add('hidden'); stopLive(); return; }
+  if (u.email !== ADMIN_EMAIL) {
+    $('#loginErr').textContent = 'Bu hesap (' + u.email + ') yetkili değil.';
+    await signOut(auth); return;
+  }
+  $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
+  loadAll();
+});
+
+// ---------- Sekmeler ----------
+let curTab = 'ozet';
+document.querySelectorAll('#tabs button').forEach((b) => b.onclick = () => {
+  curTab = b.dataset.tab;
+  document.querySelectorAll('#tabs button').forEach((x) => x.classList.toggle('on', x === b));
+  document.querySelectorAll('section[data-sec]').forEach((s) => s.classList.toggle('hidden', s.dataset.sec !== curTab));
+  if (curTab === 'siralama' && !loaded.rank) loadRankings();
+  if (curTab === 'hediyeler' && !loaded.gifts) loadGifts();
+});
+const loaded = {};
+$('#refreshBtn').onclick = () => { loaded.rank = loaded.gifts = false; loadAll(); if (curTab === 'siralama') loadRankings(); if (curTab === 'hediyeler') loadGifts(); };
+
+// ---------- Veri ----------
+let players = [];
+async function loadAll() {
+  $('#updated').textContent = 'yükleniyor…';
+  try {
+    await Promise.all([loadKpis(), loadPlayers(), loadErrors()]);
+    startLive();
+    cleanup();
+    $('#updated').textContent = 'güncellendi ' + new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+  } catch (e) {
+    $('#updated').textContent = 'hata: ' + (e.code || e.message);
+    if (e.code === 'permission-denied') toast('Yetki yok: Firestore kuralları yayınlanmamış olabilir.');
+  }
+}
+
+// Saklama süreleri (privacy.html'de yazıyor): hatalar 90 gün, 12 ay
+// görünmeyen oyuncu özeti silinir. Panel her açılışta sessizce temizler.
+async function cleanup() {
+  const old = async (q) => {
+    const s = await getDocs(q);
+    if (!s.size) return;
+    const b = writeBatch(db); s.docs.forEach((d) => b.delete(d.ref)); await b.commit();
+  };
+  try {
+    await old(query(collection(db, 'errors'), where('ts', '<', Timestamp.fromMillis(Date.now() - 90 * DAY)), limit(400)));
+    await old(query(collection(db, 'players'), where('lastSeen', '<', Timestamp.fromMillis(Date.now() - 365 * DAY)), limit(400)));
+  } catch (e) {}
+}
+
+const cnt = async (q) => { try { return (await getCountFromServer(q)).data().count; } catch (e) { return null; } };
+async function loadKpis() {
+  const P = collection(db, 'players');
+  const t0 = Timestamp.fromMillis(todayStart()), t7 = Timestamp.fromMillis(Date.now() - 7 * DAY);
+  const [total, today, week, newToday, linked, noads, pass, lbAll, duels, err24, agg] = await Promise.all([
+    cnt(P), cnt(query(P, where('lastSeen', '>=', t0))), cnt(query(P, where('lastSeen', '>=', t7))),
+    cnt(query(P, where('since', '>=', todayStart()))), cnt(query(P, where('linked', '==', true))),
+    cnt(query(P, where('noads', '==', true))), cnt(query(P, where('pass', '==', true))),
+    cnt(collection(db, 'lb', 'all', 'scores')), cnt(collection(db, 'duels')),
+    cnt(query(collection(db, 'errors'), where('ts', '>=', Timestamp.fromMillis(Date.now() - DAY)))),
+    getAggregateFromServer(P, { games: sum('games'), mins: sum('mins') }).then((r) => r.data()).catch(() => ({})),
+  ]);
+  const k = [
+    ['live', 'Şu an oynayan', '<span id="liveN">…</span>'],
+    ['', 'Oyuncu (izinli)', fmt(total)], ['', 'Bugün oynayan', fmt(today)], ['', 'Son 7 gün', fmt(week)],
+    ['', 'Bugün yeni', fmt(newToday)], ['', 'Toplam oyun (deneme)', fmt(agg.games)],
+    ['', 'Toplam oynama', agg.mins != null ? fmt(Math.round(agg.mins / 60)) + ' saat' : '—'],
+    ['', 'Ortalama oyuncu başı', total ? fmt(Math.round((agg.mins || 0) / total)) + ' dk' : '—'],
+    ['', 'Hesabı bağlı', fmt(linked) + (total ? ' <small class="muted">%' + Math.round(100 * linked / total) + '</small>' : '')],
+    ['', 'Reklamsız', fmt(noads)], ['', 'Sezon bileti', fmt(pass)],
+    ['', 'Sıralamadaki oyuncu', fmt(lbAll)], ['', 'Düello oyuncusu', fmt(duels)],
+    ['', 'Hata (24 saat)', fmt(err24)],
+  ];
+  $('#kpis').innerHTML = k.map(([c, l, v]) => `<div class="card kpi ${c}"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+}
+
+function bars(el, counts) {
+  const ent = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  const max = Math.max(1, ...ent.map((e) => e[1]));
+  $(el).innerHTML = ent.length ? ent.map(([k, v]) => `<div class="b"><span>${esc(k)}</span><i style="width:${Math.max(4, 160 * v / max)}px"></i><span>${fmt(v)}</span></div>`).join('') : '<span class="muted">Henüz veri yok</span>';
+}
+
+async function loadPlayers() {
+  const s = await getDocs(query(collection(db, 'players'), orderBy('lastSeen', 'desc'), limit(500)));
+  players = s.docs.map((d) => Object.assign({ uid: d.id }, d.data(), { seen: toMs(d.data().lastSeen) }));
+  const plat = {}, ver = {}, tier = {};
+  const wk = Date.now() - 7 * DAY;
+  for (const p of players) {
+    plat[PLAT_TR[p.plat] || p.plat || '?'] = (plat[PLAT_TR[p.plat] || p.plat || '?'] || 0) + 1;
+    if (p.seen >= wk) ver[p.ver || '?'] = (ver[p.ver || '?'] || 0) + 1;
+    if (p.tier) { const t = TIER_TR[p.tier.split(' ')[0]] || p.tier; tier[t] = (tier[t] || 0) + 1; }
+  }
+  bars('#platBars', plat); bars('#verBars', ver); bars('#tierBars', tier);
+  $('#pHint').textContent = players.length >= 500 ? 'Son görülen 500 oyuncu gösteriliyor.' : players.length + ' oyuncu.';
+  renderPlayers();
+}
+
+// Canlı: son 2 dakikada sinyal gönderenler (her 30 sn'de eşik yenilenir).
+let unsubLive = null, liveTimer = null;
+function startLive() {
+  stopLive();
+  const sub = () => {
+    if (unsubLive) unsubLive();
+    unsubLive = onSnapshot(query(collection(db, 'players'), where('lastSeen', '>=', Timestamp.fromMillis(Date.now() - ONLINE_MS))), (snap) => {
+      const list = snap.docs.map((d) => Object.assign({ uid: d.id }, d.data()));
+      const n = $('#liveN'); if (n) n.textContent = list.length;
+      $('#onlineList').innerHTML = list.length
+        ? list.map((p) => `<div class="b" style="margin:4px 0"><span class="dot on"></span><b>${esc(p.name || 'İsimsiz')}</b> <span class="muted">· ${esc(PLAT_TR[p.plat] || p.plat)} · en iyi ${fmt(p.best)} · ${fmt(p.mins)} dk</span></div>`).join('')
+        : '<span class="muted">Şu an kimse oynamıyor</span>';
+      const ids = new Set(list.map((p) => p.uid));
+      for (const p of players) p.live = ids.has(p.uid);
+      if (curTab === 'oyuncular') renderPlayers();
+    }, () => {});
+  };
+  sub(); liveTimer = setInterval(sub, 30000);
+}
+function stopLive() { if (unsubLive) unsubLive(); unsubLive = null; clearInterval(liveTimer); }
+
+// ---------- Oyuncu tablosu ----------
+const COLS = [
+  ['', 'live', (p) => `<span class="dot ${p.live ? 'on' : ''}"></span>`],
+  ['Ad', 'name', (p) => esc(p.name || 'İsimsiz')],
+  ['Platform', 'plat', (p) => esc(PLAT_TR[p.plat] || p.plat || '')],
+  ['Sürüm', 'ver', (p) => esc(p.ver || '')],
+  ['Oyun', 'games', (p) => fmt(p.games), 1],
+  ['En iyi', 'best', (p) => fmt(p.best), 1],
+  ['Dakika', 'mins', (p) => fmt(p.mins), 1],
+  ['Rank', 'mmr', (p) => esc(tierTr(p.tier)) + (p.duels ? ` <span class="muted">${p.mmr}</span>` : '')],
+  ['Elmas', 'gems', (p) => fmt(p.gems), 1],
+  ['Hesap', 'linked', (p) => (p.linked ? '<span class="tag ok">bağlı</span>' : '<span class="muted">—</span>')],
+  ['Satın alım', 'noads', (p) => (p.noads ? '<span class="tag gold">reklamsız</span> ' : '') + (p.pass ? '<span class="tag gold">bilet</span>' : '')],
+  ['Son görülme', 'seen', (p) => ago(p.seen)],
+];
+let sortKey = 'seen', sortAsc = false;
+function renderPlayers() {
+  const q = $('#pSearch').value.trim().toLowerCase(), f = $('#pFilter').value, t0 = todayStart();
+  let list = players.filter((p) => !q || (p.name || '').toLowerCase().includes(q) || p.uid.toLowerCase().includes(q));
+  if (f === 'online') list = list.filter((p) => p.live);
+  if (f === 'today') list = list.filter((p) => p.seen >= t0);
+  if (f === 'linked' || f === 'noads' || f === 'pass') list = list.filter((p) => p[f]);
+  list.sort((a, b) => { const x = a[sortKey], y = b[sortKey]; const r = typeof x === 'string' || typeof y === 'string' ? String(x || '').localeCompare(String(y || ''), 'tr') : (+x || 0) - (+y || 0); return sortAsc ? r : -r; });
+  $('#pTable thead').innerHTML = '<tr>' + COLS.map(([h, k]) => `<th data-k="${k}" class="${k === sortKey ? 'sorted' + (sortAsc ? ' asc' : '') : ''}">${h}</th>`).join('') + '<th></th></tr>';
+  $('#pTable tbody').innerHTML = list.map((p) => '<tr data-uid="' + esc(p.uid) + '">' + COLS.map(([, , fn, num]) => `<td class="${num ? 'num' : ''}">${fn(p)}</td>`).join('') + '<td><button class="btn sm" data-gift="' + esc(p.uid) + '">🎁</button></td></tr>').join('')
+    || '<tr><td colspan="13" class="muted">Oyuncu yok</td></tr>';
+}
+$('#pTable').addEventListener('click', (e) => {
+  const th = e.target.closest('th[data-k]');
+  if (th) { const k = th.dataset.k; if (sortKey === k) sortAsc = !sortAsc; else { sortKey = k; sortAsc = false; } renderPlayers(); return; }
+  const tr = e.target.closest('tr[data-uid]');
+  if (tr) openPlayer(tr.dataset.uid, !!e.target.closest('[data-gift]'));
+});
+$('#pSearch').oninput = renderPlayers; $('#pFilter').onchange = renderPlayers;
+
+function openPlayer(uid, focusGift) {
+  const p = players.find((x) => x.uid === uid) || { uid };
+  $('#drawerBody').innerHTML = `
+    <div class="row"><h2 style="margin:0;flex:1">${p.live ? '<span class="dot on"></span>' : ''}${esc(p.name || 'İsimsiz')}</h2><button class="btn sm" id="dClose">Kapat</button></div>
+    <div class="kv">
+      <b>Oyuncu ID</b><span class="mono">${esc(uid)} <button class="btn sm" id="dCopy">kopyala</button></span>
+      <b>Platform / sürüm</b><span>${esc(PLAT_TR[p.plat] || p.plat || '—')} · v${esc(p.ver || '?')} · ${esc((p.lang || '').toUpperCase())}</span>
+      <b>Oyun / en iyi</b><span>${fmt(p.games)} oyun · en iyi ${fmt(p.best)} · seviye ${fmt(p.lvl)}</span>
+      <b>Oynama süresi</b><span>${fmt(p.mins)} dakika</span>
+      <b>Düello</b><span>${esc(tierTr(p.tier))} · MMR ${fmt(p.mmr)} · ${fmt(p.duels)} maç</span>
+      <b>Cüzdan</b><span>${fmt(p.gems)} elmas · ${fmt(p.notes)} nota</span>
+      <b>Hesap</b><span>${p.linked ? 'Google/Apple bağlı' : 'Bağlı değil (anonim)'}</span>
+      <b>Satın alımlar</b><span>${[p.noads && 'Reklamsız', p.pass && 'Sezon bileti'].filter(Boolean).join(' · ') || '—'}</span>
+      <b>İlk açılış</b><span>${dt(p.since)}</span>
+      <b>Son görülme</b><span>${dt(p.seen)} (${ago(p.seen)})</span>
+    </div>
+    <h2>🎁 Hediye gönder</h2>
+    <div class="row">
+      <select id="dType"><option value="gems">Elmas</option><option value="notes">Nota</option><option value="noads">Reklamsız</option></select>
+      <input type="number" id="dAmount" value="100" min="1" max="100000" style="width:110px">
+      <input type="text" id="dNote" placeholder="Not" style="flex:1;min-width:120px">
+      <button class="btn pri" id="dSend">Gönder</button>
+    </div>`;
+  $('#drawer').classList.add('on');
+  $('#dClose').onclick = closeDrawer;
+  $('#dCopy').onclick = () => { navigator.clipboard.writeText(uid); toast('ID kopyalandı'); };
+  $('#dType').onchange = () => { $('#dAmount').style.display = $('#dType').value === 'noads' ? 'none' : ''; };
+  $('#dSend').onclick = async () => {
+    if (await sendGift(uid, p.name || '', $('#dType').value, +$('#dAmount').value, $('#dNote').value)) closeDrawer();
+  };
+  if (focusGift) $('#dAmount').focus();
+}
+function closeDrawer() { $('#drawer').classList.remove('on'); }
+$('#drawer').onclick = (e) => { if (e.target.id === 'drawer') closeDrawer(); };
+
+// ---------- Hediyeler ----------
+const GIFT_TR = { gems: 'Elmas', notes: 'Nota', noads: 'Reklamsız' };
+async function sendGift(uid, name, type, amount, note) {
+  uid = String(uid || '').trim();
+  if (!/^[A-Za-z0-9]{20,40}$/.test(uid)) { toast('Geçerli bir oyuncu ID gir'); return false; }
+  if (type !== 'noads' && !(amount > 0 && amount <= 100000)) { toast('Miktar 1–100000 arası olmalı'); return false; }
+  const label = type === 'noads' ? 'Reklamsız' : fmt(amount) + ' ' + GIFT_TR[type];
+  if (!confirm((name || uid) + ' oyuncusuna ' + label + ' gönderilsin mi?')) return false;
+  const ref = doc(collection(db, 'gifts', uid, 'items'));
+  const b = writeBatch(db);
+  const data = { type, amount: type === 'noads' ? 0 : Math.floor(amount), note: String(note || '').slice(0, 200), ts: serverTimestamp(), claimed: false };
+  b.set(ref, data);
+  b.set(doc(db, 'giftlog', ref.id), { uid, name: String(name || '').slice(0, 16), type: data.type, amount: data.amount, note: data.note, ts: serverTimestamp() });
+  try { await b.commit(); toast('🎁 Gönderildi: ' + label); loaded.gifts = false; if (curTab === 'hediyeler') loadGifts(); return true; }
+  catch (e) { toast('Gönderilemedi: ' + (e.code || e.message)); return false; }
+}
+$('#gType').onchange = () => { $('#gAmount').style.display = $('#gType').value === 'noads' ? 'none' : ''; };
+$('#gSend').onclick = async () => {
+  const uid = $('#gUid').value.trim();
+  const p = players.find((x) => x.uid === uid);
+  if (await sendGift(uid, p ? p.name : '', $('#gType').value, +$('#gAmount').value, $('#gNote').value)) { $('#gUid').value = ''; $('#gNote').value = ''; }
+};
+async function loadGifts() {
+  loaded.gifts = true;
+  const s = await getDocs(query(collection(db, 'giftlog'), orderBy('ts', 'desc'), limit(100)));
+  const logs = s.docs.map((d) => Object.assign({ id: d.id }, d.data()));
+  const states = await Promise.all(logs.map((g) => getDoc(doc(db, 'gifts', g.uid, 'items', g.id)).then((x) => (x.exists() ? x.data() : null)).catch(() => null)));
+  $('#gTable tbody').innerHTML = logs.map((g, i) => {
+    const st = states[i];
+    const status = !st ? '<span class="muted">silindi</span>' : st.claimed ? `<span class="tag ok">alındı ${ago(toMs(st.claimedAt))}</span>` : '<span class="tag">bekliyor</span>';
+    const can = st && !st.claimed;
+    return `<tr><td>${dt(toMs(g.ts))}</td><td>${esc(g.name || '')} <span class="mono muted">${esc(g.uid.slice(0, 8))}…</span></td><td>${g.type === 'noads' ? 'Reklamsız' : fmt(g.amount) + ' ' + GIFT_TR[g.type]}</td><td>${esc(g.note || '')}</td><td>${status}</td><td>${can ? `<button class="btn sm bad" data-cancel="${esc(g.id)}" data-uid="${esc(g.uid)}">İptal</button>` : ''}</td></tr>`;
+  }).join('') || '<tr><td colspan="6" class="muted">Henüz hediye gönderilmedi</td></tr>';
+}
+$('#gTable').addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-cancel]'); if (!b) return;
+  if (!confirm('Bu hediye iptal edilsin mi? (oyuncu henüz almadı)')) return;
+  try { await deleteDoc(doc(db, 'gifts', b.dataset.uid, 'items', b.dataset.cancel)); toast('İptal edildi'); loadGifts(); }
+  catch (err) { toast('İptal edilemedi: ' + (err.code || err.message)); }
+});
+
+// ---------- Sıralamalar ----------
+function weekKey(ms) {
+  const d = new Date(ms + TZ), dow = (d.getUTCDay() + 6) % 7;
+  const thu = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - dow + 3));
+  const y = thu.getUTCFullYear();
+  return 'w' + y + '-' + String(1 + Math.floor((thu - Date.UTC(y, 0, 1)) / DAY / 7)).padStart(2, '0');
+}
+function dayKey(ms) { const d = new Date(ms + TZ); return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0'); }
+function rankList(el, rows) {
+  $(el).innerHTML = rows.length ? '<table><tbody>' + rows.map((r, i) => `<tr><td class="muted">${i + 1}</td><td>${esc(r.name)}</td><td class="num">${r.v}</td><td class="muted">${r.x || ''}</td></tr>`).join('') + '</tbody></table>' : '<span class="muted">Henüz kayıt yok</span>';
+}
+async function loadRankings() {
+  loaded.rank = true;
+  const wk = weekKey(Date.now()), day = dayKey(Date.now());
+  $('#wkId').textContent = wk; $('#dayId').textContent = day;
+  const top = (path, field) => getDocs(query(collection(db, ...path), orderBy(field, 'desc'), limit(30))).then((s) => s.docs.map((d) => d.data())).catch(() => []);
+  const [all, week, duel, dset] = await Promise.all([
+    top(['lb', 'all', 'scores'], 'score'), top(['lb', wk, 'scores'], 'score'), top(['duels'], 'mmr'), top(['dset', day, 'scores'], 'total'),
+  ]);
+  rankList('#lbAll', all.map((r) => ({ name: r.name, v: fmt(r.score), x: r.heat ? '🔥' + r.heat : '' })));
+  rankList('#lbWeek', week.map((r) => ({ name: r.name, v: fmt(r.score), x: r.heat ? '🔥' + r.heat : '' })));
+  rankList('#lbDuel', duel.map((r) => ({ name: r.name, v: fmt(r.mmr), x: tierTr(duelTier(r.d || 0, r.lp || 0)) })));
+  rankList('#lbDay', dset.map((r) => ({ name: r.name, v: fmt(r.total), x: r.runs + ' deneme' })));
+}
+
+// ---------- Hatalar ----------
+let errs = [];
+async function loadErrors() {
+  const days = +$('#eRange').value;
+  const s = await getDocs(query(collection(db, 'errors'), where('ts', '>=', Timestamp.fromMillis(Date.now() - days * DAY)), orderBy('ts', 'desc'), limit(1000)));
+  errs = s.docs.map((d) => Object.assign({ id: d.id }, d.data(), { t: toMs(d.data().ts) }));
+  const vers = [...new Set(errs.map((e) => e.ver).filter(Boolean))].sort().reverse();
+  const cur = $('#eVer').value;
+  $('#eVer').innerHTML = '<option value="">Tüm sürümler</option>' + vers.map((v) => `<option ${v === cur ? 'selected' : ''}>${esc(v)}</option>`).join('');
+  renderErrors();
+}
+function errGroups() {
+  const v = $('#eVer').value, g = new Map();
+  for (const e of errs) {
+    if (v && e.ver !== v) continue;
+    const key = e.msg + '|' + String(e.stack || '').split('\n').slice(0, 2).join('|');
+    let x = g.get(key);
+    if (!x) g.set(key, x = { msg: e.msg, stack: e.stack, n: 0, users: new Set(), vers: new Set(), plats: new Set(), scr: new Set(), last: 0, first: Infinity, ids: [], ua: e.ua });
+    x.n++; x.users.add(e.uid); if (e.ver) x.vers.add(e.ver); if (e.plat) x.plats.add(e.plat); if (e.scr) x.scr.add(e.scr);
+    x.last = Math.max(x.last, e.t); x.first = Math.min(x.first, e.t); x.ids.push(e.id);
+  }
+  return [...g.values()].sort((a, b) => b.users.size - a.users.size || b.last - a.last);
+}
+function renderErrors() {
+  const gs = errGroups();
+  $('#errBadge').innerHTML = errs.length ? `<span class="tag bad">${gs.length}</span>` : '';
+  $('#errList').innerHTML = gs.length ? gs.map((g, i) => `
+    <details class="card errG"><summary>
+      <div class="row"><span class="msg sp">${esc(g.msg)}</span><span class="tag bad">${g.n}×</span><span class="tag">${g.users.size} kişi</span></div>
+      <div class="muted" style="font-size:12px;margin-top:4px">v${esc([...g.vers].join(', v'))} · ${esc([...g.plats].map((p) => PLAT_TR[p] || p).join(', '))}${g.scr.size ? ' · ekran: ' + esc([...g.scr].join(', ')) : ''} · son ${ago(g.last)}</div>
+    </summary>
+      <pre>${esc(g.stack || '(yığın yok)')}</pre>
+      <div class="muted mono" style="margin-top:6px">${esc(g.ua || '')}</div>
+      <div class="row" style="margin-top:8px"><span class="sp"></span><button class="btn sm bad" data-del="${i}">Sil (düzeltildi)</button></div>
+    </details>`).join('') : '<div class="card muted">Bu aralıkta hata yok 🎉</div>';
+}
+$('#eRange').onchange = () => loadErrors(); $('#eVer').onchange = renderErrors;
+$('#errList').addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-del]'); if (!b) return;
+  const g = errGroups()[+b.dataset.del];
+  if (!g || !confirm(g.n + ' kayıt silinsin mi?')) return;
+  for (let i = 0; i < g.ids.length; i += 400) {
+    const batch = writeBatch(db);
+    g.ids.slice(i, i + 400).forEach((id) => batch.delete(doc(db, 'errors', id)));
+    await batch.commit();
+  }
+  toast('Silindi'); loadErrors();
+});
+$('#copyErrBtn').onclick = () => {
+  const gs = errGroups();
+  const txt = 'Beat Orbit oyun hataları (' + $('#eRange').selectedOptions[0].text + (($('#eVer').value && ', v' + $('#eVer').value) || '') + ')\n\n' + gs.map((g, i) =>
+    `## ${i + 1}. ${g.msg}\n${g.n} kez, ${g.users.size} oyuncu · sürüm: ${[...g.vers].join(', ')} · platform: ${[...g.plats].join(', ')}${g.scr.size ? ' · ekran: ' + [...g.scr].join(', ') : ''}\nilk: ${dt(g.first)} · son: ${dt(g.last)}\ncihaz: ${g.ua || '-'}\n\`\`\`\n${g.stack || '(yığın yok)'}\n\`\`\``).join('\n\n');
+  navigator.clipboard.writeText(gs.length ? txt : 'Hata yok').then(() => toast('Kopyalandı — Claude\'a yapıştır'));
+};
+</script>
+</body>
+</html>

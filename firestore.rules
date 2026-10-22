@@ -80,5 +80,56 @@ service cloud.firestore {
         && request.resource.data.ts == request.time
         && (resource == null || request.resource.data.total >= resource.data.total);
     }
+    // ---- Admin paneli (admin/index.html, Firebase Hosting) ----
+    // Yalnız geliştiricinin Google hesabı (e-posta doğrulanmış, Google ile
+    // girilmiş). Başka biri paneli açsa bile hiçbir şey okuyamaz/yazamaz.
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email == 'aliaslan625@gmail.com'
+        && request.auth.token.email_verified == true
+        && request.auth.token.firebase.sign_in_provider == 'google.com';
+    }
+
+    // Oyuncu özeti (src/telemetry.js) — yalnız KVKK istatistik izni veren
+    // oyuncu yazar; izni geri alınca/hesap silinince siler. Okuma: admin.
+    match /players/{uid} {
+      allow read: if isAdmin();
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['name', 'ver', 'lang', 'plat', 'games', 'best', 'mins', 'mmr', 'tier', 'duels', 'gems', 'notes', 'lvl', 'linked', 'noads', 'pass', 'since', 'lastSeen'])
+        && request.resource.data.name is string && request.resource.data.name.size() <= 16
+        && request.resource.data.ver is string && request.resource.data.ver.size() <= 12
+        && request.resource.data.tier is string && request.resource.data.tier.size() <= 16
+        && request.resource.data.games is int && request.resource.data.best is int
+        && request.resource.data.mins is int && request.resource.data.mmr is int
+        && request.resource.data.lastSeen == request.time;
+      allow delete: if (request.auth != null && request.auth.uid == uid) || isAdmin();
+    }
+
+    // Oyun kodu hataları (crash-report.js → telemetry.js). Herkes yalnız
+    // kendi adına ekler; okuma/silme admin.
+    match /errors/{id} {
+      allow read, delete: if isAdmin();
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['msg', 'stack', 'ver', 'plat', 'uid', 'scr', 'ua', 'ts'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.msg is string && request.resource.data.msg.size() <= 300
+        && request.resource.data.stack is string && request.resource.data.stack.size() <= 3000
+        && request.resource.data.ua is string && request.resource.data.ua.size() <= 200
+        && request.resource.data.ts == request.time;
+    }
+
+    // Hediyeler: admin gönderir; oyuncu yalnız kendininkileri okur ve
+    // yalnız "alındı" işaretleyebilir (miktar/tür değiştirilemez).
+    match /gifts/{uid}/items/{gid} {
+      allow read: if (request.auth != null && request.auth.uid == uid) || isAdmin();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || (request.auth != null && request.auth.uid == uid
+        && resource.data.claimed == false
+        && request.resource.data.claimed == true
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['claimed', 'claimedAt']));
+    }
+    match /giftlog/{gid} {
+      allow read, write: if isAdmin();
+    }
   }
 }

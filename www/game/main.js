@@ -30,7 +30,10 @@ setTimeout(()=>Ads.init(), _splashUp ? 3200 : 0);
 // açılışta ikinci bir soru (bildirim izni) sorulmaz.
 // Sonra dünkü Günün Seti ödülü (DJ Vinil söyler), en son bildirim izni.
 setTimeout(async ()=>{
-  const askedUpdate = await updateMaybePrompt();
+  // KVKK bilgilendirmesi (ilk açılışta bir kez) diğer tüm sorulardan önce.
+  const askedKvkk = await kvkkMaybeAsk();
+  telemetryBeat(true);
+  const askedUpdate = askedKvkk || await updateMaybePrompt();
   notifyReschedule();
   let asked = askedUpdate;
   if(!asked && state==='menu') asked = await dsetClaimPending().catch(()=>false);

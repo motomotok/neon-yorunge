@@ -28,23 +28,31 @@ function report(message, error) {
   const key = message + '|' + ((error && error.stack) || '').split('\n')[1];
   if (seen.has(key)) return;
   seen.add(key); sent++;
+  // Admin paneli / Claude için Firestore'a da (src/telemetry.js boşaltır).
+  let scr = '';
+  try { scr = typeof state !== 'undefined' ? String(state) : ''; } catch (e) {}
+  (window.__boErr = window.__boErr || []).push({ message, stack: (error && error.stack) || '', screen: scr });
+  if (window.Telemetry) window.Telemetry.flushErrors();
+  if (!Capacitor.isNativePlatform()) return;
   const stacktrace = parseStack(error && error.stack);
   FirebaseCrashlytics.recordException(stacktrace.length ? { message, stacktrace } : { message }).catch(() => {});
 }
 
-if (Capacitor.isNativePlatform()) {
-  window.addEventListener('error', (e) => {
-    report(String(e.message || 'Script error'), e.error);
-  });
-  window.addEventListener('unhandledrejection', (e) => {
-    const r = e.reason;
-    report('Unhandled promise rejection: ' + String((r && r.message) || r), r instanceof Error ? r : null);
-  });
-}
+// Tarayıcı eklentilerinin / başka sitelerin kodundan gelen anlamsız
+// "Script error." kayıtları atlanır.
+window.addEventListener('error', (e) => {
+  if (!e.error && /^Script error\.?$/.test(String(e.message || ''))) return;
+  report(String(e.message || 'Script error'), e.error);
+});
+window.addEventListener('unhandledrejection', (e) => {
+  const r = e.reason;
+  report('Unhandled promise rejection: ' + String((r && r.message) || r), r instanceof Error ? r : null);
+});
 
 window.CrashReport = {
   // Oyun sürümünü raporlara ekler (main.js açılışta çağırır).
   setVersion(v) {
+    window.__boVer = String(v);
     if (Capacitor.isNativePlatform()) FirebaseCrashlytics.setCustomKey({ key: 'game_version', value: String(v), type: 'string' }).catch(() => {});
   },
   setKey(key, value) {

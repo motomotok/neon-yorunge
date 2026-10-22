@@ -28,6 +28,7 @@ import {
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { auth, ensureUser } from './leaderboard.js'; // + Günün Seti / Sıralama / Düello köprüleri
+import './telemetry.js'; // oyuncu özeti, hata kaydı, hediyeler (window.Telemetry)
 
 const firebaseConfig = {
   apiKey: "AIzaSyDo3EeLjVneHCimdQszQQAiYo0CuSxFqBg",
@@ -128,6 +129,7 @@ async function deleteAccount() {
     const u = a.currentUser;
     if (!u) return { ok: true };
     try { await deleteDoc(userRef(u.uid)); } catch (e) {}
+    try { await deleteDoc(doc(db, 'players', u.uid)); } catch (e) {}
     if (lastAppleAuthCode) { try { await revokeAccessToken(a, lastAppleAuthCode); } catch (e) {} lastAppleAuthCode = null; }
     await deleteUser(u);
     try { await signInAnonymously(a); } catch (e) {}
