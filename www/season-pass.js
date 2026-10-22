@@ -13,7 +13,7 @@
   function productId() {
     return 'season_pass_s' + (window.activeSeason ? activeSeason().id : 1);
   }
-  const FALLBACK_PRICE_TEXT = '29 TL';
+  const FALLBACK_PRICE_TEXT = '49 TL';
 
   const isAvailable = () => IAP.available();
 

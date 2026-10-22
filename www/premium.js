@@ -5,10 +5,10 @@
 // Tarayıcıda (bu obje yokken) tüm çağrılar sessizce no-op'tur.
 (function () {
   // Play Console'da oluşturulacak "Yönetilmeyen ürün" (non-consumable) ID'si.
-  // Fiyatı (~49 TL) Play Console tarafında sen belirlersin; buradaki metin
+  // Fiyatı (~99 TL) Play Console tarafında sen belirlersin; buradaki metin
   // sadece gerçek fiyat gelene kadar gösterilecek bir yer tutucudur.
   const PRODUCT_ID = 'remove_ads';
-  const FALLBACK_PRICE_TEXT = '49 TL';
+  const FALLBACK_PRICE_TEXT = '99 TL';
 
   const isAvailable = () => IAP.available();
 
