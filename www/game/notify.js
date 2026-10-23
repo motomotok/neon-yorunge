@@ -1,20 +1,21 @@
 // Geri dönüş hatırlatmaları (yerel bildirim; köprü: notify-bundle.js →
 // window.NativeNotify). Sunucu yok: bildirimler telefonda önceden kurulur.
 //
-// Kurallar (kullanıcıyla kararlaştırıldı):
-// - Günde EN FAZLA 1 bildirim, yalnız 10:00-21:59 arası; oyuncunun genelde
-//   oynadığı saate yakın (stats.notifHour, oyun başladıkça güncellenir).
-// - Uygulama her açılışta ve her arka plana geçişte liste baştan kurulur:
-//   o gün oynayan oyuncunun eski bildirimleri kendiliğinden iptal olur.
-// - 14 gün sonrasına bildirim yok (hiç dönmeyen oyuncu rahatsız edilmez).
+// Kurallar (kullanıcıyla kararlaştırıldı, 23.10.2026: "haftada en fazla 1"):
+// - İki bildirim arasında EN AZ 7 GÜN (son gerçekten gösterilenden sayılır).
+// - Telefonda aynı anda en fazla 1 bekleyen bildirim.
+// - Oyuncu son oynadıktan 2 gün sonra; düzenli oynayan hiç bildirim görmez
+//   (her açılış/arka plana geçişte bekleyen bildirim yeniden kurulur ve ileri kayar).
+// - Bırakan oyuncuya en fazla 3 bildirim (haftada 1), sonra sessizlik.
+// - Yalnız 10:00-21:59 arası, oyuncunun genelde oynadığı saate yakın
+//   (stats.notifHour, oyun başladıkça güncellenir).
 // - İzni önce DJ Vinil sorar; "Evet" denirse telefonun izin penceresi açılır
 //   (iOS'ta bu pencere bir kez çıkabildiği için boşa harcanmaz). "Sonra"
 //   denirse en fazla 2 kez daha, en az 5 gün arayla, günlük ödül alınınca sorulur.
-const NOTIFY_PLAN = [
-  {d:1, kind:'daily'}, {d:2, kind:'music'}, {d:3, kind:'miss'}, {d:5, kind:'music'},
-  {d:7, kind:'miss'}, {d:10, kind:'music'}, {d:14, kind:'last'},
-];
+const NOTIFY_PLAN = ['music', 'miss', 'last'];   // son oyundan sonraki 1., 2., 3. bildirim
+const NOTIFY_AFTER_DAYS = 2, NOTIFY_GAP_DAYS = 7, NOTIFY_ID = 100;
 const NOTIFY_ASK_MAX = 3, NOTIFY_ASK_GAP_DAYS = 5;
+const DAY_MS = 86400000;
 
 function notifyNative(){ return !!(window.NativeNotify && NativeNotify.isNative()); }
 
@@ -25,25 +26,39 @@ function notifyRecordPlayHour(){
   stats.notifHour = (typeof stats.notifHour==='number') ? Math.round(stats.notifHour*0.7 + h*0.3) : h;
 }
 
-function notifyBuildPlan(){
-  const now = new Date(), out = [];
+// Saat ayarı: verilen günün oyuncu saatine (10-21 arası) yerleştirir.
+function notifyAtHour(ms){
   const hour = Math.max(10, Math.min(21, typeof stats.notifHour==='number' ? stats.notifHour : 19));
-  let musicI = 0, missI = 0, weekendUsed = false;
-  NOTIFY_PLAN.forEach((p, i)=>{
-    const at = new Date(now.getFullYear(), now.getMonth(), now.getDate() + p.d, hour, 15);
+  const d = new Date(ms); return new Date(d.getFullYear(), d.getMonth(), d.getDate(), hour, 15);
+}
+
+// stats.notif = {at:[ms…], sent, n}:
+//   at   = telefonda kurulu bekleyen bildirimlerin zamanları,
+//   sent = son gösterilen bildirimin zamanı, n = son oyundan beri gösterilen sayı.
+// Kurulu zamanı geçmiş olanlar gösterilmiş sayılır. Oyuncu uygulamadayken n
+// sıfırlanır. Oyun kapalıyken yeniden kurulamayacağı için kalan bildirimler
+// (en fazla 3) aralarında 7'şer gün olacak şekilde birlikte kurulur.
+function notifyBuildPlan(){
+  const now = Date.now(), s = stats.notif || {};
+  const fired = (Array.isArray(s.at) ? s.at : []).filter(x => x <= now);
+  if(fired.length){ s.sent = Math.max(s.sent||0, ...fired); s.n = (s.n||0) + fired.length; }
+  if(!document.hidden) s.n = 0;                       // oyuncu şu an oyunda
+  s.at = []; stats.notif = s;
+  let at = notifyAtHour(now + NOTIFY_AFTER_DAYS*DAY_MS).getTime();
+  if(s.sent) at = Math.max(at, notifyAtHour(s.sent + NOTIFY_GAP_DAYS*DAY_MS).getTime());
+  if(at <= now + 3600000) at = notifyAtHour(now + DAY_MS).getTime();
+  const out = [];
+  for(let k = s.n||0; k < NOTIFY_PLAN.length; k++, at = notifyAtHour(at + NOTIFY_GAP_DAYS*DAY_MS).getTime()){
+    const kind = NOTIFY_PLAN[k], when = new Date(at);
     let title = 'Beat Orbit', body;
-    if(p.kind==='daily'){
-      title = t('notif_daily_title');
-      body = (stats.loginStreak||0) >= 2 ? t('notif_streak_body',{n:(stats.loginStreak||0)+1}) : t('notif_daily_body');
-    } else if(p.kind==='music'){
-      // Cuma-pazar günlerine denk gelen ilk davet hafta sonu bonusunu duyurur
-      // (oyunda zaten var: weekendMult, data.js).
-      if(!weekendUsed && [5,6,0].includes(at.getDay())){ weekendUsed = true; body = t('notif_weekend'); }
-      else body = t('notif_music_'+(1 + (musicI++ % 3)));
-    } else if(p.kind==='miss'){ title = t('notif_title_dj'); body = t('notif_miss_'+(1 + (missI++ % 2))); }
+    if(kind==='music'){
+      // Cuma-pazara denk gelirse hafta sonu bonusunu duyurur (weekendMult, data.js).
+      body = [5,6,0].includes(when.getDay()) ? t('notif_weekend') : t('notif_music_'+(1 + Math.floor(Math.random()*3)));
+    } else if(kind==='miss'){ title = t('notif_title_dj'); body = t('notif_miss_'+(1 + Math.floor(Math.random()*2))); }
     else { title = t('notif_title_dj'); body = t('notif_last'); }
-    out.push({id: 100 + i, title, body, at});
-  });
+    out.push({id: NOTIFY_ID + k, title, body, at: when});
+    s.at.push(at);
+  }
   return out;
 }
 
@@ -51,7 +66,10 @@ async function notifyReschedule(){
   if(!notifyNative()) return;
   const perm = await NativeNotify.permission();
   const on = cfg.notify !== false && perm === 'granted';
-  await NativeNotify.replaceAll(on ? notifyBuildPlan() : []);
+  const plan = on ? notifyBuildPlan() : [];
+  if(!on && stats.notif) stats.notif.at = [];
+  saveStats();
+  await NativeNotify.replaceAll(plan);
 }
 
 // DJ Vinil'in sorusu. trigger: 'launch' (ilk açılış) | 'streak' (günlük ödül alındı).

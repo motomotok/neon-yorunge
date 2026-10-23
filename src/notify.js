@@ -14,7 +14,7 @@ function ensureChannel() {
   if (Capacitor.getPlatform() !== 'android') return Promise.resolve();
   if (!channelReady) {
     channelReady = LocalNotifications.createChannel({
-      id: CHANNEL, name: 'Beat Orbit', description: 'Daily reward and streak reminders',
+      id: CHANNEL, name: 'Beat Orbit', description: 'Comeback reminders, at most once a week',
       importance: 3, visibility: 1,
     }).catch(() => {});
   }
