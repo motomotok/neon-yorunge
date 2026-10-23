@@ -1071,7 +1071,7 @@ function buildHell(world){
   };
 }
 
-// ---------------- Lo-Fi Chillhop ----------------
+// ---------------- Yağmurlu Kafe (eski adı Lo-Fi Chillhop; kimlik 'lofichillhop' kaldı) ----------------
 // Kullanıcının Lo-Fi konsepti: pembe → lila → turkuaz buzlu plak, kahve
 // fincanı lekeleri ve yağmur damlaları; ortada plakla dönen polaroid; sıcak
 // kahverengi oda, süzülen hafif yağmur. Sakin, göz yormayan palet.
@@ -1135,14 +1135,14 @@ function rainTexture(){
 function buildLofi(world){
   const group = new THREE.Group();
   const surf = discLayer(world, lofiSurface(), {opacity:1}, 0.0003);
-  // Polaroid: plakla döner, hafif eğik, altında yumuşak gölge. Etiket dairesini
-  // tamamen örter (yarı genişliği etiket yarıçapından büyük).
-  const PW = 0.27, PH = PW*600/512;
-  const pg = new THREE.PlaneGeometry(PW, PH); pg.rotateX(-Math.PI/2);
+  // Yağmurlu Kafe resmi: plakla dönen yuvarlak resim (eski dikdörtgen polaroid
+  // yerine), altında yumuşak gölge. Etiket dairesini tamamen örter.
+  const PR = 0.15;
+  const pg = new THREE.CircleGeometry(PR, 64); pg.rotateX(-Math.PI/2);
   const polMat = new THREE.MeshBasicMaterial({color:'#ece4da', transparent:true, depthWrite:false});
   const polaroid = new THREE.Mesh(pg, polMat);
   polaroid.position.y = TOP_Y + 0.0022; polaroid.rotation.y = 0.2; polaroid.renderOrder = -1;
-  const shg = new THREE.PlaneGeometry(PW*1.08, PH*1.06); shg.rotateX(-Math.PI/2);
+  const shg = new THREE.PlaneGeometry(PR*2.25, PR*2.25); shg.rotateX(-Math.PI/2);
   const shadow = new THREE.Mesh(shg, new THREE.MeshBasicMaterial({map:softDot(), color:'#000000', transparent:true, opacity:0.45, depthWrite:false}));
   shadow.position.set(0.006, TOP_Y + 0.0018, 0.008); shadow.rotation.y = 0.2; shadow.renderOrder = -1;
   world.recordSpin.add(shadow, polaroid);

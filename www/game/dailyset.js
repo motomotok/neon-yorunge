@@ -26,7 +26,7 @@ const DSET_REWARDS = [
 const DSET_REWARD_TOP10 = {notes:100}, DSET_REWARD_ALL = {notes:30};
 
 // Takma adlar: harf/rakam (Firestore kuralıyla aynı), dilden bağımsız.
-const DSET_ADJ = ['Neon','Bass','Lofi','Retro','Funky','Cosmic','Turbo','Groovy','Pixel','Disco','Sonic','Velvet',
+const DSET_ADJ = ['Neon','Bass','Breezy','Retro','Funky','Cosmic','Turbo','Groovy','Pixel','Disco','Sunny','Velvet',
   'Jazzy','Echo','Vinyl','Synth','Solar','Lunar','Hyper','Mellow','Electric','Golden','Midnight','Rapid','Lucky',
   'Wild','Chill','Crimson','Indigo','Silver','Snappy','Dizzy','Mighty','Tiny','Fuzzy','Stereo'];
 const DSET_NOUN = ['Fox','Panda','Tiger','Owl','Wolf','Cat','Falcon','Otter','Koala','Lynx','Raven','Shark','Dragon',
