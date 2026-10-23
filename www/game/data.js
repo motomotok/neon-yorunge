@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.75.1';
+const GAME_VERSION = '2.75.2';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -108,7 +108,6 @@ const SKINS = [
 const PENA_IMG = {};
 SKINS.forEach(sk=>{ if(sk.img){ const im=new Image(); im.src=sk.img; PENA_IMG[sk.id]=im; } });
 const MONSTER_IMG = {};
-for(let i=1;i<=16;i++){ const im=new Image(); im.src='img/monsters/monster'+i+'.png'; MONSTER_IMG['monster'+i]=im; }
 // "Cızırtı" yaratıkları: kullanıcının pembe şimşek + kırık ses dalgası
 // görselinden üretilen renkler (img/monsters/glitch_*.png). Netlik (2.59):
 // tüm cızırtılar yalnız SICAK tehlike renklerinde (kırmızı, turuncu, gül,
