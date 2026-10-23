@@ -1,6 +1,6 @@
 {
   "name": "beat-orbit",
-  "version": "2.74.4",
+  "version": "2.75.0",
   "description": "Beat Orbit - tarayıcı tabanlı refleks/arcade oyunu ve Android uygulaması",
   "private": true,
   "scripts": {
@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@capacitor-community/admob": "^6.2.0",
+    "@capacitor-firebase/analytics": "^6.3.1",
     "@capacitor-firebase/authentication": "^6.3.1",
     "@capacitor-firebase/crashlytics": "^6.3.1",
     "@capacitor/android": "^6.2.0",

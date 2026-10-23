@@ -16,6 +16,15 @@ let _lastBeat = 0, _lastGiftCheck = 0;
 
 function analyticsOn(){ return stats.kvkkV>=KVKK_VERSION && !!stats.analytics; }
 
+// Google Ads'in kurulum sonrası davranışa göre teklif verebilmesi için Firebase
+// Analytics olayları (yalnız izin verenlerde, yalnız telefonda). Tek seferlik
+// olaylar stats.evSent'te tutulur: eğitimi bitirdi, 5. oyun.
+function trackEvent(name, once){
+  if(!window.Telemetry || !analyticsOn()) return;
+  if(once){ const s=stats.evSent||(stats.evSent=[]); if(s.includes(name)) return; s.push(name); saveStats(); }
+  Telemetry.logEvent(name);
+}
+
 // Açılışta: izin hiç sorulmadıysa ekranın altında küçük bir şerit çıkar
 // (oyunu kapatmaz, beklemez). Yalnız ana menüdeyken görünür; oyuncu karar
 // verene kadar her menüye dönüşte yeniden belirir. "Kabul et" büyük/parlak,
@@ -39,6 +48,7 @@ function kvkkDecide(on){
   stats.kvkkV=KVKK_VERSION; stats.analytics=!!on;
   if(!stats.firstSeen) stats.firstSeen=Date.now();
   saveStats();
+  if(window.Telemetry) Telemetry.analyticsEnabled(!!on);
   document.getElementById('kvkkBar').style.display='none';
   if(on) telemetryBeat(true);
   else if(was && window.Telemetry){ _lastOn=false; Telemetry.forget().catch(()=>{}); }
@@ -119,6 +129,7 @@ async function checkGifts(){
 }
 
 function initTelemetry(){
+  if(window.Telemetry) Telemetry.analyticsEnabled(analyticsOn());
   document.getElementById('kvkkStatsRow').addEventListener('click', e=>{
     e.stopPropagation(); document.getElementById('kvkkStatsSw').classList.toggle('on'); beep(500,0.05,'sine',0.08);
   });

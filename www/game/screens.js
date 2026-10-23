@@ -249,7 +249,10 @@ function gameOver(reason){
   // Global Sıralama: Klasik + Günün Seti (bkz. ranking.js).
   if((mode==='classic' || mode==='daily') && !tutorialActive && typeof rkOnRun==='function') rkOnRun(runScore, session.heatLevel||0);
   let dsetRes=null;
-  if(mode==='daily' && !tutorialActive) stats.scoreRuns=(stats.scoreRuns||0)+1;
+  if(mode==='daily' && !tutorialActive){
+    stats.scoreRuns=(stats.scoreRuns||0)+1;
+    if(stats.scoreRuns>=5 && typeof trackEvent==='function') trackEvent('run_5', true);
+  }
   if(mode==='daily'){
     stats.dailyDate=todayStr(); stats.dailyScore=runScore; stats.dailyCount=(stats.dailyCount||0)+1;
     dsetRes = dsetRecordRun(session.dsetDay || dsetDayKey(), runScore);

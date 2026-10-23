@@ -16,6 +16,7 @@ import {
   collection, query, where, serverTimestamp,
 } from 'firebase/firestore';
 import { Capacitor } from '@capacitor/core';
+import { FirebaseAnalytics } from '@capacitor-firebase/analytics';
 import { auth, ensureUser } from './leaderboard.js';
 
 const db = () => getFirestore(getApp());
@@ -85,12 +86,26 @@ async function claimGift(id) {
 }
 async function uid() { const u = await user(false); return u ? u.uid : null; }
 
+// Firebase Analytics (yalnız telefonda): Google Ads'in reklamı kurulumdan sonraki
+// davranışa göre (eğitimi bitirdi, 5. oyun, düello) optimize edebilmesi için.
+// AndroidManifest'te varsayılan KAPALI; oyuncu KVKK'da istatistik iznini verince açılır.
+async function analyticsEnabled(on) {
+  if (!Capacitor.isNativePlatform()) return;
+  await FirebaseAnalytics.setEnabled({ enabled: !!on });
+}
+async function logEvent(name, params) {
+  if (!Capacitor.isNativePlatform()) return;
+  await FirebaseAnalytics.logEvent({ name, params: params || {} });
+}
+
 window.Telemetry = {
   beat: (s) => withTimeout(beat(s), 9000),
   forget: () => withTimeout(forget(), 9000),
   gifts: () => withTimeout(gifts(), 9000),
   claimGift: (id) => withTimeout(claimGift(id), 9000),
   uid: () => withTimeout(uid(), 5000).catch(() => null),
+  analyticsEnabled: (on) => analyticsEnabled(on).catch(() => {}),
+  logEvent: (name, params) => logEvent(name, params).catch(() => {}),
   flushErrors,
 };
 flushErrors();

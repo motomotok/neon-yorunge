@@ -251,6 +251,7 @@ function tutorialFinish(){
   tutorialClearSpotlight(); tutorialRestoreHidden(); tutorialRestoreDisabled(); narratorHide(); tutorialHideTapHint();
   if(!stats.tutorialDone){
     stats.tutorialDone=true;
+    if(typeof trackEvent==='function') trackEvent('tutorial_complete', true);
     // Hoş geldin hediyesi (Can Kapasitesi 1. kademe tam bu kadar). Döngü
     // adımlarında zaten verildiyse (buyHp) tekrar verilmez — atlayan da alır.
     if(!_tutGiftGiven){
