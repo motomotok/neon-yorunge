@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.74.3';
+const GAME_VERSION = '2.74.4';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -973,6 +973,10 @@ function seasonBonusEarned(){
 }
 function seasonBonusCheck(){
   const earned=seasonBonusEarned();
+  // Bir oyunda en fazla 20 XP gelir, bonus 600 XP'de bir: aynı anda birden
+  // fazla bonus birikmişse bu gerçek kazanç değildir (eski sistemden kalan XP,
+  // buluttan dönen eski kayıt) — sessizce eşitlenir, nota verilmez.
+  if(earned-(stats.seasonBonus||0) > 1){ stats.seasonBonus=earned; return; }
   while((stats.seasonBonus||0) < earned){
     stats.seasonBonus=(stats.seasonBonus||0)+1; addNotes(SEASON_BONUS_NOTES);
     if(typeof queueToast==='function') queueToast(t('toast_season_bonus',{notes:SEASON_BONUS_NOTES}));
@@ -1118,6 +1122,18 @@ function ensureSeason(){
     saveStats();
   }
 }
+// 2.73 öncesi sezon XP'si skor/40 idi (oyun başı yüzlerce XP) ve anahtar aynı
+// ('S1') kaldığı için sıfırlanmadı: eski hesaplar ilk oyunda onlarca bonus
+// (binlerce nota) alıyordu. Bir kez: XP son kademeye indirilir, bonus sayacı
+// eşitlenir. Buluttan geri yükleme sayfayı yenilediği için o da kapsanır.
+(function migrateSeasonXpV2(){
+  if(stats.seasonXpV2) return;
+  const top=SEASON_TIERS[SEASON_TIERS.length-1].xp;
+  if((stats.seasonXp||0) > top) stats.seasonXp=top;
+  stats.seasonBonus=Math.max(stats.seasonBonus||0, seasonBonusEarned());
+  stats.seasonXpV2=true;
+  try{ localStorage.setItem('beatOrbitStats', JSON.stringify(stats)); }catch(e){}
+})();
 // Alınmayı bekleyen sezon ödülü sayısı (ücretsiz + varsa premium) — ana
 // menüdeki Sezon butonunda kırmızı rozet olarak gösterilir.
 function seasonClaimableCount(){
