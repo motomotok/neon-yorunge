@@ -33,6 +33,11 @@ target 'App' do
   # tarafında kaldırmış, bu da derleme hatası veriyor. Eklenti 6.2.0 muhtemelen
   # eski 2.x UMP sürümüyle test edilmiş; burada onu sabitliyoruz.
   pod 'GoogleUserMessagingPlatform', '2.6.0'
+  # Firebase Analytics (KVKK onayıyla açılır, bkz. www/game/telemetry.js). Eklentinin
+  # varsayılan "Lite" alt paketi Firebase'i getirmiyor; bu satır olmadan derleme
+  # "import FirebaseCore" hatası veriyor. Reklam kimliği (IDFA) kullanmadığımız için
+  # WithoutAdIdSupport: takip izni penceresi gerekmez.
+  pod 'CapacitorFirebaseAnalytics/AnalyticsWithoutAdIdSupport', :path => '../../node_modules/@capacitor-firebase/analytics'
   # Add your Pods here
 end
 
