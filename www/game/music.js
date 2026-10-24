@@ -87,13 +87,27 @@ const Music = (function(){
       if(p && p.then) p.then(res, rej);
     });
   }
+  // iOS (Capacitor, capacitor://): uygulama içi ses dosyaları HTTP olmayan bir yanıtla
+  // gelir, durum kodu 0 olur ama içerik doludur (24.10.2026: "music load failed: 0").
+  // Durum 0 + dolu içerik kabul; olmazsa XHR ile bir kez daha denenir.
+  function fetchAudio(url){
+    return fetch(url).then(r=>{
+      if(!r.ok && r.status!==0) throw new Error('HTTP '+r.status);
+      return r.arrayBuffer();
+    }).then(ab=>{ if(!ab || !ab.byteLength) throw new Error('empty'); return ab; })
+      .catch(()=>new Promise((res, rej)=>{
+        const x=new XMLHttpRequest(); x.open('GET', url); x.responseType='arraybuffer';
+        x.onload=()=>{ (x.response && x.response.byteLength) ? res(x.response) : rej(new Error('xhr empty '+x.status)); };
+        x.onerror=()=>rej(new Error('xhr error')); x.send();
+      }));
+  }
   function load(name){
     if(buffers[name]) return buffers[name];
     // Bellek: menü + en son tema dışında çözülmüş şarkı tutulmaz.
     Object.keys(buffers).forEach(k=>{ if(k!=='menu' && k!==name) delete buffers[k]; });
     const tr = MUSIC_TRACKS[name];
     buffers[name] = Promise.all(tr.parts.map(p =>
-      fetch('music/'+name+'/'+p+'.m4a').then(r=>{ if(!r.ok) throw new Error(r.status); return r.arrayBuffer(); }).then(decode).then(maybeMono)
+      fetchAudio('music/'+name+'/'+p+'.m4a').then(decode).then(maybeMono)
     )).then(list=>{ const o={}; tr.parts.forEach((p,i)=>o[p]=list[i]); return o; })
       .catch(e=>{ delete buffers[name]; throw e; });
     return buffers[name];
@@ -202,7 +216,16 @@ const Music = (function(){
     }
   }
 
-  function unlock(){ ensureCtx(); resume(); }
+  // Teşhis (iOS'ta müzik yoktu): ilk dokunuştan 10 sn sonra şarkı hâlâ çalmıyorsa
+  // durumu admin paneline bir kez yazar.
+  let diagT=null;
+  function diag(){
+    if(cur || !cfg.music || !window.CrashReport || !CrashReport.report) return;
+    CrashReport.report('DIAG music: state='+(ctx&&ctx.state)+' rate='+(ctx&&ctx.sampleRate)+' suspended='+suspended+
+      ' loading='+loadingName+' buffers='+Object.keys(buffers).join('|')+' wanted='+wantedTrack()+' audible='+audible()+
+      ' scr='+state+' ua='+navigator.userAgent.slice(0,60));
+  }
+  function unlock(){ ensureCtx(); resume(); if(!diagT) diagT=setTimeout(diag, 10000); }
   document.addEventListener('pointerdown', unlock, true);
   document.addEventListener('touchend', unlock, true);
   setInterval(tick, 120);

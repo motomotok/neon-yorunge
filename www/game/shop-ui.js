@@ -465,6 +465,24 @@ function showPurchaseConfirm(iconKey, name, price, onYes, message, priceIcon, on
   if(price==null){ priceEl.style.display='none'; }
   else { priceEl.style.display='block'; priceEl.innerHTML = icon(priceIcon||'coin')+' '+price; }
   document.getElementById('purchaseConfirmOverlay').style.display = 'flex';
+  setTimeout(diagOverlayCovered, 250);
+}
+// Teşhis (iOS'ta onay penceresi görünmüyor/basılamıyordu): pencerenin ortasında
+// başka bir öğe varsa onu admin paneline bir kez yazar.
+let _diagOverlayDone=false;
+function diagOverlayCovered(){
+  if(_diagOverlayDone || !window.CrashReport || !CrashReport.report) return;
+  const ov=document.getElementById('purchaseConfirmOverlay'); if(getComputedStyle(ov).display==='none') return;
+  const box=ov.querySelector('.card'), r=box.getBoundingClientRect();
+  const el=document.elementFromPoint(r.left+r.width/2, r.top+r.height/2);
+  if(el && ov.contains(el)) return;
+  _diagOverlayDone=true;
+  const chain=[]; for(let e=el, n=0; e && n<6; e=e.parentElement, n++){
+    const cs=getComputedStyle(e);
+    chain.push((e.id?'#'+e.id:e.tagName.toLowerCase())+(e.className&&typeof e.className==='string'?'.'+e.className.split(' ').join('.'):'')+
+      '[z='+cs.zIndex+' pos='+cs.position+(cs.transform!=='none'?' tf':'')+(cs.willChange!=='auto'?' wc='+cs.willChange:'')+(cs.opacity!=='1'?' op='+cs.opacity:'')+']');
+  }
+  CrashReport.report('DIAG dialog covered: scr='+state+' box='+Math.round(r.width)+'x'+Math.round(r.height)+'@'+Math.round(r.left)+','+Math.round(r.top)+' vp='+innerWidth+'x'+innerHeight+' by '+(chain.join(' < ')||'null'));
 }
 function hidePurchaseConfirm(declined){
   const ov=document.getElementById('purchaseConfirmOverlay');
