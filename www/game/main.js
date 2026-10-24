@@ -66,7 +66,9 @@ function initIAP(){
   }
   if(window.SeasonPass){
     SeasonPass.register(
-      ()=>{ ensureSeason(); if(stats.seasonPremium){ syncSeasonPassUI(); return; } stats.seasonPremium=true; saveStats(); queueToast(t('toast_seasonpass_active')); syncSeasonPassUI(); },
+      ()=>{ ensureSeason(); if(stats.seasonPremium){ syncSeasonPassUI(); return; } stats.seasonPremium=true; saveStats(); queueToast(t('toast_seasonpass_active')); syncSeasonPassUI();
+        // Sezon ekranı açıksa premium ödüller hemen alınabilir olsun (eskiden ekrandan çıkıp girmek gerekiyordu).
+        if(state==='battlepass' && typeof renderBattlepass==='function') renderBattlepass(); },
       (price)=>{ syncSeasonPassUI(price); }
     );
   }

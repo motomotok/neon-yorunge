@@ -81,7 +81,7 @@ body{
 
 .screen{display:none;flex-direction:column;align-items:center;
   text-align:center;gap:10px;padding:20px;width:100%;max-width:560px;
-  overflow-y:auto;max-height:var(--app-h,100vh);-webkit-overflow-scrolling:touch;
+  overflow-y:auto;max-height:var(--app-h,100vh);
   position:relative;z-index:1;
   scrollbar-width:thin;scrollbar-color:rgba(150,180,255,.35) transparent;}
 /* İçerik ekrana sığıyorsa dikeyde ortalar, sığmıyorsa üstten başlatıp tamamen
@@ -103,7 +103,7 @@ body{
   background:rgba(255,255,255,.06);border:1px solid var(--glass-brd-soft);cursor:pointer;color:#eaf2ff;}
 .iconBtn .gicon{width:16px;height:16px;}
 .iconBtn:active{transform:scale(.9);background:rgba(84,224,255,.18);}
-.screenBody{flex:1 1 auto;min-height:0;width:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;
+.screenBody{flex:1 1 auto;min-height:0;width:100%;overflow-y:auto;
   display:flex;flex-direction:column;align-items:center;gap:10px;padding:4px 0;
   scrollbar-width:thin;scrollbar-color:rgba(150,180,255,.35) transparent;}
 .screenBody::-webkit-scrollbar{width:5px;}
@@ -1644,3 +1644,12 @@ body.duel #walletChip, body.duel #walletEndHud{display:none;}
 #kvkkBarNo{background:none;border:0;color:inherit;opacity:.55;font-size:11px;padding:6px 8px;cursor:pointer;font-family:inherit;}
 #kvkkBarYes{flex:1;margin:0;padding:11px 14px;font-size:15px;font-weight:800;box-shadow:0 0 18px rgba(255,201,74,.45);animation:kvkkGlow 1.8s ease-in-out infinite;}
 @keyframes kvkkGlow{50%{box-shadow:0 0 28px rgba(255,201,74,.75)}}
+
+/* iOS (WKWebView): kaydırılan ekran içeriği ayrı bir GPU katmanına alınınca, z-index'i
+   daha yüksek olan sabit pencerelerin (onay, bilgi, isim, düello arama, KVKK) ÜSTÜNE
+   çiziliyor ve dokunuşları yutuyordu: mağazada pena/plak satın alma ve Recycle onayı
+   görünmüyor, ana menüye dönünce görünüp basılamıyordu (TestFlight 1.0.1, 24.10.2026).
+   -webkit-overflow-scrolling:touch kaldırıldı (iOS 13+ varsayılan) ve pencereler kendi
+   katmanlarına zorlanıyor; böylece her zaman en üstte çizilir ve dokunuş alır. */
+#purchaseConfirmOverlay,#settingsInfoOverlay,#coreInfoOverlay,#infoPopupOverlay,
+#nameOverlay,#duelSearch,#kvkkOverlay,#kvkkBar{transform:translateZ(0);-webkit-transform:translateZ(0);isolation:isolate;}

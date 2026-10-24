@@ -63,4 +63,6 @@ window.CrashReport = {
   log(msg) {
     if (Capacitor.isNativePlatform()) FirebaseCrashlytics.log({ message: String(msg) }).catch(() => {});
   },
+  // Oyunun yakaladığı (çökmeyen ama önemli) hatalar: admin paneline ve Crashlytics'e.
+  report(msg, err) { report(String(msg), err instanceof Error ? err : null); },
 };

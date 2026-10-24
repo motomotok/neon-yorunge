@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.75.3';
+const GAME_VERSION = '2.75.4';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -23,7 +23,7 @@ const THEMES = {
   lofichillhop:   {nameKey:'theme_lofichillhop',    star:'#8fe3d8', gold:'#ffe1c8', peril:'#ff6a5a', player:'#5fe8d6', sun:'#e9b39c', bg0:'#120b09', bg1:'#2a1c17', sf:'#f2c6b4', gate:{type:'coin_or_gem', price:4800, gemPrice:140}},
   hellsanthem:    {nameKey:'theme_hellsanthem',     star:'#ffb066', gold:'#ffd28a', peril:'#ff3a1a', player:'#ffcf4a', sun:'#ff5a1a', bg0:'#0d0303', bg1:'#2a0806', sf:'#ff9a5a', gate:{type:'gem', price:300}},
   // Konsept sayfasından seçilen 4 plak (2026-10-16).
-  candydrip:      {nameKey:'theme_candydrip',       star:'#ff4fa8', gold:'#fff3a0', peril:'#7a2cff', player:'#41d7f0', sun:'#ff5fae', bg0:'#0d0616', bg1:'#2b1440', sf:'#ffb3dc', gate:{type:'coin_or_gem', price:3600, gemPrice:300}},
+  candydrip:      {nameKey:'theme_candydrip',       star:'#ff4fa8', gold:'#fff3a0', peril:'#7a2cff', player:'#41d7f0', sun:'#ff5fae', bg0:'#0d0616', bg1:'#2b1440', sf:'#ffb3dc', gate:{type:'gem', price:300}},
   steamfunk:      {nameKey:'theme_steamfunk',       star:'#ffcf6a', gold:'#ffe7a8', peril:'#ff4a2a', player:'#5fe8d6', sun:'#e0a050', bg0:'#0c0704', bg1:'#2a1a0e', sf:'#f3c98a', gate:{type:'coin_or_gem', price:5200, gemPrice:200}},
   cybercircuit:   {nameKey:'theme_cybercircuit',    star:'#2ee6ff', gold:'#d8fbff', peril:'#ff3df0', player:'#2ee6ff', sun:'#ff3df0', bg0:'#04020d', bg1:'#120a30', sf:'#8fe9ff', gate:{type:'coin_or_gem', price:5600, gemPrice:180}},
   crystalrune:    {nameKey:'theme_crystalrune',     star:'#ffc56a', gold:'#fff0b8', peril:'#ff4f7a', player:'#7ff3ff', sun:'#f0a640', bg0:'#03070f', bg1:'#0f2244', sf:'#9fdcff', gate:{type:'gem', price:350}},

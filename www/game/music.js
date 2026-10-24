@@ -53,8 +53,13 @@ const Music = (function(){
   function ensureCtx(){
     if(ctx) return ctx;
     const C = window.AudioContext || window.webkitAudioContext; if(!C) return null;
-    try{ ctx = new C({sampleRate:32000, latencyHint:'playback'}); }
+    // iOS (WKWebView): donanımdan farklı örnekleme hızıyla açılan bağlam hata vermeden
+    // SESSİZ kalabiliyor (TestFlight 1.0.1: efektler var, müzik yok). iOS'ta varsayılan hız.
+    const IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+    try{ ctx = IOS ? new C({latencyHint:'playback'}) : new C({sampleRate:32000, latencyHint:'playback'}); }
     catch(e){ try{ ctx = new C(); }catch(e2){ return null; } }
+    // iOS telefon görüşmesi/Siri sonrası bağlamı 'interrupted' bırakır: ilk dokunuşta devam.
+    ctx.onstatechange = ()=>{ if(ctx.state==='interrupted' && !suspended) resume(); };
     out = ctx.createGain(); out.gain.value = musicVolume();
     duck = ctx.createGain(); duck.gain.value = 1;
     // Risk balonu etkileri için tüm şarkıya binen filtre (bkz. setFx).
@@ -173,7 +178,8 @@ const Music = (function(){
         if(loadingName!==name) return;
         loadingName = null;
         if(!cur && wantedTrack()===name && audible()){ start(name, bufs); lastCombo=-1; }
-      }).catch(()=>{ if(loadingName===name) loadingName=null; });
+      }).catch(e=>{ if(loadingName===name) loadingName=null;
+        if(window.CrashReport && CrashReport.report) CrashReport.report('music load failed: '+name+' ('+(ctx&&ctx.sampleRate)+' Hz): '+((e&&e.message)||e), e); });
     }
 
     // Menüdeyken seçili temanın şarkısı önceden çözülür: oyun başlarken
