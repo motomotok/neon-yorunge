@@ -63,6 +63,12 @@
 
 	<!-- AdMob iOS App ID (gerçek). Bu anahtar olmadan Google Mobile Ads SDK
 	     başlatılır başlatılmaz uygulama ÇÖKER. -->
+	<!-- Firebase Analytics: KVKK onayı verilene kadar kapalı başlar (Android'deki
+	     firebase_analytics_collection_enabled=false ile aynı); oyun onaydan sonra
+	     Telemetry.analyticsEnabled(true) ile açar. -->
+	<key>FIREBASE_ANALYTICS_COLLECTION_ENABLED</key>
+	<false/>
+
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-6695608611504367~3068140676</string>
 
