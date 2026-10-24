@@ -1644,12 +1644,3 @@ body.duel #walletChip, body.duel #walletEndHud{display:none;}
 #kvkkBarNo{background:none;border:0;color:inherit;opacity:.55;font-size:11px;padding:6px 8px;cursor:pointer;font-family:inherit;}
 #kvkkBarYes{flex:1;margin:0;padding:11px 14px;font-size:15px;font-weight:800;box-shadow:0 0 18px rgba(255,201,74,.45);animation:kvkkGlow 1.8s ease-in-out infinite;}
 @keyframes kvkkGlow{50%{box-shadow:0 0 28px rgba(255,201,74,.75)}}
-
-/* iOS (WKWebView): kaydırılan ekran içeriği ayrı bir GPU katmanına alınınca, z-index'i
-   daha yüksek olan sabit pencerelerin (onay, bilgi, isim, düello arama, KVKK) ÜSTÜNE
-   çiziliyor ve dokunuşları yutuyordu: mağazada pena/plak satın alma ve Recycle onayı
-   görünmüyor, ana menüye dönünce görünüp basılamıyordu (TestFlight 1.0.1, 24.10.2026).
-   -webkit-overflow-scrolling:touch kaldırıldı (iOS 13+ varsayılan) ve pencereler kendi
-   katmanlarına zorlanıyor; böylece her zaman en üstte çizilir ve dokunuş alır. */
-#purchaseConfirmOverlay,#settingsInfoOverlay,#coreInfoOverlay,#infoPopupOverlay,
-#nameOverlay,#duelSearch,#kvkkOverlay,#kvkkBar{transform:translateZ(0);-webkit-transform:translateZ(0);isolation:isolate;}

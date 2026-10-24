@@ -259,7 +259,7 @@ function setEquipped(category, id){
   saveCfg();
 }
 function purchase(category, item){
-  if(item.gate.type!=='coin') return false;
+  if(item.gate.type!=='coin' && item.gate.type!=='coin_or_gem') return false;
   const price = effectivePrice(category, item);
   if(stats.notes < price){
     queueToast(t('insufficient_stardust',{n:price-stats.notes}));
@@ -486,7 +486,10 @@ function diagOverlayCovered(){
 }
 function hidePurchaseConfirm(declined){
   const ov=document.getElementById('purchaseConfirmOverlay');
-  ov.style.display = 'none'; ov.style.zIndex = '';
+  // z-index 35'e döner (öğretici "Atla" 60 yapıyor). Eskiden '' yapılıyordu; bu, HTML'deki
+  // z-index:35'i de siliyor ve ilk onaydan sonraki her pencere menü katmanının (#overlay, 20)
+  // altında kalıyordu: mağaza/Recycle onayı görünmüyor, menüde görünüp basılamıyordu.
+  ov.style.display = 'none'; ov.style.zIndex = '35';
   const no = pendingPurchaseNo;
   pendingPurchase = null; pendingPurchaseNo = null;
   if(declined && no) no();
