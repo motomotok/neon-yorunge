@@ -1,15 +1,15 @@
 // Beat Orbit — Cloud Functions (Firebase projesi "sentaks", Blaze planı).
 //
 // stopBilling: harcama emniyet şalteri. Google Cloud'daki "Beat Orbit Stop"
-// bütçesi (yalnız bu projeyi sayar) eşiğe her ulaştığında "billing-alerts"
+// bütçesi (sentaks + ajan-kelime TOPLAMINI sayar, ₺1000) eşiğe her ulaştığında "billing-alerts"
 // Pub/Sub konusuna mesaj yollar. Gerçekleşen maliyet bütçe tutarına ulaştıysa
 // bu fonksiyon projenin faturalandırma bağlantısını keser → ücretli servisler
 // durur, proje ücretsiz kotaya düşer (oyunun kendisi çalışmaya devam eder;
 // sıralama/düello/bulut kaydı ödeme hesabı yeniden bağlanana kadar kısıtlı).
 // Yeniden açmak: Firebase konsolu → sol alt "Spark" → Blaze'e tekrar geç.
 //
-// Aynı desen Pasla'da (ajan-kelime) var; ikisi bilerek ayrı: biri aşarsa
-// yalnız o proje durur.
+// Aynı desen Pasla'da (ajan-kelime) var. 27.10: iki bütçe de iki projenin
+// toplamını sayıyor; toplam ₺1000'e ulaşınca ikisi de kendi projesini durdurur.
 //
 // Gerekli yetki (bir kez, Google Cloud → IAM): fonksiyonun hizmet hesabına
 // (PROJE_NUMARASI-compute@developer.gserviceaccount.com) bu projede
