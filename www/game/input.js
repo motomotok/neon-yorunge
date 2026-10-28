@@ -142,6 +142,15 @@ document.getElementById('playGamesBtn').addEventListener('click', e=>{ e.stopPro
 });
 document.getElementById('linkGoogleBtn').addEventListener('click', e=>{ e.stopPropagation(); if(window.CloudSync) CloudSync.linkGoogle(); });
 document.getElementById('linkAppleBtn').addEventListener('click', e=>{ e.stopPropagation(); if(window.CloudSync) CloudSync.linkApple(); });
+document.getElementById('signOutBtn').addEventListener('click', async e=>{
+  e.stopPropagation();
+  if(!window.CloudSync || !CloudSync.signOut) return;
+  if(!window.confirm(t('account_signout_confirm'))) return;
+  const btn = e.currentTarget; btn.disabled = true;
+  const r = await CloudSync.signOut();
+  btn.disabled = false;
+  if(r!=='ok') queueToast(t(r==='save_failed' ? 'account_signout_save_err' : 'account_link_err_toast'));
+});
 document.getElementById('deleteAccountBtn').addEventListener('click', async e=>{
   e.stopPropagation();
   if(!window.CloudSync) return;

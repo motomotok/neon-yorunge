@@ -23,7 +23,7 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, getDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import {
   GoogleAuthProvider, OAuthProvider, linkWithCredential, linkWithPopup, signInWithCredential,
-  deleteUser, signInAnonymously, revokeAccessToken,
+  deleteUser, signInAnonymously, revokeAccessToken, signOut as fbSignOut,
 } from 'firebase/auth';
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
@@ -139,6 +139,22 @@ async function deleteAccount() {
   }
 }
 
+// Ayarlar → "Çıkış yap": Google/Apple oturumu kapanır, cihaz yeni bir anonim
+// hesapla devam eder (başka hesaba geçmek ya da hesapsız oynamak için).
+// İlerlemeyi buluta kaydetmek çağıranın işi (bkz. cloud-sync.js signOutAccount).
+async function signOut() {
+  try {
+    const a = auth();
+    await a.authStateReady();
+    if (isNative()) { try { await FirebaseAuthentication.signOut(); } catch (e) {} }   // hesap seçici yeniden sorsun
+    await fbSignOut(a);
+    try { await signInAnonymously(a); } catch (e) {}
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: (e && (e.code || e.message)) || String(e) };
+  }
+}
+
 window.CloudAccount = {
   isNative,
   status,
@@ -146,4 +162,5 @@ window.CloudAccount = {
   saveProgress,
   loadProgress,
   deleteAccount,
+  signOut,
 };

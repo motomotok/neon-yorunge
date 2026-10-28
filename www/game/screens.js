@@ -134,7 +134,7 @@ function startGame(m,d){
   if(AC && AC.state!=='running') acResume();
   // Zorluk seçimi yok: tek, dengeli (normal) zorluk.
   mode=m; diffKey='normal';
-  diffCfg = DIFF[diffKey];
+  diffCfg = m==='daily' ? warmupCfg(DIFF[diffKey], warmupLevel()) : DIFF[diffKey];
   // Normal oyun: rastgele harita; sonucu günlük sıralamaya yazılır (oyunun
   // başladığı güne). Kalıcı yetenekler, Süpernova ve Isı geçerli.
   let dsetDay=null;
@@ -197,10 +197,10 @@ try{
   if(capApp && capApp.addListener) capApp.addListener('pause', autoPause);
 }catch(e){}
 
-let adGamesLeft = null;
-const LONG_RUN_FRAMES = 45*60; // 45 sn ve üstü oyun "uzun" sayılır
-const SHORT_RUN_AD_CHANCE = 0.2; // kısa oyunlardan sonra yalnız %20 ihtimalle
-function rollAdInterval(){ return 2 + Math.floor(Math.random()*2); } // 2 ya da 3 oyun
+// Oyun sonu reklamı (2.75.9): ilk AD_FREE_RUNS oyunda hiç reklam yok, sonra
+// 5 oyunda 2 reklam — aralık sırayla 2 ve 3 oyun (ör. 5., 8., 10., 13., 15.).
+// İlk 10 oyunda en fazla 3 reklam. Sayaç kalıcı (stats.adRunsLeft).
+const AD_FREE_RUNS = 3, AD_MIN_GAP_MS = 60000;
 
 // Bitiş ekranında TEK, dinamik bir "bir sonraki hedef" satırı — en motive
 // edici olanı otomatik seçer: rekor çok yakınsa ("yakın ıskalama" hissi en
@@ -305,20 +305,17 @@ function gameOver(reason){
   }
   setHud(false); showScreen('over'); syncAdButtons();
   beep(200,0.3,'sine',0.12);
-  // Oyun sonu reklamı: uzun oyunlarda (45 sn+) 2-3 oyunda bir; hemen düşülen
-  // kısa denemelerde yalnız %20 ihtimalle (test geri bildirimi: kısa
-  // oyunlarda sürekli reklam oyuncuyu kaçırıyordu). Sayaç uzun oyunlarındır.
-  // elapsed kare cinsinden (60 = 1 sn).
-  const longRun = elapsed >= LONG_RUN_FRAMES;
   // Bu oyunda zaten reklam izleyip devam ettiyse oyun sonunda ikinci bir
   // reklam çıkmaz (test geri bildirimi: tek "devam" için art arda 3 reklam).
-  if(!stats.premiumNoAds && !tutorialActive && !session.watchedReviveAd){
+  if(!stats.premiumNoAds && !tutorialActive && (stats.scoreRuns||0) > AD_FREE_RUNS){
     let showAd = false;
-    if(longRun){
-      if(adGamesLeft===null) adGamesLeft=rollAdInterval();
-      adGamesLeft--;
-      if(adGamesLeft<=0){ adGamesLeft=rollAdInterval(); showAd = true; }
-    } else showAd = Math.random() < SHORT_RUN_AD_CHANCE;
+    if(stats.adRunsLeft==null){ stats.adRunsLeft=2; stats.adNextGap=3; }
+    stats.adRunsLeft--;
+    if(stats.adRunsLeft<=0 && !session.watchedReviveAd && Date.now()-(window._lastInterAt||0) >= AD_MIN_GAP_MS){
+      showAd = true;
+      stats.adRunsLeft = stats.adNextGap||2; stats.adNextGap = stats.adRunsLeft===2 ? 3 : 2;
+    } else if(stats.adRunsLeft<0) stats.adRunsLeft=0;   // bekleyen reklam bir sonraki oyuna kalır
+    saveStats();
     // Oyuncu bu arada "Tekrar"a bastıysa reklam yeni oyunun ortasında açılmasın.
     if(showAd) setTimeout(()=>{ if(state==='over'){ window._lastInterAt=Date.now(); Ads.showInterstitial(); } }, 700);
   }

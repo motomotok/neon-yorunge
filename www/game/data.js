@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.75.8';
+const GAME_VERSION = '2.75.9';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -686,6 +686,22 @@ const DIFF = {
   hard:{label:'Zor', hazBase:0.165, hazRamp:0.00096, hazCap:0.40, speedRamp:0.00128, speedCap:2.9, comboMulCap:2.1, scoreMult:1.35, threatFar:2.3, threatCdMul:0.8},
 };
 let diffCfg = DIFF.normal;
+// Isınma (2.75.9, gizli): yeni oyuncu ilk denemelerinde oyunu bilmeden çok
+// zorlanıyordu. Skor Avı'nda ilk 10 deneme en yumuşak, 10-20 ve 20-30 arası
+// kademeli sertleşir, 30. denemeden sonra herkes aynı (normal) akışta.
+// Puan çarpanı DEĞİŞMEZ (ekranda kolaylık hissedilmez). Düelloda yok (eşitlik).
+// 1 = en yumuşak, 0 = normal.
+function warmupLevel(){
+  const n=stats.scoreRuns||0;
+  return n<10 ? 1 : n<20 ? 0.66 : n<30 ? 0.33 : 0;
+}
+function warmupCfg(base, w){
+  if(!(w>0)) return base;
+  const e=DIFF.easy, o=Object.assign({}, base);
+  for(const k of ['hazBase','hazRamp','hazCap','speedRamp','speedCap','comboMulCap','threatFar','threatCdMul']) o[k]=base[k]+(e[k]-base[k])*w;
+  o.warmup=w;
+  return o;
+}
 
 function mulberry32(seed){
   return function(){

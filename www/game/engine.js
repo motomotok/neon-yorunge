@@ -198,21 +198,26 @@ function teaserChance(){
   teaserCredit = 0;                         // her zar o ana kadarki krediyi harcar (Poisson inceltme)
   return p;
 }
+// Isınma (bkz. data.js warmupLevel): yer değiştiren cızırtı (hazardJump) çok
+// daha seyrek, gelişmiş tipler daha geç açılır, keşifler seyrekleşir.
+function hazMin(h){ return h.min*(1+(diffCfg.warmup||0)); }
 function pickHazardKind(){
   _pickTeaser=false;
-  const locked = HAZARD_KINDS.filter(h=>h.min>0 && score<h.min);
-  const tc = teaserChance();
+  const w=diffCfg.warmup||0;
+  const locked = HAZARD_KINDS.filter(h=>h.min>0 && score<hazMin(h));
+  const tc = teaserChance()*(1-0.7*w);
   if(locked.length && tc>0 && rnd()<tc){
     const seen = stats.seenHazards||[];
     let tot=0;
-    const ws = locked.map(h=>{ const w=(1/(1+(h.min-score)/500))*(seen.includes(h.type)?1:2); tot+=w; return w; });
+    const ws = locked.map(h=>{ const x=(1/(1+(hazMin(h)-score)/500))*(seen.includes(h.type)?1:2); tot+=x; return x; });
     let r=rnd()*tot;
     for(let i=0;i<locked.length;i++){ r-=ws[i]; if(r<=0){ _pickTeaser=true; rareSince=0; teaserCredit=0; return locked[i].type; } }
   }
   let total=0;
   const weights=HAZARD_KINDS.map(h=>{
-    const w = h.min===0 ? h.cap : (score>=h.min ? Math.min(h.cap,(score-h.min)*h.rampPer) : 0);
-    total+=w; return w;
+    let x = h.min===0 ? h.cap : (score>=hazMin(h) ? Math.min(h.cap,(score-hazMin(h))*h.rampPer) : 0);
+    if(h.type==='hazardJump') x *= 1-0.75*w;
+    total+=x; return x;
   });
   let r=rnd()*total;
   let type='hazard';

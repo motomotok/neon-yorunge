@@ -18,7 +18,7 @@ function isAccountLinked(){ return cloudLinked('google.com') || cloudLinked('app
 
 async function initCloudSync(){
   if(!ACCOUNT_LINK_ENABLED){
-    ['linkRow','acctLinkDesc','acctDeleteRow'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; });
+    ['linkRow','acctLinkDesc','acctDeleteRow','acctSignOutRow'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; });
     return;
   }
   // Apple ile giriş yalnız iOS'ta ve web'de gösterilir (Android'de Google yeterli).
@@ -109,6 +109,23 @@ async function deleteCloudAccount(){
   return true;
 }
 
+// Çıkış: önce ilerleme buluta kaydedilir (kaydedilemezse çıkılmaz), sonra
+// oturum kapanır ve bu cihaz yeni oyuncu olarak başlar — ilerleme hesapta
+// kalır, aynı hesapla tekrar giriş yapınca geri yüklenir. Cihaza/mağaza
+// hesabına ait olanlar (reklamsız, sezon bileti, öğretici, izinler) korunur.
+const SIGNOUT_KEEP = /^(installId|lastSeenTs|kvkkV|analytics|tutorialDone|firstSeen|premiumNoAds|seasonPremium|seasonKey|seenIntro|evSent|loginNudges|guide\w*Done|\w*V\d+|balanceV2)$/;
+async function signOutAccount(){
+  if(!window.CloudAccount || !CloudAccount.signOut) return 'error';
+  if(isAccountLinked() && !(await saveProgress(true))) return 'save_failed';
+  const res = await CloudAccount.signOut();
+  if(!res.ok) return 'error';
+  const keep={};
+  for(const k in stats) if(SIGNOUT_KEEP.test(k)) keep[k]=stats[k];
+  try{ localStorage.setItem('beatOrbitStats', JSON.stringify(keep)); }catch(e){}
+  location.reload();
+  return 'ok';
+}
+
 function syncLinkButtons(){
   [['google','linkGoogleBtn','linkGoogleStatusText','Google'],['apple','linkAppleBtn','linkAppleStatusText','Apple']].forEach(([which, btnId, statusId, label])=>{
     const linked = cloudLinked(which==='google' ? 'google.com' : 'apple.com');
@@ -117,6 +134,7 @@ function syncLinkButtons(){
     if(st) st.innerHTML = icon(which==='google' ? 'gem' : 'gem')+' '+label+(linked ? ' <span style="color:#6fe08a">'+t('account_linked_badge')+'</span>' : '');
   });
   const delRow=document.getElementById('acctDeleteRow'); if(delRow) delRow.style.display = isAccountLinked() ? '' : 'none';
+  const outRow=document.getElementById('acctSignOutRow'); if(outRow) outRow.style.display = isAccountLinked() ? '' : 'none';
   const desc=document.getElementById('acctLinkDesc');
   if(desc) desc.textContent = isAccountLinked() ? t('account_saved_desc') : t('account_link_desc');
 }
@@ -145,5 +163,6 @@ window.CloudSync = {
   linkGoogle(){ linkAccount('google'); },
   linkApple(){ linkAccount('apple'); },
   deleteAccount: deleteCloudAccount,
+  signOut: signOutAccount,
   isLinked: isAccountLinked,
 };
