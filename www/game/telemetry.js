@@ -2,9 +2,10 @@
 // oyun tarafı (düz <script>). Firebase köprüsü: window.Telemetry
 // (src/telemetry.js → firebase-bundle.js). Ağ/Firebase yoksa sessizce no-op.
 //
-// KVKK: ilk açılışta bir kez bilgilendirme gösterilir. Hata kayıtları her
-// zaman (meşru menfaat, aydınlatma metninde yazıyor) gider; istatistik özeti
-// YALNIZ oyuncu kutuyu işaretlediyse (açık rıza, varsayılan kapalı) gider.
+// KVKK: ilk açılışta bir kez bilgilendirme gösterilir. Hata kayıtları ve oyuncu
+// özeti (admin paneli: takma ad, oyun sayısı, süre, bugünkü oyunlar...) HER ZAMAN
+// gider (oyun hizmeti / meşru menfaat, aydınlatma metninde yazıyor; Pasla'daki
+// gibi). Açık rıza (varsayılan kapalı) yalnız Firebase Analytics olayları için.
 // İzin Ayarlar → Bilgi → Gizlilik & Yasal → "Veri İzinleri"nden değişir.
 const KVKK_VERSION = 1;
 // MALİYET: periyodik sinyal YOK. İzin veren oyuncu yalnız oyunu açınca
@@ -44,14 +45,12 @@ function kvkkMaybeAsk(){
 }
 let _kvkkBarTimer=null;
 function kvkkDecide(on){
-  const was=analyticsOn();
   stats.kvkkV=KVKK_VERSION; stats.analytics=!!on;
   if(!stats.firstSeen) stats.firstSeen=Date.now();
   saveStats();
   if(window.Telemetry) Telemetry.analyticsEnabled(!!on);
   document.getElementById('kvkkBar').style.display='none';
-  if(on) telemetryBeat(true);
-  else if(was && window.Telemetry){ _lastOn=false; Telemetry.forget().catch(()=>{}); }
+  telemetryBeat(true);
 }
 function openKvkk(first){
   const ov=document.getElementById('kvkkOverlay'); if(!ov) return;
@@ -73,17 +72,32 @@ function telemetrySummary(){
     tier=rankTier(d.d||0, d.lp||0).id+(div ? ' '+ROMAN[div] : '');
   }
   return {
-    name: stats.playerName||stats.dsetName||'', ver: GAME_VERSION, lang: cfg.lang,
+    name: stats.playerName||(typeof dsetPlayerName==='function' ? dsetPlayerName() : stats.dsetName)||'', ver: GAME_VERSION, lang: cfg.lang,
     games: stats.games||0, best: stats.best||0, mins: Math.floor((stats.playSec||0)/60),
     mmr: d ? d.mmr||0 : 0, tier, duels: d ? d.games||0 : 0,
     gems: stats.gems||0, notes: stats.notes||0, lvl: stats.maxLevel||1,
     linked: typeof isAccountLinked==='function' && isAccountLinked(),
     noads: !!stats.premiumNoAds, pass: !!stats.seasonPremium, since: stats.firstSeen||0,
+    day: dayStat().d, dayGames: dayStat().g, dayMins: Math.floor(dayStat().s/60),
   };
+}
+// Bugünkü oyun sayısı ve süresi (panelde "bugün kim ne kadar oynadı").
+function dayStat(){
+  const d=todayStr();
+  if(!stats.dayStat || stats.dayStat.d!==d) stats.dayStat={d, g:0, s:0};
+  return stats.dayStat;
+}
+// Oyun sonunda: bugünkü sayaç +1 ve özet yazılır (en fazla 2 dakikada bir).
+let _lastRunBeat = 0;
+function telemetryRunEnd(){
+  dayStat().g++;
+  if(!window.Telemetry || Date.now()-_lastRunBeat < 120000) return;
+  _lastRunBeat=Date.now(); _lastBeat=Date.now(); _lastOn=true;
+  Telemetry.beat(Object.assign(telemetrySummary(), {on:true})).catch(()=>{});
 }
 let _lastOn = false;
 function telemetryBeat(force){
-  if(!window.Telemetry || !analyticsOn() || document.hidden) return;
+  if(!window.Telemetry || document.hidden) return;
   // Zaten "oyunda" yazılmışsa (ör. reklamdan dönüş) yalnız 30 dk'da bir yeniler.
   if(_lastOn && Date.now()-_lastBeat < BEAT_MS-5000) return;
   _lastBeat=Date.now(); _lastOn=true;
@@ -91,7 +105,7 @@ function telemetryBeat(force){
 }
 // Oturum sonu: güncel istatistikle "çıktı" yazılır (bir kez).
 function telemetryEnd(){
-  if(!window.Telemetry || !analyticsOn() || !_lastOn) return;
+  if(!window.Telemetry || !_lastOn) return;
   // Reklam tam ekrandayken oyun arka plana düşer; bu oturum sonu değildir.
   if(window.Ads && Ads.isShowing && Ads.isShowing()) return;
   _lastOn=false; _lastBeat=Date.now();
@@ -143,7 +157,7 @@ function initTelemetry(){
   });
   // Oynama süresi: yalnız oyun ekranı açık ve uygulama öndeyken sayılır
   // (stats oyun sonunda zaten kaydediliyor).
-  setInterval(()=>{ if(state==='play' && !document.hidden) stats.playSec=(stats.playSec||0)+1; }, 1000);
+  setInterval(()=>{ if(state==='play' && !document.hidden){ stats.playSec=(stats.playSec||0)+1; dayStat().s++; } }, 1000);
   setInterval(()=>telemetryBeat(false), 60000);
   document.addEventListener('visibilitychange', ()=>{
     if(document.hidden){ telemetryEnd(); return; }

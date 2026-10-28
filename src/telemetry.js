@@ -3,8 +3,8 @@
 // Oyun tarafı: www/game/telemetry.js. Admin paneli: admin/index.html.
 //
 // players/{uid}  — oyuncunun anonim özeti (skor, oyun sayısı, dakika, rank,
-//                  son görülme). YALNIZ oyuncu KVKK ekranında istatistik
-//                  iznini verdiyse yazılır; izni geri alınca silinir.
+//                  bugünkü oyun/dakika, son görülme). Her oyuncu için yazılır
+//                  (oyun hizmeti; Pasla'daki gibi). 12 ay açmayan silinir.
 // errors/{id}    — oyun kodundaki yakalanmamış hatalar (Crashlytics'e ek
 //                  olarak; panelde ve Claude'un okuyabileceği yerde dursun).
 // gifts/{uid}/items/{id} — admin panelinden gönderilen hediyeler (elmas,
@@ -42,7 +42,8 @@ async function beat(s) {
     mmr: int(s.mmr, 4000), tier: str(s.tier, 16), duels: int(s.duels, 1e6),
     gems: int(s.gems, 1e7), notes: int(s.notes, 1e9), lvl: int(s.lvl, 1e4),
     linked: !!s.linked, noads: !!s.noads, pass: !!s.pass, on: s.on !== false,
-    since: int(s.since, 1e13), lastSeen: serverTimestamp(),
+    since: int(s.since, 1e13), day: str(s.day, 10), dayGames: int(s.dayGames, 1e5), dayMins: int(s.dayMins, 1440),
+    lastSeen: serverTimestamp(),
   }, { merge: true });
   return u.uid;
 }

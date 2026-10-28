@@ -287,6 +287,8 @@ async function cleanup() {
 
 const cnt = async (q) => { try { return (await getCountFromServer(q)).data().count; } catch (e) { return null; } };
 const TIER_IDS = ['bronze', 'silver', 'gold', 'platinum', 'diamond', 'master', 'champion'];
+// Oyunun gün anahtarıyla aynı biçim (telefonun yerel tarihi, YYYY-MM-DD).
+function todayKey() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 async function loadKpis() {
   const P = collection(db, 'players');
   const t0 = Timestamp.fromMillis(todayStart()), t7 = Timestamp.fromMillis(Date.now() - 7 * DAY);
@@ -303,7 +305,7 @@ async function loadKpis() {
   const pct = (n) => (total ? ' <small class="muted">%' + Math.round(100 * (n || 0) / total) + '</small>' : '');
   const k = [
     ['live', 'Şu an oynayan', '<span id="liveN">…</span>'],
-    ['', 'Oyuncu (izinli)', fmt(total)],
+    ['', 'Oyuncu', fmt(total)],
     ['', '🤖 Android', fmt(pa) + pct(pa)], ['', '🍎 iOS', fmt(pi) + pct(pi)], ['', '🌐 Web', fmt(pw) + pct(pw)],
     ['', 'Bugün oynayan', fmt(today)], ['', 'Son 7 gün', fmt(week)],
     ['', 'Bugün yeni', fmt(newToday)], ['', 'Toplam oyun (deneme)', fmt(agg.games)],
@@ -335,7 +337,9 @@ async function loadPlayers(more) {
   const cons = [orderBy('lastSeen', 'desc'), limit(PAGE)];
   if (more && lastPlayerDoc) cons.splice(1, 0, startAfter(lastPlayerDoc));
   const s = await getDocs(query(collection(db, 'players'), ...cons));
-  const rows = s.docs.map((d) => Object.assign({ uid: d.id }, d.data(), { seen: toMs(d.data().lastSeen) }));
+  const tk = todayKey();
+  const rows = s.docs.map((d) => { const x = d.data(); const td = x.day === tk;
+    return Object.assign({ uid: d.id }, x, { seen: toMs(x.lastSeen), todayG: td ? x.dayGames || 0 : 0, todayM: td ? x.dayMins || 0 : 0 }); });
   players = more ? players.concat(rows) : rows;
   lastPlayerDoc = s.docs.length ? s.docs[s.docs.length - 1] : lastPlayerDoc;
   markLive();
@@ -379,6 +383,7 @@ const COLS = [
   ['Oyun', 'games', (p) => fmt(p.games), 1],
   ['En iyi', 'best', (p) => fmt(p.best), 1],
   ['Dakika', 'mins', (p) => fmt(p.mins), 1],
+  ['Bugün', 'todayG', (p) => (p.todayG ? fmt(p.todayG) + ' oyun · ' + fmt(p.todayM) + ' dk' : '<span class="muted">—</span>'), 1],
   ['Rank', 'mmr', (p) => esc(tierTr(p.tier)) + (p.duels ? ` <span class="muted">${p.mmr}</span>` : '')],
   ['Elmas', 'gems', (p) => fmt(p.gems), 1],
   ['Hesap', 'linked', (p) => (p.linked ? '<span class="tag ok">bağlı</span>' : '<span class="muted">—</span>')],
@@ -396,7 +401,7 @@ function renderPlayers() {
   list.sort((a, b) => { const x = a[sortKey], y = b[sortKey]; const r = typeof x === 'string' || typeof y === 'string' ? String(x || '').localeCompare(String(y || ''), 'tr') : (+x || 0) - (+y || 0); return sortAsc ? r : -r; });
   $('#pTable thead').innerHTML = '<tr>' + COLS.map(([h, k]) => `<th data-k="${k}" class="${k === sortKey ? 'sorted' + (sortAsc ? ' asc' : '') : ''}">${h}</th>`).join('') + '<th></th></tr>';
   $('#pTable tbody').innerHTML = list.map((p) => '<tr data-uid="' + esc(p.uid) + '">' + COLS.map(([, , fn, num]) => `<td class="${num ? 'num' : ''}">${fn(p)}</td>`).join('') + '<td><button class="btn sm" data-gift="' + esc(p.uid) + '">🎁</button></td></tr>').join('')
-    || '<tr><td colspan="13" class="muted">Oyuncu yok</td></tr>';
+    || '<tr><td colspan="14" class="muted">Oyuncu yok</td></tr>';
 }
 $('#pTable').addEventListener('click', (e) => {
   const th = e.target.closest('th[data-k]');
@@ -416,6 +421,7 @@ function openPlayer(uid, focusGift) {
       <b>Platform / sürüm</b><span>${esc(PLAT_TR[p.plat] || p.plat || '—')} · v${esc(p.ver || '?')} · ${esc((p.lang || '').toUpperCase())}</span>
       <b>Oyun / en iyi</b><span>${fmt(p.games)} oyun · en iyi ${fmt(p.best)} · seviye ${fmt(p.lvl)}</span>
       <b>Oynama süresi</b><span>${fmt(p.mins)} dakika</span>
+      <b>Bugün</b><span>${p.todayG ? fmt(p.todayG) + ' oyun · ' + fmt(p.todayM) + ' dakika' : 'bugün oynamadı'}</span>
       <b>Düello</b><span>${esc(tierTr(p.tier))} · MMR ${fmt(p.mmr)} · ${fmt(p.duels)} maç</span>
       <b>Cüzdan</b><span>${fmt(p.gems)} elmas · ${fmt(p.notes)} nota</span>
       <b>Hesap</b><span>${p.linked ? 'Google/Apple bağlı' : 'Bağlı değil (anonim)'}</span>

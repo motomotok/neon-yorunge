@@ -278,6 +278,7 @@ function gameOver(reason){
   if(ranked) addSeasonXp(seasonXpForRun(runScore));
   ensureRival();
   saveStats();
+  if(typeof telemetryRunEnd==='function') telemetryRunEnd();
   if(window.CloudSync) CloudSync.onGameOver();
   if(typeof maybeNudgeShop==='function') maybeNudgeShop();
   if(mode!=='zen' && window.PlayGames && PlayGames.isNative() && PlayGames.signedIn) PlayGames.submitScore(runScore);
