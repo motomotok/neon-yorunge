@@ -363,7 +363,7 @@ function updatePrestigePreview(){
   const gain=coresPreview();
   el.innerHTML = gain>0
     ? icon('atom')+' '+t('prestige_preview',{n:gain}).replace(/^⚛\s*/,'')
-    : t('prestige_preview_zero');
+    : t('prestige_preview_zero',{n:PRESTIGE_MIN_LEVEL, c:totalPowerLevel()});
   const walletEl=document.getElementById('upgradesCoreWallet'); if(walletEl) walletEl.textContent=stats.cores||0;
 }
 function attemptPrestige(){

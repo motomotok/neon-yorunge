@@ -16,13 +16,20 @@ const DSET_DAY_MS = 86400000;
 const DSET_TOP_N = 3;
 const DSET_BOTS_MAX = 11, DSET_REAL_FULL = 30;
 // Botların gün sonu toplamları, ref'e oran olarak (yüksekten düşüğe).
-const DSET_BOT_BANDS = [[1.03,1.07],[0.96,1.0],[0.9,0.95],[0.83,0.88],[0.74,0.8],[0.64,0.7],
+// Ekonomi 3 (2.75.8): en iyi iki bot %3-7 / -%4-0 yerine %10-20 / %0-8 üstte —
+// birincilik artık yalnız iyi günlerde (eskiden neredeyse her gün) gelir.
+const DSET_BOT_BANDS = [[1.10,1.20],[1.0,1.08],[0.9,0.95],[0.83,0.88],[0.74,0.8],[0.64,0.7],
   [0.54,0.6],[0.44,0.5],[0.34,0.4],[0.25,0.3],[0.16,0.22]];
+// Elmas 10/5/3 → 5/3/1 ve YALNIZ o gün listede en az DSET_GEM_MIN_REAL gerçek
+// oyuncu varsa (botlara karşı yalnız nota). Elmas gerçek parayla satılıyor.
 const DSET_REWARDS = [
-  {gems:10, notes:600},
-  {gems:5, notes:300},
-  {gems:3, notes:200},
+  {gems:5, notes:600},
+  {gems:3, notes:300},
+  {gems:1, notes:200},
 ];
+const DSET_GEM_MIN_REAL = 5;
+function dsetGemsOk(real){ return (real||[]).filter(p=>p.uid!==_dsetMyUid && p.total>0).length >= DSET_GEM_MIN_REAL; }
+function dsetRw(rw, gemsOk){ return gemsOk ? rw : Object.assign({}, rw, {gems:0}); }
 const DSET_REWARD_TOP10 = {notes:100}, DSET_REWARD_ALL = {notes:30};
 
 // Takma adlar: harf/rakam (Firestore kuralıyla aynı), dilden bağımsız.
@@ -46,6 +53,9 @@ function dsetDayKey(ms){
 function dsetDayStartMs(key){ const [y,m,d]=key.split('-').map(Number); return Date.UTC(y,m-1,d)-DSET_TZ_MS; }
 function dsetSeed(key){ return +key.replace(/-/g,''); }
 function dsetDayFrac(key){ return Math.max(0, Math.min(1, (gameNowMs()-dsetDayStartMs(key))/DSET_DAY_MS)); }
+// Ekranda botlar en az günün %60'ındaki puanlarıyla görünür: sabah tek oyunla
+// "birinci" görünüp gün sonunda düşmek yanıltıcıydı. Ödül her zaman gün sonu (1).
+function dsetShowFrac(key){ return Math.max(0.6, dsetDayFrac(key)); }
 function dsetMsLeft(){ const k=dsetDayKey(); return Math.max(0, dsetDayStartMs(k)+DSET_DAY_MS-gameNowMs()); }
 function dsetTotal(top){ return Math.round((top||[]).reduce((s,v)=>s+v,0)*100)/100; }
 function dsetFmt(n){ return (+n||0).toFixed(2); }
@@ -65,12 +75,13 @@ function dsetInstallId(){
 function dsetComputeRef(){
   const totals = (stats.dsetHist||[]).slice(-7).map(h=>h.total).filter(v=>v>0);
   if(stats.dsetPending && stats.dsetPending.top && stats.dsetPending.top.length) totals.push(dsetTotal(stats.dsetPending.top));
-  const est = Math.max(400, Math.round((stats.best||0)*1.4));
+  // Yeni oyuncuda taban 2000 (eskiden 400: tek acemi oyunu bile birinci yapıyordu).
+  const est = Math.max(2000, Math.round((stats.best||0)*1.4));
   let ref;
   if(totals.length>=3){ const s=totals.slice().sort((a,b)=>a-b); ref=s[Math.floor(s.length/2)]; }
   else if(totals.length) ref=(totals.reduce((a,b)=>a+b,0)/totals.length + est)/2;
   else ref=est;
-  return Math.max(300, Math.round(ref));
+  return Math.max(1500, Math.round(ref));
 }
 function dsetComputeBotCount(){
   const real = stats.dsetRealSeen||0;
@@ -230,7 +241,7 @@ function dsetRecordRun(day, score){
 // Oyun sonu ekranı için tek satır: toplam, sıra, bir üsttekine kalan.
 function dsetOverText(res){
   const d=stats.dset; if(!d) return '';
-  const b=dsetBuildBoard(d, dsetCachedReal(d.day, dsetLg(d)), dsetDayFrac(d.day));
+  const b=dsetBuildBoard(d, dsetCachedReal(d.day, dsetLg(d)), dsetShowFrac(d.day));
   if(!b.me) return '';
   let s=t('dset_over_line',{total:dsetFmt(b.me.total), rank:b.me.rank});
   if(res && res.counted && res.before>0) s+=' · +'+dsetFmt(res.after-res.before);
@@ -269,7 +280,7 @@ async function dsetClaimPending(){
     if(stats.dsetPending!==p) return false;
     const b=dsetBuildBoard(p, real, 1);
     if(!b.me){ stats.dsetPending=null; saveStats(); return false; }
-    const rank=b.me.rank, rw=dsetRewardFor(rank, b.count);
+    const rank=b.me.rank, rw=dsetRw(dsetRewardFor(rank, b.count), dsetGemsOk(real));
     const before=rewardSnapshot();
     dsetGrant(rw);
     rewardLedgerAdd('dset', before);
@@ -305,14 +316,14 @@ function dsetTimeLeftText(){
 function dsetEsc(s){ return String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function renderDset(){
   const d=dsetEnsureDay();
-  const b=dsetBuildBoard(d, dsetCachedReal(d.day, dsetLg(d)), dsetDayFrac(d.day));
+  const b=dsetBuildBoard(d, dsetCachedReal(d.day, dsetLg(d)), dsetShowFrac(d.day));
   document.getElementById('rkTimer').innerHTML=icon('hourglass')+' '+dsetTimeLeftText();
   const crown = stats.dsetCrownDay===d.day ? ' <span class="dsCrown">👑 '+t('dset_crown')+'</span>' : '';
   // Kürsü: 2 - 1 - 3
   const stand=(rank)=>{
     const r=b.rows[rank-1];
     const medal=['🥇','🥈','🥉'][rank-1];
-    const rw=DSET_REWARDS[rank-1];
+    const rw=dsetRw(DSET_REWARDS[rank-1], dsetGemsOk(dsetCachedReal(d.day, dsetLg(d))));
     const rwHtml = `<div class="dsBlockRw">${rw.gems?`<span>${icon('gem')}${rw.gems}</span>`:''}${rw.notes?`<span>${icon('coin')}${rw.notes}</span>`:''}</div>`;
     return `<div class="dsStand p${rank}${r&&r.me?' me':''}">
       <div class="dsMedal">${medal}</div>
@@ -341,7 +352,8 @@ function renderDset(){
 }
 function renderDsetRewards(){
   const el=document.getElementById('rkRewards'); if(!el) return;
-  const row=(lbl, rw)=>`<div class="dsRw"><span>${lbl}</span><span>${dsetRewardText(rw)}</span></div>`;
+  const d=stats.dset, ok=dsetGemsOk(d ? dsetCachedReal(d.day, dsetLg(d)) : []);
+  const row=(lbl, rw)=>`<div class="dsRw"><span>${lbl}</span><span>${dsetRewardText(dsetRw(rw, ok))}</span></div>`;
   el.innerHTML = `<div class="dsRwHead">${icon('gift')} ${t('dset_rewards_title')}</div>`
     + row('🥇', DSET_REWARDS[0]) + row('🥈', DSET_REWARDS[1]) + row('🥉', DSET_REWARDS[2])
     + row(t('dset_rw_top10'), DSET_REWARD_TOP10) + row(t('dset_rw_all'), DSET_REWARD_ALL);
@@ -356,13 +368,13 @@ function syncDsetChip(){
   const el=document.getElementById('menuSetChip'); if(!el) return;   // 2.69.1'de menüden kalktı
   if(!stats.tutorialDone){ el.style.display='none'; return; }
   const d=dsetEnsureDay();
-  const b=dsetBuildBoard(d, dsetCachedReal(d.day, dsetLg(d)), dsetDayFrac(d.day));
+  const b=dsetBuildBoard(d, dsetCachedReal(d.day, dsetLg(d)), dsetShowFrac(d.day));
   el.style.display='';
   document.getElementById('menuSetText').textContent = b.me ? t('dset_your_rank',{rank:b.me.rank}) : t('dset_chip_sub');
 }
 // Mod ekranındaki kartın alt yazısı.
 function dsetModeStatus(){
   const d=dsetEnsureDay();
-  const b=dsetBuildBoard(d, dsetCachedReal(d.day, dsetLg(d)), dsetDayFrac(d.day));
+  const b=dsetBuildBoard(d, dsetCachedReal(d.day, dsetLg(d)), dsetShowFrac(d.day));
   return b.me ? t('dset_chip_rank',{rank:b.me.rank}) : t('mode_daily_desc');
 }
