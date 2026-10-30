@@ -70,6 +70,10 @@ exports.refreshDash = onCall({ region: "europe-west1", secrets: [DASH_SECRETS], 
   const prevAt = prev.exists && prev.get("at") ? prev.get("at").toMillis() : 0;
   if (Date.now() - prevAt < 60000) return { ok: true, cached: true };
   const dash = await collectDash(JSON.parse(DASH_SECRETS.value()));
+  // Bir kaynak bu sefer çekilemezse (izin/kota) panel boş kalmasın: son bilinen değer korunur.
+  if (!dash.paslaFunnel && prev.exists) {
+    try { const old = JSON.parse(prev.get("json")); if (old.paslaFunnel) { dash.paslaFunnel = old.paslaFunnel; dash.paslaFunnelAt = old.paslaFunnelAt || old.at; } } catch (e) {}
+  }
   try { dash.funnel = await collectFunnel(admin.firestore()); }
   catch (e) { dash.errors.push("Oyuncu yolculuğu: " + String(e.message || e).slice(0, 200)); }
   await ref.set({ json: JSON.stringify(dash), at: admin.firestore.Timestamp.fromDate(new Date(dash.at)) });
