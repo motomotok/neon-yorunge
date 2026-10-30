@@ -14,6 +14,7 @@ const APPS = [
   { name: "Beat Orbit", pkg: "com.motomotok.neonyorunge", campaign: "24394184560", ios: "6817908576" },
   { name: "Pasla", pkg: "com.ajankelime.game", campaign: "24219313563", ios: "6818055363" },
 ];
+const PASLA_GA4 = "551002520";   // Pasla Google Analytics 4 mülkü (gizli değil)
 const ADS_STATUS = { ENABLED: "açık", PAUSED: "duraklatıldı", REMOVED: "kaldırıldı" };
 
 async function collectDash(S) {
@@ -194,8 +195,59 @@ async function collectDash(S) {
     return out;
   }
 
-  const [ads, admob, play, ios] = await Promise.all([safe("Ads", collectAds), safe("AdMob", collectAdmob), safe("Play", collectPlay), safe("iOS", collectIos)]);
-  return { at: new Date().toISOString(), today: TODAY, ads: ads || [], admob, play: play || [], ios: ios || [], errors };
+  // ---- Pasla oyuncu yolculuğu (Google Analytics 4 huni raporu) ----
+  // Bulutta: fonksiyonun hizmet hesabı GA4 mülkünde "Görüntüleyici" (şifre gerekmez,
+  // meta veri sunucusundan anahtar alınır). Bilgisayarda: S.ga_refresh.
+  async function gaToken() {
+    if (S.ga_refresh) return gtoken(S.ga_refresh);
+    const r = await fetch("http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token?scopes=https://www.googleapis.com/auth/analytics.readonly", { headers: { "Metadata-Flavor": "Google" } });
+    if (!r.ok) throw new Error("GA anahtarı alınamadı " + r.status);
+    return (await r.json()).access_token;
+  }
+  async function ga(path, body) {
+    const res = await fetch(`https://analyticsdata.googleapis.com/${path}`, { method: "POST", headers: { authorization: "Bearer " + (await gaToken()), "content-type": "application/json" }, body: JSON.stringify(body) });
+    if (!res.ok) throw new Error(`GA ${res.status} ${(await res.text()).slice(0, 200)}`);
+    return res.json();
+  }
+  async function collectPaslaFunnel() {
+    const P = "properties/" + PASLA_GA4;
+    const ev = (...names) => names.length === 1 ? { funnelEventFilter: { eventName: names[0] } } : { orGroup: { expressions: names.map((n) => ({ funnelEventFilter: { eventName: n } })) } };
+    const STEPS = [["Oyunu açtı", ev("first_open")],
+      ["Mod seçti", ev("single_phone_mode_selected", "room_created", "room_joined", "bot_quick_play_requested", "daily_screen_opened")],
+      ["Oyun başlattı", ev("local_game_started", "game_started", "daily_puzzle_started")],
+      ["1. oyunu bitirdi", ev("local_game_finished", "game_finished", "daily_puzzle_finished")],
+      ["2. oyunu bitirdi", ev("local_game_finished", "game_finished", "daily_puzzle_finished")]];
+    const ranges = { today: [TODAY, TODAY], yesterday: [YESTERDAY, YESTERDAY], d7: [D7, TODAY], d30: [D30, TODAY] };
+    const out = {};
+    for (const [k, [from, to]] of Object.entries(ranges)) {
+      const f = await ga(`v1alpha/${P}:runFunnelReport`, { dateRanges: [{ startDate: from, endDate: to }],
+        funnel: { isOpenFunnel: false, steps: STEPS.map(([name, filterExpression]) => ({ name, filterExpression })) } });
+      const rows = (f.funnelTable && f.funnelTable.rows) || [];
+      const steps = STEPS.map(([name]) => { const r = rows.find((x) => x.dimensionValues[0].value.endsWith(name)); return { label: name, n: r ? Number(r.metricValues[0].value) : 0 }; });
+      // Yeni oyuncuların oynama süresi ve bitirdiği oyun sayısı, silme ve ertesi gün dönüş.
+      const eng = await ga(`v1beta/${P}:runReport`, { dateRanges: [{ startDate: from, endDate: to }], dimensions: [{ name: "newVsReturning" }],
+        metrics: [{ name: "activeUsers" }, { name: "userEngagementDuration" }] });
+      const nw = (eng.rows || []).find((r) => r.dimensionValues[0].value === "new");
+      const users = nw ? Number(nw.metricValues[0].value) : 0, secs = nw ? Number(nw.metricValues[1].value) : 0;
+      const evs = await ga(`v1beta/${P}:runReport`, { dateRanges: [{ startDate: from, endDate: to }], dimensions: [{ name: "eventName" }, { name: "newVsReturning" }],
+        metrics: [{ name: "eventCount" }, { name: "totalUsers" }],
+        dimensionFilter: { filter: { fieldName: "eventName", inListFilter: { values: ["local_game_finished", "game_finished", "daily_puzzle_finished", "app_remove"] } } } });
+      let games = 0, removes = 0;
+      for (const r of evs.rows || []) { const e = r.dimensionValues[0].value; if (e === "app_remove") removes += Number(r.metricValues[1].value); else if (r.dimensionValues[1].value === "new") games += Number(r.metricValues[0].value); }
+      out[k] = { steps, newUsers: users, avgMins: users ? r2(secs / users / 60) : 0, gamesPerUser: users ? r2(games / users) : 0, removes };
+    }
+    // Ertesi gün dönüş (D1): son 7 ve 30 günün kohortları (bugün hariç, dünküler henüz eksik olabilir).
+    for (const k of ["d7", "d30"]) {
+      const c = await ga(`v1beta/${P}:runReport`, { dimensions: [{ name: "cohort" }, { name: "cohortNthDay" }], metrics: [{ name: "cohortActiveUsers" }],
+        cohortSpec: { cohorts: [{ name: "c", dimension: "firstSessionDate", dateRange: { startDate: k === "d7" ? D7 : D30, endDate: shift(TODAY, -2) } }], cohortsRange: { granularity: "DAILY", startOffset: 0, endOffset: 1 } } });
+      const v = (n) => { const r = (c.rows || []).find((x) => Number(x.dimensionValues[1].value) === n); return r ? Number(r.metricValues[0].value) : 0; };
+      out[k].d1 = v(0) ? r2(100 * v(1) / v(0)) : null;
+    }
+    return out;
+  }
+
+  const [ads, admob, play, ios, paslaFunnel] = await Promise.all([safe("Ads", collectAds), safe("AdMob", collectAdmob), safe("Play", collectPlay), safe("iOS", collectIos), safe("Pasla yolculuğu", collectPaslaFunnel)]);
+  return { at: new Date().toISOString(), today: TODAY, ads: ads || [], admob, play: play || [], ios: ios || [], paslaFunnel, errors };
 }
 
 module.exports = { collectDash };

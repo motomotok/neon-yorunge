@@ -369,6 +369,37 @@ function funnelHtml(P) {
       ${stuckTot ? `<div class="fun" style="margin-top:8px">${stuck}</div>` : '<div class="muted" style="margin-top:6px">Henüz veri yok — 2.76.1 yayına girince dolmaya başlar.</div>'}</div>
     <p class="hint">"Oyunu açan" Play'den/App Store'dan gelen herkesi sayar (reklam + organik); oyunu indirip hiç açmayan sayılmaz. Bugünün oyuncuları için "ertesi gün" henüz anlamlı değildir. Oyun sayısına eğitim dahil değildir.</p>`;
 }
+
+// "Oyuncu yolculuğu" — Pasla (Google Analytics 4 huni raporu; functions/dash.js collectPaslaFunnel).
+const PASLA_ADVICE = {
+  'Oyunu açtı→Mod seçti': 'Açılış ekranında kayboluyorlar: ilk ekran ne yapılacağını net söylemiyor. İlk açılışta tek büyük "Hemen oyna" ya da doğrudan oyuna sokmak en çok kazandıracak yer.',
+  'Mod seçti→Oyun başlattı': 'Mod seçip oyunu başlatmıyorlar: kurulum (oyuncu sayısı, isim, oda) fazla adımlı. Varsayılanlarla tek dokunuşta başlatma eklenmeli.',
+  'Oyun başlattı→1. oyunu bitirdi': 'Oyunun ortasında bırakıyorlar: tur uzun ya da kurallar anlaşılmıyor. İlk turu kısaltmak / kuralları oyun içinde göstermek.',
+  '1. oyunu bitirdi→2. oyunu bitirdi': 'İlk oyundan sonra tekrar oynamıyorlar: oyun sonunda büyük "Tekrar oyna", skor/rekor ve kısa ödül.',
+};
+function paslaFunnelHtml(P) {
+  const key = { today: 'today', yesterday: 'yesterday', d7: 'd7', d30: 'd30' }[P] || 'd30', f = dash.paslaFunnel && dash.paslaFunnel[key];
+  if (!f) return '';
+  const ad = (dash.ads || []).find((c) => c.app === 'Pasla'), adInst = ad && ad.p[key] ? Math.round(ad.p[key].inst) : null;
+  const st = f.steps, base = Math.max(1, st[0].n);
+  let worst = null;
+  const rows = st.map((x, i) => {
+    let drop = '';
+    if (i > 0 && st[i - 1].n > 0) {
+      const lost = 1 - x.n / st[i - 1].n;
+      drop = `<div class="drop">−%${Math.round(lost * 100)} bıraktı</div>`;
+      if (st[i - 1].n >= 3 && (!worst || lost > worst.lost)) worst = { lost, k: st[i - 1].label + '→' + x.label };
+    }
+    return `<span>${esc(x.label)}${drop}</span><div class="bar"><i style="width:${Math.max(1, 100 * x.n / base)}%"></i></div><span class="n">${fmt(x.n)} <span class="muted">${pct(x.n, st[0].n)}</span></span>`;
+  }).join('');
+  return `<h2>Oyuncu yolculuğu <span class="muted" style="font-weight:500">${key === 'd30' && P !== 'd30' ? '(son 30 gün)' : ''} yeni oyuncular · Google Analytics</span></h2>
+    <div class="rgrid">${adInst != null ? kpi(fmt(adInst), 'Reklamdan yükleme') : ''}${kpi(fmt(f.newUsers), 'Yeni oyuncu (açan)')}${kpi(pct(st[3].n, st[0].n), 'En az 1 oyun bitiren')}
+      ${kpi(fmt(f.avgMins) + ' dk', 'Yeni oyuncu ort. süre')}${kpi(fmt(f.gamesPerUser), 'Yeni oyuncu başı bitirilen oyun')}
+      ${f.d1 != null ? kpi('%' + Math.round(f.d1), 'Ertesi gün tekrar açan') : ''}${kpi(fmt(f.removes), 'Uygulamayı silen (tüm oyuncular)')}</div>
+    <div class="card" style="margin-top:8px"><div class="fun">${rows}</div>
+      ${worst ? `<div class="advice"><b>En çok kayıp: ${esc(worst.k.replace('→', ' → '))}</b> (−%${Math.round(worst.lost * 100)}). ${esc(PASLA_ADVICE[worst.k] || '')}</div>` : ''}</div>
+    <p class="hint">Google Analytics verisi 1-2 gün geriden gelir: "Bugün" ve "Dün" eksik görünür, kararlar için "Son 7 / 30 gün"e bak. "Oyunu açtı" ile "Yeni oyuncu" arasındaki fark, ilk açılışı Analytics'e ulaşmadan kapananlardır.</p>`;
+}
 function renderDash() {
   if (!dash) return;
   chips('#rpPeriod', PERIODS, rpPeriod, (k) => { rpPeriod = k; });
@@ -384,6 +415,7 @@ function renderDash() {
     const ios = (dash.ios || []).find((x) => x.app === name);
     h += `<div class="appHead">${esc(name)} <small>${esc(pName)}</small></div>`;
     if (name === 'Beat Orbit') h += funnelHtml(P);
+    if (name === 'Pasla') h += paslaFunnelHtml(P);
     // Reklam (Google Ads)
     if (ad) {
       const m = ad.p[P];
