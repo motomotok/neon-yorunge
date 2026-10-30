@@ -400,6 +400,41 @@ function paslaFunnelHtml(P) {
       ${worst ? `<div class="advice"><b>En çok kayıp: ${esc(worst.k.replace('→', ' → '))}</b> (−%${Math.round(worst.lost * 100)}). ${esc(PASLA_ADVICE[worst.k] || '')}</div>` : ''}</div>
     <p class="hint">Google Analytics verisi 1-2 gün geriden gelir: "Bugün" ve "Dün" eksik görünür, kararlar için "Son 7 / 30 gün"e bak. "Oyunu açtı" ile "Yeni oyuncu" arasındaki fark, ilk açılışı Analytics'e ulaşmadan kapananlardır.</p>`;
 }
+
+// Pasla → tek telefon modu hunisi (yeni oyuncular; veri: collectPaslaFunnel → single).
+const SINGLE_ADVICE = {
+  'Tek telefonu seçti→Oyunu başlattı': 'Tek telefonu seçip oyunu başlatmıyorlar: kurulum ekranı (oyuncu ekleme, isim yazma, ayarlar) uzun ya da karışık. Hazır 3-4 oyuncuyla tek büyük "Başlat" düğmesi; isimleri sonra değiştirsinler.',
+  'Oyunu başlattı→1. oyunu bitirdi': 'Oyunu başlatıp bitirmeden bırakıyorlar: ilk oyun çok uzun, kurallar anlaşılmıyor ya da araya reklam giriyor. İlk oyunu kısa tut (az tur), kuralı ilk turda ekranda göster, ilk oyunda geçiş reklamı gösterme.',
+  '1. oyunu bitirdi→2. oyunu bitirdi': 'Bir oyun oynayıp bırakıyorlar: oyun sonunda büyük "Aynı oyuncularla tekrar oyna" düğmesi olsun, isimler ve ayarlar hatırlansın, skor ekranı eğlenceli olsun.',
+  '2. oyunu bitirdi→3. oyunu bitirdi': 'İki oyundan sonra bırakıyorlar: kelimeler/kategoriler tekrar ediyor olabilir. Çeşitlilik (yeni paketler) ve kısa ödüller.',
+  '3. oyunu bitirdi→5. oyunu bitirdi': 'Düzenli oynayanlar burada eleniyor: yeni kategori paketleri, günlük görev ve haftalık yenilik ekle.',
+};
+function paslaSingleHtml(P) {
+  const key = { today: 'today', yesterday: 'yesterday', d7: 'd7', d30: 'd30' }[P] || 'd30', f = dash.paslaFunnel && dash.paslaFunnel[key], g = f && f.single;
+  if (!g) return '';
+  const st = g.steps, base = Math.max(1, st[0].n);
+  let worst = null;
+  const rows = st.map((x, i) => {
+    let drop = '';
+    if (i > 0 && st[i - 1].n > 0) {
+      const lost = 1 - x.n / st[i - 1].n;
+      drop = `<div class="drop">−%${Math.round(lost * 100)} ${i === 1 ? 'seçmedi' : 'bıraktı'}</div>`;
+      if (i >= 2 && st[i - 1].n >= 3 && (!worst || lost > worst.lost)) worst = { lost, k: st[i - 1].label + '→' + x.label };
+    }
+    return `<span>${esc(x.label)}${drop}</span><div class="bar"><i style="width:${Math.max(1, 100 * x.n / base)}%"></i></div><span class="n">${fmt(x.n)} <span class="muted">${pct(x.n, st[0].n)}</span></span>`;
+  }).join('');
+  const modes = Object.entries(g.modes || {}).sort((a, b) => b[1] - a[1]).map(([m, n]) => `${esc(m)} <b>${fmt(n)}</b>`).join(' · ');
+  const plat = Object.entries(g.plat || {}).filter(([, a]) => a[0] > 0).map(([pl, a]) =>
+    kpi(pct(a[1], a[0]) + ' / ' + pct(a[3], a[0]), esc(pl) + ` (${fmt(a[0])} açan): seçen / bitiren`)).join('');
+  const neverFin = st[2].n ? Math.round(100 * (1 - st[3].n / st[2].n)) : null;
+  return `<h2>Tek telefon modu <span class="muted" style="font-weight:500">${key === 'd30' && P !== 'd30' ? '(son 30 gün)' : ''} yeni oyuncular · olay sırasıyla</span></h2>
+    <div class="rgrid">${kpi(pct(st[1].n, st[0].n), 'Açanlardan tek telefonu seçen')}${neverFin != null ? kpi('%' + neverFin, 'Başlatıp hiç oyun bitirmeyen') : ''}
+      ${g.gameFinish != null ? kpi('%' + fmt(g.gameFinish), 'Başlatılan oyunların bitme oranı') : ''}${g.gamesPerPlayer != null ? kpi(fmt(g.gamesPerPlayer), 'Bitiren oyuncu başı oyun') : ''}${plat}</div>
+    <div class="card" style="margin-top:8px"><div class="fun">${rows}</div>
+      ${worst ? `<div class="advice"><b>En çok kayıp: ${esc(worst.k.replace('→', ' → '))}</b> (−%${Math.round(worst.lost * 100)}). ${esc(SINGLE_ADVICE[worst.k] || '')}</div>` : ''}</div>
+    ${modes ? `<p class="hint">Yeni oyuncuların seçtiği modlar (kişi; bir kişi birden çok mod seçebilir): ${modes}</p>` : ''}
+    <p class="hint">Adımlar aynı kişinin sırayla yaptıklarıdır (Google Analytics olayları). "Bitme oranı" tüm oyuncuların başlattığı oyunlar içindir. Oyun içi ayrıntılar (oyuncu sayısı, kategori) Analytics'te kayıtlı olmadığı için görünmez.</p>`;
+}
 function renderDash() {
   if (!dash) return;
   chips('#rpPeriod', PERIODS, rpPeriod, (k) => { rpPeriod = k; });
@@ -415,7 +450,7 @@ function renderDash() {
     const ios = (dash.ios || []).find((x) => x.app === name);
     h += `<div class="appHead">${esc(name)} <small>${esc(pName)}</small></div>`;
     if (name === 'Beat Orbit') h += funnelHtml(P);
-    if (name === 'Pasla') h += paslaFunnelHtml(P);
+    if (name === 'Pasla') h += paslaFunnelHtml(P) + paslaSingleHtml(P);
     // Reklam (Google Ads)
     if (ad) {
       const m = ad.p[P];

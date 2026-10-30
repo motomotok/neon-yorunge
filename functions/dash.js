@@ -217,6 +217,11 @@ async function collectDash(S) {
       ["Oyun başlattı", ev("local_game_started", "game_started", "daily_puzzle_started")],
       ["1. oyunu bitirdi", ev("local_game_finished", "game_finished", "daily_puzzle_finished")],
       ["2. oyunu bitirdi", ev("local_game_finished", "game_finished", "daily_puzzle_finished")]];
+    // Tek telefon modu: yeni oyuncu ilk açılıştan sonra sırayla neler yaptı (aynı kişi, sıralı adımlar).
+    const SINGLE = [["Oyunu açtı", "first_open"], ["Tek telefonu seçti", "single_phone_mode_selected"], ["Oyunu başlattı", "local_game_started"],
+      ["1. oyunu bitirdi", "local_game_finished"], ["2. oyunu bitirdi", "local_game_finished"], ["3. oyunu bitirdi", "local_game_finished"], ["5. oyunu bitirdi", "local_game_finished", 2]];
+    const singleSteps = []; for (const [name, e, rep] of SINGLE) { for (let i = 1; i < (rep || 1); i++) singleSteps.push({ name: "_" + name + i, filterExpression: ev(e) }); singleSteps.push({ name, filterExpression: ev(e) }); }
+    const MODES = { single_phone_mode_selected: "Tek telefon", room_created: "Oda kurdu", room_joined: "Odaya katıldı", bot_quick_play_requested: "Botlarla", daily_screen_opened: "Günlük bulmaca" };
     const ranges = { today: [TODAY, TODAY], yesterday: [YESTERDAY, YESTERDAY], d7: [D7, TODAY], d30: [D30, TODAY] };
     const out = {};
     for (const [k, [from, to]] of Object.entries(ranges)) {
@@ -231,10 +236,24 @@ async function collectDash(S) {
       const users = nw ? Number(nw.metricValues[0].value) : 0, secs = nw ? Number(nw.metricValues[1].value) : 0;
       const evs = await ga(`v1beta/${P}:runReport`, { dateRanges: [{ startDate: from, endDate: to }], dimensions: [{ name: "eventName" }, { name: "newVsReturning" }],
         metrics: [{ name: "eventCount" }, { name: "totalUsers" }],
-        dimensionFilter: { filter: { fieldName: "eventName", inListFilter: { values: ["local_game_finished", "game_finished", "daily_puzzle_finished", "app_remove"] } } } });
-      let games = 0, removes = 0;
-      for (const r of evs.rows || []) { const e = r.dimensionValues[0].value; if (e === "app_remove") removes += Number(r.metricValues[1].value); else if (r.dimensionValues[1].value === "new") games += Number(r.metricValues[0].value); }
-      out[k] = { steps, newUsers: users, avgMins: users ? r2(secs / users / 60) : 0, gamesPerUser: users ? r2(games / users) : 0, removes };
+        dimensionFilter: { filter: { fieldName: "eventName", inListFilter: { values: ["local_game_finished", "game_finished", "daily_puzzle_finished", "app_remove", "local_game_started", ...Object.keys(MODES)] } } } });
+      let games = 0, removes = 0, lStart = 0, lFin = 0, lFinUsers = 0; const modes = {};
+      for (const r of evs.rows || []) {
+        const e = r.dimensionValues[0].value, isNew = r.dimensionValues[1].value === "new", cnt = Number(r.metricValues[0].value), us = Number(r.metricValues[1].value);
+        if (e === "app_remove") removes += us;
+        else if (MODES[e]) { if (isNew) modes[MODES[e]] = (modes[MODES[e]] || 0) + us; }
+        else if (e === "local_game_started") lStart += cnt;
+        else { if (isNew) games += cnt; if (e === "local_game_finished") { lFin += cnt; lFinUsers += us; } }
+      }
+      // Tek telefon hunisi (platform kırılımıyla tek istek).
+      const sf = await ga(`v1alpha/${P}:runFunnelReport`, { dateRanges: [{ startDate: from, endDate: to }], funnel: { isOpenFunnel: false, steps: singleSteps },
+        funnelBreakdown: { breakdownDimension: { name: "platform" } } });
+      const sv = (idx, plat) => { const r = ((sf.funnelTable && sf.funnelTable.rows) || []).find((x) => x.dimensionValues[0].value.startsWith(idx + 1 + ". ") && x.dimensionValues[1].value === plat); return r ? Number(r.metricValues[0].value) : 0; };
+      const shown = singleSteps.map((x, i) => [x.name, i]).filter(([n]) => !n.startsWith("_"));
+      const single = { steps: shown.map(([label, i]) => ({ label, n: sv(i, "RESERVED_TOTAL") })), plat: {},
+        gameFinish: lStart ? r2(100 * lFin / lStart) : null, gamesPerPlayer: lFinUsers ? r2(lFin / lFinUsers) : null, modes };
+      for (const pl of ["Android", "iOS"]) single.plat[pl] = shown.map(([, i]) => sv(i, pl));
+      out[k] = { steps, newUsers: users, avgMins: users ? r2(secs / users / 60) : 0, gamesPerUser: users ? r2(games / users) : 0, removes, single };
     }
     // Ertesi gün dönüş (D1): son 7 ve 30 günün kohortları (bugün hariç, dünküler henüz eksik olabilir).
     for (const k of ["d7", "d30"]) {
