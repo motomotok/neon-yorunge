@@ -44,6 +44,8 @@ async function beat(s) {
     linked: !!s.linked, noads: !!s.noads, pass: !!s.pass, on: s.on !== false,
     since: int(s.since, 1e13), day: str(s.day, 10), dayGames: int(s.dayGames, 1e5), dayMins: int(s.dayMins, 1440),
     ft: int(s.ft, 200), runs: int(s.runs, 1e7), days: int(s.days, 1e5),
+    fps: int(s.fps, 240), mfps: int(s.mfps, 240), dev: str(s.dev, 32), gpu: str(s.gpu, 48), q: str(s.q, 8),
+    ram: int(s.ram, 64), boot: int(s.boot, 3000),
     lastSeen: serverTimestamp(),
   }, { merge: true });
   return u.uid;

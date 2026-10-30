@@ -367,6 +367,7 @@ function funnelHtml(P) {
       ${worst ? `<div class="advice"><b>En çok kayıp: ${esc(worst.k.replace('→', ' → '))}</b> (−%${Math.round(worst.lost * 100)}). ${esc(FUN_ADVICE[worst.k] || '')}</div>` : ''}</div>
     <div class="card" style="margin-top:8px"><span class="muted">Hiç oyun bitirmeden çıkanlar nerede bıraktı? (2.76.1+ sürüm, ${fmt(f.tracked)} oyuncu izlendi${f.tracked ? ', eğitimi bitiren ' + pct(f.tutDone, f.tracked) : ''})</span>
       ${stuckTot ? `<div class="fun" style="margin-top:8px">${stuck}</div>` : '<div class="muted" style="margin-top:6px">Henüz veri yok — 2.76.1 yayına girince dolmaya başlar.</div>'}</div>
+    ${perfHtml(f)}
     <p class="hint">"Oyunu açan" Play'den/App Store'dan gelen herkesi sayar (reklam + organik); oyunu indirip hiç açmayan sayılmaz. Bugünün oyuncuları için "ertesi gün" henüz anlamlı değildir. Oyun sayısına eğitim dahil değildir.</p>`;
 }
 
@@ -434,6 +435,20 @@ function paslaSingleHtml(P) {
       ${worst ? `<div class="advice"><b>En çok kayıp: ${esc(worst.k.replace('→', ' → '))}</b> (−%${Math.round(worst.lost * 100)}). ${esc(SINGLE_ADVICE[worst.k] || '')}</div>` : ''}</div>
     ${modes ? `<p class="hint">Yeni oyuncuların seçtiği modlar (kişi; bir kişi birden çok mod seçebilir): ${modes}</p>` : ''}
     <p class="hint">Adımlar aynı kişinin sırayla yaptıklarıdır (Google Analytics olayları). "Bitme oranı" tüm oyuncuların başlattığı oyunlar içindir. Oyun içi ayrıntılar (oyuncu sayısı, kategori) Analytics'te kayıtlı olmadığı için görünmez.</p>`;
+}
+
+// "Telefon ve akıcılık" (2.76.2+): yavaş telefonda oynayan oranı düşüyor mu?
+function perfHtml(f) {
+  const p = f.perf;
+  if (!p) return '';
+  if (!p.measured) return `<div class="card" style="margin-top:8px"><span class="muted">Telefon ve akıcılık</span><div class="muted" style="margin-top:6px">Henüz veri yok — 2.76.2 yayına girince dolmaya başlar.</div></div>`;
+  const rows = [['Akıcı (45+ FPS)', p.smooth], ['Orta (30-45 FPS)', p.mid], ['Takılıyor (30 FPS altı)', p.slow], ['RAM 3 GB ve altı', p.lowRam]]
+    .map(([l, b]) => `<span>${esc(l)}</span><div class="bar"><i style="width:${Math.max(1, 100 * b.n / Math.max(1, p.measured))}%"></i></div><span class="n">${fmt(b.n)} kişi · <b>${pct(b.played, b.n)}</b> oynadı</span>`).join('');
+  const dv = (p.devs || []).map((d) => `<tr><td>${esc(d.dev || '?')}</td><td>${esc((d.gpu || '').replace(/^(ANGLE \()?/, '').slice(0, 28))}</td><td class="num">${d.ram ? fmt(d.ram) + ' GB' : '—'}</td>
+    <td class="num">${d.fps ? fmt(d.fps) : '—'} / ${d.mfps ? fmt(d.mfps) : '—'}</td><td>${esc(d.q || '')}</td><td class="num">${d.boot ? fmt(d.boot) + ' sn' : '—'}</td><td class="num">${fmt(d.runs)}</td><td>${esc(d.ft != null ? (FT_STUCK[d.ft] || (d.ft >= 6 ? 'ilk oyunu bitirdi' : '')) : '')}</td></tr>`).join('');
+  return `<div class="card" style="margin-top:8px"><span class="muted">Telefon ve akıcılık (2.76.2+ sürüm, ${fmt(p.measured)} oyuncu ölçüldü · ortanca açılış ${fmt(p.medBoot)} sn)</span>
+    <div class="fun" style="margin-top:8px">${rows}</div>
+    <details style="margin-top:8px"><summary class="muted">En yavaş telefonlar (FPS oyun / menü)</summary><div style="overflow-x:auto"><table><tr><th>Telefon</th><th>GPU</th><th class="num">RAM</th><th class="num">FPS</th><th>Kalite</th><th class="num">Açılış</th><th class="num">Oyun</th><th>Son adım</th></tr>${dv}</table></div></details></div>`;
 }
 function renderDash() {
   if (!dash) return;

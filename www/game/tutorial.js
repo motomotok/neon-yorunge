@@ -18,11 +18,14 @@ let _tutTapOK = false;            // bu adımda dokunmaya izin var mı
 let _tutPending = {};             // etiket -> {type, ring, resolved}
 let _tutDodgeHit = false;
 let _tutSidesDone = {left:false, right:false};
+// Öğreticide şarkı kombo beklemeden duyulur (music.js en az bu seviyeyi çalar):
+// başta bas + boğuk melodi, ilk nota alınınca şarkı tam açılır.
+let tutorialMusicLv = 1;
 // Süpernova'nın adı tek yerden (i18n: prestige_name) gelir — ad değişirse metinler kendiliğinden uyar.
 function _tutP(){ return {p:t('prestige_name')}; }
 
 function startTutorial(){
-  tutorialActive = true;
+  tutorialActive = true; tutorialMusicLv = 1;
   mode='classic'; diffKey='normal'; diffCfg=DIFF.normal;
   resetGame();
   items.length = 0; // resetGame()'in otomatik tohum öğelerini temizle — senaryo tamamen elle kontrol edilecek
@@ -79,11 +82,11 @@ const TUTORIAL_STEPS = {
   },
   dodge(){
     _tutDodgeHit = false;
-    _tutSayThen('tut2_dodge', ()=>{
+    narratorSay(t('tut2_music')+' '+t('tut2_dodge'), {onDone:()=>{
       _tutTapOK = true;
       tutorialShowTapHint(player.targetRing<2 ? 'right' : 'left');
       tutorialSpawnItem('hazard','dodge');
-    });
+    }});
   },
   // Kaçış sonucu + "sahne senin" → kısa bekleme → gerçek ilk oyun.
   go(){
@@ -105,7 +108,7 @@ function tutorialTapAllowed(){
 function tutorialOnItemResolved(tag){
   const p = _tutPending[tag]; if(!p || p.resolved) return;
   p.resolved = true;
-  if(tag==='note') tutorialGoStep('dodge');
+  if(tag==='note'){ tutorialMusicLv = 3; tutorialGoStep('dodge'); }
   else if(tag==='dodge'){ _tutDodgeHit = true; setTimeout(()=>{ if(tutorialStep==='dodge') tutorialGoStep('go'); }, 800); }
 }
 // Her karede (engine.js update) çağrılır: yanından geçilip kaybolan

@@ -1,5 +1,6 @@
 // Bootstrap: tüm modüller yüklendikten sonra tek seferlik başlatma çağrıları.
 // Bu dosya her zaman script sırasının EN SONUNDA yer almalı.
+if(!stats.bootDs){ stats.bootDs=Math.max(1, Math.round(performance.now()/100)); saveStats(); }
 hydrateIcons();
 document.getElementById('versionTag').textContent = 'v'+GAME_VERSION;
 if(window.CrashReport) CrashReport.setVersion(GAME_VERSION);

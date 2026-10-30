@@ -65,6 +65,26 @@ function closeKvkk(){
   kvkkDecide(document.getElementById('kvkkStatsSw').classList.contains('on'));
 }
 
+// Cihaz ve akıcılık (panel → Raporlar → "Telefon ve akıcılık"): reklamdan
+// gelenler ucuz telefonda takılıp mı çıkıyor? Saniyede çizilen kare sayısı
+// oyunda ve menüde ayrı ayrı yumuşatılarak tutulur (bu oturumun değeri).
+let _frames = 0, _fpsPlay = null, _fpsMenu = null;
+(function _frameCount(){ _frames++; requestAnimationFrame(_frameCount); })();
+const _fpsAvg = (prev, v) => prev==null ? v : prev*0.85 + v*0.15;
+function deviceModel(){
+  const ua=navigator.userAgent||'';
+  const m=ua.match(/Android [\d.]+;(?: [a-z]{2}[-_][a-z]{2};)? ([^;)]+?)(?: Build[^;)]*)?[;)]/i);
+  if(m) return m[1].trim();
+  if(/iPad/.test(ua)) return 'iPad '+screen.width+'x'+screen.height;
+  if(/iPhone/.test(ua)) return 'iPhone '+screen.width+'x'+screen.height;
+  return '';
+}
+function perfSummary(){
+  const i=(window.Render3D && typeof _gfx3dState!=='undefined' && _gfx3dState==='ready') ? Render3D.info() : null;
+  return { fps: Math.round(_fpsPlay||0), mfps: Math.round(_fpsMenu||0), dev: deviceModel(), gpu: i ? i.gpu||'' : '',
+    q: i ? i.quality||'' : (cfg.gfx==='3d' ? '' : '2d'), ram: navigator.deviceMemory||0, boot: stats.bootDs||0 };
+}
+
 function telemetrySummary(){
   // İlk açılış zamanı herkes için (eskiden yalnız KVKK kararında yazılıyordu).
   if(!stats.firstSeen) stats.firstSeen=Date.now();
@@ -84,6 +104,7 @@ function telemetrySummary(){
     noads: !!stats.premiumNoAds, pass: !!stats.seasonPremium, since: stats.firstSeen||0,
     day: dayStat().d, dayGames: dayStat().g, dayMins: Math.floor(dayStat().s/60),
     ft: stats.ft||0, runs: stats.scoreRuns||0, days: stats.activeDays||1,
+    ...perfSummary(),
   };
 }
 // İlk deneyim hunisi (panel → Raporlar → Oyuncu yolculuğu). Oyuncunun ulaştığı
@@ -176,7 +197,12 @@ function initTelemetry(){
   });
   // Oynama süresi: yalnız oyun ekranı açık ve uygulama öndeyken sayılır
   // (stats oyun sonunda zaten kaydediliyor).
-  setInterval(()=>{ if(state==='play' && !document.hidden){ stats.playSec=(stats.playSec||0)+1; dayStat().s++; } }, 1000);
+  setInterval(()=>{
+    const fr=_frames; _frames=0;
+    if(document.hidden) return;
+    if(state==='play'){ stats.playSec=(stats.playSec||0)+1; dayStat().s++; _fpsPlay=_fpsAvg(_fpsPlay, fr); }
+    else if(state==='menu') _fpsMenu=_fpsAvg(_fpsMenu, fr);
+  }, 1000);
   setInterval(()=>telemetryBeat(false), 60000);
   document.addEventListener('visibilitychange', ()=>{
     if(document.hidden){ telemetryEnd(); return; }

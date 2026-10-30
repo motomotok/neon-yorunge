@@ -182,7 +182,9 @@ const Music = (function(){
     }
     if(!ensureCtx()) return;
     if(suspended){ suspended = false; resume(); }
-    if(ctx.state!=='running') return; // ilk dokunuşu bekle (tarayıcı otomatik çalmayı engeller)
+    // Tarayıcı otomatik çalmayı engelliyorsa ilk dokunuşu bekle; uygulamada
+    // (Capacitor) engel yok, öğretici dokunmadan başlarken de müzik çalar.
+    if(ctx.state!=='running'){ resume(); return; }
 
     const name = wantedTrack();
     if((!cur || cur.name!==name) && loadingName!==name){
@@ -210,8 +212,11 @@ const Music = (function(){
 
     if(cur && cur.nodes.rest && state==='play'){
       const c = (typeof combo!=='undefined') ? combo : 0;
-      if(cur.level<0) setLevel(musicLevelFor(c), true);
-      else if(c!==lastCombo) setLevel(musicLevelFor(c), false);
+      let lv = musicLevelFor(c);
+      // Öğretici: "olayımız müzik" — şarkı kombo beklemeden duyulur.
+      if(typeof tutorialActive!=='undefined' && tutorialActive) lv = Math.max(lv, tutorialMusicLv||1);
+      if(cur.level<0) setLevel(lv, true);
+      else if(c!==lastCombo || lv!==cur.level) setLevel(lv, false);
       lastCombo = c;
     }
   }

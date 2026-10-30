@@ -95,7 +95,7 @@ service cloud.firestore {
     match /players/{uid} {
       allow read: if isAdmin();
       allow create, update: if request.auth != null && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['name', 'ver', 'lang', 'plat', 'games', 'best', 'mins', 'mmr', 'tier', 'duels', 'gems', 'notes', 'lvl', 'linked', 'noads', 'pass', 'on', 'since', 'day', 'dayGames', 'dayMins', 'ft', 'runs', 'days', 'lastSeen'])
+        && request.resource.data.keys().hasOnly(['name', 'ver', 'lang', 'plat', 'games', 'best', 'mins', 'mmr', 'tier', 'duels', 'gems', 'notes', 'lvl', 'linked', 'noads', 'pass', 'on', 'since', 'day', 'dayGames', 'dayMins', 'ft', 'runs', 'days', 'fps', 'mfps', 'dev', 'gpu', 'q', 'ram', 'boot', 'lastSeen'])
         && request.resource.data.name is string && request.resource.data.name.size() <= 16
         && request.resource.data.ver is string && request.resource.data.ver.size() <= 12
         && request.resource.data.tier is string && request.resource.data.tier.size() <= 16

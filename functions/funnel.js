@@ -18,6 +18,7 @@ async function collectFunnel(db) {
     const tracked = typeof p.ft === "number" && p.ft !== 99;   // 2.76.1+ ilk deneyim adımları
     const runs = typeof p.runs === "number" ? p.runs : Math.max(0, (p.games || 0) - 1);   // eski sürümde öğretici 1 oyun sayılıyordu
     players.push({ d, plat: p.plat || "?", ver: p.ver || "", mins: p.mins || 0, runs, ft: tracked ? p.ft : null,
+      fps: p.fps || 0, mfps: p.mfps || 0, dev: p.dev || "", gpu: p.gpu || "", q: p.q || "", ram: p.ram || 0, boot: p.boot || 0,
       returned: typeof p.days === "number" ? p.days >= 2 : last - created >= 20 * 3600000 });
   }
   const med = (a) => { if (!a.length) return 0; const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
@@ -28,7 +29,14 @@ async function collectFunnel(db) {
     // Hiç gerçek oyun bitirmeyenler (yeni sürüm): en son nerede kaldılar?
     const stuck = {}; for (const p of tr) if (p.runs < 1) stuck[p.ft] = (stuck[p.ft] || 0) + 1;
     const plat = {}; for (const p of c) { const k = p.plat; plat[k] = plat[k] || { n: 0, played: 0 }; plat[k].n++; if (p.runs >= 1) plat[k].played++; }
-    return { opened: n, played1: cnt((p) => p.runs >= 1), played3: cnt((p) => p.runs >= 3), played5: cnt((p) => p.runs >= 5), played10: cnt((p) => p.runs >= 10),
+    // Telefon ve akıcılık (2.76.2+): oyunda FPS yoksa menü FPS'i kullanılır.
+    const pf = c.filter((p) => p.fps || p.mfps), fpsOf = (p) => p.fps || p.mfps;
+    const band = (lo, hi) => { const b = pf.filter((p) => fpsOf(p) >= lo && fpsOf(p) < hi); return { n: b.length, played: b.filter((p) => p.runs >= 1).length }; };
+    const lowRam = pf.filter((p) => p.ram && p.ram <= 3), boots = pf.filter((p) => p.boot).map((p) => p.boot / 10);
+    const devs = pf.slice().sort((a, b) => fpsOf(a) - fpsOf(b)).slice(0, 25).map((p) => ({ dev: p.dev, gpu: p.gpu, ram: p.ram, fps: p.fps, mfps: p.mfps, q: p.q, boot: p.boot / 10, runs: p.runs, mins: p.mins, ft: p.ft }));
+    const perf = { measured: pf.length, smooth: band(45, 999), mid: band(30, 45), slow: band(0, 30),
+      lowRam: { n: lowRam.length, played: lowRam.filter((p) => p.runs >= 1).length }, medBoot: r1(med(boots)), devs };
+    return { perf, opened: n, played1: cnt((p) => p.runs >= 1), played3: cnt((p) => p.runs >= 3), played5: cnt((p) => p.runs >= 5), played10: cnt((p) => p.runs >= 10),
       returned: cnt((p) => p.returned), avgMins: n ? r1(c.reduce((s, p) => s + p.mins, 0) / n) : 0, medMins: med(c.map((p) => p.mins)),
       avgRuns: n ? r1(c.reduce((s, p) => s + p.runs, 0) / n) : 0, medRuns: med(c.map((p) => p.runs)),
       tracked: tr.length, tutDone: tr.filter((p) => p.ft >= 4).length, stuck, plat };
