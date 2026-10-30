@@ -2,7 +2,7 @@
   "name": "beat-orbit-functions",
   "private": true,
   "main": "index.js",
-  "engines": { "node": "20" },
+  "engines": { "node": "22" },
   "dependencies": {
     "@google-cloud/billing": "^4.6.0",
     "firebase-admin": "^12.7.0",
