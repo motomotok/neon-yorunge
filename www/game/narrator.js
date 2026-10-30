@@ -2,7 +2,7 @@
 // sonrası) konuşan maskot. Metin daktilo gibi harf harf yazılır; CTA
 // butonu ancak yazı bittikten sonra çıkar — oyuncu metni okumadan geçemez.
 // tutorial.js'ten ÖNCE yüklenir.
-const NARRATOR_CHAR_MS = 30;     // harf başına süre
+const NARRATOR_CHAR_MS = 22;     // harf başına süre (2.76: 30→22, öğretici daha akıcı)
 const NARRATOR_CTA_DELAY = 450;  // yazı bittikten sonra butonun belirme gecikmesi
 let _narr = {timer:null, ctaTimer:null, typing:false};
 

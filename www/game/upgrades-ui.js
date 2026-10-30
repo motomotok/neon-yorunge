@@ -47,6 +47,7 @@ function renderUpgrades(){
           upgradeJustBoughtTimer=setTimeout(()=>{ upgradeJustBoughtKey=null; renderUpgrades(); }, 2400);
           renderUpgrades();
           if(tutorialActive && typeof tutorialOnUpgradeBought==='function') tutorialOnUpgradeBought(key);
+          if(typeof guideOnUpgradeBought==='function') guideOnUpgradeBought(key);
         }
       });
     }

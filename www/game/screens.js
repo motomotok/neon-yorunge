@@ -122,6 +122,7 @@ function goLanguage(){ state='language'; setHud(false); showScreen('language'); 
 function goUpgrades(){ state='upgrades'; setHud(false); showScreen('upgrades'); refreshWallet(); renderUpgrades(); renderUpgradesTab();
   const pb=document.getElementById('upPlayBtn'); if(pb) pb.style.display = tutorialActive ? 'none' : '';
   if(tutorialActive && typeof tutorialOnNav==='function') tutorialOnNav('upgrades');
+  if(typeof guideCheckUpgrades==='function') guideCheckUpgrades();
 }
 
 // Oyunda iki oyun var: OYNA (her oyun rastgele harita; günün en iyi 3 oyunu
@@ -320,6 +321,7 @@ function gameOver(reason){
     if(showAd) setTimeout(()=>{ if(state==='over'){ window._lastInterAt=Date.now(); Ads.showInterstitial(); } }, 700);
   }
   if(tutorialActive && typeof tutorialOnGameOver==='function') tutorialOnGameOver();
+  else if(typeof guideCheckOver==='function') guideCheckOver();
 }
 
 function addToLeaderboard(scoreVal){

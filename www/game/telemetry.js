@@ -37,7 +37,8 @@ function kvkkMaybeAsk(){
   const bar=document.getElementById('kvkkBar');
   const sync=()=>{
     if(stats.kvkkV>=KVKK_VERSION){ bar.style.display='none'; clearInterval(_kvkkBarTimer); return; }
-    const show = state==='menu' && document.getElementById('kvkkOverlay').style.display!=='flex';
+    // İlk açılışı kalabalıklaştırmasın: ilk gerçek oyun bitmeden çıkmaz.
+    const show = state==='menu' && (stats.scoreRuns||0)>=1 && document.getElementById('kvkkOverlay').style.display!=='flex';
     bar.style.display = show ? 'flex' : 'none';
   };
   _kvkkBarTimer=setInterval(sync, 400); sync();

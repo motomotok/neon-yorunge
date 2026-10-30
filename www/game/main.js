@@ -23,6 +23,8 @@ resetGame(); renderThemeGrid(); goMenu();
 // Reklam SDK'sı da (kendi betiklerini aynı iş parçacığında çalıştırır) logodan sonra.
 const _splashUp = !!document.getElementById('splash');
 setTimeout(syncGfxMode, _splashUp ? 1900 : 0);
+// İlk açılış: menüde bekletmeden öğretici (ardından gerçek ilk oyun) başlar.
+if(!stats.tutorialDone) setTimeout(()=>{ if(!stats.tutorialDone && !tutorialActive && state==='menu') startTutorial(); }, _splashUp ? 2000 : 300);
 setTimeout(()=>Ads.init(), _splashUp ? 3200 : 0);
 // Bildirimler: eski planı iptal edip yeniden kur (oyuncu şu an burada);
 // izin hiç sorulmadıysa DJ Vinil menüde bir kez sorar.
