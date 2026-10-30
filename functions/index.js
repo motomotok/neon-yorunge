@@ -45,3 +45,31 @@ exports.stopBilling = onMessagePublished({ topic: "billing-alerts", region: "eur
     logger.error("Faturalandırma kapatılamadı (IAM yetkisi eksik olabilir)", e);
   }
 });
+
+// refreshDash: admin panelinde "Yenile" (Raporlar). Google Ads / AdMob / Play /
+// App Store verisini o an çeker (functions/dash.js) ve dash/main'e yazar.
+// Yalnız admin (Google ile girmiş, doğrulanmış aliaslan625@gmail.com) çağırabilir;
+// art arda basılırsa 60 sn içinde ikinci kez toplamaz (maliyet/kota koruması).
+// Anahtarlar Secret Manager'da: DASH_SECRETS (bkz. Otomasyonlar/
+// pasla-play-reports-mcp/scripts/dash-collect.mjs --secret-file).
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const { defineSecret } = require("firebase-functions/params");
+const admin = require("firebase-admin");
+const { collectDash } = require("./dash");
+const DASH_SECRETS = defineSecret("DASH_SECRETS");
+if (!admin.apps.length) admin.initializeApp();
+
+exports.refreshDash = onCall({ region: "europe-west1", secrets: [DASH_SECRETS], timeoutSeconds: 120, memory: "256MiB", maxInstances: 1 }, async (req) => {
+  const t = (req.auth && req.auth.token) || {};
+  if (t.email !== "aliaslan625@gmail.com" || !t.email_verified || !t.firebase || t.firebase.sign_in_provider !== "google.com") {
+    throw new HttpsError("permission-denied", "Yalnız admin.");
+  }
+  const ref = admin.firestore().doc("dash/main");
+  const prev = await ref.get();
+  const prevAt = prev.exists && prev.get("at") ? prev.get("at").toMillis() : 0;
+  if (Date.now() - prevAt < 60000) return { ok: true, cached: true };
+  const dash = await collectDash(JSON.parse(DASH_SECRETS.value()));
+  await ref.set({ json: JSON.stringify(dash), at: admin.firestore.Timestamp.fromDate(new Date(dash.at)) });
+  logger.info(`dash yenilendi, hata ${dash.errors.length}`);
+  return { ok: true, errors: dash.errors.length };
+});

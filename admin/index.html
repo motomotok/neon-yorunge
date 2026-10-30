@@ -134,7 +134,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#080a14;border:1px sol
     <div class="chips" id="rpPeriod"></div>
     <div class="chips" id="rpApp"></div>
     <div id="rpBody"><span class="muted">yükleniyor…</span></div>
-    <p class="hint">Veriler bilgisayardaki toplayıcıdan gelir (bilgisayar açıkken her 2 saatte bir). Google Ads ve AdMob birkaç saat, Play'in günlük yükleme raporu 3-5 gün geriden gelir. "Mağazada görünen indirme", Play sayfasında herkesin gördüğü sayıdır (10+, 50+…). Bu sekme açılınca yalnız 1 okuma yapar.</p>
+    <p class="hint">Üstteki "Yenile"ye basınca veriler o an Google Ads, AdMob, Play ve App Store'dan çekilir (10-30 sn). Google Ads ve AdMob'un kendisi birkaç saat, Play'in günlük yükleme raporu 3-5 gün geriden gelir. "Mağazada görünen indirme", Play sayfasında herkesin gördüğü sayıdır (10+, 50+…). Sekmeyi açmak 1 okuma yapar; Yenile de ücretsiz kota içinde kalır.</p>
   </section>
 
   <section data-sec="ozet" class="hidden">
@@ -206,6 +206,7 @@ import {
   getFirestore, collection, doc, query, where, orderBy, limit, getDocs, getDoc, startAfter,
   getCountFromServer, getAggregateFromServer, sum, writeBatch, serverTimestamp, Timestamp, deleteDoc,
 } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
+import { getFunctions, httpsCallable } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-functions.js';
 
 const ADMIN_EMAIL = 'aliaslan625@gmail.com';
 const app = initializeApp({
@@ -218,6 +219,7 @@ const app = initializeApp({
 });
 const auth = getAuth(app);
 const db = getFirestore(app);
+const refreshDashFn = httpsCallable(getFunctions(app, 'europe-west1'), 'refreshDash', { timeout: 150000 });
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmt = (n) => (n == null ? '—' : Number(n).toLocaleString('tr-TR'));
@@ -279,7 +281,17 @@ document.querySelectorAll('#tabs button').forEach((b) => b.onclick = () => {
   document.querySelectorAll('section[data-sec]').forEach((s) => s.classList.toggle('hidden', s.dataset.sec !== curTab));
   openTab(curTab);
 });
-$('#refreshBtn').onclick = () => { loaded.players = loaded.rank = loaded.gifts = loaded.errors = loaded.dash = false; loadAll(); openTab(curTab); };
+$('#refreshBtn').onclick = async () => {
+  loaded.players = loaded.rank = loaded.gifts = loaded.errors = false; loadAll();
+  if (curTab !== 'raporlar') { loaded.dash = false; openTab(curTab); return; }
+  // Raporlar: bulut fonksiyonu Ads / AdMob / Play / App Store'dan o an çeker (~10-30 sn).
+  const btn = $('#refreshBtn'); btn.disabled = true; btn.textContent = '↻ Çekiliyor…';
+  $('#rpAt').innerHTML = '<span class="muted">Google Ads, AdMob, Play ve App Store\'dan güncel veri çekiliyor…</span>';
+  try { await refreshDashFn(); }
+  catch (e) { toast('Güncel veri çekilemedi (' + (e.code || e.message) + '), son kayıt gösteriliyor.'); }
+  btn.disabled = false; btn.textContent = '↻ Yenile';
+  loaded.dash = false; openTab('raporlar');
+};
 
 // ---------- Raporlar (Ads / AdMob / Play / App Store) ----------
 // Tek belge: dash/main (Otomasyonlar/pasla-play-reports-mcp/scripts/dash-collect.mjs yazar).
@@ -299,7 +311,7 @@ async function loadDash() {
     dash = JSON.parse(snap.data().json);
     const at = new Date(dash.at), age = Date.now() - at;
     $('#rpAt').innerHTML = 'Son güncelleme: <b>' + at.toLocaleString('tr-TR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) + '</b>'
-      + (age > 6 * 3600000 ? ' <span class="tag bad">' + Math.round(age / 3600000) + ' saat önce — bilgisayar kapalı olabilir</span>' : '');
+      + (age > 6 * 3600000 ? ' <span class="tag bad">' + Math.round(age / 3600000) + ' saat önce — Yenile\'ye bas</span>' : '');
     renderDash();
   } catch (e) { loaded.dash = false; $('#rpBody').innerHTML = '<span class="err">Rapor okunamadı: ' + esc(e.code || e.message) + '</span>'; }
 }
