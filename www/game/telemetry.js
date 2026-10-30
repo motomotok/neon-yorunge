@@ -66,6 +66,9 @@ function closeKvkk(){
 }
 
 function telemetrySummary(){
+  // İlk açılış zamanı herkes için (eskiden yalnız KVKK kararında yazılıyordu).
+  if(!stats.firstSeen) stats.firstSeen=Date.now();
+  if(stats.ft==null && stats.tutorialDone) stats.ft = FT_LEGACY;
   const d=stats.duel;
   let tier='';
   if(d && d.games>0 && typeof rankTier==='function'){
@@ -80,12 +83,27 @@ function telemetrySummary(){
     linked: typeof isAccountLinked==='function' && isAccountLinked(),
     noads: !!stats.premiumNoAds, pass: !!stats.seasonPremium, since: stats.firstSeen||0,
     day: dayStat().d, dayGames: dayStat().g, dayMins: Math.floor(dayStat().s/60),
+    ft: stats.ft||0, runs: stats.scoreRuns||0, days: stats.activeDays||1,
   };
+}
+// İlk deneyim hunisi (panel → Raporlar → Oyuncu yolculuğu). Oyuncunun ulaştığı
+// en ileri adım; her adım oyuncu başına yalnız BİR kez yazılır (~7 yazma):
+//  1 öğretici başladı · 2 nota adımı · 3 kaçış adımı · 4 öğretici bitti
+//  5 ilk gerçek oyun başladı · 6 ilk gerçek oyun bitti · 7 ilk yeteneği aldı
+// Sonrası özetteki runs (oyun sayısı) ve days (dönüş) ile izlenir.
+// 2.76.1'den önce öğreticiyi bitirmiş eski oyuncular 99 (huniye girmez).
+const FT_LEGACY = 99;
+function telemetryFt(n){
+  if((stats.ft||0) >= n) return;
+  stats.ft = n; saveStats();
+  if(!window.Telemetry) return;
+  _lastBeat=Date.now(); _lastOn=true;
+  Telemetry.beat(Object.assign(telemetrySummary(), {on:true})).catch(()=>{});
 }
 // Bugünkü oyun sayısı ve süresi (panelde "bugün kim ne kadar oynadı").
 function dayStat(){
   const d=todayStr();
-  if(!stats.dayStat || stats.dayStat.d!==d) stats.dayStat={d, g:0, s:0};
+  if(!stats.dayStat || stats.dayStat.d!==d){ stats.dayStat={d, g:0, s:0}; stats.activeDays=(stats.activeDays||0)+1; }
   return stats.dayStat;
 }
 // Oyun sonunda: bugünkü sayaç +1 ve özet yazılır (en fazla 2 dakikada bir).

@@ -101,6 +101,12 @@ pre{white-space:pre-wrap;word-break:break-word;background:#080a14;border:1px sol
 .rev:first-of-type{border-top:0}
 .stars{color:var(--accent2);letter-spacing:1px}
 .rgrid ~ .tblWrap th.num,th.num{text-align:right}
+.fun{display:grid;grid-template-columns:minmax(120px,190px) 1fr auto;gap:6px 10px;align-items:center;font-size:13px}
+.fun .bar{height:14px;border-radius:7px;background:var(--panel2);overflow:hidden}
+.fun .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:7px}
+.fun .n{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.fun .drop{color:var(--bad);font-size:11.5px}
+.advice{border-left:3px solid var(--accent2);padding:8px 12px;margin-top:10px;background:var(--panel2);border-radius:0 10px 10px 0;font-size:13px}
 .pos{color:var(--ok)}.neg{color:var(--bad)}
 </style>
 </head>
@@ -323,6 +329,46 @@ function spark(daily, f, days = 30) {
   const last = daily.slice(-days), max = Math.max(1e-9, ...last.map((r) => r[f] || 0));
   return `<div class="spark">${last.map((r) => `<i class="${r[f] ? '' : 'z'}" style="height:${Math.max(3, 100 * (r[f] || 0) / max)}%" title="${esc(r.d)}: ${esc(r[f])}"></i>`).join('')}</div>`;
 }
+
+// "Oyuncu yolculuğu" (yalnız Beat Orbit; veri: refreshDash → functions/funnel.js).
+const FT_STUCK = { 0: 'Eğitim başlamadan çıktı', 1: 'Eğitim: sola-sağa adımı', 2: 'Eğitim: nota adımı', 3: 'Eğitim: cızırtıdan kaçış', 4: 'Eğitim bitti, gerçek oyun başlamadı', 5: 'İlk gerçek oyunun ortasında çıktı' };
+const FUN_ADVICE = {
+  'Oyunu açtı→1. oyunu bitirdi': 'Oyuncular ilk oyunu bitirmeden gidiyor: ilk dakika (eğitim + ilk oyun) en önemli yer. Aşağıdaki "nerede bıraktılar" listesine bak.',
+  '1. oyunu bitirdi→3+ oyun': 'İlk oyundan sonra tekrar oynamıyorlar: ilk oyun çok zor ya da oyun sonu ekranı "bir daha" dedirtmiyor (ödül, rekor, hedef).',
+  '3+ oyun→5+ oyun': 'Birkaç oyundan sonra bırakıyorlar: kısa vadeli hedefler (görev, yetenek alma, günlük ödül) güçlendirilmeli.',
+  '5+ oyun→10+ oyun': 'Orta oyunda düşüş: ilerleme hızı, yetenek fiyatları ve çeşitlilik (yeni tehlike/boss) gözden geçirilmeli.',
+};
+function funnelHtml(P) {
+  const map = { today: 'today', yesterday: 'yesterday', d7: 'd7', d30: 'd30' };
+  const key = map[P] || 'd30', f = dash.funnel && dash.funnel[key];
+  if (!f) return '';
+  const ad = (dash.ads || []).find((c) => c.app === 'Beat Orbit'), adInst = ad && ad.p[key] ? Math.round(ad.p[key].inst) : null;
+  const steps = [['Oyunu açtı', f.opened], ['1. oyunu bitirdi', f.played1], ['3+ oyun', f.played3], ['5+ oyun', f.played5], ['10+ oyun', f.played10]];
+  const base = Math.max(1, f.opened);
+  let worst = null;
+  const rows = steps.map(([l, n], i) => {
+    let drop = '';
+    if (i > 0 && steps[i - 1][1] > 0) {
+      const lost = 1 - n / steps[i - 1][1];
+      drop = `<div class="drop">−%${Math.round(lost * 100)} bıraktı</div>`;
+      if (steps[i - 1][1] >= 3 && (!worst || lost > worst.lost)) worst = { lost, k: steps[i - 1][0] + '→' + l };
+    }
+    return `<span>${esc(l)}${drop}</span><div class="bar"><i style="width:${Math.max(1, 100 * n / base)}%"></i></div><span class="n">${fmt(n)} <span class="muted">${pct(n, f.opened)}</span></span>`;
+  }).join('');
+  const stuckTot = Object.values(f.stuck || {}).reduce((a, b) => a + b, 0);
+  const stuck = Object.entries(f.stuck || {}).sort((a, b) => b[1] - a[1]).map(([k, n]) =>
+    `<span>${esc(FT_STUCK[k] || ('adım ' + k))}</span><div class="bar"><i style="width:${100 * n / Math.max(1, stuckTot)}%"></i></div><span class="n">${fmt(n)} <span class="muted">${pct(n, stuckTot)}</span></span>`).join('');
+  const plat = Object.entries(f.plat || {}).map(([k, v]) => kpi(pct(v.played, v.n), esc(k) + ': ' + fmt(v.n) + ' açan, oynayan oranı')).join('');
+  return `<h2>Oyuncu yolculuğu <span class="muted" style="font-weight:500">${key === 'd30' && P !== 'd30' ? '(son 30 gün)' : ''} yeni oyuncular · oyunu ilk açtığı güne göre</span></h2>
+    <div class="rgrid">${adInst != null ? kpi(fmt(adInst), 'Reklamdan yükleme') : ''}${kpi(fmt(f.opened), 'Oyunu açan (tüm kaynaklar)')}${kpi(pct(f.played1, f.opened), 'Gerçekten oynayan (1+ oyun)')}
+      ${kpi(fmt(f.avgMins) + ' dk', 'Ortalama oynama süresi')}${kpi(fmt(f.medMins) + ' dk', 'Ortanca süre (tipik oyuncu)')}${kpi(fmt(f.avgRuns), 'Ortalama oyun sayısı')}
+      ${kpi(pct(f.returned, f.opened), 'Ertesi gün tekrar açan')}${plat}</div>
+    <div class="card" style="margin-top:8px"><div class="fun">${rows}</div>
+      ${worst ? `<div class="advice"><b>En çok kayıp: ${esc(worst.k.replace('→', ' → '))}</b> (−%${Math.round(worst.lost * 100)}). ${esc(FUN_ADVICE[worst.k] || '')}</div>` : ''}</div>
+    <div class="card" style="margin-top:8px"><span class="muted">Hiç oyun bitirmeden çıkanlar nerede bıraktı? (2.76.1+ sürüm, ${fmt(f.tracked)} oyuncu izlendi${f.tracked ? ', eğitimi bitiren ' + pct(f.tutDone, f.tracked) : ''})</span>
+      ${stuckTot ? `<div class="fun" style="margin-top:8px">${stuck}</div>` : '<div class="muted" style="margin-top:6px">Henüz veri yok — 2.76.1 yayına girince dolmaya başlar.</div>'}</div>
+    <p class="hint">"Oyunu açan" Play'den/App Store'dan gelen herkesi sayar (reklam + organik); oyunu indirip hiç açmayan sayılmaz. Bugünün oyuncuları için "ertesi gün" henüz anlamlı değildir. Oyun sayısına eğitim dahil değildir.</p>`;
+}
 function renderDash() {
   if (!dash) return;
   chips('#rpPeriod', PERIODS, rpPeriod, (k) => { rpPeriod = k; });
@@ -337,6 +383,7 @@ function renderDash() {
     const play = (dash.play || []).find((x) => x.app === name);
     const ios = (dash.ios || []).find((x) => x.app === name);
     h += `<div class="appHead">${esc(name)} <small>${esc(pName)}</small></div>`;
+    if (name === 'Beat Orbit') h += funnelHtml(P);
     // Reklam (Google Ads)
     if (ad) {
       const m = ad.p[P];

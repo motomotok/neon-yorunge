@@ -43,6 +43,7 @@ async function beat(s) {
     gems: int(s.gems, 1e7), notes: int(s.notes, 1e9), lvl: int(s.lvl, 1e4),
     linked: !!s.linked, noads: !!s.noads, pass: !!s.pass, on: s.on !== false,
     since: int(s.since, 1e13), day: str(s.day, 10), dayGames: int(s.dayGames, 1e5), dayMins: int(s.dayMins, 1440),
+    ft: int(s.ft, 200), runs: int(s.runs, 1e7), days: int(s.days, 1e5),
     lastSeen: serverTimestamp(),
   }, { merge: true });
   return u.uid;

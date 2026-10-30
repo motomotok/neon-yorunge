@@ -56,6 +56,7 @@ const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { defineSecret } = require("firebase-functions/params");
 const admin = require("firebase-admin");
 const { collectDash } = require("./dash");
+const { collectFunnel } = require("./funnel");
 const DASH_SECRETS = defineSecret("DASH_SECRETS");
 if (!admin.apps.length) admin.initializeApp();
 
@@ -69,6 +70,8 @@ exports.refreshDash = onCall({ region: "europe-west1", secrets: [DASH_SECRETS], 
   const prevAt = prev.exists && prev.get("at") ? prev.get("at").toMillis() : 0;
   if (Date.now() - prevAt < 60000) return { ok: true, cached: true };
   const dash = await collectDash(JSON.parse(DASH_SECRETS.value()));
+  try { dash.funnel = await collectFunnel(admin.firestore()); }
+  catch (e) { dash.errors.push("Oyuncu yolculuğu: " + String(e.message || e).slice(0, 200)); }
   await ref.set({ json: JSON.stringify(dash), at: admin.firestore.Timestamp.fromDate(new Date(dash.at)) });
   logger.info(`dash yenilendi, hata ${dash.errors.length}`);
   return { ok: true, errors: dash.errors.length };

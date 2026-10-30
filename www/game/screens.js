@@ -141,6 +141,7 @@ function startGame(m,d){
   let dsetDay=null;
   if(mode==='daily'){
     dsetDay = dsetEnsureDay().day;
+    if(typeof telemetryFt==='function') telemetryFt(5);
     rngFn = Math.random;
   } else if(mode==='duel' && duelMatch){
     rngFn = mulberry32(duelMatch.seed);   // iki oyuncu aynı haritada
@@ -252,6 +253,7 @@ function gameOver(reason){
   let dsetRes=null;
   if(mode==='daily' && !tutorialActive){
     stats.scoreRuns=(stats.scoreRuns||0)+1;
+    if(typeof telemetryFt==='function') telemetryFt(6);
     if(stats.scoreRuns>=5 && typeof trackEvent==='function') trackEvent('run_5', true);
   }
   if(mode==='daily'){

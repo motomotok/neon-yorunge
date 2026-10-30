@@ -182,5 +182,6 @@ function guideOnDuelPick(n){
 }
 function guideOnDuelSearch(){ if(guideActive==='duel') guideEnd(); }
 function guideOnUpgradeBought(key){
+  if(guideActive==='up' && guideStep==='uhp' && key==='hp' && typeof telemetryFt==='function') telemetryFt(7);
   if(guideActive==='up' && guideStep==='uhp' && key==='hp') setTimeout(()=>{ if(guideStep==='uhp') guideEnd(); }, 600);
 }

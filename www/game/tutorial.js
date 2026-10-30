@@ -43,6 +43,8 @@ function tutorialGoStep(step, arg){
   _tutTapOK = false;
   _tutPending = {};
   tutorialStep = step;
+  const ft = {sides:1, note:2, dodge:3, go:4}[step];
+  if(ft && typeof telemetryFt==='function') telemetryFt(ft);
   const S = TUTORIAL_STEPS[step];
   if(S) S(arg);
 }
