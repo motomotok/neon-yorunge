@@ -85,6 +85,23 @@ pre{white-space:pre-wrap;word-break:break-word;background:#080a14;border:1px sol
 .lists{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
 .hint{font-size:12px;color:var(--dim);margin-top:6px}
 .hidden{display:none!important}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px}
+.chips button{background:none;border:1px solid var(--line);border-radius:999px;padding:5px 11px;cursor:pointer;color:var(--dim);font-size:12.5px}
+.chips button.on{background:var(--panel2);color:var(--text);border-color:var(--accent2)}
+.rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.rgrid .card{padding:10px 12px}
+.rgrid .v{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+.rgrid .l{color:var(--dim);font-size:11.5px}
+.appHead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:22px 0 8px;font-size:17px;font-weight:800}
+.appHead small{font-size:12px;font-weight:500;color:var(--dim)}
+.spark{display:flex;align-items:flex-end;gap:2px;height:54px;margin-top:8px}
+.spark i{flex:1;min-width:3px;background:linear-gradient(180deg,var(--accent2),var(--accent));border-radius:2px 2px 0 0;opacity:.85}
+.spark i.z{background:var(--line)}
+.rev{border-top:1px solid var(--line);padding:8px 0;font-size:13px;white-space:normal}
+.rev:first-of-type{border-top:0}
+.stars{color:var(--accent2);letter-spacing:1px}
+.rgrid ~ .tblWrap th.num,th.num{text-align:right}
+.pos{color:var(--ok)}.neg{color:var(--bad)}
 </style>
 </head>
 <body>
@@ -104,14 +121,23 @@ pre{white-space:pre-wrap;word-break:break-word;background:#080a14;border:1px sol
     <button class="btn" id="logoutBtn">Çıkış</button>
   </header>
   <nav id="tabs">
-    <button data-tab="ozet" class="on">Özet</button>
+    <button data-tab="raporlar" class="on">Raporlar</button>
+    <button data-tab="ozet">Özet</button>
     <button data-tab="oyuncular">Oyuncular</button>
     <button data-tab="siralama">Sıralamalar</button>
     <button data-tab="hatalar">Hatalar <span id="errBadge"></span></button>
     <button data-tab="hediyeler">Hediyeler</button>
   </nav>
 
-  <section data-sec="ozet">
+  <section data-sec="raporlar">
+    <div class="row" style="margin-bottom:8px"><span class="muted" id="rpAt">—</span></div>
+    <div class="chips" id="rpPeriod"></div>
+    <div class="chips" id="rpApp"></div>
+    <div id="rpBody"><span class="muted">yükleniyor…</span></div>
+    <p class="hint">Veriler bilgisayardaki toplayıcıdan gelir (bilgisayar açıkken her 2 saatte bir). Google Ads ve AdMob birkaç saat, Play'in günlük yükleme raporu 3-5 gün geriden gelir. "Mağazada görünen indirme", Play sayfasında herkesin gördüğü sayıdır (10+, 50+…). Bu sekme açılınca yalnız 1 okuma yapar.</p>
+  </section>
+
+  <section data-sec="ozet" class="hidden">
     <div class="grid" id="kpis"></div>
     <div class="lists" style="margin-top:12px">
       <div class="card"><h2 style="margin-top:0"><span class="dot on"></span>Şu an oynayanlar</h2><div id="onlineList" class="muted">—</div></div>
@@ -231,20 +257,21 @@ onAuthStateChanged(auth, async (u) => {
     await signOut(auth); return;
   }
   $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
-  loadAll();
+  loadAll(); openTab(curTab);
 });
 
 // ---------- Sekmeler ----------
 // MALİYET KURALI: her sekme verisini yalnız açıldığında ve bir kez çeker
 // (Yenile'ye basınca tekrar). Özet yalnız "sayım" sorguları kullanır: her
 // sayım, sonuç kaç olursa olsun ~1 okuma (1000 kayıtta 1) sayılır.
-let curTab = 'ozet';
+let curTab = 'raporlar';
 const loaded = {};
 function openTab(tab) {
   if (tab === 'oyuncular' && !loaded.players) loadPlayers();
   if (tab === 'siralama' && !loaded.rank) loadRankings();
   if (tab === 'hediyeler' && !loaded.gifts) loadGifts();
   if (tab === 'hatalar' && !loaded.errors) loadErrors();
+  if (tab === 'raporlar' && !loaded.dash) loadDash();
 }
 document.querySelectorAll('#tabs button').forEach((b) => b.onclick = () => {
   curTab = b.dataset.tab;
@@ -252,7 +279,93 @@ document.querySelectorAll('#tabs button').forEach((b) => b.onclick = () => {
   document.querySelectorAll('section[data-sec]').forEach((s) => s.classList.toggle('hidden', s.dataset.sec !== curTab));
   openTab(curTab);
 });
-$('#refreshBtn').onclick = () => { loaded.players = loaded.rank = loaded.gifts = loaded.errors = false; loadAll(); openTab(curTab); };
+$('#refreshBtn').onclick = () => { loaded.players = loaded.rank = loaded.gifts = loaded.errors = loaded.dash = false; loadAll(); openTab(curTab); };
+
+// ---------- Raporlar (Ads / AdMob / Play / App Store) ----------
+// Tek belge: dash/main (Otomasyonlar/pasla-play-reports-mcp/scripts/dash-collect.mjs yazar).
+let dash = null, rpPeriod = 'today', rpApp = 'Beat Orbit';
+const PERIODS = [['today', 'Bugün'], ['yesterday', 'Dün'], ['d7', 'Son 7 gün'], ['d30', 'Son 30 gün'], ['month', 'Bu ay'], ['lastMonth', 'Geçen ay'], ['total', 'Tümü']];
+const tl = (n, d = 2) => (n == null || isNaN(n) ? '—' : '₺' + Number(n).toLocaleString('tr-TR', { minimumFractionDigits: d, maximumFractionDigits: d }));
+const pct = (a, b) => (b ? (100 * a / b).toLocaleString('tr-TR', { maximumFractionDigits: 1 }) + '%' : '—');
+const kpi = (v, l, cls = '') => `<div class="card"><div class="v ${cls}">${v}</div><div class="l">${l}</div></div>`;
+const IOS_STATE = { READY_FOR_SALE: 'yayında', WAITING_FOR_REVIEW: 'incelemeyi bekliyor', IN_REVIEW: 'inceleniyor', PREPARE_FOR_SUBMISSION: 'hazırlanıyor',
+  REJECTED: 'reddedildi', DEVELOPER_REJECTED: 'geri çekildi', PENDING_DEVELOPER_RELEASE: 'yayın onayı bekliyor', PROCESSING_FOR_APP_STORE: 'işleniyor', REPLACED_WITH_NEW_VERSION: 'yerini yenisi aldı' };
+const stars = (n) => '★'.repeat(n || 0) + '☆'.repeat(5 - (n || 0));
+async function loadDash() {
+  loaded.dash = true;
+  try {
+    const snap = await getDoc(doc(db, 'dash', 'main'));
+    if (!snap.exists()) { $('#rpBody').innerHTML = '<span class="muted">Henüz rapor yok.</span>'; return; }
+    dash = JSON.parse(snap.data().json);
+    const at = new Date(dash.at), age = Date.now() - at;
+    $('#rpAt').innerHTML = 'Son güncelleme: <b>' + at.toLocaleString('tr-TR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) + '</b>'
+      + (age > 6 * 3600000 ? ' <span class="tag bad">' + Math.round(age / 3600000) + ' saat önce — bilgisayar kapalı olabilir</span>' : '');
+    renderDash();
+  } catch (e) { loaded.dash = false; $('#rpBody').innerHTML = '<span class="err">Rapor okunamadı: ' + esc(e.code || e.message) + '</span>'; }
+}
+function chips(el, list, cur, on) {
+  $(el).innerHTML = list.map(([k, l]) => `<button data-k="${esc(k)}" class="${k === cur ? 'on' : ''}">${esc(l)}</button>`).join('');
+  $(el).querySelectorAll('button').forEach((b) => b.onclick = () => { on(b.dataset.k); renderDash(); });
+}
+function spark(daily, f, days = 30) {
+  const last = daily.slice(-days), max = Math.max(1e-9, ...last.map((r) => r[f] || 0));
+  return `<div class="spark">${last.map((r) => `<i class="${r[f] ? '' : 'z'}" style="height:${Math.max(3, 100 * (r[f] || 0) / max)}%" title="${esc(r.d)}: ${esc(r[f])}"></i>`).join('')}</div>`;
+}
+function renderDash() {
+  if (!dash) return;
+  chips('#rpPeriod', PERIODS, rpPeriod, (k) => { rpPeriod = k; });
+  chips('#rpApp', [['Beat Orbit', 'Beat Orbit'], ['Pasla', 'Pasla'], ['*', 'İkisi']], rpApp, (k) => { rpApp = k; });
+  const P = rpPeriod, pName = PERIODS.find((x) => x[0] === P)[1];
+  const apps = rpApp === '*' ? ['Beat Orbit', 'Pasla'] : [rpApp];
+  let h = '';
+  for (const name of apps) {
+    const key = name.toLowerCase().split(' ')[0];
+    const ad = (dash.ads || []).find((c) => c.app === name);
+    const mob = ((dash.admob && dash.admob.apps) || []).filter((a) => a.app.toLowerCase().includes(key));
+    const play = (dash.play || []).find((x) => x.app === name);
+    const ios = (dash.ios || []).find((x) => x.app === name);
+    h += `<div class="appHead">${esc(name)} <small>${esc(pName)}</small></div>`;
+    // Reklam (Google Ads)
+    if (ad) {
+      const m = ad.p[P];
+      h += `<h2>Google Ads reklamı <span class="tag ${ad.status === 'açık' ? 'ok' : 'bad'}">${esc(ad.status)}</span> <span class="muted" style="font-weight:500">günlük bütçe ${tl(ad.budget, 0)} · başlangıç ${esc(ad.start || '—')}</span></h2>
+      <div class="rgrid">${kpi(tl(m.cost), 'Harcama')}${kpi(fmt(Math.round(m.inst)), 'Yükleme')}${kpi(m.inst ? tl(m.cost / m.inst) : '—', 'Yükleme başı')}
+      ${kpi(fmt(m.imp), 'Gösterim')}${kpi(fmt(m.clk), 'Tıklama')}${kpi(pct(m.clk, m.imp), 'Tıklama oranı')}${kpi(pct(m.inst, m.clk), 'Tıklayan → yükleyen')}</div>
+      <div class="tblWrap" style="margin-top:8px"><table><thead><tr><th>Reklam grubu</th><th>Durum</th><th class="num">Harcama</th><th class="num">Yükleme</th><th class="num">Yükleme başı</th><th class="num">Gösterim</th><th class="num">Tıklama</th><th class="num">Tık. oranı</th></tr></thead><tbody>
+      ${ad.groups.map((g) => { const x = g.p[P]; return `<tr><td>${esc(g.name)}</td><td>${esc(g.status)}</td><td class="num">${tl(x.cost)}</td><td class="num">${fmt(Math.round(x.inst))}</td><td class="num">${x.inst ? tl(x.cost / x.inst) : '—'}</td><td class="num">${fmt(x.imp)}</td><td class="num">${fmt(x.clk)}</td><td class="num">${pct(x.clk, x.imp)}</td></tr>`; }).join('')}
+      </tbody></table></div>
+      <div class="lists" style="margin-top:8px"><div class="card"><span class="muted">Günlük harcama (son 30 gün)</span>${spark(ad.daily, 'cost')}</div><div class="card"><span class="muted">Günlük yükleme (son 30 gün)</span>${spark(ad.daily, 'inst')}</div></div>`;
+    }
+    // Reklam geliri (AdMob)
+    if (mob.length) {
+      const cols = PERIODS.filter((x) => x[0] !== 'total');
+      const earn = (k) => mob.reduce((s, a) => s + a.p[k].earn, 0);
+      h += `<h2>Reklam geliri (AdMob)</h2>
+      <div class="tblWrap"><table><thead><tr><th>Platform</th>${cols.map((x) => `<th class="num">${esc(x[1])}</th>`).join('')}</tr></thead><tbody>
+      ${mob.map((a) => `<tr><td>${esc(a.platform)}</td>${cols.map((x) => `<td class="num">${tl(a.p[x[0]].earn)}</td>`).join('')}</tr>`).join('')}
+      <tr><td><b>Toplam</b></td>${cols.map((x) => `<td class="num"><b>${tl(earn(x[0]))}</b></td>`).join('')}</tr>
+      </tbody></table></div>
+      <div class="rgrid" style="margin-top:8px">${mob.map((a) => kpi(fmt(a.p[P].imp), esc(a.platform) + ' reklam gösterimi')).join('')}
+      ${ad && P !== 'total' ? kpi(tl(earn(P) - ad.p[P].cost), 'Reklam geliri − reklam harcaması', earn(P) - ad.p[P].cost >= 0 ? 'pos' : 'neg') : ''}</div>`;
+    }
+    // Google Play
+    if (play) {
+      const st = play.store || {}, last = play.daily.slice(-7);
+      h += `<h2>Google Play</h2><div class="rgrid">${kpi(esc(st.installs || '—'), 'Mağazada görünen indirme')}${kpi(st.rating ? '★ ' + esc(st.rating) : '—', 'Puan')}${kpi(esc(st.ratingCount || '0'), 'Yorum sayısı')}
+      ${last.length ? kpi(fmt(last[last.length - 1].active), 'Cihazda yüklü (' + esc(last[last.length - 1].d.slice(5)) + ')') : ''}</div>`;
+      if (last.length) h += `<div class="tblWrap" style="margin-top:8px"><table><thead><tr><th>Gün (Play raporu)</th><th class="num">Yükleyen</th><th class="num">Kaldıran</th><th class="num">Cihazda yüklü</th></tr></thead><tbody>
+        ${last.slice().reverse().map((r) => `<tr><td>${esc(r.d)}</td><td class="num">${fmt(r.inst)}</td><td class="num">${fmt(r.uninst)}</td><td class="num">${fmt(r.active)}</td></tr>`).join('')}</tbody></table></div>`;
+      h += `<div class="card" style="margin-top:8px"><span class="muted">Son yorumlar (Play, son 7 gün)</span>${play.reviews.length ? play.reviews.map((r) => `<div class="rev"><span class="stars">${stars(r.star)}</span> <b>${esc(r.author)}</b> <span class="muted">${esc(r.date || '')} · v${esc(r.ver || '?')} ${r.replied ? '· yanıtlandı' : ''}</span><div>${r.text ? esc(r.text) : '<span class="muted">(yazısız)</span>'}</div></div>`).join('') : '<div class="muted" style="margin-top:6px">Yeni yorum yok.</div>'}</div>`;
+    }
+    // App Store
+    if (ios) {
+      h += `<h2>App Store</h2><div class="rgrid">${ios.versions.map((v) => kpi(esc(v.v), esc(IOS_STATE[v.state] || v.state.replace(/_/g, ' ').toLowerCase()))).join('')}</div>
+      <div class="card" style="margin-top:8px"><span class="muted">Son yorumlar (App Store)</span>${ios.reviews.length ? ios.reviews.map((r) => `<div class="rev"><span class="stars">${stars(r.star)}</span> <b>${esc(r.title)}</b> <span class="muted">${esc(r.author)} · ${esc(r.date)} · ${esc(r.country)}</span><div>${esc(r.text)}</div></div>`).join('') : '<div class="muted" style="margin-top:6px">Henüz yorum yok.</div>'}</div>`;
+    }
+  }
+  if (dash.errors && dash.errors.length) h += `<div class="card" style="margin-top:14px"><span class="err">Toplanamayanlar:</span><pre>${esc(dash.errors.join('\n'))}</pre></div>`;
+  $('#rpBody').innerHTML = h;
+}
 
 // ---------- Veri ----------
 let players = [], livePlayers = [];

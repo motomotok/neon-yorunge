@@ -128,6 +128,18 @@ service cloud.firestore {
         && request.resource.data.claimed == true
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['claimed', 'claimedAt']));
     }
+    // Admin paneli "Raporlar" (Ads / AdMob / Play / App Store özeti). Bilgisayardaki
+    // toplayıcı (Otomasyonlar/pasla-play-reports-mcp/scripts/dash-collect.mjs)
+    // tek belgeyi gizli anahtarla yazar; kuralda yalnız anahtarın sha256 özeti var.
+    match /dash/{id} {
+      allow read: if isAdmin();
+      allow create, update: if id == 'main'
+        && request.resource.data.keys().hasOnly(['k', 'json', 'at'])
+        && request.resource.data.k is string
+        && hashing.sha256(request.resource.data.k).toHexString().lower() == '748a196758b3c2a6dd1dad06cd69b5334cb5e9f116ada600beb9fe7339ca49de'
+        && request.resource.data.json is string
+        && request.resource.data.json.size() < 800000;
+    }
     match /giftlog/{gid} {
       allow read, write: if isAdmin();
     }
