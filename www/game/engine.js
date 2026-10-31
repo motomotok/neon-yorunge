@@ -75,6 +75,10 @@ const PW_NOSHIELD = ['slow','magnet','mult'];   // "Kalkansız" ısı mühürü
 // sistem emojisi yerine oyunun kendi SVG ikonlarıyla çizilir.
 const PW_ICON_TYPE = {shield:'shield', slow:'clock', magnet:'magnet', mult:'coin'};
 
+// İlk 3 gerçek oyunda +1 can: yeni oyuncu 2-3 darbede "daha başlamadan" ölmesin.
+function newbieHp(){
+  return (mode==='daily' && !tutorialActive && (stats.scoreRuns||0) < 3 && maxHpFor() < MAX_HP) ? 1 : 0;
+}
 function resetGame(){
   player = { ang:-Math.PI/2, targetRing:0, curRadius:radiusFor(0), speed:1.6, speedMulEase:1, comboMulEase:1,
              shieldHits:0, slowT:0, magnetT:0, invulT:0, multT:0 };
@@ -82,7 +86,7 @@ function resetGame(){
   // Çekirdek Ağacı'ndaki "Refleks" dalı, her denemeyi biraz daha ileriden
   // (yüksek bir kombodan) başlatır — kalıcı, sıfırlanmayan bir avantaj.
   combo=1+Math.floor(coreBonus('startCombo'));
-  maxHp = mode==='zen' ? 9999 : maxHpFor(); hp = maxHp;
+  maxHp = mode==='zen' ? 9999 : maxHpFor() + newbieHp(); hp = maxHp;
   level=1; elapsed=0; spawnCooldown=0; threatCd=150; rareSince=0; teaserCredit=0; teaserLastScore=0; breathT=0; nextBreath=720; shake=0; flash=0; levelFlashT=0;   // threatCd: tehdit yönetmeni ilk ~2.5 sn bekler
   session = {stars:0, golds:0, diamonds:0, magnets:0, hits:0, shieldSaved:false, streakMax:0,
              coins:0, coinPickups:0, luckyCharges:0, noteMult:1, revivedUsed:false, bossesCleared:0};
@@ -1060,7 +1064,7 @@ function hitHazard(ix,iy,subtype,itm){
   const lostCombo=combo;
   // Kombo Koruması yeteneği: darbe komboyu sıfırlamaz, yarıya indirir.
   combo = hasPerk('comboGuard') ? Math.max(1, Math.floor(combo/2)) : 1;
-  hp = Math.max(0, hp-dmg); shake=Math.min(20, 8+dmg*1.2); flash=1; session.hits++;
+  hp = Math.max(0, hp-dmg); shake=Math.min(20, 8+dmg*1.2); flash=1; session.hits++; session.lastHit=subtype;
   // İkinci Şans yeteneği: oyunda bir kez, öldürücü darbeden 1 canla kurtulur.
   if(hp<=0 && session.secondChance && !tutorialActive){
     session.secondChance=false; hp=1; player.invulT=INVUL*3;
@@ -1090,14 +1094,18 @@ let reviveTimer=null;
 // "Devam Et" butonu ve "devam et ya da bitir" metniyle.
 function reviveSubRender(hpVal, secs){
   const el=document.getElementById('reviveSub');
-  if(el) el.innerHTML=t(stats.premiumNoAds ? 'revive_sub_premium_html' : 'revive_sub_html',{hp:hpVal, sec:secs});
+  if(el) el.innerHTML=t(stats.premiumNoAds ? 'revive_sub_premium_html' : reviveFree() ? 'revive_sub_free_html' : 'revive_sub_html',{hp:hpVal, sec:secs});
 }
 function syncReviveButton(){
   const btn=document.getElementById('reviveWatchBtn'); if(!btn) return;
-  const prem=!!stats.premiumNoAds;
+  const prem=!!stats.premiumNoAds || reviveFree();
   btn.innerHTML = icon(prem ? 'play' : 'tv')+' <span>'+t(prem ? 'btn_revive_continue' : 'btn_revive_watch')+'</span>';
 }
+// İlk oyunlarda (geçiş reklamı da yokken) devam etmek reklamsız: yeni oyuncu
+// ilk ölümünde "reklam izle" ekranıyla karşılaşıp çıkmasın.
+function reviveFree(){ return !stats.premiumNoAds && (stats.scoreRuns||0) < AD_FREE_RUNS; }
 function offerRevive(){
+  session.reviveOffered=true;
   state='revive'; showScreen('revive'); reviveAdPending=false; syncReviveButton();
   const hpVal=Math.max(1,Math.ceil(maxHp/2));
   let secs=6;
@@ -1114,13 +1122,14 @@ function acceptRevive(){
   // hâlâ revive ekranında değilse (ör. süre doldu, oyun bitti) hiçbir şey olmaz.
   if(state!=='revive' || reviveAdPending) return;
   clearInterval(reviveTimer);
+  const free=reviveFree();
   const revive=()=>{
     reviveAdPending=false;
     if(state!=='revive') return;
-    session.revivedUsed=true; session.watchedReviveAd=!stats.premiumNoAds; hp=Math.max(1,Math.ceil(maxHp/2)); combo=1; player.invulT=INVUL*3;
+    session.revivedUsed=true; session.watchedReviveAd=!stats.premiumNoAds && !free; hp=Math.max(1,Math.ceil(maxHp/2)); combo=1; player.invulT=INVUL*3;
     state='play'; showScreen(null); queueToast(t('revive_continue_toast'));
   };
-  if(stats.premiumNoAds){ revive(); return; }
+  if(stats.premiumNoAds || free){ revive(); return; }
   reviveAdPending=true;
   // Reklam bulunamazsa (dolum yok/yüklenemedi) diriltme yine verilir.
   const started=Ads.showRewarded(revive, (reason)=>{ if(reason==='unavailable'){ revive(); return; } reviveAdPending=false; declineRevive(true); });

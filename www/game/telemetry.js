@@ -85,6 +85,33 @@ function perfSummary(){
     q: i ? i.quality||'' : (cfg.gfx==='3d' ? '' : '2d'), ram: navigator.deviceMemory||0, boot: stats.bootDs||0 };
 }
 
+// Oyuncu şu an nerede (çıkış anında son yazılan değer = nerede bıraktı).
+function telemetryScreen(){
+  let s=String(state||'');
+  if(typeof tutorialActive!=='undefined' && tutorialActive) s+=':tut';
+  else if(typeof guideActive!=='undefined' && guideActive) s+=':'+guideActive;
+  return s.slice(0,16);
+}
+// İlk gerçek oyun (r1) ve son oyun: süre, skor, darbe, öldüren tehlike, devam
+// teklifi (0 yok · 1 teklif edildi, geçti · 2 devam etti). Oyun sonu ekranında
+// kaç saniye kaldığı (os) ve oradan nereye gittiği (ob) ekran değişiminde yazılır.
+function telemetryRun(sec, sc){
+  const o={s:Math.round(sec), sc:Math.floor(sc), h:session.hits||0, k:session.lastHit||'',
+    rv: session.revivedUsed ? 2 : session.reviveOffered ? 1 : 0};
+  stats.lastRun={s:o.s, h:o.h};
+  if((stats.scoreRuns||0)===1 && !stats.r1) stats.r1=Object.assign({at:Date.now()}, o);
+}
+function telemetryOnState(prev, cur){
+  const r=stats.r1;
+  if(prev==='over' && r && r.ob==null){ r.ob=cur; r.os=Math.round((Date.now()-r.at)/1000); saveStats(); }
+}
+function runSummary(){
+  const r=stats.r1||{}, l=stats.lastRun||{};
+  const os = r.ob==null && r.at && state==='over' ? Math.round((Date.now()-r.at)/1000) : (r.os||0);
+  return { scr: telemetryScreen(), opens: stats.opens||0, r1s: r.s||0, r1sc: r.sc||0, r1h: r.h||0, r1k: r.k||'',
+    r1rv: r.rv||0, r1os: os, r1ob: r.ob||'', lrs: l.s||0, lrh: l.h||0 };
+}
+
 function telemetrySummary(){
   // İlk açılış zamanı herkes için (eskiden yalnız KVKK kararında yazılıyordu).
   if(!stats.firstSeen) stats.firstSeen=Date.now();
@@ -104,7 +131,7 @@ function telemetrySummary(){
     noads: !!stats.premiumNoAds, pass: !!stats.seasonPremium, since: stats.firstSeen||0,
     day: dayStat().d, dayGames: dayStat().g, dayMins: Math.floor(dayStat().s/60),
     ft: stats.ft||0, runs: stats.scoreRuns||0, days: stats.activeDays||1,
-    ...perfSummary(),
+    ...perfSummary(), ...runSummary(),
   };
 }
 // İlk deneyim hunisi (panel → Raporlar → Oyuncu yolculuğu). Oyuncunun ulaştığı
@@ -197,11 +224,16 @@ function initTelemetry(){
   });
   // Oynama süresi: yalnız oyun ekranı açık ve uygulama öndeyken sayılır
   // (stats oyun sonunda zaten kaydediliyor).
+  let stPrev=null, stSince=0;
   setInterval(()=>{
     const fr=_frames; _frames=0;
+    if(state!==stPrev){ if(stPrev!==null) telemetryOnState(stPrev, state); stPrev=state; stSince=Date.now(); }
     if(document.hidden) return;
     if(state==='play'){ stats.playSec=(stats.playSec||0)+1; dayStat().s++; _fpsPlay=_fpsAvg(_fpsPlay, fr); }
-    else if(state==='menu') _fpsMenu=_fpsAvg(_fpsMenu, fr);
+    // Menü FPS'i: açılış logosu + 3D kurulumu (ilk ~8 sn) ve menüye geçişin
+    // ilk 2 sn'si sayılmaz — eskiden yeni oyuncuda yalnız açılışı ölçüyordu.
+    else if(state==='menu' && performance.now()>8000 && Date.now()-stSince>=2000 && !document.getElementById('splash'))
+      _fpsMenu=_fpsAvg(_fpsMenu, fr);
   }, 1000);
   setInterval(()=>telemetryBeat(false), 60000);
   document.addEventListener('visibilitychange', ()=>{

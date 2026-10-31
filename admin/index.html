@@ -368,6 +368,7 @@ function funnelHtml(P) {
     <div class="card" style="margin-top:8px"><span class="muted">Hiç oyun bitirmeden çıkanlar nerede bıraktı? (2.76.1+ sürüm, ${fmt(f.tracked)} oyuncu izlendi${f.tracked ? ', eğitimi bitiren ' + pct(f.tutDone, f.tracked) : ''})</span>
       ${stuckTot ? `<div class="fun" style="margin-top:8px">${stuck}</div>` : '<div class="muted" style="margin-top:6px">Henüz veri yok — 2.76.1 yayına girince dolmaya başlar.</div>'}</div>
     ${perfHtml(f)}
+    ${firstRunHtml(f)}
     <p class="hint">"Oyunu açan" Play'den/App Store'dan gelen herkesi sayar (reklam + organik); oyunu indirip hiç açmayan sayılmaz. Bugünün oyuncuları için "ertesi gün" henüz anlamlı değildir. Oyun sayısına eğitim dahil değildir.</p>`;
 }
 
@@ -449,6 +450,28 @@ function perfHtml(f) {
   return `<div class="card" style="margin-top:8px"><span class="muted">Telefon ve akıcılık (2.76.2+ sürüm, ${fmt(p.measured)} oyuncu ölçüldü · ortanca açılış ${fmt(p.medBoot)} sn)</span>
     <div class="fun" style="margin-top:8px">${rows}</div>
     <details style="margin-top:8px"><summary class="muted">En yavaş telefonlar (FPS oyun / menü)</summary><div style="overflow-x:auto"><table><tr><th>Telefon</th><th>GPU</th><th class="num">RAM</th><th class="num">FPS</th><th>Kalite</th><th class="num">Açılış</th><th class="num">Oyun</th><th>Son adım</th></tr>${dv}</table></div></details></div>`;
+}
+
+// "İlk oyun ve çıkış" (2.76.3+): ilk gerçek oyun nasıl geçti, oyuncu hangi ekranda bıraktı.
+const SCR_TR = { 'play': 'Oyun oynarken', 'play:tut': 'Eğitimde', 'story:tut': 'Eğitimde (atla sorusu)', 'revive': '"Devam et" ekranında', 'over': 'Oyun sonu ekranında',
+  'over:up': 'Oyun sonu (Yetenekler önerisi)', 'upgrades:up': 'Yetenekler rehberinde', 'upgrades': 'Yetenekler ekranında', 'menu': 'Ana menüde', 'pause': 'Duraklatınca',
+  'shop': 'Mağazada', 'ranking': 'Sıralamada', 'settings': 'Ayarlarda' };
+const HAZ_TR = { hazard: 'Cızırtı (1)', hazardJump: 'Sıçrayan (1)', hazardBomb: 'Bomba (1)', hazardPull: 'Çekim (2)', hazardTwin: 'İkiz (2)', hazardPulse: 'Nabız (3)', hazardCreep: 'Sürüngen (4)', '?': 'Bilinmiyor' };
+function firstRunHtml(f) {
+  const r = f.first;
+  if (!r) return '';
+  if (!r.n && !r.quitN) return `<div class="card" style="margin-top:8px"><span class="muted">İlk oyun ve çıkış</span><div class="muted" style="margin-top:6px">Henüz veri yok — 2.76.3 yayına girince dolmaya başlar.</div></div>`;
+  const bars = (o, lab, tot) => Object.entries(o).sort((a, b) => b[1] - a[1]).map(([k, n]) =>
+    `<span>${esc(lab[k] || k)}</span><div class="bar"><i style="width:${Math.max(1, 100 * n / Math.max(1, tot))}%"></i></div><span class="n">${fmt(n)} <span class="muted">${pct(n, tot)}</span></span>`).join('');
+  const nextTot = Object.values(r.next).reduce((s, n) => s + n, 0);
+  const NEXT_TR = { play: 'Tekrar oynadı', upgrades: 'Yeteneklere gitti', menu: 'Ana menüye döndü', ranking: 'Sıralamaya baktı', shop: 'Mağazaya gitti' };
+  return `<div class="card" style="margin-top:8px"><span class="muted">İlk oyun ve çıkış (2.76.3+ sürüm)</span>
+    <div class="rgrid" style="margin-top:8px">${kpi(fmt(r.medSec) + ' sn', 'İlk oyun süresi (ortanca)')}${kpi(fmt(r.medHits), 'İlk oyunda darbe (ortanca)')}
+      ${kpi(fmt(r.medScore), 'İlk oyun skoru (ortanca)')}${kpi(fmt(r.revUsed) + ' / ' + fmt(r.revOffered), '"Devam et" kullanan / teklif edilen')}
+      ${kpi(fmt(r.medOver) + ' sn', 'Oyun sonu ekranında kalma')}${r.opensN ? kpi(pct(r.reopened, r.opensN), 'Oyunu 2+ kez açan') : ''}</div>
+    ${r.quitN ? `<div style="margin-top:10px"><b>En fazla 1 oyun oynayıp çıkanlar nerede bıraktı</b> <span class="muted">(${fmt(r.quitN)} kişi)</span><div class="fun" style="margin-top:6px">${bars(r.quit, SCR_TR, r.quitN)}</div></div>` : ''}
+    ${nextTot ? `<div style="margin-top:10px"><b>İlk oyun sonunda ne yaptı</b><div class="fun" style="margin-top:6px">${bars(r.next, NEXT_TR, nextTot)}</div></div>` : ''}
+    ${r.n ? `<div style="margin-top:10px"><b>İlk oyunu bitiren darbe</b> <span class="muted">(son vuran tehlike, parantezde hasar)</span><div class="fun" style="margin-top:6px">${bars(r.killers, HAZ_TR, r.n)}</div></div>` : ''}</div>`;
 }
 function renderDash() {
   if (!dash) return;

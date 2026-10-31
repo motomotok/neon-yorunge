@@ -136,7 +136,6 @@ const GUIDE_STEPS = {
   },
   // ---- Yetenekler (ilk oyun sonu) ----
   uover(){
-    tutorialHideEl(document.getElementById('retryBtn'));
     tutorialHideEl(document.getElementById('watchAdCoinsBtn'));
     tutorialHideEl(document.querySelector('#screen-over .row2'));
     tutorialSpotlight(document.getElementById('coinsEarned'));
@@ -165,7 +164,7 @@ const GUIDE_STEPS = {
 // input.js: rehber sürerken yalnız beklenen düğme. true = bu gezinmeyi engelle.
 function guideBlocksNav(g){
   if(!guideActive) return false;
-  const want = guideStep==='menu' ? 'duel' : guideStep==='rmenu' ? 'ranking' : guideStep==='uover' ? 'upgrades'
+  const want = guideStep==='menu' ? 'duel' : guideStep==='rmenu' ? 'ranking'
     : ['pick','find','dname','rname','podium','tabs','uhp','rc'].includes(guideStep) ? '__none' : null;
   if(want && g!==want){ beep(200,0.08,'square',0.1); return true; }
   return false;
@@ -174,7 +173,7 @@ function guideBlocksNav(g){
 function guideOnNav(g){
   if(!guideActive) return;
   if(guideStep==='menu' && g==='duel') guideGo(stats.playerName ? 'pick' : 'dname');
-  if(guideStep==='uover' && g==='upgrades') guideGo('uhp');
+  if(guideStep==='uover') g==='upgrades' ? guideGo('uhp') : guideEnd();   // öneri: başka yere giderse rehber biter
   // 'ranking': goRanking → guideRankEnter devralır.
 }
 function guideOnDuelPick(n){

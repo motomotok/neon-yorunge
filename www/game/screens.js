@@ -130,6 +130,7 @@ function goUpgrades(){ state='upgrades'; setHud(false); showScreen('upgrades'); 
 // ve Düello. Eski modlar
 // (Klasik/Zaman/Zen) ve oyun öncesi takviyeler 2.69'da kaldırıldı.
 function startGame(m,d){
+  if(typeof guideActive!=='undefined' && guideActive==='up') guideEnd();
   notifyRecordPlayHour();
   m = m==='duel' ? 'duel' : 'daily';
   if(AC && AC.state!=='running') acResume();
@@ -253,6 +254,7 @@ function gameOver(reason){
   let dsetRes=null;
   if(mode==='daily' && !tutorialActive){
     stats.scoreRuns=(stats.scoreRuns||0)+1;
+    if(typeof telemetryRun==='function') telemetryRun(elapsedSec, runScore);
     if(typeof telemetryFt==='function') telemetryFt(6);
     if(stats.scoreRuns>=5 && typeof trackEvent==='function') trackEvent('run_5', true);
   }
