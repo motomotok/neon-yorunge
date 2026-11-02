@@ -76,6 +76,11 @@ const PW_NOSHIELD = ['slow','magnet','mult'];   // "Kalkansız" ısı mühürü
 const PW_ICON_TYPE = {shield:'shield', slow:'clock', magnet:'magnet', mult:'coin'};
 
 // İlk 3 gerçek oyunda +1 can: yeni oyuncu 2-3 darbede "daha başlamadan" ölmesin.
+// Yeni oyuncu rampası: 0.35'ten başlar, ilk 40 sn'de 1'e (normal) çıkar.
+const NEWBIE_RAMP_FRAMES = 40*60;
+function newbieRamp(){
+  return session && session.newbie ? Math.min(1, 0.35 + 0.65*elapsed/NEWBIE_RAMP_FRAMES) : 1;
+}
 function newbieHp(){
   return (mode==='daily' && !tutorialActive && (stats.scoreRuns||0) < 3 && maxHpFor() < MAX_HP) ? 1 : 0;
 }
@@ -90,6 +95,11 @@ function resetGame(){
   level=1; elapsed=0; spawnCooldown=0; threatCd=150; rareSince=0; teaserCredit=0; teaserLastScore=0; breathT=0; nextBreath=720; shake=0; flash=0; levelFlashT=0;   // threatCd: tehdit yönetmeni ilk ~2.5 sn bekler
   session = {stars:0, golds:0, diamonds:0, magnets:0, hits:0, shieldSaved:false, streakMax:0,
              coins:0, coinPickups:0, luckyCharges:0, noteMult:1, revivedUsed:false, bossesCleared:0};
+  // Yeni oyuncunun ilk 3 gerçek oyunu: tehlikeler seyrek başlar (bkz. newbieRamp),
+  // darbe sonrası koruma uzun. Subway Surfers / Temple Run'daki gibi ilk
+  // saniyeler oyuncuya "oynuyorum" dedirtsin, 20 sn'de ölüp çıkmasın.
+  session.newbie = mode==='daily' && !tutorialActive && (stats.scoreRuns||0) < 3;
+  if(session.newbie) threatCd = 300;   // ilk ~5 sn tehdit yönetmeni susar
   timeLeft = mode==='time' ? 60 : mode==='duel' ? DUEL_SECS : null;
   newRecord=false; timeScale=1; timeScaleT=0;
   bossNextIndex=0; bossClock=0; bossActive=false; bossWaveItems=[]; bossReward=0; bossTelegraph=null; bossQueue=[]; bossNextCol=0; bossEnd=0;
@@ -464,7 +474,7 @@ function spawnItem(atAng, atRing, forceHazard, safe){
   // Çekirdek Ağacı'ndaki "Sağlamlık" dalı tehlike ihtimalini kalıcı olarak
   // hafifçe düşürür — %30'la sınırlı, zorluk hep anlamlı kalsın diye.
   const hazSoftMul = 1-Math.min(0.3, coreBonus('hazardSoften'));
-  const hazChance = zen ? 0 : Math.min(diffCfg.hazCap, diffCfg.hazBase + elapsed*diffCfg.hazRamp)*hazSoftMul;
+  const hazChance = zen ? 0 : Math.min(diffCfg.hazCap, diffCfg.hazBase + elapsed*diffCfg.hazRamp)*hazSoftMul*newbieRamp();
   let ang=atAng, ring=atRing;
   if(ang==null || ring==null){
     let tries=0, ok=false;
@@ -621,7 +631,7 @@ function threatDirector(dt){
     if(spawnItem(ang, r, true)){
       // Yoğun anda ~1.1 sn, sakin anda ~2.5 sn sonra yeni tehdit (nefes payı).
       const intensity = 0.5 + 0.5*Math.sin(elapsed*0.012);
-      threatCd = (65 + (1-intensity)*85)*(diffCfg.threatCdMul||1); return;
+      threatCd = (65 + (1-intensity)*85)*(diffCfg.threatCdMul||1)/newbieRamp(); return;
     }
   }
   threatCd = 12;
@@ -1065,6 +1075,8 @@ function hitHazard(ix,iy,subtype,itm){
   // Kombo Koruması yeteneği: darbe komboyu sıfırlamaz, yarıya indirir.
   combo = hasPerk('comboGuard') ? Math.max(1, Math.floor(combo/2)) : 1;
   hp = Math.max(0, hp-dmg); shake=Math.min(20, 8+dmg*1.2); flash=1; session.hits++; session.lastHit=subtype;
+  if(session.firstHitT==null) session.firstHitT=elapsed/60;
+  if(elapsed<600) session.hits10=(session.hits10||0)+1;
   // İkinci Şans yeteneği: oyunda bir kez, öldürücü darbeden 1 canla kurtulur.
   if(hp<=0 && session.secondChance && !tutorialActive){
     session.secondChance=false; hp=1; player.invulT=INVUL*3;
@@ -1086,7 +1098,7 @@ function hitHazard(ix,iy,subtype,itm){
     else if(mode!=='zen' && mode!=='duel' && !session.revivedUsed) offerRevive();
     else gameOver();
   }
-  else { player.invulT=INVUL; beep(220,0.15,'square',0.1,true); }
+  else { player.invulT=INVUL*(session.newbie ? 2 : 1); beep(220,0.15,'square',0.1,true); }
 }
 
 let reviveTimer=null;

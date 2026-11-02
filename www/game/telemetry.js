@@ -97,6 +97,7 @@ function telemetryScreen(){
 // kaç saniye kaldığı (os) ve oradan nereye gittiği (ob) ekran değişiminde yazılır.
 function telemetryRun(sec, sc){
   const o={s:Math.round(sec), sc:Math.floor(sc), h:session.hits||0, k:session.lastHit||'',
+    fh:Math.round(session.firstHitT!=null ? session.firstHitT : sec), h10:session.hits10||0,
     rv: session.revivedUsed ? 2 : session.reviveOffered ? 1 : 0};
   stats.lastRun={s:o.s, h:o.h};
   if((stats.scoreRuns||0)===1 && !stats.r1) stats.r1=Object.assign({at:Date.now()}, o);
@@ -109,7 +110,7 @@ function runSummary(){
   const r=stats.r1||{}, l=stats.lastRun||{};
   const os = r.ob==null && r.at && state==='over' ? Math.round((Date.now()-r.at)/1000) : (r.os||0);
   return { scr: telemetryScreen(), opens: stats.opens||0, r1s: r.s||0, r1sc: r.sc||0, r1h: r.h||0, r1k: r.k||'',
-    r1rv: r.rv||0, r1os: os, r1ob: r.ob||'', lrs: l.s||0, lrh: l.h||0 };
+    r1rv: r.rv||0, r1os: os, r1ob: r.ob||'', r1fh: r.fh||0, r1h10: r.h10||0, lrs: l.s||0, lrh: l.h||0 };
 }
 
 function telemetrySummary(){

@@ -467,7 +467,7 @@ function firstRunHtml(f) {
   const NEXT_TR = { play: 'Tekrar oynadı', upgrades: 'Yeteneklere gitti', menu: 'Ana menüye döndü', ranking: 'Sıralamaya baktı', shop: 'Mağazaya gitti' };
   return `<div class="card" style="margin-top:8px"><span class="muted">İlk oyun ve çıkış (2.76.3+ sürüm)</span>
     <div class="rgrid" style="margin-top:8px">${kpi(fmt(r.medSec) + ' sn', 'İlk oyun süresi (ortanca)')}${kpi(fmt(r.medHits), 'İlk oyunda darbe (ortanca)')}
-      ${kpi(fmt(r.medScore), 'İlk oyun skoru (ortanca)')}${kpi(fmt(r.revUsed) + ' / ' + fmt(r.revOffered), '"Devam et" kullanan / teklif edilen')}
+      ${kpi(fmt(r.medScore), 'İlk oyun skoru (ortanca)')}${r.fhN ? kpi(fmt(r.medFirstHit) + ' sn', 'İlk darbeye kadar (ortanca)') + kpi(fmt(r.medHits10), 'İlk 10 sn darbe (ortanca)') : ''}${kpi(fmt(r.revUsed) + ' / ' + fmt(r.revOffered), '"Devam et" kullanan / teklif edilen')}
       ${kpi(fmt(r.medOver) + ' sn', 'Oyun sonu ekranında kalma')}${r.opensN ? kpi(pct(r.reopened, r.opensN), 'Oyunu 2+ kez açan') : ''}</div>
     ${r.quitN ? `<div style="margin-top:10px"><b>En fazla 1 oyun oynayıp çıkanlar nerede bıraktı</b> <span class="muted">(${fmt(r.quitN)} kişi)</span><div class="fun" style="margin-top:6px">${bars(r.quit, SCR_TR, r.quitN)}</div></div>` : ''}
     ${nextTot ? `<div style="margin-top:10px"><b>İlk oyun sonunda ne yaptı</b><div class="fun" style="margin-top:6px">${bars(r.next, NEXT_TR, nextTot)}</div></div>` : ''}

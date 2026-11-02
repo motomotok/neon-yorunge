@@ -20,7 +20,7 @@ async function collectFunnel(db) {
     players.push({ d, plat: p.plat || "?", ver: p.ver || "", mins: p.mins || 0, runs, ft: tracked ? p.ft : null,
       fps: p.fps || 0, mfps: p.mfps || 0, dev: p.dev || "", gpu: p.gpu || "", q: p.q || "", ram: p.ram || 0, boot: p.boot || 0,
       scr: p.scr || "", on: p.on === true, opens: p.opens || 0, r1s: p.r1s || 0, r1sc: p.r1sc || 0, r1h: p.r1h || 0, r1k: p.r1k || "",
-      r1rv: p.r1rv || 0, r1os: p.r1os || 0, r1ob: p.r1ob || "",
+      r1rv: p.r1rv || 0, r1os: p.r1os || 0, r1ob: p.r1ob || "", r1fh: p.r1fh, r1h10: p.r1h10,
       returned: typeof p.days === "number" ? p.days >= 2 : last - created >= 20 * 3600000 });
   }
   const med = (a) => { if (!a.length) return 0; const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
@@ -43,7 +43,9 @@ async function collectFunnel(db) {
     const fr = c.filter((p) => p.r1s > 0), quit = c.filter((p) => p.scr && !p.on && p.runs <= 1), op = c.filter((p) => p.opens);
     const first = { n: fr.length, medSec: med(fr.map((p) => p.r1s)), medHits: med(fr.map((p) => p.r1h)), medScore: med(fr.map((p) => p.r1sc)),
       killers: tally(fr.map((p) => p.r1k || "?")), revOffered: fr.filter((p) => p.r1rv >= 1).length, revUsed: fr.filter((p) => p.r1rv === 2).length,
-      next: tally(fr.filter((p) => p.r1ob).map((p) => p.r1ob)), medOver: med(fr.filter((p) => p.r1os).map((p) => p.r1os)),
+      next: tally(fr.filter((p) => p.r1ob).map((p) => p.r1ob)),
+      medFirstHit: med(fr.filter((p) => typeof p.r1fh === "number").map((p) => p.r1fh)), medHits10: med(fr.filter((p) => typeof p.r1h10 === "number").map((p) => p.r1h10)),
+      fhN: fr.filter((p) => typeof p.r1fh === "number").length, medOver: med(fr.filter((p) => p.r1os).map((p) => p.r1os)),
       quitN: quit.length, quit: tally(quit.map((p) => p.scr)), opensN: op.length, reopened: op.filter((p) => p.opens >= 2).length };
     return { perf, first, opened: n, played1: cnt((p) => p.runs >= 1), played3: cnt((p) => p.runs >= 3), played5: cnt((p) => p.runs >= 5), played10: cnt((p) => p.runs >= 10),
       returned: cnt((p) => p.returned), avgMins: n ? r1(c.reduce((s, p) => s + p.mins, 0) / n) : 0, medMins: med(c.map((p) => p.mins)),
