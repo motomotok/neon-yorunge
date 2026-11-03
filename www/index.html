@@ -28,6 +28,8 @@
       <div class="lbl" id="levelLbl" data-i18n="hud_level">Seviye</div><div class="val" id="levelHud">1</div>
       <div class="lbl" id="timerLbl" style="display:none" data-i18n="hud_time">Süre</div><div class="val" id="timerHud" style="display:none">60</div>
       <div class="hudWave" id="waveRow"><span data-i18n="hud_wave">Dalga</span> <b id="waveHud">1</b></div>
+      <!-- İlk iki şarkı (bkz. game/data.js songNext): kalan süre + ilerleme çubuğu -->
+      <div id="songHud" style="display:none"><div class="lbl" id="songLbl">Şarkı 1</div><div class="val" id="songTime">0:40</div><div id="songBar"><i id="songBarFill"></i></div></div>
     </div>
     <div style="text-align:right"><div class="lbl" data-i18n="hud_combo">Combo</div><div class="val" id="combo">x1</div></div>
   </div>
@@ -469,6 +471,8 @@
     <div class="muted" id="overStats">En iyi: 0 · Seviye 1</div>
     <div class="walletBig" style="font-size:16px;padding:6px 16px;" id="coinsEarned"><i class="gicon" data-icon="coin"></i> +0</div>
     <div class="sub" id="nextGoalLine" style="margin:6px 0 0;min-height:1em"></div>
+    <!-- Görevler (bkz. game/screens.js renderMissionsCard) -->
+    <div class="msCard" id="msCard" style="display:none"></div>
     <div class="col">
       <button class="btn" id="retryBtn"><i class="gicon" data-icon="replay"></i> <span data-i18n="btn_retry">TEKRAR</span></button>
       <button class="btn alt" id="dsetOverBtn" style="display:none"><i class="gicon" data-icon="trophy"></i> <span data-i18n="dset_over_btn">Sıralama</span></button>
@@ -478,6 +482,22 @@
         <button class="btn alt small" id="shareBtn"><i class="gicon" data-icon="share"></i> <span data-i18n="btn_share">Paylaş</span></button>
         <button class="btn alt small" data-go="menu" data-i18n="btn_main_menu">ANA MENÜ</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Şarkı 1 bitti: kutlama + ikinci plak hediyesi (bkz. game/screens.js showSongWin) -->
+  <div class="screen" id="screen-songwin">
+    <div class="swTag"><i class="gicon" data-icon="music"></i> <span data-i18n="songwin_tag">ŞARKI TAMAMLANDI</span></div>
+    <div class="swSong" id="swSong">Retro Beats</div>
+    <div class="score swScore" id="swScore">0</div>
+    <div class="walletBig" style="font-size:15px;padding:5px 14px;" id="swNotes"></div>
+    <div class="swGift">
+      <div class="swRecord" id="swRecord"><img id="swRecImg" alt=""></div>
+      <div class="swGiftTxt"><small data-i18n="songwin_new">YENİ PLAK AÇILDI</small><b id="swName">Synth Beats</b><span id="swDesc"></span></div>
+    </div>
+    <div class="col">
+      <button class="btn" id="swPlayBtn"><i class="gicon" data-icon="play"></i> <span id="swPlayLbl">ÇAL</span></button>
+      <button class="btn alt small" id="swLaterBtn" data-i18n="songwin_later">Sonra</button>
     </div>
   </div>
 

@@ -79,7 +79,10 @@ const PW_ICON_TYPE = {shield:'shield', slow:'clock', magnet:'magnet', mult:'coin
 // Yeni oyuncu rampası: 0.35'ten başlar, ilk 40 sn'de 1'e (normal) çıkar.
 const NEWBIE_RAMP_FRAMES = 40*60;
 function newbieRamp(){
-  return session && session.newbie ? Math.min(1, 0.35 + 0.65*elapsed/NEWBIE_RAMP_FRAMES) : 1;
+  if(!session || !session.newbie) return 1;
+  // Şarkı 1: tempo şarkı boyunca yavaşça artar, tam hıza hiç çıkmaz.
+  if(session.song && session.song.n===1) return 0.3 + 0.5*Math.min(1, elapsed/session.song.end);
+  return Math.min(1, 0.35 + 0.65*elapsed/NEWBIE_RAMP_FRAMES);
 }
 function newbieHp(){
   return (mode==='daily' && !tutorialActive && (stats.scoreRuns||0) < 3 && maxHpFor() < MAX_HP) ? 1 : 0;
@@ -100,6 +103,11 @@ function resetGame(){
   // saniyeler oyuncuya "oynuyorum" dedirtsin, 20 sn'de ölüp çıkmasın.
   session.newbie = mode==='daily' && !tutorialActive && (stats.scoreRuns||0) < 3;
   if(session.newbie) threatCd = 300;   // ilk ~5 sn tehdit yönetmeni susar
+  // İlk iki şarkı (bkz. data.js songNext): sonu olan kısa oyun. Görev sayaçları:
+  // toplanan güçlendirme, darbesiz geçen en uzun süre (sn).
+  const songN = (mode==='daily' && !tutorialActive) ? songNext() : 0;
+  session.song = songN ? {n:songN, end:SONG_SECS[songN]*60, finale:false, done:false, doneAt:0} : null;
+  session.powers=0; session.cleanT=0; session.cleanMax=0; session.msNew=[]; session.msSet=false;
   timeLeft = mode==='time' ? 60 : mode==='duel' ? DUEL_SECS : null;
   newRecord=false; timeScale=1; timeScaleT=0;
   bossNextIndex=0; bossClock=0; bossActive=false; bossWaveItems=[]; bossReward=0; bossTelegraph=null; bossQueue=[]; bossNextCol=0; bossEnd=0;
@@ -716,8 +724,10 @@ function burst(x,y,color,n,spd){
 }
 // sub: büyük yazının altında küçük ikinci satır; cls: 'drop' gibi görünüm.
 function showFlash(text,dur,sub,cls){
-  levelFlashT=dur;
   const el=document.getElementById('levelFlash');
+  // Şarkı yazıları (başlık, FİNAL, ŞARKI BİTTİ) görünürken melodi/seviye yazısı ezmesin.
+  if(cls!=='song' && el.className==='song' && levelFlashT>30) return;
+  levelFlashT=dur;
   el.textContent=text; el.className=cls||'';
   if(sub){ const s=document.createElement('small'); s.textContent=sub; el.appendChild(s); }
   // Müzik anlarında kısa bir "vuruş" büyümesi (yalnız transform: GPU'da, boyama yok).
@@ -752,12 +762,16 @@ function update(dt){
   elapsed+=dt;
   const zen = mode==='zen';
   const nl = zen ? level : 1 + Math.floor(elapsed/720);
-  if(nl>level){ level=nl; beep(660,0.1,'triangle',0.13); beep(990,0.12,'sine',0.10); showFlash(t('flash_level',{n:level}),70); vibrate([10,50,10]); }
+  // Şarkıda seviye göstergesi yok: "SEVİYE N" yazısı şarkı yazılarını ezmesin.
+  if(nl>level){ level=nl; beep(660,0.1,'triangle',0.13); beep(990,0.12,'sine',0.10); if(!session.song){ showFlash(t('flash_level',{n:level}),70); vibrate([10,50,10]); } }
 
   if(mode==='time' || mode==='duel'){
     timeLeft -= dt/60;
     if(timeLeft<=0){ timeLeft=0; gameOver('time'); return; }
   }
+  if(session.song){ songTick(); if(state!=='play') return; }
+  session.cleanT += dt/60; if(session.cleanT>session.cleanMax) session.cleanMax=session.cleanT;
+  if(mode==='daily' && !tutorialActive && (_msTick+=dt)>=30){ _msTick=0; missionsCheck(false); }
 
   // Ani hız sıçramalarını (dondurma/yavaşlatma bitince tek karede eski hıza
   // fırlaması) önlemek için hedef çarpana her karede yumuşakça yaklaşılır —
@@ -803,8 +817,9 @@ function update(dt){
   const bossTail = bossActive && bossNextCol>=bossEnd && !bossQueue.length;
   // Nota yağmuru sürerken normal akış (ve dolayısıyla cızırtı) durur; oyuncu
   // bir tam tur dönünce yağmur biter.
+  // Şarkı finali: yağmur bitse de şarkı sonuna kadar cızırtı gelmez.
   if(noteRain>0) noteRain -= angStep*dt*timeScale;
-  else if(!bossActive || bossTail) updateSpawns(dt, bossTail);
+  else if(!bossActive || bossTail) updateSpawns(dt, bossTail || !!(session.song && session.song.finale));
 
   const perkMagnet = hasPerk('noteMagnet') || (mode==='duel' && duelHas('dpMagnet'));
   for(const it of items){
@@ -987,7 +1002,7 @@ function update(dt){
     }
   } else if(!zen && mode!=='duel'){
     const stage = bossStageFor(bossNextIndex);
-    if(!bossTelegraph && noteRain<=0 && !tutorialActive) bossClock += dt;
+    if(!bossTelegraph && noteRain<=0 && !tutorialActive && !session.song) bossClock += dt;   // şarkıda boss yok
     if(bossTelegraph && bossTelegraph.stageIndex===bossNextIndex){
       // Oyun zamanıyla sayılır: duraklatma/reklam/arka planda geçen süre sayılmaz
       // (eskiden duvar saatine bağlıydı; devam edilince boss anında patlıyordu).
@@ -1043,8 +1058,26 @@ function stepGame(frameDt){
   updateHud();
 }
 
-// Nota yağmuru (Boss Avcısı): noteRain = kalan açı (radyan), bkz. üstteki let.
-function startNoteRain(){
+// İlk iki şarkı (bkz. data.js songNext): son SONG_FINALE_SEC saniye cızırtısız
+// nota yağmuru ve tam şarkı; süre dolunca kutlama, 1.5 sn sonra oyun sonu.
+// Süre oyun zamanıyla sayılır (duraklatma / devam ekranı saymaz).
+let _msTick = 0;
+function songTick(){
+  const s=session.song;
+  if(s.done){ if(elapsed>=s.doneAt+90) gameOver('song'); return; }
+  if(!s.finale && elapsed >= s.end - SONG_FINALE_SEC*60){ s.finale=true; startNoteRain('song'); }
+  if(elapsed >= s.end) songComplete();
+}
+function songComplete(){
+  const s=session.song;
+  s.done=true; s.doneAt=elapsed; player.invulT=999;
+  showFlash(t('song_done_flash'),130,t('song_done_sub'),'song');
+  for(let i=0;i<5;i++) burst(CX+(rnd()-0.5)*W*0.6, CY+(rnd()-0.5)*H*0.4, [T.star,T.gold,'#ffffff',T.player,'#ff7ae0'][i], 26, 6);
+  shake=8; vibrate([30,40,30,40,60]);
+  beep(523,0.18,'triangle',0.13); setTimeout(()=>beep(659,0.18,'triangle',0.13),120); setTimeout(()=>beep(784,0.3,'triangle',0.14),240); setTimeout(()=>beep(1046,0.4,'sine',0.12),380);
+}
+// Nota yağmuru (Boss Avcısı, şarkı finali): noteRain = kalan açı (radyan), bkz. üstteki let.
+function startNoteRain(kind){
   for(const it of items){ if(it.alive && (isHazardType(it.type) || it.type==='hazardTwinDecoy')) it.expiring=true; }
   // Halkalar kaydırmalı dizilir (aynı açıda üst üste gelmesin); pena'nın hemen
   // önünden başlar, arkasında küçük bir boşluk kalır. ~15 nota × 3 halka.
@@ -1057,8 +1090,8 @@ function startNoteRain(){
   // Hepsi toplanırsa ~NOTE_RAIN_SCORE puan: nota başına eşit pay.
   for(const it of rain){ it.rainPts = NOTE_RAIN_SCORE/rain.length; items.push(it); }
   noteRain = Math.PI*2 + 0.4;
-  showFlash(t('perk_note_rain_flash'), 70);
-  queueToast(icon('trophy')+' '+t('perk_boss_rain_toast'));
+  if(kind==='song'){ hideIntroCard(); showFlash(t('song_finale_flash'), 110, t('song_finale_sub'), 'song'); }
+  else { showFlash(t('perk_note_rain_flash'), 70); queueToast(icon('trophy')+' '+t('perk_boss_rain_toast')); }
   burst(CX, CY, '#ffd27a', 40, 6); beep(880,0.12,'sine',0.13); beep(1320,0.16,'triangle',0.11);
 }
 
@@ -1074,7 +1107,7 @@ function hitHazard(ix,iy,subtype,itm){
   const lostCombo=combo;
   // Kombo Koruması yeteneği: darbe komboyu sıfırlamaz, yarıya indirir.
   combo = hasPerk('comboGuard') ? Math.max(1, Math.floor(combo/2)) : 1;
-  hp = Math.max(0, hp-dmg); shake=Math.min(20, 8+dmg*1.2); flash=1; session.hits++; session.lastHit=subtype;
+  hp = Math.max(0, hp-dmg); shake=Math.min(20, 8+dmg*1.2); flash=1; session.hits++; session.lastHit=subtype; session.cleanT=0;
   if(session.firstHitT==null) session.firstHitT=elapsed/60;
   if(elapsed<600) session.hits10=(session.hits10||0)+1;
   // İkinci Şans yeteneği: oyunda bir kez, öldürücü darbeden 1 canla kurtulur.
@@ -1157,6 +1190,7 @@ function activatePower(type,x,y){
   // Takviye Süresi yükseltmesi (kalıcı) tüm zamanlı güçlendirmelerin
   // süresini çarpar — kalkanın süresi yok, etkilenmiyor.
   const durMul = 1+upgradeBonus('boostDur');
+  session.powers++;
   if(type==='shield'){ player.shieldHits=shieldHitsFor(); burst(x,y,'#5efc82',12,3.5); beep(700,0.12,'sine',0.13); beep(1050,0.12,'triangle',0.1); }
   else if(type==='slow'){ player.slowT=SLOW_DUR*durMul; burst(x,y,'#7aa2ff',12,3.5); beep(400,0.2,'sine',0.13); }
   else if(type==='magnet'){ player.magnetT=MAGNET_DUR*durMul; session.magnets++; stats.magnets++; burst(x,y,'#ff7ae0',12,3.5); beep(600,0.14,'triangle',0.13); beep(900,0.14,'sine',0.1); }
@@ -1179,7 +1213,8 @@ function updateHud(){
   // "Dalga" satırı: sıradaki boss dalgasının numarası (sonsuz boss sistemi
   // olduğu için sabit bir payda yok, bkz. bossStageFor()). Zen modda boss
   // hiç yok, satır tamamen gizlenir.
-  const waveActive = mode!=='zen' && mode!=='duel';
+  const sg = session && session.song;
+  const waveActive = mode!=='zen' && mode!=='duel' && !sg;
   if(_hud.waveActive!==waveActive){
     document.getElementById('waveRow').style.display = waveActive ? '' : 'none';
     _hud.waveActive=waveActive;
@@ -1198,7 +1233,7 @@ function updateHud(){
   // yüzden herhangi bir takviye aktifken ipucu geçici olarak gizleniyor.
   const anyPowerupActive = player.shieldHits>0 || player.slowT>0 || player.magnetT>0 || player.multT>0 || !!(session && session.risk);
   let goalText='';
-  if(mode!=='zen' && mode!=='duel' && !bossActive && !anyPowerupActive){
+  if(mode!=='zen' && mode!=='duel' && !bossActive && !anyPowerupActive && !sg){
     // Boss yaklaşınca (son 15 sn) geri sayım; değilse rekora kalan puan; rekor
     // geçildiyse yine boss geri sayımı.
     const bossSec = bossSecondsLeft(), recordRemain = stats.best - score;
@@ -1217,12 +1252,23 @@ function updateHud(){
   const hpText = mode==='zen' ? '∞' : hp+'/'+maxHp;
   if(_hud.hpText!==hpText){ document.getElementById('hpText').textContent=hpText; _hud.hpText=hpText; }
   const isTime = mode==='time' || mode==='duel';
-  if(_hud.isTime!==isTime){
+  // Orta sütun: seviye, süre (düello) ya da şarkı (ilk iki şarkı: kalan süre + çubuk).
+  const midKey = isTime ? 'time' : sg ? 'song'+sg.n : 'level';
+  if(_hud.isTime!==midKey){
     document.getElementById('timerLbl').style.display = isTime?'block':'none';
     document.getElementById('timerHud').style.display = isTime?'block':'none';
-    document.getElementById('levelLbl').style.display = isTime?'none':'block';
-    document.getElementById('levelHud').style.display = isTime?'none':'block';
-    _hud.isTime=isTime;
+    document.getElementById('levelLbl').style.display = midKey==='level'?'block':'none';
+    document.getElementById('levelHud').style.display = midKey==='level'?'block':'none';
+    document.getElementById('songHud').style.display = sg?'block':'none';
+    if(sg) document.getElementById('songLbl').textContent = t('song_hud',{n:sg.n});
+    _hud.isTime=midKey;
+  }
+  if(sg){
+    const left = Math.max(0, Math.ceil((sg.end-elapsed)/60));
+    const songText = Math.floor(left/60)+':'+String(left%60).padStart(2,'0');
+    if(_hud.songT!==songText){ document.getElementById('songTime').textContent=songText; _hud.songT=songText; }
+    const p = Math.round(Math.min(1, elapsed/sg.end)*200)/200;
+    if(_hud.songP!==p){ document.getElementById('songBarFill').style.transform='scaleX('+p+')'; _hud.songP=p; }
   }
   if(isTime){
     const timerText=Math.ceil(timeLeft)+'s';
@@ -1286,7 +1332,7 @@ function chip(iconKey,cls){ return `<div class="pwchip${cls?' '+cls:''}">${icon(
 const RISK_DUR = 420, RISK_FIRST = 900, RISK_MIN_SCORE = 250, RISK_CLEAN_BONUS = 60;
 let riskCd = RISK_FIRST;
 function riskReady(){
-  if(riskCd>0 || mode==='zen' || mode==='duel' || tutorialActive || score<RISK_MIN_SCORE) return false;
+  if(riskCd>0 || mode==='zen' || mode==='duel' || tutorialActive || score<RISK_MIN_SCORE || session.song) return false;
   if(session.risk || bossActive || bossTelegraph || noteRain>0) return false;
   for(const it of items) if(it.alive && isRisk(it.type)) return false;
   return true;
@@ -1393,7 +1439,7 @@ const INTRO_FAMILY = {attackOrb:'power', coin:'good', diamond:'good', shield:'po
 let introCd=0, _introHideT=null;
 function introCheck(dt){
   if(introCd>0){ introCd-=dt; return; }
-  if(tutorialActive || bossActive || bossTelegraph) return;
+  if(tutorialActive || bossActive || bossTelegraph || (session.song && session.song.finale)) return;
   const seen = stats.seenIntro || (stats.seenIntro=[]);
   for(const it of items){
     if(!it.alive || it.expiring || it.boss || it.pop<0.6) continue;

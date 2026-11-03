@@ -25,11 +25,28 @@ function _loadScriptOnce(src){
   });
 }
 
+// Ekran kartı yoksa (tarayıcı WebGL'i işlemciyle çiziyor: SwiftShader,
+// llvmpipe) 3D saniyede birkaç kareye düşer — oyun hiç açılmamış gibi takılır.
+// Böyle cihazlar 3D paketi hiç indirmeden klasik çizimle başlar.
+function gfxSoftwareGpu(){
+  try{
+    const g=document.createElement('canvas').getContext('webgl');
+    if(!g) return false;
+    const ext=g.getExtension('WEBGL_debug_renderer_info');
+    const r=String(ext ? g.getParameter(ext.UNMASKED_RENDERER_WEBGL) : g.getParameter(g.RENDERER)||'');
+    const lose=g.getExtension('WEBGL_lose_context'); if(lose) lose.loseContext();
+    return /SwiftShader|llvmpipe|Software|softpipe/i.test(r);
+  }catch(e){ return false; }
+}
 function syncGfxMode(){
   const c3=document.getElementById('game3d');
   if(cfg.gfx!=='3d'){ if(c3) c3.style.display='none'; return; }
   if(_gfx3dState==='ready'){ c3.style.display='block'; return; }
   if(_gfx3dState==='loading' || _gfx3dState==='failed') return;
+  if(!cfg.gfxSwChecked){
+    cfg.gfxSwChecked=true; saveCfg();
+    if(gfxSoftwareGpu()){ gfx3dFailed('software-gpu'); return; }
+  }
   _gfx3dState='loading';
   // Manifest yoksa/bozuksa da 3D çalışsın (tüm slotlar klasik görsele düşer).
   _loadScriptOnce('assets3d/manifest.js').catch(()=>{})
@@ -68,7 +85,7 @@ function gfx3dFailed(reason){
   }
   cfg.gfx='classic'; saveCfg();
   const c3=document.getElementById('game3d'); if(c3) c3.style.display='none';
-  if(typeof queueToast==='function') queueToast(t('gfx_unsupported_toast'));
+  if(typeof queueToast==='function') queueToast(t(reason==='slow' || reason==='software-gpu' ? 'gfx_slow_toast' : 'gfx_unsupported_toast'));
   if(typeof syncGfxSettings==='function') syncGfxSettings();
 }
 
@@ -120,6 +137,7 @@ function renderFrame3D(dt){
   f.skinImg=penaImg(); f.playerColor=playerColor(); f.colorblind=cfg.colorblind; f.easeOut=easeOut;
   try{ Render3D.render(f); }
   catch(e){ gfx3dFailed(e && e.message); }
+  gfxSlowWatch();
   if(state==='menu' && (++_menuAnchorTick % 12)===1) syncMenuAnchors();
   // ~10 sn'de bir: hangi GPU'da hangi seviye/FPS ile oynandığı çökme
   // raporlarına eklensin (zorlanan cihazları gerçek veriden görmek için).
@@ -130,6 +148,24 @@ function renderFrame3D(dt){
   }
   // Ayarlar açıkken otomatik kalite değişirse işaretli seviye güncellensin.
   if(state==='settings' && (++_menuAnchorTick % 30)===0) syncGfxSettings();
+}
+
+// Otomatik kalitede oyun art arda 6 sn saniyede 15 karenin altında (ya da 3D en
+// düşük seviyeye inmişken 18'in altında) kalırsa klasik çizime geçilir ve
+// kaydedilir; Ayarlar > 3D Grafik'ten geri açılabilir. Kalite düşürme adımları
+// (render3d trackFps) ~20 sn sürüyor: o kadar beklenirse ilk şarkının yarısı
+// takılarak geçiyordu. Yalnız oyun ekranı ölçülür.
+let _slowT0=0, _slowFrames=0, _slowSecs=0;
+function gfxSlowWatch(){
+  if(state!=='play' || document.hidden || (cfg.gfxQuality||'auto')!=='auto'){ _slowT0=0; _slowSecs=0; return; }
+  const now=performance.now();
+  if(!_slowT0){ _slowT0=now; _slowFrames=0; return; }
+  _slowFrames++;
+  if(now-_slowT0 < 1000) return;
+  const fps=_slowFrames*1000/(now-_slowT0); _slowT0=now; _slowFrames=0;
+  const q=Render3D.info ? Render3D.info().quality : 'low';
+  _slowSecs = (fps<15 || (fps<18 && q==='low')) ? _slowSecs+1 : 0;
+  if(_slowSecs>=6){ _slowSecs=0; gfx3dFailed('slow'); }
 }
 
 // Ana menüde "Reklamsız Premium" şeridi pikap kolu (iğne) ile plağın üst

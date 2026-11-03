@@ -90,6 +90,8 @@ function telemetryScreen(){
   let s=String(state||'');
   if(typeof tutorialActive!=='undefined' && tutorialActive) s+=':tut';
   else if(typeof guideActive!=='undefined' && guideActive) s+=':'+guideActive;
+  else if(state==='over' && document.getElementById('screen-songwin').classList.contains('active')) s+=':song';
+  else if((state==='play' || state==='pause' || state==='revive') && session && session.song) s+=':s'+session.song.n;
   return s.slice(0,16);
 }
 // İlk gerçek oyun (r1) ve son oyun: süre, skor, darbe, öldüren tehlike, devam
@@ -132,6 +134,8 @@ function telemetrySummary(){
     noads: !!stats.premiumNoAds, pass: !!stats.seasonPremium, since: stats.firstSeen||0,
     day: dayStat().d, dayGames: dayStat().g, dayMins: Math.floor(dayStat().s/60),
     ft: stats.ft||0, runs: stats.scoreRuns||0, days: stats.activeDays||1,
+    // İlk iki şarkı (0 sırada Ş1 · 1 Ş1 bitti · 2 bitti), Ş1 denemesi, biten görev, görev seti.
+    sg: stats.songStage||0, s1t: stats.song1Tries||0, msn: (stats.mset && stats.mset.n)||0, msl: (stats.mset && stats.mset.lv)||0,
     ...perfSummary(), ...runSummary(),
   };
 }

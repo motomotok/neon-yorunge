@@ -215,6 +215,8 @@ const Music = (function(){
       let lv = musicLevelFor(c);
       // Öğretici: "olayımız müzik" — şarkı kombo beklemeden duyulur.
       if(typeof tutorialActive!=='undefined' && tutorialActive) lv = Math.max(lv, tutorialMusicLv||1);
+      // İlk iki şarkı: plağın şarkısı baştan duyulsun (bas), finalde tam şarkı.
+      else if(typeof session!=='undefined' && session && session.song) lv = Math.max(lv, session.song.finale ? 4 : 1);
       if(cur.level<0) setLevel(lv, true);
       else if(c!==lastCombo || lv!==cur.level) setLevel(lv, false);
       lastCombo = c;
@@ -244,6 +246,8 @@ const Music = (function(){
       return Math.pow(2, semi/12);
     },
     playing(){ return !!cur; },
+    // Sıradaki şarkıyı önceden çöz (Şarkı 1 → 2 geçişinde sessiz bekleme olmasın).
+    preload(name){ if(MUSIC_TRACKS[name] && ensureCtx() && !buffers[name] && loadingName!==name) load(name).catch(()=>{}); },
     // Ses kaydırıcısı (ayarlar / duraklat) sürüklenirken anında uygular.
     setVolume(){ if(out) out.gain.setTargetAtTime(musicVolume(), ctx.currentTime, 0.05); },
     // Oyunda kombo ile dolan bir tema şarkısı duyuluyor mu (yazılar için).

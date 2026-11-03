@@ -369,7 +369,8 @@ function funnelHtml(P) {
       ${stuckTot ? `<div class="fun" style="margin-top:8px">${stuck}</div>` : '<div class="muted" style="margin-top:6px">Henüz veri yok — 2.76.1 yayına girince dolmaya başlar.</div>'}</div>
     ${perfHtml(f)}
     ${firstRunHtml(f)}
-    <p class="hint">"Oyunu açan" Play'den/App Store'dan gelen herkesi sayar (reklam + organik); oyunu indirip hiç açmayan sayılmaz. Bugünün oyuncuları için "ertesi gün" henüz anlamlı değildir. Oyun sayısına eğitim dahil değildir.</p>`;
+    ${songHtml(f)}
+    <p class="hint">"Oyunu açan" Play'den/App Store'dan gelen herkesi sayar (reklam + organik); oyunu indirip hiç açmayan sayılmaz.${f.bots ? ' Google Play test robotları (' + fmt(f.bots) + ' cihaz: sahte GPU / emülatör) hiçbir sayıya dahil değildir.' : ''} Bugünün oyuncuları için "ertesi gün" henüz anlamlı değildir. Oyun sayısına eğitim dahil değildir.</p>`;
 }
 
 // "Oyuncu yolculuğu" — Pasla (Google Analytics 4 huni raporu; functions/dash.js collectPaslaFunnel).
@@ -454,9 +455,25 @@ function perfHtml(f) {
 
 // "İlk oyun ve çıkış" (2.76.3+): ilk gerçek oyun nasıl geçti, oyuncu hangi ekranda bıraktı.
 const SCR_TR = { 'play': 'Oyun oynarken', 'play:tut': 'Eğitimde', 'story:tut': 'Eğitimde (atla sorusu)', 'revive': '"Devam et" ekranında', 'over': 'Oyun sonu ekranında',
+  'play:s1': 'Şarkı 1 çalarken', 'pause:s1': 'Şarkı 1 (duraklatınca)', 'revive:s1': 'Şarkı 1 "Devam et"', 'play:s2': 'Şarkı 2 çalarken', 'pause:s2': 'Şarkı 2 (duraklatınca)',
+  'revive:s2': 'Şarkı 2 "Devam et"', 'over:song': 'Şarkı bitti / yeni plak ekranı',
   'over:up': 'Oyun sonu (Yetenekler önerisi)', 'upgrades:up': 'Yetenekler rehberinde', 'upgrades': 'Yetenekler ekranında', 'menu': 'Ana menüde', 'pause': 'Duraklatınca',
   'shop': 'Mağazada', 'ranking': 'Sıralamada', 'settings': 'Ayarlarda' };
 const HAZ_TR = { hazard: 'Cızırtı (1)', hazardJump: 'Sıçrayan (1)', hazardBomb: 'Bomba (1)', hazardPull: 'Çekim (2)', hazardTwin: 'İkiz (2)', hazardPulse: 'Nabız (3)', hazardCreep: 'Sürüngen (4)', '?': 'Bilinmiyor' };
+// İlk iki şarkı ve görevler (2.77.0+, bkz. www/game/data.js songNext / MISSION_POOL).
+function songHtml(f) {
+  const s = f.song;
+  if (!s) return '';
+  if (!s.n) return `<div class="card" style="margin-top:8px"><span class="muted">İlk iki şarkı ve görevler</span><div class="muted" style="margin-top:6px">Henüz veri yok — 2.77.0 yayına girince dolmaya başlar.</div></div>`;
+  const qTot = Object.values(s.quit).reduce((a, b) => a + b, 0);
+  const bars = Object.entries(s.quit).sort((a, b) => b[1] - a[1]).map(([k, n]) =>
+    `<span>${esc(SCR_TR[k] || k)}</span><div class="bar"><i style="width:${Math.max(1, 100 * n / Math.max(1, qTot))}%"></i></div><span class="n">${fmt(n)} <span class="muted">${pct(n, qTot)}</span></span>`).join('');
+  return `<div class="card" style="margin-top:8px"><span class="muted">İlk iki şarkı ve görevler (2.77.0+ sürüm, ${fmt(s.n)} yeni oyuncu)</span>
+    <div class="rgrid" style="margin-top:8px">${kpi(pct(s.s1, s.n), 'Şarkı 1\'i bitiren (ikinci plağı kazanan)')}${kpi(fmt(s.medTries), 'Şarkı 1 deneme (bitirenlerde ortanca)')}
+      ${kpi(pct(s.s2, s.n), 'Şarkı 2\'yi oynayan (sonsuz moda geçen)')}${kpi(pct(s.ms1, s.n), 'En az 1 görev bitiren')}${kpi(pct(s.ms3, s.n), 'İlk görev setini bitiren (3 görev)')}
+      ${kpi(fmt(s.medMs), 'Biten görev (ortanca)')}</div>
+    ${qTot ? `<div style="margin-top:10px"><b>En fazla 2 oyun oynayıp çıkanlar nerede bıraktı</b> <span class="muted">(${fmt(qTot)} kişi)</span><div class="fun" style="margin-top:6px">${bars}</div></div>` : ''}</div>`;
+}
 function firstRunHtml(f) {
   const r = f.first;
   if (!r) return '';

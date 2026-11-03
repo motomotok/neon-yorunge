@@ -11,9 +11,15 @@ async function collectFunnel(db) {
   const D7 = trDate(now - 6 * DAY), D30 = trDate(now - 29 * DAY);
   const snap = await db.collection("players").where("lastSeen", ">=", new Date(now - 31 * DAY)).get();
   const players = [];
+  // Google Play'in yayın öncesi test robotları (yazılımla çizen sahte GPU,
+  // emülatör) gerçek oyuncu değil: huniyi bozuyorlardı (öğreticide "çıkan",
+  // 1-6 FPS'li "OnePlus8Pro"lar). Sayılmaz, yalnız adetleri gösterilir.
+  const isBot = (p) => /SwiftShader|Emulator|llvmpipe/i.test(p.gpu || "") || /^sdk_gphone/i.test(p.dev || "");
+  const bots = { today: 0, yesterday: 0, d7: 0, d30: 0 };
   for (const doc of snap.docs) {
     const p = doc.data(), created = doc.createTime.toMillis(), d = trDate(created);
     if (d < D30) continue;
+    if (isBot(p)) { bots.d30++; if (d >= D7) bots.d7++; if (d === TODAY) bots.today++; if (d === YESTERDAY) bots.yesterday++; continue; }
     const last = p.lastSeen ? p.lastSeen.toMillis() : created;
     const tracked = typeof p.ft === "number" && p.ft !== 99;   // 2.76.1+ ilk deneyim adımları
     const runs = typeof p.runs === "number" ? p.runs : Math.max(0, (p.games || 0) - 1);   // eski sürümde öğretici 1 oyun sayılıyordu
@@ -21,6 +27,7 @@ async function collectFunnel(db) {
       fps: p.fps || 0, mfps: p.mfps || 0, dev: p.dev || "", gpu: p.gpu || "", q: p.q || "", ram: p.ram || 0, boot: p.boot || 0,
       scr: p.scr || "", on: p.on === true, opens: p.opens || 0, r1s: p.r1s || 0, r1sc: p.r1sc || 0, r1h: p.r1h || 0, r1k: p.r1k || "",
       r1rv: p.r1rv || 0, r1os: p.r1os || 0, r1ob: p.r1ob || "", r1fh: p.r1fh, r1h10: p.r1h10,
+      sg: p.sg, s1t: p.s1t || 0, msn: p.msn || 0, msl: p.msl || 0,
       returned: typeof p.days === "number" ? p.days >= 2 : last - created >= 20 * 3600000 });
   }
   const med = (a) => { if (!a.length) return 0; const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
@@ -47,12 +54,19 @@ async function collectFunnel(db) {
       medFirstHit: med(fr.filter((p) => typeof p.r1fh === "number").map((p) => p.r1fh)), medHits10: med(fr.filter((p) => typeof p.r1h10 === "number").map((p) => p.r1h10)),
       fhN: fr.filter((p) => typeof p.r1fh === "number").length, medOver: med(fr.filter((p) => p.r1os).map((p) => p.r1os)),
       quitN: quit.length, quit: tally(quit.map((p) => p.scr)), opensN: op.length, reopened: op.filter((p) => p.opens >= 2).length };
-    return { perf, first, opened: n, played1: cnt((p) => p.runs >= 1), played3: cnt((p) => p.runs >= 3), played5: cnt((p) => p.runs >= 5), played10: cnt((p) => p.runs >= 10),
+    // İlk iki şarkı ve görevler (2.77.0+): sg yazan sürümdeki yeni oyuncular.
+    const sp = c.filter((p) => typeof p.sg === "number" && (p.s1t > 0 || p.sg > 0));
+    const song = { n: sp.length, s1: sp.filter((p) => p.sg >= 1).length, s2: sp.filter((p) => p.sg >= 2).length,
+      medTries: med(sp.filter((p) => p.sg >= 1).map((p) => p.s1t)), ms1: sp.filter((p) => p.msn >= 1).length,
+      ms3: sp.filter((p) => p.msn >= 3).length, medMs: med(sp.map((p) => p.msn)), quit: tally(sp.filter((p) => !p.on && p.runs <= 2).map((p) => p.scr || "?")) };
+    return { perf, first, song, opened: n, played1: cnt((p) => p.runs >= 1), played3: cnt((p) => p.runs >= 3), played5: cnt((p) => p.runs >= 5), played10: cnt((p) => p.runs >= 10),
       returned: cnt((p) => p.returned), avgMins: n ? r1(c.reduce((s, p) => s + p.mins, 0) / n) : 0, medMins: med(c.map((p) => p.mins)),
       avgRuns: n ? r1(c.reduce((s, p) => s + p.runs, 0) / n) : 0, medRuns: med(c.map((p) => p.runs)),
       tracked: tr.length, tutDone: tr.filter((p) => p.ft >= 4).length, stuck, plat };
   }
-  return { today: cohort(TODAY, TODAY), yesterday: cohort(YESTERDAY, YESTERDAY), d7: cohort(D7, TODAY), d30: cohort(D30, TODAY), reads: snap.size };
+  const out = { today: cohort(TODAY, TODAY), yesterday: cohort(YESTERDAY, YESTERDAY), d7: cohort(D7, TODAY), d30: cohort(D30, TODAY), reads: snap.size };
+  for (const k of Object.keys(bots)) out[k].bots = bots[k];
+  return out;
 }
 
 module.exports = { collectFunnel };

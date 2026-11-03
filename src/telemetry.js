@@ -47,7 +47,7 @@ async function beat(s) {
     fps: int(s.fps, 240), mfps: int(s.mfps, 240), dev: str(s.dev, 32), gpu: str(s.gpu, 48), q: str(s.q, 8),
     ram: int(s.ram, 64), boot: int(s.boot, 3000),
     scr: str(s.scr, 16), opens: int(s.opens, 1e6), r1s: int(s.r1s, 3600), r1sc: int(s.r1sc, 2e6), r1h: int(s.r1h, 100),
-    r1k: str(s.r1k, 12), r1rv: int(s.r1rv, 2), r1os: int(s.r1os, 86400), r1ob: str(s.r1ob, 12), r1fh: int(s.r1fh, 3600), r1h10: int(s.r1h10, 100), lrs: int(s.lrs, 3600), lrh: int(s.lrh, 100),
+    r1k: str(s.r1k, 12), r1rv: int(s.r1rv, 2), r1os: int(s.r1os, 86400), r1ob: str(s.r1ob, 12), r1fh: int(s.r1fh, 3600), r1h10: int(s.r1h10, 100), lrs: int(s.lrs, 3600), lrh: int(s.lrh, 100), sg: int(s.sg, 2), s1t: int(s.s1t, 999), msn: int(s.msn, 99999), msl: int(s.msl, 9999),
     lastSeen: serverTimestamp(),
   }, { merge: true });
   return u.uid;

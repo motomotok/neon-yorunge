@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.76.4';
+const GAME_VERSION = '2.77.0';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -583,6 +583,8 @@ if((stats.heatSeals||[]).length && !(stats.sealsOwned||[]).length) stats.sealsOw
 // 2.69: oyun öncesi takviyeler kaldırıldı — eldekiler satış fiyatından notaya
 // çevrilir (bir kez). Menü açılınca bilgi verilir (stats.boostRefundShown).
 if(stats.scoreRuns==null) stats.scoreRuns = Math.max(0, (stats.games||0) - (stats.tutorialDone ? 1 : 0));
+// İlk iki şarkı (bkz. songNext) yalnız yeni oyunculara: oynamış olan atlar.
+if(stats.songStage==null) stats.songStage = stats.scoreRuns>0 ? 2 : 0;
 if(!stats.boostRefundDone){
   let refund=0;
   for(const b of BOOSTS) refund += (stats.boosts && stats.boosts[b.id]||0) * b.price;
@@ -946,6 +948,115 @@ function ensureTodayQuest(){
   }
 }
 function currentQuest(){ return QUEST_POOL.find(q=>q.id===stats.questId)||QUEST_POOL[0]; }
+
+// İlk iki şarkı (2.77.0): yeni oyuncunun ilk gerçek oyunları sonsuz değil,
+// sonu olan kısa birer şarkı (ilerleme çubuğu, son 5 sn cızırtısız nota
+// finali, "Şarkı bitti!" kutlaması). Veride ilk gerçek oyunda ~%40 oyunun
+// ortasında çıkıyordu: hedefsiz, ölünce biten oyun yerine kazanılan bir şarkı.
+//  Şarkı 1 (40 sn) bitince ikinci plak (Synth Beats) hediye edilir ve tek
+//  dokunuşla onun şarkısı çalar: oyuncu her plağın kendi şarkısı ve dünyası
+//  olduğunu oynayarak öğrenir. Şarkı 2 (60 sn) bitince +SONG2_NOTES, sonra
+//  sonsuz mod. Şarkı 1 kazanılana kadar tekrar edilir; şarkı 2 tek denemedir.
+// stats.songStage: 0 = sırada Şarkı 1 · 1 = sırada Şarkı 2 · 2 = bitti.
+const SONG_SECS = [0, 40, 60], SONG_FINALE_SEC = 5, SONG_MAX_RUNS = 5;
+const SONG_GIFT_THEME = 'synthbeats', SONG2_NOTES = 150;
+function songNext(){
+  const st = stats.songStage||0;
+  if(st>=2 || (stats.scoreRuns||0) >= SONG_MAX_RUNS) return 0;
+  return st+1;
+}
+
+// Görevler (2.77.0, Subway Surfers'taki gibi): her an 3 görev açık. Biri
+// bitince notası hemen verilir (oyun içinde de), üçü bitince set bonusu
+// (elmas) ve bir sonraki, biraz daha zor set gelir. 'total' görevler oyunlar
+// boyunca birikir, 'run' görevleri tek oyunda yapılmalı. İlk set elle seçildi:
+// tekrar oynatır (3 oyun), notaya ve x10 komboya (melodinin açıldığı an) yönlendirir.
+const MISSION_POOL = {
+  games:  {scope:'total', icon:'replay',    tg:[3,4,5,6,8,10]},
+  notes:  {scope:'total', icon:'music',     tg:[50,80,120,160,220,300]},
+  combo:  {scope:'run',   icon:'flame',     tg:[10,12,15,18,22,28]},
+  survive:{scope:'run',   icon:'hourglass', tg:[45,60,75,90,120,150]},
+  score:  {scope:'run',   icon:'star',      tg:[150,250,400,550,750,1000]},
+  powers: {scope:'total', icon:'lightning', tg:[2,3,4,6,8,10]},
+  nohit:  {scope:'run',   icon:'shield',    tg:[12,15,20,25,30,40]},
+  coins:  {scope:'total', icon:'coin',      tg:[2,3,4,6,8,10]},
+  boss:   {scope:'total', icon:'medal',     tg:[1,1,2,2,3,3], minLv:3},
+};
+const MISSION_FIRST_SET = ['games','notes','combo'];
+const MISSION_NOTES = [50,60,75,90,110,130], MISSION_SET_GEMS = 3;
+function missionReward(lv){ return MISSION_NOTES[Math.min(lv,MISSION_NOTES.length)-1]; }
+function missionMake(id, lv){
+  const d=MISSION_POOL[id];
+  return {id, tg:d.tg[Math.min(lv,d.tg.length)-1], acc:0, best:0, done:false};
+}
+// Set yoksa ilk seti, set bittiyse (bonus verildi) sıradaki seti kurar.
+// Oyun başında çağrılır: bitmiş set oyun sonu ekranında bir kez görünür kalsın.
+function missionsEnsure(){
+  const ms=stats.mset;
+  if(!ms || !Array.isArray(ms.list) || !ms.list.length){
+    stats.mset={lv:1, list:MISSION_FIRST_SET.map(id=>missionMake(id,1)), n:(ms && ms.n)||0, paid:false};
+    return;
+  }
+  if(!ms.paid) return;
+  const lv=ms.lv+1, prev=ms.list.map(m=>m.id);
+  let ids=Object.keys(MISSION_POOL).filter(id=>!(MISSION_POOL[id].minLv>lv));
+  const fresh=ids.filter(id=>!prev.includes(id));
+  if(fresh.length>=3) ids=fresh;
+  for(let i=ids.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [ids[i],ids[j]]=[ids[j],ids[i]]; }
+  stats.mset={lv, list:ids.slice(0,3).map(id=>missionMake(id,lv)), n:ms.n||0, paid:false};
+}
+function missionText(m){ return t('ms_'+m.id,{n:m.tg}); }
+// Bu oyundaki değer (bkz. engine.js session); end = oyun sonu ('games' +1 sayar).
+function missionCur(id, end){
+  const s=session; if(!s) return 0;
+  switch(id){
+    case 'games': return end ? 1 : 0;
+    case 'notes': return s.stars||0;
+    case 'combo': return s.streakMax||0;
+    case 'survive': return Math.floor(elapsed/60);
+    case 'score': return Math.floor(score);
+    case 'powers': return s.powers||0;
+    case 'nohit': return Math.floor(s.cleanMax||0);
+    case 'coins': return s.coinPickups||0;
+    case 'boss': return s.bossesCleared||0;
+  }
+  return 0;
+}
+function missionProgress(m, end){
+  if(m.done) return m.tg;
+  const c=missionCur(m.id, end);
+  return MISSION_POOL[m.id].scope==='total' ? m.acc+c : Math.max(m.best, c);
+}
+// Oyun içinde (yarım saniyede bir) ve oyun sonunda: biten görevin notası hemen
+// verilir; üçü de bitince set bonusu. Sıradaki set bir sonraki oyunda kurulur.
+function missionsCheck(end){
+  const ms=stats.mset; if(!ms || ms.paid || !session) return;
+  let any=false;
+  for(const m of ms.list){
+    if(m.done || missionProgress(m,end) < m.tg) continue;
+    m.done=true; any=true; ms.n=(ms.n||0)+1;
+    const r=missionReward(ms.lv); addNotes(r);
+    session.msNew.push(m.id);
+    queueToast(icon('check')+' '+t('ms_done_toast',{text:missionText(m), n:r})+' '+icon('coin'));
+    beep(880,0.1,'triangle',0.12); beep(1320,0.14,'sine',0.1);
+  }
+  if(any && ms.list.every(m=>m.done)){
+    ms.paid=true; session.msSet=true; addGems(MISSION_SET_GEMS);
+    queueToast(icon('trophy')+' '+t('ms_set_toast',{n:ms.lv, g:MISSION_SET_GEMS})+' '+icon('gem'));
+  }
+  if(any) saveStats();
+}
+// Oyun sonu: birikenler eklenir, tek oyunluk en iyiler güncellenir.
+function missionsRunEnd(){
+  const ms=stats.mset; if(!ms) return;
+  missionsCheck(true);
+  for(const m of ms.list){
+    if(m.done) continue;
+    const c=missionCur(m.id, true);
+    if(MISSION_POOL[m.id].scope==='total') m.acc+=c; else m.best=Math.max(m.best, c);
+  }
+  saveStats();
+}
 
 const ACHIEVEMENTS = [
   {id:'first', icon:'star', nameKey:'ach_first_name', descKey:'ach_first_desc', reward:50, check:(s)=>s.games>=1},

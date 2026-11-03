@@ -60,6 +60,8 @@ document.getElementById('nameSaveBtn').addEventListener('click', e=>{ e.stopProp
 document.getElementById('nameCancelBtn').addEventListener('click', e=>{ e.stopPropagation(); closeNameDialog(); const f=_nameDone; _nameDone=null; if(f) f(); });
 document.getElementById('nameInput').addEventListener('keydown', e=>{ e.stopPropagation(); if(e.key==='Enter') saveNameDialog(); });
 document.getElementById('retryBtn').addEventListener('click', e=>{ e.stopPropagation(); startGame(); });
+document.getElementById('swPlayBtn').addEventListener('click', e=>{ e.stopPropagation(); songPlayNext(); });
+document.getElementById('swLaterBtn').addEventListener('click', e=>{ e.stopPropagation(); songWinLater(); });
 document.getElementById('shareBtn').addEventListener('click', e=>{ e.stopPropagation(); shareScore(); });
 document.getElementById('watchAdCoinsBtn').addEventListener('click', e=>{ e.stopPropagation(); watchAdForCoins(); });
 document.getElementById('watchAdCoinsShopBtn').addEventListener('click', e=>{ e.stopPropagation(); watchAdForCoins(); });

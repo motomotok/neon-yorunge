@@ -11,7 +11,7 @@
 //    götürür. İsim yoksa önce isim yazdırır, sonra "Merhaba X" diye günlük
 //    ödülleri (kürsü) ve haftalık / tüm zamanlar sekmelerini anlatır.
 //  İsim iki rehberde ortaktır: birinde yazıldıysa diğeri sormaz, adıyla selamlar.
-//  - 'up': yeni öğreticiyi görenlerde ilk gerçek oyunun sonunda → YETENEKLER
+//  - 'up': yeni öğreticiyi görenlerde ilk iki şarkı bitince (data.js songNext) → YETENEKLER
 //    → hoş geldin hediyesiyle Can Kapasitesi al (screens.js gameOver).
 //  - 'recycle': Süpernova ilk kez Çekirdek verecek seviyeye gelince
 //    Yetenekler ekranında bir kez anlatılır (screens.js goUpgrades).
@@ -63,6 +63,8 @@ function guideStart(id){
 // screens.js gameOver: ilk gerçek oyun bittiğinde.
 function guideCheckOver(){
   if(guideActive || tutorialActive || !stats.guideUpPending || mode!=='daily') return;
+  if(songNext()>0) return;   // ilk iki şarkı bitmeden değil: önce şarkıyı bitirsin
+
   setTimeout(()=>{ if(!guideActive && state==='over') guideStart('up'); }, 900);
 }
 // screens.js goUpgrades: Süpernova ilk kez Çekirdek verebilir hâle gelince.

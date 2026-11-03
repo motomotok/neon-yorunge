@@ -1644,3 +1644,67 @@ body.duel #walletChip, body.duel #walletEndHud{display:none;}
 #kvkkBarNo{background:none;border:0;color:inherit;opacity:.55;font-size:11px;padding:6px 8px;cursor:pointer;font-family:inherit;}
 #kvkkBarYes{flex:1;margin:0;padding:11px 14px;font-size:15px;font-weight:800;box-shadow:0 0 18px rgba(255,201,74,.45);animation:kvkkGlow 1.8s ease-in-out infinite;}
 @keyframes kvkkGlow{50%{box-shadow:0 0 28px rgba(255,201,74,.75)}}
+
+/* ---- İlk iki şarkı (2.77.0, bkz. game/data.js songNext) ---- */
+/* Oyun içi: orta sütunda şarkı no + kalan süre + ilerleme çubuğu. */
+#songHud{will-change:transform;}
+#songBar{width:92px;height:6px;margin:4px auto 0;border-radius:3px;background:rgba(255,255,255,.16);overflow:hidden;
+  box-shadow:0 0 0 1px rgba(255,255,255,.06) inset;}
+#songBar i{display:block;height:100%;background:linear-gradient(90deg,var(--star),var(--gold));transform-origin:0 50%;transform:scaleX(0);
+  transition:transform .3s linear;box-shadow:0 0 10px var(--star);}
+#levelFlash.song{color:#fff;text-shadow:0 0 24px var(--star),0 0 4px #fff;}
+#levelFlash.song small{color:var(--gold);text-shadow:0 0 12px rgba(0,0,0,.85);}
+.badge.song{background:linear-gradient(90deg,var(--star),#d8fbff);color:#06222a;box-shadow:0 0 22px var(--star);}
+/* Şarkı 1 bitti ekranı: kutlama + yeni plak hediyesi. */
+.swTag{font-family:var(--font-ui);font-weight:900;letter-spacing:3px;font-size:13px;color:var(--gold);
+  display:flex;align-items:center;gap:6px;text-shadow:0 0 14px rgba(255,210,74,.5);animation:pop .4s ease;}
+.swTag .gicon{width:16px;height:16px;}
+.swSong{font-size:14px;opacity:.7;letter-spacing:1px;margin-top:-4px;}
+.swScore{font-size:clamp(40px,12vw,72px);}
+.swGift{display:flex;align-items:center;gap:14px;width:100%;max-width:400px;margin-top:6px;padding:14px 16px;border-radius:20px;
+  background:linear-gradient(150deg,rgba(255,255,255,.09),rgba(255,255,255,.03));border:1px solid rgba(255,255,255,.18);
+  box-shadow:0 0 30px rgba(0,0,0,.35);text-align:left;animation:swIn .6s .25s ease both;}
+@keyframes swIn{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:none}}
+.swRecord{--rec:#120a30;--glow:#19e3ff;flex:none;width:96px;height:96px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:repeating-radial-gradient(circle,#0c0c10 0 3px,#1b1b22 3px 6px);
+  box-shadow:0 0 0 2px rgba(255,255,255,.14),0 0 28px var(--glow),0 6px 18px rgba(0,0,0,.5);animation:dsrSpin 2.4s linear infinite;}
+.swRecord img{width:46%;height:46%;border-radius:50%;object-fit:cover;box-shadow:0 0 0 2px var(--rec);}
+.swGiftTxt{display:flex;flex-direction:column;gap:3px;min-width:0;}
+.swGiftTxt small{font-size:11px;font-weight:900;letter-spacing:2px;color:var(--gold);}
+.swGiftTxt b{font-family:var(--font-display);font-size:clamp(20px,6vw,26px);line-height:1.1;}
+.swGiftTxt span{font-size:13px;opacity:.8;line-height:1.4;}
+#swPlayBtn{animation:kvkkGlow 1.8s ease-in-out infinite;}
+
+/* ---- Görevler (2.77.0, bkz. game/screens.js renderMissionsCard) ---- */
+.msCard{width:100%;max-width:420px;padding:9px 12px 8px;border-radius:16px;background:rgba(0,0,0,.32);
+  border:1px solid rgba(255,255,255,.14);display:flex;flex-direction:column;gap:5px;text-align:left;}
+.msHead{display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:900;letter-spacing:2px;
+  text-transform:uppercase;opacity:.85;}
+.msHead span{display:flex;align-items:center;gap:5px;} .msHead .gicon{width:13px;height:13px;}
+.msHead b{color:var(--gold);letter-spacing:1px;}
+.msRow{display:flex;align-items:center;gap:8px;font-size:12.5px;line-height:1.25;min-height:22px;}
+.msIc{flex:none;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.1);}
+.msIc .gicon{width:12px;height:12px;}
+.msTxt{flex:1;min-width:0;font-weight:600;}
+.msBar{flex:none;width:44px;height:5px;border-radius:3px;background:rgba(255,255,255,.16);overflow:hidden;}
+.msBar i{display:block;height:100%;background:var(--gold);transform-origin:0 50%;}
+.msVal{flex:none;min-width:44px;text-align:right;font-size:12px;font-variant-numeric:tabular-nums;color:#ffd28a;display:flex;align-items:center;justify-content:flex-end;gap:3px;}
+.msVal .gicon{width:13px;height:13px;}
+.msRow.done .msTxt{opacity:.55;text-decoration:line-through;}
+.msRow.done .msIc{background:rgba(94,252,130,.22);color:#5efc82;}
+.msRow.new{animation:msNew 1.2s .3s ease both;}
+.msRow.new .msTxt{opacity:1;text-decoration:none;color:#b8ffca;}
+@keyframes msNew{0%{transform:scale(1)}25%{transform:scale(1.05);filter:brightness(1.6)}100%{transform:none}}
+.msFoot{font-size:11px;opacity:.6;display:flex;align-items:center;gap:4px;}
+.msFoot .gicon,.msSet .gicon{width:12px;height:12px;}
+.msSet{font-size:12px;font-weight:800;color:#7fe8ff;display:flex;align-items:center;gap:5px;}
+/* Kısa ekranlarda (ör. 360×640) oyun sonu sığsın: Tekrar ilk bakışta görünsün. */
+@media (max-height:740px){
+  #screen-over{gap:7px;}
+  #screen-over .score{font-size:clamp(40px,12vw,64px);}
+  #screen-over .btn{padding-top:12px;padding-bottom:12px;}
+  #screen-songwin{gap:8px;}
+  .swRecord{width:80px;height:80px;}
+}
+/* Oyun sonu / şarkı ekranı taşınca öğeler küçülüp üst üste binmesin (ekran kayar). */
+#screen-over > *, #screen-songwin > *{flex-shrink:0;}

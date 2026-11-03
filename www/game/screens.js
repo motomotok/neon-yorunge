@@ -149,9 +149,15 @@ function startGame(m,d){
     metaOff = true;
   } else rngFn = Math.random;
   pendingBoost=null; activeBoost=null;
+  if(mode==='daily') missionsEnsure();
   resetGame(); state='play'; setHud(true); showScreen(null); showTutorialHint();
   if(dsetDay) session.dsetDay = dsetDay;
   beep(440,0.1,'sine',0.12);
+  // İlk iki şarkı: başlık kartı (şarkı no + plağın adı).
+  if(session.song){
+    if(session.song.n===1) stats.song1Tries=(stats.song1Tries||0)+1;
+    showFlash(t('song_flash',{n:session.song.n}), 150, t('song_flash_sub',{name:t(T.nameKey), s:SONG_SECS[session.song.n]}), 'song');
+  }
   // En az bir kalıcı yükseltme alınmışsa, deneme başında kısa bir "güç
   // özeti" — oyuncu kasarak kazandığı gücü her denemede hissetsin.
   if(mode!=='zen' && mode!=='duel' && totalPowerLevel()>0){
@@ -257,6 +263,22 @@ function gameOver(reason){
     if(typeof telemetryRun==='function') telemetryRun(elapsedSec, runScore);
     if(typeof telemetryFt==='function') telemetryFt(6);
     if(stats.scoreRuns>=5 && typeof trackEvent==='function') trackEvent('run_5', true);
+    missionsRunEnd();
+  }
+  // İlk iki şarkı (bkz. data.js songNext): Şarkı 1 kazanılınca ikinci plak
+  // hediye; Şarkı 2 tek denemedir (kazanırsa +nota); sonra sonsuz mod.
+  const song = (mode==='daily' && !tutorialActive) ? session.song : null;
+  const songWin = !!(song && song.done);
+  if(song){
+    if(song.n===1 && songWin){
+      stats.songStage=1;
+      if(!stats.owned.themes.includes(SONG_GIFT_THEME)) stats.owned.themes.push(SONG_GIFT_THEME);
+      if(typeof trackEvent==='function') trackEvent('song1_done', true);
+    } else if(song.n===2){
+      stats.songStage=2;
+      if(songWin) addNotes(SONG2_NOTES);
+    }
+    if((stats.scoreRuns||0) >= SONG_MAX_RUNS && stats.songStage<2) stats.songStage=2;
   }
   if(mode==='daily'){
     stats.dailyDate=todayStr(); stats.dailyScore=runScore; stats.dailyCount=(stats.dailyCount||0)+1;
@@ -298,9 +320,13 @@ function gameOver(reason){
   const melodyOctave=Math.floor(session.streakMax/MELODY_SCALE.length);
   const melodyText = melodyOctave>0 ? t('melody_octave',{n:melodyOctave}) : '';
   document.getElementById('overStats').textContent=t('over_stats_line',{n:stats.games, reason:reasonText, best:(ranked ? stats.best : (stats.zenBest||0)).toFixed(2), level, melody:melodyText});
-  document.getElementById('recordBadge').innerHTML = (newRecord ? `<span class="badge">${icon('trophy')} ${t('new_record_badge')}</span>` : '')
+  document.getElementById('recordBadge').innerHTML = (songWin && song.n===2 ? `<span class="badge song">${icon('music')} ${t('song_done_badge',{n:SONG2_NOTES})}</span> ` : '')
+    + (newRecord ? `<span class="badge">${icon('trophy')} ${t('new_record_badge')}</span>` : '')
     + (session.heatLevel>0 ? ` <span class="badge heat">${icon('flame')} ${t('heat_badge',{n:session.heatLevel, m:session.heatMult.toFixed(2)})}</span>` : '');
-  document.getElementById('nextGoalLine').textContent = mode==='daily' ? dsetOverText(dsetRes) : nextGoalLineText(runScore, newRecord);
+  document.getElementById('nextGoalLine').textContent = song && song.n===1 && !songWin ? t('song1_lost_goal',{name:t(THEMES[SONG_GIFT_THEME].nameKey)})
+    : song && song.n===2 ? t('song_endless_line')
+    : mode==='daily' ? dsetOverText(dsetRes) : nextGoalLineText(runScore, newRecord);
+  renderMissionsCard();
   document.getElementById('dsetOverBtn').style.display = mode==='daily' ? '' : 'none';
   if(mode==='zen'){
     document.getElementById('coinsEarned').innerHTML = `${icon('moon')} ${t('zen_no_stardust')}`;
@@ -308,7 +334,9 @@ function gameOver(reason){
     const totalEarned = session.coins + scoreBonus;
     document.getElementById('coinsEarned').innerHTML = `${icon('coin')} +${totalEarned} <span style="opacity:.6;font-size:12px">${t('coins_earned_detail',{pickups:session.coins, bonus:scoreBonus})}</span>`;
   }
-  setHud(false); showScreen('over'); syncAdButtons();
+  setHud(false); syncAdButtons();
+  if(song && song.n===1 && songWin){ showSongWin(runScore); return; }
+  showScreen('over');
   beep(200,0.3,'sine',0.12);
   // Bu oyunda zaten reklam izleyip devam ettiyse oyun sonunda ikinci bir
   // reklam çıkmaz (test geri bildirimi: tek "devam" için art arda 3 reklam).
@@ -326,6 +354,57 @@ function gameOver(reason){
   }
   if(tutorialActive && typeof tutorialOnGameOver==='function') tutorialOnGameOver();
   else if(typeof guideCheckOver==='function') guideCheckOver();
+}
+
+// Şarkı 1 bitti: oyun sonu yerine kutlama + ikinci plak hediyesi. "Çal" yeni
+// plağı takar ve Şarkı 2'yi hemen başlatır (müzik ve dünya birlikte değişir);
+// "Sonra" normal oyun sonu ekranına geçer (görevler, Tekrar).
+function showSongWin(runScore){
+  const gift=THEMES[SONG_GIFT_THEME], name=t(gift.nameKey);
+  document.getElementById('swSong').textContent = t(T.nameKey);
+  document.getElementById('swScore').textContent = runScore.toFixed(2);
+  document.getElementById('swNotes').innerHTML = document.getElementById('coinsEarned').innerHTML;
+  document.getElementById('swRecImg').src = themeLabelSrc(SONG_GIFT_THEME);
+  document.getElementById('swRecord').style.setProperty('--rec', gift.bg1);
+  document.getElementById('swRecord').style.setProperty('--glow', gift.star);
+  document.getElementById('swName').textContent = name;
+  document.getElementById('swDesc').textContent = t('songwin_desc',{name});
+  document.getElementById('swPlayLbl').textContent = t('songwin_play',{name});
+  showScreen('songwin');
+  if(typeof Music!=='undefined' && Music.preload) Music.preload(THEME_MUSIC[SONG_GIFT_THEME]);
+  beep(660,0.15,'triangle',0.12); setTimeout(()=>beep(990,0.25,'sine',0.11),160);
+}
+function songPlayNext(){
+  if(state!=='over') return;
+  applyTheme(SONG_GIFT_THEME);
+  startGame('daily');
+}
+function songWinLater(){
+  if(state!=='over') return;
+  showScreen('over'); beep(200,0.3,'sine',0.12);
+}
+
+// Oyun sonu ekranındaki görev kartı (bkz. data.js MISSION_POOL): bu oyunda
+// biten görev parlar ve notasını gösterir; set bittiyse bonus satırı.
+function renderMissionsCard(){
+  const el=document.getElementById('msCard'); if(!el) return;
+  const ms=stats.mset;
+  if(!ms || mode!=='daily' || tutorialActive){ el.style.display='none'; return; }
+  el.style.display='';
+  const fresh=(session && session.msNew) || [], r=missionReward(ms.lv);
+  const done=ms.list.filter(m=>m.done).length;
+  let h=`<div class="msHead"><span>${icon('target')} ${t('ms_title',{n:ms.lv})}</span><b>${done}/3</b></div>`;
+  for(const m of ms.list){
+    // Oyun bitti: bu oyunun değeri missionsRunEnd'de zaten eklendi.
+    const p=m.done ? m.tg : MISSION_POOL[m.id].scope==='total' ? m.acc : m.best, frac=Math.min(1, p/m.tg), isNew=fresh.includes(m.id);
+    h+=`<div class="msRow${m.done?' done':''}${isNew?' new':''}"><i class="msIc">${icon(m.done?'check':MISSION_POOL[m.id].icon)}</i>`
+      +`<span class="msTxt">${missionText(m)}</span>`
+      +(m.done ? `<b class="msVal">${isNew?'+'+r+' '+icon('coin'):icon('check')}</b>`
+        : `<span class="msBar"><i style="transform:scaleX(${frac})"></i></span><b class="msVal">${Math.min(p,m.tg)}/${m.tg}</b>`)+`</div>`;
+  }
+  if(ms.paid) h+=`<div class="msSet">${icon('trophy')} ${t('ms_set_line',{g:MISSION_SET_GEMS})} ${icon('gem')}</div>`;
+  else h+=`<div class="msFoot">${t('ms_reward_line',{n:r})} ${icon('coin')}</div>`;
+  el.innerHTML=h;
 }
 
 function addToLeaderboard(scoreVal){
