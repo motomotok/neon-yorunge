@@ -52,11 +52,22 @@ function tutorialGoStep(step, arg){
   if(S) S(arg);
 }
 
-// Oyuncunun önüne (yarım tur ileriye) etiketli bir öğe koyar.
-const TUTORIAL_ITEM_DIST = Math.PI;
+// Oyuncunun önüne etiketli bir öğe koyar: plağın alt yarısına ya da yan
+// kenarlarına (ekranda aşağı = sin>0; sin > TUT_MIN_SIN). Üstte DJ Vinil'in
+// kutusu duruyor; eskiden sabit yarım tur ileri konuyordu, pena alttayken öğe
+// kutunun arkasında kalıyordu. 3D'de plak daha büyük göründüğü için sınır
+// yatayın biraz üstünde kalır (2D ve 3D'de kutunun altında ölçüldü).
+// En az TUTORIAL_ITEM_DIST ileride: oyuncunun dokunmaya vakti olsun.
+const TUTORIAL_ITEM_DIST = Math.PI*0.75, TUT_MIN_SIN = -0.2;
+function tutorialSpawnAng(){
+  for(let d=TUTORIAL_ITEM_DIST; d<TUTORIAL_ITEM_DIST+Math.PI*2; d+=0.05){
+    if(Math.sin(player.ang+d) > TUT_MIN_SIN) return normAng(player.ang+d);
+  }
+  return Math.PI/2;
+}
 function tutorialSpawnItem(type, tag, ring, angOffset){
   const r = ring==null ? player.targetRing : ring;
-  items.push({ang: normAng(player.ang+(angOffset==null ? TUTORIAL_ITEM_DIST : angOffset)), ring:r, type, alive:true, pop:0,
+  items.push({ang: angOffset==null ? tutorialSpawnAng() : normAng(player.ang+angOffset), ring:r, type, alive:true, pop:0,
     expiring:false, prevFwd:null, jumpT:0, pulsePhase:0, pulseDanger:false, creepT:0, creeped:false,
     tutorialTag:tag});
   _tutPending[tag] = {type, ring:r, resolved:false};

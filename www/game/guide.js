@@ -15,7 +15,7 @@
 //    → hoş geldin hediyesiyle Can Kapasitesi al (screens.js gameOver).
 //  - 'recycle': Süpernova ilk kez Çekirdek verecek seviyeye gelince
 //    Yetenekler ekranında bir kez anlatılır (screens.js goUpgrades).
-const DUEL_UNLOCK_RUNS = 3, RANK_GUIDE_RUNS = 7;
+const DUEL_UNLOCK_RUNS = 3, RANK_GUIDE_RUNS = 7, GUIDE_UP_RUNS = 3;
 let guideActive = null, guideStep = null;
 
 function duelUnlocked(){
@@ -63,7 +63,8 @@ function guideStart(id){
 // screens.js gameOver: ilk gerçek oyun bittiğinde.
 function guideCheckOver(){
   if(guideActive || tutorialActive || !stats.guideUpPending || mode!=='daily') return;
-  if(songNext()>0) return;   // ilk iki şarkı bitmeden değil: önce şarkıyı bitirsin
+  // İlk iki şarkı bitmeden ve ilk 3 oyundan önce değil: oyuncu önce oyunu sevsin.
+  if(songNext()>0 || (stats.scoreRuns||0) < GUIDE_UP_RUNS) return;
 
   setTimeout(()=>{ if(!guideActive && state==='over') guideStart('up'); }, 900);
 }
@@ -137,12 +138,18 @@ const GUIDE_STEPS = {
     narratorSay(t('guide_rank_3'), {pos:'bottom', cta:t('tut_cta_understood'), onCta:()=>guideEnd()});
   },
   // ---- Yetenekler (ilk oyun sonu) ----
+  // Görev kartı gizlenir ve DJ Vinil üstte konuşur: YETENEKLER düğmesi
+  // kutunun arkasında kalmasın (görev kartı ekranı uzatıp düğmeyi aşağı itiyordu).
   uover(){
     tutorialHideEl(document.getElementById('watchAdCoinsBtn'));
     tutorialHideEl(document.querySelector('#screen-over .row2'));
+    tutorialHideEl(document.getElementById('msCard'));
+    tutorialHideEl(document.getElementById('nextGoalLine'));
+    const upBtn=document.querySelector('#screen-over [data-go="upgrades"]');
     tutorialSpotlight(document.getElementById('coinsEarned'));
-    tutorialSpotlight(document.querySelector('#screen-over [data-go="upgrades"]'));
-    narratorSay(t('tut2_over',{b:t('menu_upgrades')}), {pos:'bottom'});
+    tutorialSpotlight(upBtn);
+    narratorSay(t('tut2_over',{b:t('menu_upgrades')}), {pos:'top'});
+    requestAnimationFrame(()=>{ const sc=document.getElementById('screen-over'); if(sc) sc.scrollTop=sc.scrollHeight; });
   },
   uhp(){
     guideGiveGift();
