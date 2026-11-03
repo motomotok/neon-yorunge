@@ -1,11 +1,13 @@
 // Kalıcı yükseltmeler (roguelike meta-progression) ekranı. Veri/mantık
 // (META_UPGRADES, upgradeLevel/upgradeBonus/nextUpgradeTier/buyUpgrade)
 // data.js'de; burada sadece kartları çizip satın alma akışını bağlıyoruz.
-// Not: mağazadaki showPurchaseConfirm() onay diyaloğu KASITLI olarak
-// kullanılmıyor — burası sık ziyaret edilen, "kasarak harca" ekranı,
-// her satın almada ekstra bir onay adımı akışı gereksiz yavaşlatıyordu.
-// Tek tıkla anında satın alınıyor.
+// Satın almadan önce onay sorulur (2.77.2): tek tıkla anında alım "yanlışlıkla
+// aldım" geri bildirimi aldı. Pencerede alınca ne kazanılacağı ve fiyat yazar.
+// Kademe, Süpernova yeteneği ve Isı mührü için aynı onay (bkz. upgradeConfirm).
 let upgradeJustBoughtKey=null, upgradeJustBoughtTimer=null;
+function upgradeConfirm(iconKey, name, price, priceIcon, msg, onYes){
+  showPurchaseConfirm(iconKey, name, price, onYes, msg, priceIcon);
+}
 function renderUpgrades(){
   const grid=document.getElementById('upgradesGrid'); if(!grid) return;
   grid.innerHTML='';
@@ -34,6 +36,8 @@ function renderUpgrades(){
     if(tier){
       card.addEventListener('click', ()=>{
         if((stats.notes||0)<tier.cost){ queueToast(t('insufficient_stardust_short')); beep(200,0.1,'square',0.1); return; }
+        beep(500,0.05,'sine',0.08);
+        upgradeConfirm(track.icon, t(track.nameKey), tier.cost, 'coin', t('upgrade_confirm_msg',{gain:track.format(totalBonus+tier.add)}), ()=>{
         if(buyUpgrade(key)){
           // Kademe kartları onaysız tek tıkla satın alınıyor — hızlı art arda
           // tıklanınca (bkz. kullanıcı geri bildirimi) toast kuyruğu bitmek
@@ -49,6 +53,7 @@ function renderUpgrades(){
           if(tutorialActive && typeof tutorialOnUpgradeBought==='function') tutorialOnUpgradeBought(key);
           if(typeof guideOnUpgradeBought==='function') guideOnUpgradeBought(key);
         }
+        });
       });
     }
     grid.appendChild(card);
@@ -105,9 +110,13 @@ function renderHeat(){
       +`<div class="bdesc upDesc">${t('seal_'+s.id+'_desc')}</div>`+status;
     card.addEventListener('click', ()=>{
       if(!un){
-        if(!buySeal(s.id)){ queueToast(t('core_insufficient_toast')); beep(200,0.1,'square',0.1); return; }
-        beep(330,0.1,'sawtooth',0.07); beep(660,0.12,'triangle',0.1); beep(990,0.14,'sine',0.08);
-        updatePrestigePreview(); renderHeat(); return;
+        if((stats.cores||0)<s.cost){ queueToast(t('core_insufficient_toast')); beep(200,0.1,'square',0.1); return; }
+        upgradeConfirm(s.icon, t('seal_'+s.id+'_name'), s.cost, 'atom', t('seal_'+s.id+'_desc')+' '+t('purchase_confirm_default'), ()=>{
+          if(!buySeal(s.id)){ queueToast(t('core_insufficient_toast')); beep(200,0.1,'square',0.1); return; }
+          beep(330,0.1,'sawtooth',0.07); beep(660,0.12,'triangle',0.1); beep(990,0.14,'sine',0.08);
+          updatePrestigePreview(); renderHeat();
+        });
+        return;
       }
       toggleSeal(s.id);
       if(!on){ beep(330,0.1,'sawtooth',0.07); beep(660,0.12,'triangle',0.1); } else beep(400,0.08,'sine',0.1);
@@ -176,12 +185,14 @@ function renderPerks(){
     card.addEventListener('click', ()=>{
       if(!owned){
         if((stats.cores||0)<p.cost){ queueToast(t('core_insufficient_toast')); beep(200,0.1,'square',0.1); return; }
-        if(buyPerk(p.id)){
-          beep(700,0.1,'sine',0.13); beep(1000,0.1,'triangle',0.12);
-          perkJustId=p.id; clearTimeout(perkJustTimer);
-          perkJustTimer=setTimeout(()=>{ perkJustId=null; renderPerks(); }, 2400);
-          updatePrestigePreview(); renderPerks();
-        }
+        upgradeConfirm(p.icon, t('perk_'+p.id+'_name'), p.cost, 'atom', t('perk_'+p.id+'_desc')+' '+t('purchase_confirm_default'), ()=>{
+          if(buyPerk(p.id)){
+            beep(700,0.1,'sine',0.13); beep(1000,0.1,'triangle',0.12);
+            perkJustId=p.id; clearTimeout(perkJustTimer);
+            perkJustTimer=setTimeout(()=>{ perkJustId=null; renderPerks(); }, 2400);
+            updatePrestigePreview(); renderPerks();
+          }
+        });
         return;
       }
       if(togglePerk(p.id)){

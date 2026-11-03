@@ -151,16 +151,14 @@ const GUIDE_STEPS = {
     narratorSay(t('tut2_over',{b:t('menu_upgrades')}), {pos:'top'});
     requestAnimationFrame(()=>{ const sc=document.getElementById('screen-over'); if(sc) sc.scrollTop=sc.scrollHeight; });
   },
+  // Hediye verilir, Yetenekler anlatılır; satın almaya zorlanmaz ("Anladım" ile
+  // kapanır). Eskiden Can Kapasitesi'ni almadan çıkılamıyordu: notasını önceden
+  // harcayan oyuncuda hediye yetmiyor ve rehber takılı kalıyordu.
   uhp(){
     guideGiveGift();
     upgradesTab='tier'; renderUpgradesTab();
-    tutorialDisableEl(document.getElementById('resetProgressBtn'));
-    tutorialHideEl(document.getElementById('upPlayBtn'));
-    const cards=[...document.querySelectorAll('#upgradesGrid .shopCard')];
-    const hpCard=cards.find(c=>c.dataset.key==='hp');
-    cards.forEach(c=>{ if(c!==hpCard) tutorialDim(c); });
-    tutorialSpotlight(hpCard);
-    narratorSay(t('tut2_buyhp',{n:tutGift(), h:t('up_hp_name')}), {pos:'bottom'});
+    tutorialSpotlight(document.getElementById('upgradesGrid'));
+    narratorSay(t('tut2_skills_info',{n:tutGift()}), {pos:'bottom', cta:t('tut_cta_understood'), onCta:()=>guideEnd()});
   },
   // ---- Süpernova (ilk kez Çekirdek verebilir olunca) ----
   rc(){
@@ -174,7 +172,7 @@ const GUIDE_STEPS = {
 function guideBlocksNav(g){
   if(!guideActive) return false;
   const want = guideStep==='menu' ? 'duel' : guideStep==='rmenu' ? 'ranking'
-    : ['pick','find','dname','rname','podium','tabs','uhp','rc'].includes(guideStep) ? '__none' : null;
+    : ['pick','find','dname','rname','podium','tabs','rc'].includes(guideStep) ? '__none' : null;
   if(want && g!==want){ beep(200,0.08,'square',0.1); return true; }
   return false;
 }
@@ -183,6 +181,7 @@ function guideOnNav(g){
   if(!guideActive) return;
   if(guideStep==='menu' && g==='duel') guideGo(stats.playerName ? 'pick' : 'dname');
   if(guideStep==='uover') g==='upgrades' ? guideGo('uhp') : guideEnd();   // öneri: başka yere giderse rehber biter
+  else if(guideStep==='uhp') guideEnd();
   // 'ranking': goRanking → guideRankEnter devralır.
 }
 function guideOnDuelPick(n){
@@ -191,5 +190,5 @@ function guideOnDuelPick(n){
 function guideOnDuelSearch(){ if(guideActive==='duel') guideEnd(); }
 function guideOnUpgradeBought(key){
   if(guideActive==='up' && guideStep==='uhp' && key==='hp' && typeof telemetryFt==='function') telemetryFt(7);
-  if(guideActive==='up' && guideStep==='uhp' && key==='hp') setTimeout(()=>{ if(guideStep==='uhp') guideEnd(); }, 600);
+  if(guideActive==='up' && guideStep==='uhp') setTimeout(()=>{ if(guideStep==='uhp') guideEnd(); }, 600);
 }
