@@ -45,16 +45,14 @@
 <div id="riskVeil" aria-hidden="true"></div>
 <div id="riskEdge" aria-hidden="true"></div>
 <div id="introCard"><canvas width="96" height="96"></canvas><div class="icText"><span class="icTag"></span><b class="icName"></b><small class="icDesc"></small></div></div>
-<div class="hint" id="hint" data-i18n="hint_bar">SOL → iç halka &nbsp;·&nbsp; SAĞ → dış halka</div>
+<div class="hint sideChips" id="hint"><span class="sideChip in" id="chipIn"><i></i><b data-i18n="tut_inner">İÇ HALKA</b></span><span class="sideChip out" id="chipOut"><i></i><b data-i18n="tut_outer">DIŞ HALKA</b></span></div>
 <div id="tutorialHint">
   <div class="tutTap tutTap-left">
     <div class="tutPulse"></div>
-    <div class="tutArrow"><i class="gicon" data-icon="back"></i></div>
     <div class="tutLabel" data-i18n="tut_inner">İÇ HALKA</div>
   </div>
   <div class="tutTap tutTap-right">
     <div class="tutPulse"></div>
-    <div class="tutArrow tutArrow-flip"><i class="gicon" data-icon="back"></i></div>
     <div class="tutLabel" data-i18n="tut_outer">DIŞ HALKA</div>
   </div>
 </div>
@@ -240,16 +238,19 @@
     <div class="screenBody">
       <div class="toggleGrid">
         <div class="toggle quad"><i class="gicon" data-icon="speaker"></i><span data-i18n="toggle_sound">Ses</span> <div class="sw" id="soundSw"></div></div>
+        <div class="toggle quad"><i class="gicon" data-icon="music"></i><span data-i18n="toggle_music">Müzik</span> <div class="sw" id="musicSw"></div></div>
+        <div class="toggle quad"><i class="gicon" data-icon="atom"></i><span data-i18n="toggle_gfx3d">3D Grafik</span> <div class="sw" id="gfxSw"></div></div>
+        <div class="toggle quad" id="notifyRow" style="display:none"><i class="gicon" data-icon="bell"></i><span data-i18n="toggle_notify">Bildirimler</span> <div class="sw" id="notifySw"></div></div>
         <div class="toggle quad"><i class="gicon" data-icon="bigbtn"></i><span data-i18n="toggle_big">Büyük Butonlar</span> <div class="sw" id="bigSw"></div></div>
         <div class="toggle quad"><i class="gicon" data-icon="hand"></i><span data-i18n="toggle_hand">Sol El Modu</span> <div class="sw" id="handSw"></div></div>
         <div class="toggle quad"><i class="gicon" data-icon="eye"></i><span data-i18n="toggle_cb">Renk Körü Simgeler</span> <div class="sw" id="cbSw"></div></div>
-        <div class="toggle half"><i class="gicon" data-icon="music"></i><span data-i18n="toggle_music">Müzik</span> <div class="sw" id="musicSw"></div></div>
-        <div class="toggle half"><i class="gicon" data-icon="atom"></i><span data-i18n="toggle_gfx3d">3D Grafik</span> <div class="sw" id="gfxSw"></div></div>
-        <div class="toggle wide" id="notifyRow" style="display:none"><span><i class="gicon" data-icon="bell"></i> <span data-i18n="toggle_notify">Bildirimler</span></span> <div class="sw" id="notifySw"></div></div>
+        <div class="toggle quad"><i class="gicon" data-icon="lightning"></i><span data-i18n="toggle_arcs">Yön Işıkları</span> <div class="sw" id="arcsSw"></div></div>
       </div>
+      <div class="setDuo">
       <div class="setNameRow"><i class="gicon" data-icon="trophy"></i><span class="snLbl" data-i18n="set_name_label">Oyuncu adın</span><b id="setNameVal">—</b>
         <button class="btn small" id="setNameBtn"><span data-i18n="set_name_btn">İsim Değiştir</span></button></div>
       <div class="volRow"><i class="gicon" data-icon="music"></i><span data-i18n="music_volume">Müzik Sesi</span><input type="range" class="musicVol" min="0" max="100" step="5" aria-label="Müzik Sesi"></div>
+      </div>
       <!-- Grafik kalitesi: "Otomatik" açıkken oyun cihaza göre seçer ve seçtiği
            seviye aşağıda işaretli görünür; oyuncu bir seviyeye dokunursa
            Otomatik kapanır ve o seviye sabitlenir. -->
@@ -265,13 +266,13 @@
         </div>
         <div class="gfxQHint" id="gfxQHint"></div>
       </div>
+      <div class="acctGrid">
       <div class="acctRow" id="acctRow">
         <div class="acctCard" id="playGamesCard">
           <div class="acctStatus" id="playGamesStatusText"><i class="gicon" data-icon="trophy"></i> <span data-i18n="playgames_label">Play Games</span></div>
           <button class="btn alt small" id="playGamesBtn" data-i18n="playgames_connect">Bağlan</button>
         </div>
       </div>
-      <div class="sub" id="acctLinkDesc" style="margin-top:10px" data-i18n="account_link_desc">Hesabını bağla, cihaz değiştirsen bile satın alımların ve sezon biletin kaybolmasın.</div>
       <div class="acctRow cols2" id="linkRow">
         <div class="acctCard" id="linkGoogleCard">
           <div class="acctStatus" id="linkGoogleStatusText"><i class="gicon" data-icon="gem"></i> Google</div>
@@ -282,19 +283,23 @@
           <button class="btn alt small" id="linkAppleBtn" data-i18n="account_link_btn">Bağla</button>
         </div>
       </div>
-      <div class="acctRow" id="acctSignOutRow" style="display:none;margin-top:8px">
+      </div>
+      <div class="sub" id="acctLinkDesc" data-i18n="account_link_desc">Hesabını bağla, cihaz değiştirsen bile satın alımların ve sezon biletin kaybolmasın.</div>
+      <div class="acctGrid">
+      <div class="acctRow" id="acctSignOutRow" style="display:none">
         <div class="acctCard">
           <div class="acctStatus" data-i18n="account_signout_label">Hesaptan çıkış yap</div>
           <button class="btn alt small" id="signOutBtn" data-i18n="account_signout_btn">Çıkış yap</button>
         </div>
       </div>
-      <div class="acctRow" id="acctDeleteRow" style="display:none;margin-top:8px">
+      <div class="acctRow" id="acctDeleteRow" style="display:none">
         <div class="acctCard">
           <div class="acctStatus" data-i18n="account_delete_label">Hesabımı ve bulut verilerimi sil</div>
           <button class="btn alt small" id="deleteAccountBtn" data-i18n="account_delete_btn">Sil</button>
         </div>
       </div>
-      <div class="sub" style="margin-top:4px" data-i18n="theme_label">Tema</div>
+      </div>
+      <div class="sub setThemeLbl" data-i18n="theme_label">Tema</div>
       <div class="themes" id="themeGrid"></div>
     </div>
     <div class="screenFoot">
@@ -473,6 +478,7 @@
     <div class="sub" id="nextGoalLine" style="margin:6px 0 0;min-height:1em"></div>
     <!-- Görevler (bkz. game/screens.js renderMissionsCard) -->
     <div class="msCard" id="msCard" style="display:none"></div>
+    <div class="tmrLine" id="tmrLine" style="display:none"></div>
     <div class="col">
       <button class="btn" id="retryBtn"><i class="gicon" data-icon="replay"></i> <span data-i18n="btn_retry">TEKRAR</span></button>
       <button class="btn alt" id="dsetOverBtn" style="display:none"><i class="gicon" data-icon="trophy"></i> <span data-i18n="dset_over_btn">Sıralama</span></button>
@@ -607,6 +613,20 @@
       <button class="btn small" id="pcYesBtn"><i class="gicon" data-icon="check"></i> <span data-i18n="btn_yes">Evet</span></button>
       <button class="btn alt small" id="pcNoBtn"><i class="gicon" data-icon="cross"></i> <span data-i18n="btn_no">Hayır</span></button>
     </div>
+  </div>
+</div>
+<!-- Tek dokunuşluk geri bildirim (bkz. game/screens.js feedbackShow) -->
+<div id="fbOverlay" style="display:none;position:fixed;inset:0;z-index:35;align-items:center;justify-content:center;background:rgba(2,3,10,.72);padding:18px;">
+  <div class="card" style="max-width:320px;width:100%;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center;">
+    <img src="img/dj_vinil.png" alt="" style="width:64px;height:64px;border-radius:50%">
+    <div id="fbQ" style="font-size:16px;font-weight:800;"></div>
+    <div class="fbGrid">
+      <button class="btn alt small" id="fbBtn1"></button>
+      <button class="btn alt small" id="fbBtn2"></button>
+      <button class="btn alt small" id="fbBtn3"></button>
+      <button class="btn small" id="fbBtn4"></button>
+    </div>
+    <button class="btn alt small" id="fbSkip"></button>
   </div>
 </div>
 

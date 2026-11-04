@@ -2,6 +2,7 @@
 // Bu dosya her zaman script sırasının EN SONUNDA yer almalı.
 if(!stats.bootDs) stats.bootDs=Math.max(1, Math.round(performance.now()/100));
 stats.opens=(stats.opens||0)+1; saveStats();   // kaç kez açıldı (geri dönüyor mu?)
+setTimeout(notifyCollectOpens, 3000);   // bildirime dokunup açtıysa
 hydrateIcons();
 document.getElementById('versionTag').textContent = 'v'+GAME_VERSION;
 if(window.CrashReport) CrashReport.setVersion(GAME_VERSION);
@@ -42,6 +43,7 @@ setTimeout(async ()=>{
   let asked = askedUpdate;
   if(!asked && state==='menu') asked = await dsetClaimPending().catch(()=>false);
   _menuBootDone = true;
+  if(!asked) asked = dailyWelcome();   // KVKK şeridi oyunu kapatmaz; dönen oyuncunun hediyesini bekletmesin
   if(!asked && !askedKvkk && state==='menu') notifyMaybeAsk('launch');
 }, _splashUp ? 4800 : 1500);
 syncAdButtons();

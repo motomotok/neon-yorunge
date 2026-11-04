@@ -369,6 +369,7 @@ function funnelHtml(P) {
       ${stuckTot ? `<div class="fun" style="margin-top:8px">${stuck}</div>` : '<div class="muted" style="margin-top:6px">Henüz veri yok — 2.76.1 yayına girince dolmaya başlar.</div>'}</div>
     ${perfHtml(f)}
     ${firstRunHtml(f)}
+    ${retHtml(f)}
     ${songHtml(f)}
     <p class="hint">"Oyunu açan" Play'den/App Store'dan gelen herkesi sayar (reklam + organik); oyunu indirip hiç açmayan sayılmaz.${f.bots ? ' Google Play test robotları (' + fmt(f.bots) + ' cihaz: sahte GPU / emülatör) hiçbir sayıya dahil değildir.' : ''} Bugünün oyuncuları için "ertesi gün" henüz anlamlı değildir. Oyun sayısına eğitim dahil değildir.</p>`;
 }
@@ -465,6 +466,21 @@ const GUIDE_TR = { duel: 'Düello', rank: 'Sıralama', up: 'Yetenekler', recycle
 const scrTr = (k) => { if (SCR_TR[k]) return SCR_TR[k]; const [a, b] = String(k).split(':'); return (SCR_TR[a] || a) + (b ? ' (rehber: ' + (GUIDE_TR[b] || b) + ')' : ''); };
 const QUAL_TR = { low: 'Düşük', medium: 'Orta', high: 'Yüksek', '2d': '2D' };
 const HAZ_TR = { hazard: 'Cızırtı (1)', hazardJump: 'Sıçrayan (1)', hazardBomb: 'Bomba (1)', hazardPull: 'Çekim (2)', hazardTwin: 'İkiz (2)', hazardPulse: 'Nabız (3)', hazardCreep: 'Sürüngen (4)', '?': 'Bilinmiyor' };
+// Geri dönüş (2.78.0+): ertesi gün gelen var mı, reklamdan gelenlerle mağazadan gelenler farklı mı, bildirim çalışıyor mu?
+function retHtml(f) {
+  const r = f.ret;
+  if (!r) return '';
+  if (!r.n) return `<div class="card" style="margin-top:8px"><span class="muted">Geri dönüş</span><div class="muted" style="margin-top:6px">Henüz veri yok — 2.78.0 yayına girince dolmaya başlar.</div></div>`;
+  const row = (l, g) => `<tr><td>${esc(l)}</td><td class="num">${fmt(g.n)}</td><td class="num">${pct(g.played, g.n)}</td><td class="num"><b>${pct(g.d1, g.n)}</b></td><td class="num">${pct(g.back, g.n)}</td><td class="num">${pct(g.claim, g.n)}</td></tr>`;
+  const nf = r.notif, fbTot = r.fb.reduce((a, b) => a + b, 0);
+  return `<div class="card" style="margin-top:8px"><span class="muted">Geri dönüş (2.78.0+ sürüm, ${fmt(r.n)} oyuncu · bugün gelenler hariç)</span>
+    <div class="rgrid" style="margin-top:8px">${kpi(pct(r.all.d1, r.all.n), 'Ertesi gün geri gelen')}${kpi(pct(r.all.back, r.all.n), 'Başka bir gün geri gelen')}${kpi(r.medTti ? fmt(r.medTti) + ' sn' : '—', 'Oyunu görene kadar bekleme (ortanca)')}</div>
+    <div style="overflow-x:auto;margin-top:8px"><table><tr><th>Nereden geldi</th><th class="num">Oyuncu</th><th class="num">En az 1 oyun</th><th class="num">Ertesi gün</th><th class="num">Başka gün</th><th class="num">Günlük ödül aldı</th></tr>
+      ${row('Reklamdan (Android)', r.ad)}${row('Mağazadan (Android)', r.org)}${row('Ayrılamayan (iOS, web, eski sürüm)', r.other)}</table></div>
+    <div class="rgrid" style="margin-top:8px">${kpi(pct(nf.asked, nf.n), 'Bildirim izni soruldu (telefonda)')}${kpi(pct(nf.ok, nf.n), 'Bildirim izni var')}${kpi(fmt(nf.no + nf.denied), 'İzni reddeden')}${kpi(fmt(nf.shown), 'Gösterilen bildirim')}${kpi(fmt(nf.opens) + ' / ' + fmt(nf.openers) + ' kişi', 'Bildirimden açılış')}</div>
+    <div class="rgrid" style="margin-top:8px">${kpi(fmt(r.g3) + ' / ' + fmt(r.g3Promised), 'Yeni plağı alan / söz verilen')}${kpi(fmt(r.dofYes) + ' / ' + fmt(r.dofShown), 'Düello önerisini kabul eden / gören')}${kpi(fmt(r.rv), 'Mağaza puanı penceresi istenen')}</div>
+    ${fbTot ? `<div style="margin-top:10px"><b>Oyun nasıl? (3. oyundan sonra)</b> <span class="muted">(${fmt(fbTot)} cevap)</span><div class="fun" style="margin-top:6px">${['Zor', 'Sıkıcı', 'Karışık', 'Güzel'].map((l, i) => `<span>${l}</span><div class="bar"><i style="width:${Math.max(1, 100 * r.fb[i] / fbTot)}%"></i></div><span class="n">${fmt(r.fb[i])} <span class="muted">${pct(r.fb[i], fbTot)}</span></span>`).join('')}</div></div>` : ''}</div>`;
+}
 // İlk iki şarkı ve görevler (2.77.0+, bkz. www/game/data.js songNext / MISSION_POOL).
 function songHtml(f) {
   const s = f.song;

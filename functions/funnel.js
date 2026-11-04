@@ -14,7 +14,7 @@ async function collectFunnel(db) {
   // Google Play'in yayın öncesi test robotları (yazılımla çizen sahte GPU,
   // emülatör) gerçek oyuncu değil: huniyi bozuyorlardı (öğreticide "çıkan",
   // 1-6 FPS'li "OnePlus8Pro"lar). Sayılmaz, yalnız adetleri gösterilir.
-  const isBot = (p) => /SwiftShader|Emulator|llvmpipe/i.test(p.gpu || "") || /^sdk_gphone/i.test(p.dev || "");
+  const isBot = (p) => /SwiftShader|Emulator|llvmpipe/i.test(p.gpu || "") || /^sdk_gphone/i.test(p.dev || "") || (p.dev === "OnePlus8Pro" && !p.gpu);
   const bots = { today: 0, yesterday: 0, d7: 0, d30: 0 };
   for (const doc of snap.docs) {
     const p = doc.data(), created = doc.createTime.toMillis(), d = trDate(created);
@@ -28,6 +28,7 @@ async function collectFunnel(db) {
       scr: p.scr || "", on: p.on === true, opens: p.opens || 0, r1s: p.r1s || 0, r1sc: p.r1sc || 0, r1h: p.r1h || 0, r1k: p.r1k || "",
       r1rv: p.r1rv || 0, r1os: p.r1os || 0, r1ob: p.r1ob || "", r1fh: p.r1fh, r1h10: p.r1h10,
       sg: p.sg, s1t: p.s1t || 0, msn: p.msn || 0, msl: p.msl || 0,
+      np: p.np, tti: p.tti || 0, src: p.src || "", nsh: p.nsh || 0, nop: p.nop || 0, rd: p.rd || 0, lc: p.lc || 0, fb: p.fb || 0, g3: p.g3 || 0, rv: p.rv || 0, dof: p.dof || 0,
       returned: typeof p.days === "number" ? p.days >= 2 : last - created >= 20 * 3600000 });
   }
   const med = (a) => { if (!a.length) return 0; const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
@@ -59,7 +60,17 @@ async function collectFunnel(db) {
     const song = { n: sp.length, s1: sp.filter((p) => p.sg >= 1).length, s2: sp.filter((p) => p.sg >= 2).length,
       medTries: med(sp.filter((p) => p.sg >= 1).map((p) => p.s1t)), ms1: sp.filter((p) => p.msn >= 1).length,
       ms3: sp.filter((p) => p.msn >= 3).length, medMs: med(sp.map((p) => p.msn)), quit: tally(sp.filter((p) => !p.on && p.runs <= 2).map((p) => p.scr || "?")) };
-    return { perf, first, song, opened: n, played1: cnt((p) => p.runs >= 1), played3: cnt((p) => p.runs >= 3), played5: cnt((p) => p.runs >= 5), played10: cnt((p) => p.runs >= 10),
+    // Geri dönüş (2.78.0+): bugün gelenler henüz dönemeyeceği için sayılmaz.
+    const rp = c.filter((p) => typeof p.np === "number"), el = rp.filter((p) => p.d < TODAY);
+    const grp = (a) => ({ n: a.length, played: a.filter((p) => p.runs >= 1).length, d1: a.filter((p) => p.rd === 1).length, back: a.filter((p) => p.rd >= 1).length, claim: a.filter((p) => p.lc >= 1).length });
+    const nat = rp.filter((p) => p.plat !== "web");
+    const ret = { fb: [1, 2, 3, 4].map((v) => rp.filter((p) => p.fb === v).length), g3: rp.filter((p) => p.g3 === 2).length, g3Promised: rp.filter((p) => p.g3 >= 1).length,
+      rv: rp.filter((p) => p.rv === 1).length, dofShown: rp.filter((p) => p.dof >= 1).length, dofYes: rp.filter((p) => p.dof === 2).length,
+      n: rp.length, all: grp(el), ad: grp(el.filter((p) => p.src === "ad")), org: grp(el.filter((p) => p.src === "org")),
+      other: grp(el.filter((p) => !p.src)), medTti: r1(med(rp.filter((p) => p.tti).map((p) => p.tti / 10))),
+      notif: { n: nat.length, asked: nat.filter((p) => p.np >= 1).length, ok: nat.filter((p) => p.np === 2).length, denied: nat.filter((p) => p.np === 3).length, no: nat.filter((p) => p.np === 4).length,
+        shown: nat.reduce((s, p) => s + p.nsh, 0), opens: nat.reduce((s, p) => s + p.nop, 0), openers: nat.filter((p) => p.nop > 0).length } };
+    return { perf, first, song, ret, opened: n, played1: cnt((p) => p.runs >= 1), played3: cnt((p) => p.runs >= 3), played5: cnt((p) => p.runs >= 5), played10: cnt((p) => p.runs >= 10),
       returned: cnt((p) => p.returned), avgMins: n ? r1(c.reduce((s, p) => s + p.mins, 0) / n) : 0, medMins: med(c.map((p) => p.mins)),
       avgRuns: n ? r1(c.reduce((s, p) => s + p.runs, 0) / n) : 0, medRuns: med(c.map((p) => p.runs)),
       tracked: tr.length, tutDone: tr.filter((p) => p.ft >= 4).length, stuck, plat };

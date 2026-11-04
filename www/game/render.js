@@ -440,7 +440,20 @@ function colorToHex(c){
   return h;
 }
 
+// Penanın gideceği komşu halkalar: iç mavi, dış turuncu (3D: entities _updateSideArcs).
+function drawSideArcs2D(){
+  if(state!=='play' || !sideArcsOn()) return;
+  ctx.save(); ctx.lineCap='round'; ctx.globalAlpha=0.85;
+  [[-1,'#39D5FF'],[1,'#FF9A3D']].forEach(([d,col])=>{
+    const ring=player.targetRing+d; if(ring<0 || ring>=NUM_RINGS) return;
+    const r=radiusFor(ring), a0=player.ang-0.1, a1=player.ang+0.65;
+    ctx.lineWidth=PLAYER_R*0.72; ctx.strokeStyle='rgba(0,0,0,.7)'; ctx.beginPath(); ctx.arc(CX,CY,r,a0,a1); ctx.stroke();
+    ctx.lineWidth=PLAYER_R*0.42; ctx.strokeStyle=col; ctx.beginPath(); ctx.arc(CX,CY,r,a0,a1); ctx.stroke();
+  });
+  ctx.restore();
+}
 function drawPlayer(t){
+  drawSideArcs2D();
   const pr=player.curRadius;
   const px=CX+Math.cos(player.ang)*pr, py=CY+Math.sin(player.ang)*pr;
   const pc = playerColor();

@@ -691,6 +691,9 @@ function updateSpawns(dt, calm){
 }
 const MIN_VISIBLE = 3;
 
+// Yön yayları yeni oyuncu için: ilk SIDE_ARC_RUNS oyunda kendiliğinden açık. Ayarlar'dan elle seçilirse (cfg.sideArcs) o geçerli.
+const SIDE_ARC_RUNS = 5;
+function sideArcsOn(){ return typeof cfg.sideArcs==='boolean' ? cfg.sideArcs : (stats.scoreRuns||0) < SIDE_ARC_RUNS; }
 function tap(x){
   // Tutorial'ın coin/tehlike adımlarında (senaryo öğesi oyuncunun O ANKİ
   // halkasına göre yerleştirildiği için) halka değiştirmek öğeyi
@@ -761,7 +764,7 @@ function checkStreak(ix,iy,mult){
 function update(dt){
   elapsed+=dt;
   const zen = mode==='zen';
-  const nl = zen ? level : 1 + Math.floor(elapsed/720);
+  const nl = (zen || tutorialActive) ? level : 1 + Math.floor(elapsed/720);
   // Şarkıda seviye göstergesi yok: "SEVİYE N" yazısı şarkı yazılarını ezmesin.
   if(nl>level){ level=nl; beep(660,0.1,'triangle',0.13); beep(990,0.12,'sine',0.10); if(!session.song){ showFlash(t('flash_level',{n:level}),70); vibrate([10,50,10]); } }
 
@@ -1245,6 +1248,12 @@ function updateHud(){
   const comboText='x'+combo;
   if(_hud.combo!==comboText){ document.getElementById('combo').textContent=comboText; _hud.combo=comboText; }
   if(_hud.level!==level){ document.getElementById('levelHud').textContent=level; _hud.level=level; }
+  // O halkadan o yöne geçilemiyorsa yön çipi söner.
+  if(_hud.ring!==player.targetRing){
+    _hud.ring=player.targetRing;
+    document.getElementById('chipIn').classList.toggle('off', player.targetRing<=0);
+    document.getElementById('chipOut').classList.toggle('off', player.targetRing>=NUM_RINGS-1);
+  }
   // Can artık sabit kalp sayısı değil, değişken bir HP bar (bkz. §4 plan) —
   // "3 can" yerine "3-17 arası HP", tehlike tipine göre değişen hasar alıyor.
   const hpPct = mode==='zen' ? 100 : Math.max(0, Math.round(hp/maxHp*100));

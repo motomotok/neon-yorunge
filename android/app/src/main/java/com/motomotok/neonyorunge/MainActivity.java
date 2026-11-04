@@ -1,5 +1,7 @@
 package com.motomotok.neonyorunge;
 
+import android.os.Bundle;
+
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
@@ -7,6 +9,12 @@ import androidx.core.view.WindowInsetsControllerCompat;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(InstallSourcePlugin.class);
+        super.onCreate(savedInstanceState);
+    }
 
     // Alttaki gezinme çubuğu (geri/ana ekran/son uygulamalar) oyun sırasında
     // gizli kalır; ekranın altından kaydırınca geçici olarak görünür.

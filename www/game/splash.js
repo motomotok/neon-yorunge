@@ -18,6 +18,8 @@ function gameAssetsReady(){
   let done = false;
   function finish(){
     if(done) return; done = true;
+    // Oyuncunun oyunu görene kadar beklediği süre (panel: saniyenin onda biri).
+    if(typeof stats!=='undefined' && !stats.ttiDs){ stats.ttiDs=Math.round(performance.now()/100); saveStats(); }
     el.classList.add('out');
     setTimeout(()=>{ el.remove(); }, 900);
   }

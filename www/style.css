@@ -554,6 +554,17 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
 #levelFlash.drop small{color:#ffd9d2;text-shadow:0 0 12px rgba(0,0,0,.85);}
 .hint{position:fixed;bottom:calc(env(safe-area-inset-bottom) + 22px);left:0;right:0;text-align:center;
   font-size:12px;letter-spacing:1.5px;opacity:.5;z-index:9;pointer-events:none;}
+/* Dokunuş yönü ok yerine renkle: plaktaki yay penanın o an gideceği halkayı aynı renkte gösterir. */
+:root{--side-in:#39D5FF;--side-out:#FF9A3D;}
+.hint.sideChips{opacity:1;height:30px;}
+.sideChip{position:absolute;top:0;display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;
+  background:rgba(0,0,0,.55);border:1.5px solid currentColor;font-family:var(--font-ui);font-size:11px;font-weight:800;letter-spacing:1px;
+  white-space:nowrap;transform:translateX(-50%);transition:opacity .15s;}
+.sideChip b{font-weight:800;}
+.sideChip i{width:10px;height:10px;border-radius:50%;background:currentColor;}
+.sideChip.in{left:25%;color:var(--side-in);}
+.sideChip.out{left:75%;color:var(--side-out);}
+.sideChip.off{opacity:.25;}
 
 /* İlk 5 saniyelik dokunma eğitimi: ekranın sol/sağ yarısına karşılık
    gelen köşelerde, hangi tarafa dokununca hangi yöne geçileceğini
@@ -573,8 +584,14 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
 .tutPulse::after{content:'';position:absolute;inset:0;border-radius:50%;
   border:2px solid rgba(255,255,255,.5);animation:tutRipple .8s ease-out infinite;}
 @keyframes tutRipple{0%{transform:scale(.6);opacity:.9}100%{transform:scale(1.9);opacity:0}}
-.tutArrow{font-size:22px;color:#fff;filter:drop-shadow(0 0 6px rgba(120,180,255,.65));}
-.tutArrow-flip{transform:scaleX(-1);}
+.tutTap-left .tutPulse{border-color:var(--side-in);background:rgba(57,213,255,.22);}
+.tutTap-left .tutPulse::after{border-color:var(--side-in);}
+.tutTap-left .tutLabel{color:var(--side-in);}
+.tutTap-right .tutPulse{border-color:var(--side-out);background:rgba(255,154,61,.22);}
+.tutTap-right .tutPulse::after{border-color:var(--side-out);}
+.tutTap-right .tutLabel{color:var(--side-out);}
+/* Etiket altta çipte zaten yazıyor; Geri Sar'ın ters ipuçlarında etiket kalır. */
+#tutorialHint:not(.rev) .tutLabel{display:none;}
 .tutLabel{font-family:var(--font-ui);font-size:10.5px;font-weight:800;letter-spacing:1px;
   color:#fff;background:rgba(0,0,0,.45);padding:3px 10px;border-radius:999px;white-space:nowrap;}
 
@@ -1148,6 +1165,12 @@ h1 .gicon,h2 .gicon{color:var(--star);}
 .htTap small{font-size:11px;opacity:.75;}
 .htTapDot{width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,.5);margin-bottom:2px;position:relative;}
 .htTapDot::after{content:'';position:absolute;inset:4px;border-radius:50%;background:rgba(255,255,255,.5);}
+.htTap.L b{color:var(--side-in);}
+.htTap.L .htTapDot{border-color:var(--side-in);}
+.htTap.L .htTapDot::after{background:var(--side-in);}
+.htTap.R b{color:var(--side-out);}
+.htTap.R .htTapDot{border-color:var(--side-out);}
+.htTap.R .htTapDot::after{background:var(--side-out);}
 .htTap.L{animation:htTapL 4s infinite;} .htTap.R{animation:htTapR 4s infinite;}
 .htTap.L .htTapDot{animation:htDotL 4s infinite;} .htTap.R .htTapDot{animation:htDotR 4s infinite;}
 @keyframes htTapL{0%,8%{border-color:rgba(255,255,255,.08);background:rgba(255,255,255,.04);}12%,20%{border-color:#2fe6c4;background:rgba(47,230,196,.16);}28%,100%{border-color:rgba(255,255,255,.08);background:rgba(255,255,255,.04);}}
@@ -1318,6 +1341,34 @@ h1 .gicon,h2 .gicon{color:var(--star);}
   #screen-settings .theme .themeLabelPreview{width:38px;height:38px;}
   #screen-settings .theme .swatch{display:none;}
 }
+
+/* Ayarlar tek ekran: ayarlar yan yana kutu, ad ve ses yan yana, hesaplar tek sıra, temalar yana kayan şerit. */
+#screen-settings .screenBody{gap:8px;}
+#screen-settings .toggleGrid .toggle.quad{min-height:0;padding:5px 3px;gap:2px;}
+#screen-settings .toggleGrid .toggle.quad .gicon{width:16px;height:16px;}
+#screen-settings .toggleGrid .toggle.quad span{font-size:9.5px;min-height:22px;justify-content:center;flex:none;}
+@media (max-height:700px){ #screen-settings .toggleGrid .toggle.quad .gicon{display:none;} }
+.setDuo{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%;}
+.setDuo .setNameRow,.setDuo .volRow{margin:0;max-width:none;flex-wrap:wrap;gap:6px;padding:8px 10px;border-radius:12px;align-content:space-between;min-width:0;}
+.setDuo .setNameRow .snLbl{display:none;}
+.setDuo .setNameRow b{font-size:12px;}
+.setDuo .setNameRow .btn{width:100%;padding:6px 4px;font-size:10.5px;}
+.setDuo .volRow span{flex:1;font-size:11px;font-weight:700;min-width:0;}
+.setDuo .volRow input{flex:1 0 100%;width:100%;min-width:0;}
+#screen-settings .gfxQCard{padding:8px 10px;}
+#screen-settings .gfxQHint{display:none;}
+#screen-settings .gfxQOpt{padding:5px 4px 4px;}
+.acctGrid{display:flex;gap:6px;width:100%;}
+.acctGrid:empty{display:none;}
+.acctGrid .acctRow{display:contents;}
+.acctGrid .acctCard{flex:1 1 0;min-width:0;padding:7px 8px;gap:5px;}
+.acctGrid .acctCard .acctStatus{min-height:0;font-size:10.5px;justify-content:center;text-align:center;overflow-wrap:anywhere;}
+.acctGrid .acctCard .btn.small{padding:6px 4px;font-size:10.5px;}
+#acctLinkDesc{font-size:10.5px;line-height:1.3;opacity:.7;margin:-2px 0 0;}
+.setThemeLbl{margin:0;font-size:11px;opacity:.75;}
+#screen-settings #themeGrid{display:flex;gap:6px;overflow-x:auto;touch-action:pan-x pan-y;padding:7px 2px 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch;flex:none;}
+#themeGrid::-webkit-scrollbar{display:none;}
+#screen-settings #themeGrid .theme{flex:0 0 23.5%;min-width:0;}
 
 /* Nabız parlamaları: box-shadow'u canlandırmak her karede tüm menü katmanını
    yeniden boyatıyordu (Mali-G52'de menü 14 FPS). Parlama sabit bir ::after
@@ -1676,6 +1727,13 @@ body.duel #walletChip, body.duel #walletEndHud{display:none;}
 #swPlayBtn{animation:kvkkGlow 1.8s ease-in-out infinite;}
 
 /* ---- Görevler (2.77.0, bkz. game/screens.js renderMissionsCard) ---- */
+#screen-over.overSimple #dsetOverBtn,#screen-over.overSimple [data-go="upgrades"],#screen-over.overSimple #watchAdCoinsBtn,#screen-over.overSimple #shareBtn{display:none!important}
+/* Yarı saydam kart arkasındaki bitiş ekranı yazıları metnin içine giriyordu. */
+#purchaseConfirmOverlay>.card,#fbOverlay>.card,#settingsInfoOverlay>.card,#infoPopupOverlay>.card,#coreInfoOverlay>div,#nameOverlay>div{background:#15141f;}
+.fbGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
+.fbGrid .btn{width:100%;margin:0}
+.tmrLine{font-size:13px;font-weight:600;color:#ffcf7a;text-align:center;margin:2px 0}
+.tmrLine .gicon{vertical-align:-2px}
 .msCard{width:100%;max-width:420px;padding:9px 12px 8px;border-radius:16px;background:rgba(0,0,0,.32);
   border:1px solid rgba(255,255,255,.14);display:flex;flex-direction:column;gap:5px;text-align:left;}
 .msHead{display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:900;letter-spacing:2px;

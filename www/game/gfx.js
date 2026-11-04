@@ -45,7 +45,7 @@ function syncGfxMode(){
   if(_gfx3dState==='loading' || _gfx3dState==='failed') return;
   if(!cfg.gfxSwChecked){
     cfg.gfxSwChecked=true; saveCfg();
-    if(gfxSoftwareGpu()){ gfx3dFailed('software-gpu'); return; }
+    if(gfxSoftwareGpu()){ cfg.gfxSw=true; saveCfg(); gfx3dFailed('software-gpu'); return; }
   }
   _gfx3dState='loading';
   // Manifest yoksa/bozuksa da 3D çalışsın (tüm slotlar klasik görsele düşer).
@@ -128,6 +128,7 @@ function renderFrame3D(dt){
   const f=_frame3d;
   f.dt=dt; f.W=W; f.H=H; f.base=Math.min(W,H); f.CX=CX; f.CY=CY; f.RINGS=RINGS; f.PLAYER_R=PLAYER_R;
   f.state=state; f.inGame=!!GAME_STATES[state]; f.inMenu=!!MENU_STATES[state];
+  f.sideArcs=sideArcsOn();
   f.player=player; f.items=items; f.particles=particles; f.shake=shake; f.flash=flash;
   f.bossIntensity=(GAME_STATES[state] && bossTelegraph) ? bossTelegraphIntensity(bossTelegraph.t) : 0;
   f.bossPh=(GAME_STATES[state] && bossTelegraph) ? bossTelegraphPhases(bossTelegraph.t) : null;

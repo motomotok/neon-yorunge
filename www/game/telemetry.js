@@ -81,7 +81,7 @@ function deviceModel(){
 }
 function perfSummary(){
   const i=(window.Render3D && typeof _gfx3dState!=='undefined' && _gfx3dState==='ready') ? Render3D.info() : null;
-  return { fps: Math.round(_fpsPlay||0), mfps: Math.round(_fpsMenu||0), dev: deviceModel(), gpu: i ? i.gpu||'' : '',
+  return { fps: Math.round(_fpsPlay||0), mfps: Math.round(_fpsMenu||0), dev: deviceModel(), gpu: i ? i.gpu||'' : (cfg.gfxSw ? 'SwiftShader' : ''),
     q: i ? i.quality||'' : (cfg.gfx==='3d' ? '' : '2d'), ram: navigator.deviceMemory||0, boot: stats.bootDs||0 };
 }
 
@@ -136,6 +136,13 @@ function telemetrySummary(){
     ft: stats.ft||0, runs: stats.scoreRuns||0, days: stats.activeDays||1,
     // İlk iki şarkı (0 sırada Ş1 · 1 Ş1 bitti · 2 bitti), Ş1 denemesi, biten görev, görev seti.
     sg: stats.songStage||0, s1t: stats.song1Tries||0, msn: (stats.mset && stats.mset.n)||0, msl: (stats.mset && stats.mset.lv)||0,
+    // Geri dönüş (yeni yazma yok, mevcut özete eklenir): oyunu görme süresi, kaynak (Android:
+    // reklam/mağaza), bildirim izni/gösterilen/açılan, ilk dönüş günü (1 = ertesi gün), alınan günlük ödül.
+    tti: stats.ttiDs||0, src: stats.src||'', np: stats.np||0, nsh: (stats.notif && stats.notif.tot)||0,
+    nop: stats.nfOpen||0, rd: stats.retDay||0, lc: stats.loginClaims||0,
+    // Geri bildirim (1 zor · 2 sıkıcı · 3 karışık · 4 güzel), üçüncü plak (1 söz · 2 verildi),
+    // mağaza puanı penceresi istendi mi, düello önerisi (1 gösterildi · 2 kabul).
+    fb: stats.fb||0, g3: (stats.song3 && stats.song3.s)||0, rv: stats.rvAsked||0, dof: stats.duelOffered||0,
     ...perfSummary(), ...runSummary(),
   };
 }
@@ -156,7 +163,10 @@ function telemetryFt(n){
 // Bugünkü oyun sayısı ve süresi (panelde "bugün kim ne kadar oynadı").
 function dayStat(){
   const d=todayStr();
-  if(!stats.dayStat || stats.dayStat.d!==d){ stats.dayStat={d, g:0, s:0}; stats.activeDays=(stats.activeDays||0)+1; }
+  if(!stats.dayStat || stats.dayStat.d!==d){
+    stats.dayStat={d, g:0, s:0}; stats.activeDays=(stats.activeDays||0)+1;
+    if(!stats.retDay && stats.activeDays>1 && stats.firstSeen) stats.retDay=Math.max(1, daysBetweenStr(todayStr(new Date(stats.firstSeen)), d));
+  }
   return stats.dayStat;
 }
 // Oyun sonunda: bugünkü sayaç +1 ve özet yazılır (en fazla 2 dakikada bir).
@@ -246,5 +256,11 @@ function initTelemetry(){
     telemetryBeat(true); checkGifts();
   });
   setTimeout(checkGifts, 6000);
+  // Android: reklamdan mı mağazadan mı geldi? Telefondan okunur, sunucuya sorulmaz; bulununca bir daha sorulmaz.
+  setTimeout(async ()=>{
+    if(stats.src || !window.Telemetry || !Telemetry.installSource) return;
+    const r=await Telemetry.installSource();
+    if(r){ stats.src=r; saveStats(); }
+  }, 5000);
 }
 initTelemetry();

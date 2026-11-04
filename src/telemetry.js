@@ -15,10 +15,12 @@ import {
   getFirestore, doc, setDoc, deleteDoc, addDoc, updateDoc, getDocs,
   collection, query, where, serverTimestamp,
 } from 'firebase/firestore';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { FirebaseAnalytics } from '@capacitor-firebase/analytics';
+import { InAppReview } from '@capacitor-community/in-app-review';
 import { auth, ensureUser } from './leaderboard.js';
 
+const InstallSource = registerPlugin('InstallSource');
 const db = () => getFirestore(getApp());
 const plat = () => (Capacitor.getPlatform ? Capacitor.getPlatform() : 'web');
 const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
@@ -47,7 +49,9 @@ async function beat(s) {
     fps: int(s.fps, 240), mfps: int(s.mfps, 240), dev: str(s.dev, 32), gpu: str(s.gpu, 48), q: str(s.q, 8),
     ram: int(s.ram, 64), boot: int(s.boot, 3000),
     scr: str(s.scr, 16), opens: int(s.opens, 1e6), r1s: int(s.r1s, 3600), r1sc: int(s.r1sc, 2e6), r1h: int(s.r1h, 100),
-    r1k: str(s.r1k, 12), r1rv: int(s.r1rv, 2), r1os: int(s.r1os, 86400), r1ob: str(s.r1ob, 12), r1fh: int(s.r1fh, 3600), r1h10: int(s.r1h10, 100), lrs: int(s.lrs, 3600), lrh: int(s.lrh, 100), sg: int(s.sg, 2), s1t: int(s.s1t, 999), msn: int(s.msn, 99999), msl: int(s.msl, 9999),
+    r1k: str(s.r1k, 12), r1rv: int(s.r1rv, 2), r1os: int(s.r1os, 86400), r1ob: str(s.r1ob, 12), r1fh: int(s.r1fh, 3600), r1h10: int(s.r1h10, 100), lrs: int(s.lrs, 3600), lrh: int(s.lrh, 100), tti: int(s.tti, 3000), src: str(s.src, 4), np: int(s.np, 4), nsh: int(s.nsh, 999), nop: int(s.nop, 9999), rd: int(s.rd, 9999), lc: int(s.lc, 99999),
+    fb: int(s.fb, 4), g3: int(s.g3, 2), rv: int(s.rv, 1), dof: int(s.dof, 2),
+    sg: int(s.sg, 2), s1t: int(s.s1t, 999), msn: int(s.msn, 99999), msl: int(s.msl, 9999),
     lastSeen: serverTimestamp(),
   }, { merge: true });
   return u.uid;
@@ -104,7 +108,18 @@ async function logEvent(name, params) {
   await FirebaseAnalytics.logEvent({ name, params: params || {} });
 }
 
+// Android Play yükleme kaynağı: yalnız sınıfı döner ('ad' | 'org'), ham değer saklanmaz.
+async function installSource() {
+  if (Capacitor.getPlatform() !== 'android') return '';
+  const { referrer } = await InstallSource.get();
+  if (referrer == null) return '';
+  return /gclid=|gbraid=|wbraid=|utm_medium=cpc/i.test(referrer) ? 'ad' : 'org';
+}
+
 window.Telemetry = {
+  installSource: () => withTimeout(installSource(), 5000).catch(() => ''),
+  // Mağazanın kendi puan penceresi (gösterip göstermemeye mağaza karar verir).
+  askReview: () => (Capacitor.isNativePlatform() ? InAppReview.requestReview().catch(() => {}) : Promise.resolve()),
   beat: (s) => withTimeout(beat(s), 9000),
   forget: () => withTimeout(forget(), 9000),
   gifts: () => withTimeout(gifts(), 9000),

@@ -14,7 +14,7 @@ function ensureChannel() {
   if (Capacitor.getPlatform() !== 'android') return Promise.resolve();
   if (!channelReady) {
     channelReady = LocalNotifications.createChannel({
-      id: CHANNEL, name: 'Beat Orbit', description: 'Comeback reminders, at most once a week',
+      id: CHANNEL, name: 'Beat Orbit', description: 'Comeback reminders, at most twice a week',
       importance: 3, visibility: 1,
     }).catch(() => {});
   }
@@ -53,6 +53,13 @@ async function replaceAll(items) {
   } catch (e) {
     if (window.CrashReport) window.CrashReport.log('notify schedule failed: ' + (e && e.message));
   }
+}
+
+// Bildirime dokunup açanlar (panel ölçümü): oyun tarafı notifyCollectOpens ile toplar.
+if (isNative()) {
+  LocalNotifications.addListener('localNotificationActionPerformed', () => {
+    window.__boNotifOpens = (window.__boNotifOpens || 0) + 1;
+  }).catch(() => {});
 }
 
 window.NativeNotify = { isNative, permission, request, replaceAll };

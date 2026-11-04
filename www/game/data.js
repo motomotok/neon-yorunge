@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.77.3';
+const GAME_VERSION = '2.80.0';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -906,6 +906,7 @@ function claimLoginReward(){
   grantLoginStreakReward(reward);
   rewardLedgerAdd('login', before);
   stats.lastClaimedRewardDate = todayStr();
+  stats.loginClaims = (stats.loginClaims||0)+1;
   saveStats();
   return {day, reward};
 }
@@ -953,12 +954,12 @@ function currentQuest(){ return QUEST_POOL.find(q=>q.id===stats.questId)||QUEST_
 // sonu olan kısa birer şarkı (ilerleme çubuğu, son 5 sn cızırtısız nota
 // finali, "Şarkı bitti!" kutlaması). Veride ilk gerçek oyunda ~%40 oyunun
 // ortasında çıkıyordu: hedefsiz, ölünce biten oyun yerine kazanılan bir şarkı.
-//  Şarkı 1 (40 sn) bitince ikinci plak (Synth Beats) hediye edilir ve tek
+//  Şarkı 1 (25 sn) bitince ikinci plak (Synth Beats) hediye edilir ve tek
 //  dokunuşla onun şarkısı çalar: oyuncu her plağın kendi şarkısı ve dünyası
 //  olduğunu oynayarak öğrenir. Şarkı 2 (60 sn) bitince +SONG2_NOTES, sonra
 //  sonsuz mod. Şarkı 1 kazanılana kadar tekrar edilir; şarkı 2 tek denemedir.
 // stats.songStage: 0 = sırada Şarkı 1 · 1 = sırada Şarkı 2 · 2 = bitti.
-const SONG_SECS = [0, 40, 60], SONG_FINALE_SEC = 5, SONG_MAX_RUNS = 5;
+const SONG_SECS = [0, 25, 60], SONG_FINALE_SEC = 5, SONG_MAX_RUNS = 5;
 const SONG_GIFT_THEME = 'synthbeats', SONG2_NOTES = 150;
 function songNext(){
   const st = stats.songStage||0;

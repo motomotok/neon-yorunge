@@ -109,6 +109,17 @@ function sealArcGeometry(r, w, span, seg){
   g.setAttribute('uv', new THREE.Float32BufferAttribute(uv,2));
   g.setIndex(idx); return g;
 }
+// Penanın gideceği komşu halkalar: iç mavi, dış turuncu. Yay penanın az gerisinden başlar, ileri doğru söner.
+const SIDE_ARC_SPAN = 0.75, SIDE_ARC_BACK = 0.1, SIDE_ARC_COLORS = [0x39D5FF, 0xFF9A3D];
+let _sideArcTex=null;
+function sideArcTexture(){
+  if(_sideArcTex) return _sideArcTex;
+  const c=document.createElement('canvas'); c.width=64; c.height=4;
+  const g=c.getContext('2d'), gr=g.createLinearGradient(0,0,64,0);
+  gr.addColorStop(0,'rgba(255,255,255,0)'); gr.addColorStop(0.14,'rgba(255,255,255,1)'); gr.addColorStop(0.55,'rgba(255,255,255,.8)'); gr.addColorStop(1,'rgba(255,255,255,0)');
+  g.fillStyle=gr; g.fillRect(0,0,64,4);
+  _sideArcTex=new THREE.CanvasTexture(c); return _sideArcTex;
+}
 let _sealTex=null;
 function sealTexture(){
   if(_sealTex) return _sealTex;
@@ -697,6 +708,30 @@ export class Entities {
     }
   }
 
+  _updateSideArcs(f, t){
+    if(!this.sideArcs) this.sideArcs = SIDE_ARC_COLORS.map(col=>{
+      const m = new THREE.Mesh(new THREE.BufferGeometry(),
+        new THREE.MeshBasicMaterial({map:sideArcTexture(), color:col, transparent:true, depthWrite:false, side:THREE.DoubleSide, forceSinglePass:true, toneMapped:false}));
+      m.renderOrder = 3; m.visible = false; this.group.add(m);
+      // Koyu taban: renkli plaklarda da (Candy) yay seçilsin.
+      m.userData.back = new THREE.Mesh(new THREE.BufferGeometry(),
+        new THREE.MeshBasicMaterial({map:sideArcTexture(), color:0x000000, transparent:true, opacity:0.7, depthWrite:false, side:THREE.DoubleSide, forceSinglePass:true, toneMapped:false}));
+      m.userData.back.renderOrder = 2; m.userData.back.position.y = -0.05; m.add(m.userData.back);
+      return m;
+    });
+    const pl = f.player, play = f.state==='play' && pl && f.sideArcs;
+    this.sideArcs.forEach((m,i)=>{
+      const ring = play ? pl.targetRing + (i ? 1 : -1) : -1;
+      m.visible = ring>=0 && ring<f.RINGS.length;
+      if(!m.visible) return;
+      const rad = f.RINGS[ring], w = f.PLAYER_R*0.7, key = rad.toFixed(1)+'|'+w.toFixed(1);
+      if(m.userData.key!==key){ m.geometry.dispose(); m.geometry = sealArcGeometry(rad, w, SIDE_ARC_SPAN, 24); m.userData.back.geometry.dispose(); m.userData.back.geometry = sealArcGeometry(rad, w*1.7, SIDE_ARC_SPAN, 24); m.userData.key = key; }
+      m.position.y = TOP_Y*f.base + 0.4;
+      m.rotation.y = -(pl.ang - SIDE_ARC_BACK);
+      m.material.opacity = 0.85 + Math.sin(t*5)*0.1;
+    });
+  }
+
   _updateScratch(f, t, dt){
     const sc = this.scratch, pl = f.player, R = f.PLAYER_R;
     const now = t, LIFE = 3.0;
@@ -835,6 +870,7 @@ export class Entities {
     const notes = f.notes||0;
     if(f.inGame && notes > this.lastNotes) this._noteHit(f);
     this.lastNotes = notes;
+    this._updateSideArcs(f, t);
     this._updateScratch(f, t, dt);
     this._updateRipples(f, dt);
     this._updateParticles(f);

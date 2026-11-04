@@ -98,6 +98,7 @@ document.querySelectorAll('#gfxQSeg .gfxQOpt').forEach(b=>b.addEventListener('cl
   setGfxQuality(b.dataset.q); beep(550,0.05,'sine',0.08); }));
 document.getElementById('bigSw').addEventListener('click', ()=>{ cfg.bigButtons=!cfg.bigButtons; saveCfg(); applyAccessibility(); syncSettings(); beep(600,0.06,'sine',0.1); });
 document.getElementById('handSw').addEventListener('click', ()=>{ cfg.leftHand=!cfg.leftHand; saveCfg(); applyAccessibility(); syncSettings(); beep(600,0.06,'sine',0.1); });
+document.getElementById('arcsSw').addEventListener('click', ()=>{ cfg.sideArcs=!sideArcsOn(); saveCfg(); syncSettings(); beep(600,0.06,'sine',0.1); });
 document.getElementById('cbSw').addEventListener('click', ()=>{ cfg.colorblind=!cfg.colorblind; saveCfg(); syncSettings(); beep(600,0.06,'sine',0.1); });
 // Switch küçültüldüğü için dokunma alanı dar kalmasın diye tüm satır
 // tıklanabilir — tıklama zaten switch'in üzerindeyse (çift tetiklemeyi

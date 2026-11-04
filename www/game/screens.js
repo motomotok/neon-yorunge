@@ -104,10 +104,17 @@ function goMenu(){ state='menu'; setHud(false); showScreen('menu');
   // verilir (açılıştaki ilk kontrol main.js'te, güncelleme sorusundan sonra).
   if(_menuBootDone && stats.dsetPending) setTimeout(()=>{ if(state==='menu') dsetClaimPending(); }, 600);
   if(tutorialActive && typeof tutorialOnNav==='function') tutorialOnNav('menu');
+  if(_menuBootDone) setTimeout(dailyWelcome, 500);
 }
 let _menuBootDone=false;
 function goHowto(){ state='howto'; setHud(false); showScreen('howto'); renderHowtoIcons(); }
-function goSettings(){ state='settings'; setHud(false); showScreen('settings'); syncSettings(); }
+function goSettings(){ state='settings'; setHud(false); showScreen('settings'); syncSettings(); themeStripToSel(); }
+// Tema şeridi yana kayar: seçili tema görünür yerde açılsın.
+function themeStripToSel(){
+  const g=document.getElementById('themeGrid'), s=g && g.querySelector('.theme.sel'); if(!s) return;
+  const gr=g.getBoundingClientRect(), sr=s.getBoundingClientRect();
+  g.scrollLeft += (sr.left+sr.width/2) - (gr.left+gr.width/2);
+}
 function syncSettingsName(){ const el=document.getElementById('setNameVal'); if(el) el.textContent = stats.playerName || t('name_none'); }
 function goStats(){ state='stats'; setHud(false); showScreen('stats'); syncStats(); }
 function goMode(){ goRanking('today'); }   // eski Modlar ekranı kaldırıldı
@@ -327,6 +334,9 @@ function gameOver(reason){
     : song && song.n===2 ? t('song_endless_line')
     : mode==='daily' ? dsetOverText(dsetRes) : nextGoalLineText(runScore, newRecord);
   renderMissionsCard();
+  renderTomorrowLine();
+  // İlk oyunlarda oyun sonu sade: yeni oyuncunun önünde Tekrar ve görevler dışında seçenek kalabalığı olmasın.
+  document.getElementById('screen-over').classList.toggle('overSimple', mode==='daily' && !tutorialActive && (stats.scoreRuns||0)<OVER_SIMPLE_RUNS);
   document.getElementById('dsetOverBtn').style.display = mode==='daily' ? '' : 'none';
   if(mode==='zen'){
     document.getElementById('coinsEarned').innerHTML = `${icon('moon')} ${t('zen_no_stardust')}`;
@@ -354,6 +364,8 @@ function gameOver(reason){
   }
   if(tutorialActive && typeof tutorialOnGameOver==='function') tutorialOnGameOver();
   else if(typeof guideCheckOver==='function') guideCheckOver();
+  const happy = (songWin && song.n===2) || (newRecord && (stats.scoreRuns||0)>=REVIEW_MIN_RUNS);
+  if(!tutorialActive) setTimeout(()=>overPrompt(happy), 1800);
 }
 
 // Şarkı 1 bitti: oyun sonu yerine kutlama + ikinci plak hediyesi. "Çal" yeni
@@ -373,6 +385,7 @@ function showSongWin(runScore){
   showScreen('songwin');
   if(typeof Music!=='undefined' && Music.preload) Music.preload(THEME_MUSIC[SONG_GIFT_THEME]);
   beep(660,0.15,'triangle',0.12); setTimeout(()=>beep(990,0.25,'sine',0.11),160);
+  setTimeout(()=>overPrompt(false), 2600);
 }
 function songPlayNext(){
   if(state!=='over') return;
@@ -384,6 +397,81 @@ function songWinLater(){
   showScreen('over'); beep(200,0.3,'sine',0.12);
 }
 
+// Oyun sonunda yarının somut ödülü: oyuncu çıkarken geri gelmek için bir sebep görsün.
+// Yalnız ilk iki hafta; sonrasında oyuncu seriyi zaten biliyor.
+// Üçüncü plak (stats.song3 = {s:1 söz verildi · 2 verildi, d:söz günü, k:tema}): söz ilk
+// oyun sonunda verilir, ertesi gün veya sonraki ilk gelişte menüde hediye edilir.
+const SONG3_THEMES = ['urbansounds', 'lofichillhop', 'steamfunk', 'cybercircuit'];
+const OVER_SIMPLE_RUNS = 3, REVIEW_MIN_RUNS = 5, FEEDBACK_RUNS = 3;
+function renderTomorrowLine(){
+  const el=document.getElementById('tmrLine'); if(!el) return;
+  if(tutorialActive || (stats.activeDays||1)>14){ el.style.display='none'; return; }
+  if(!stats.song3){
+    const k=SONG3_THEMES.find(x=>!stats.owned.themes.includes(x));
+    if(k){ stats.song3={s:1, d:todayStr(), k}; saveStats(); }
+  }
+  const s3=stats.song3;
+  const r=LOGIN_STREAK_REWARDS[Math.max(1,stats.loginStreak||1)%LOGIN_STREAK_REWARDS.length], reward=loginRewardHero(r).name;
+  el.innerHTML=icon('gift')+' '+(s3 && s3.s===1 && s3.d===todayStr()
+    ? t('tomorrow_song',{name:t(THEMES[s3.k].nameKey), reward:reward.replace(/^\+\s*/,'')}) : t('tomorrow_line',{reward}));
+  el.style.display='';
+}
+function song3Due(){ const s=stats.song3; return !!(s && s.s===1 && s.d<todayStr()); }
+function song3Give(after){
+  const s=stats.song3; s.s=2;
+  if(!stats.owned.themes.includes(s.k)) stats.owned.themes.push(s.k);
+  saveStats();
+  const name=t(THEMES[s.k].nameKey);
+  if(typeof Music!=='undefined' && Music.preload) Music.preload(THEME_MUSIC[s.k]);
+  showDjConfirm(t('song3_ready',{name}), ()=>{ applyTheme(s.k); startGame('daily'); }, {yes:t('song3_play'), no:t('btn_later')}, after);
+}
+// Günün ilk menüsü: sözü verilen plak, sonra günlük ödül ekranı (ilk 7 gün). Ödül yalnız
+// rozetle dururken oyuncu "yarın gel" sözünün karşılığını görmeden geçip gidebiliyordu.
+function dailyWelcome(){
+  if(state!=='menu' || tutorialActive || guideActive || !stats.tutorialDone) return false;
+  const ov=document.getElementById('purchaseConfirmOverlay');
+  if(ov && getComputedStyle(ov).display!=='none') return false;
+  if(song3Due()){ song3Give(()=>setTimeout(dailyWelcome, 300)); return true; }
+  if(!loginRewardClaimedToday() && stats.lsAutoDate!==todayStr() && (stats.scoreRuns||0)>=1 && (stats.activeDays||1)<=7){
+    stats.lsAutoDate=todayStr(); saveStats(); goLoginStreak(); return true;
+  }
+  return false;
+}
+// Oyun sonunda en fazla BİR soru, sırayla: bildirim izni → mağaza puanı (mutlu an) →
+// tek dokunuşluk geri bildirim → düello önerisi.
+async function overPrompt(happy){
+  if(state!=='over' || guideActive || tutorialActive) return;
+  const ov=document.getElementById('purchaseConfirmOverlay');
+  if((ov && getComputedStyle(ov).display!=='none') || (window.Ads && Ads.isShowing && Ads.isShowing())) return;
+  if(typeof notifyMaybeAsk==='function' && await notifyMaybeAsk('run')) return;
+  if(state!=='over') return;
+  if(happy && !stats.rvAsked && window.Telemetry && Telemetry.askReview){ stats.rvAsked=1; saveStats(); Telemetry.askReview(); return; }
+  if(!stats.fbAsked && (stats.scoreRuns||0)>=FEEDBACK_RUNS){ feedbackShow(); return; }
+  if(!stats.duelOffered && duelUnlocked() && songNext()===0 && !(stats.duel && stats.duel.games>0)){
+    stats.duelOffered=1; saveStats();
+    showDjConfirm(t('duel_offer'), ()=>{
+      stats.duelOffered=2; saveStats();
+      if(!stats.guideDuelDone){ guideActive='duel'; guideStep='menu'; }
+      goDuel();
+      if(guideActive==='duel') guideOnNav('duel');
+    }, {yes:t('duel_offer_yes'), no:t('btn_later')});
+  }
+}
+// Tek dokunuşluk geri bildirim: stats.fb 1 zor · 2 sıkıcı · 3 karışık · 4 güzel (0 cevap yok).
+function feedbackShow(){
+  stats.fbAsked=true; saveStats();
+  const ov=document.getElementById('fbOverlay');
+  document.getElementById('fbQ').textContent=t('fb_q');
+  ['hard','boring','confusing','good'].forEach((k,i)=>{
+    const b=document.getElementById('fbBtn'+(i+1));
+    b.textContent=t('fb_'+k);
+    b.onclick=()=>{ stats.fb=i+1; saveStats(); ov.style.display='none'; queueToast(t('fb_thanks')); beep(700,0.06,'sine',0.1); };
+  });
+  const skip=document.getElementById('fbSkip');
+  skip.textContent=t('btn_later');
+  skip.onclick=()=>{ ov.style.display='none'; };
+  ov.style.display='flex';
+}
 // Oyun sonu ekranındaki görev kartı (bkz. data.js MISSION_POOL): bu oyunda
 // biten görev parlar ve notasını gösterir; set bittiyse bonus satırı.
 function renderMissionsCard(){

@@ -15,7 +15,7 @@
 //    → hoş geldin hediyesiyle Can Kapasitesi al (screens.js gameOver).
 //  - 'recycle': Süpernova ilk kez Çekirdek verecek seviyeye gelince
 //    Yetenekler ekranında bir kez anlatılır (screens.js goUpgrades).
-const DUEL_UNLOCK_RUNS = 3, RANK_GUIDE_RUNS = 7, GUIDE_UP_RUNS = 3;
+const DUEL_UNLOCK_RUNS = 2, RANK_GUIDE_RUNS = 7, GUIDE_UP_RUNS = 3;
 let guideActive = null, guideStep = null;
 
 function duelUnlocked(){
@@ -37,7 +37,7 @@ function guideCheckMenu(){
     if(guideActive || tutorialActive || state!=='menu') return;
     const ov=document.getElementById('purchaseConfirmOverlay');
     if(ov && getComputedStyle(ov).display!=='none') return;   // başka bir DJ sorusu açık
-    if(!stats.guideDuelDone && duelUnlocked()){
+    if(!stats.guideDuelDone && duelUnlocked() && songNext()===0){
       if(stats.duel && stats.duel.games>0){ stats.guideDuelDone=true; saveStats(); }
       else return guideStart('duel');
     }
@@ -144,6 +144,7 @@ const GUIDE_STEPS = {
     tutorialHideEl(document.getElementById('watchAdCoinsBtn'));
     tutorialHideEl(document.querySelector('#screen-over .row2'));
     tutorialHideEl(document.getElementById('msCard'));
+    tutorialHideEl(document.getElementById('tmrLine'));
     tutorialHideEl(document.getElementById('nextGoalLine'));
     const upBtn=document.querySelector('#screen-over [data-go="upgrades"]');
     tutorialSpotlight(document.getElementById('coinsEarned'));
