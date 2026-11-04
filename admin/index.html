@@ -358,7 +358,7 @@ function funnelHtml(P) {
   const stuckTot = Object.values(f.stuck || {}).reduce((a, b) => a + b, 0);
   const stuck = Object.entries(f.stuck || {}).sort((a, b) => b[1] - a[1]).map(([k, n]) =>
     `<span>${esc(FT_STUCK[k] || ('adım ' + k))}</span><div class="bar"><i style="width:${100 * n / Math.max(1, stuckTot)}%"></i></div><span class="n">${fmt(n)} <span class="muted">${pct(n, stuckTot)}</span></span>`).join('');
-  const plat = Object.entries(f.plat || {}).map(([k, v]) => kpi(pct(v.played, v.n), esc(k) + ': ' + fmt(v.n) + ' açan, oynayan oranı')).join('');
+  const plat = Object.entries(f.plat || {}).map(([k, v]) => kpi(pct(v.played, v.n), esc(PLAT_TR[k] || k) + ': ' + fmt(v.n) + ' açan, oynayan oranı')).join('');
   return `<h2>Oyuncu yolculuğu <span class="muted" style="font-weight:500">${key === 'd30' && P !== 'd30' ? '(son 30 gün)' : ''} yeni oyuncular · oyunu ilk açtığı güne göre</span></h2>
     <div class="rgrid">${adInst != null ? kpi(fmt(adInst), 'Reklamdan yükleme') : ''}${kpi(fmt(f.opened), 'Oyunu açan (tüm kaynaklar)')}${kpi(pct(f.played1, f.opened), 'Gerçekten oynayan (1+ oyun)')}
       ${kpi(fmt(f.avgMins) + ' dk', 'Ortalama oynama süresi')}${kpi(fmt(f.medMins) + ' dk', 'Ortanca süre (tipik oyuncu)')}${kpi(fmt(f.avgRuns), 'Ortalama oyun sayısı')}
@@ -447,7 +447,7 @@ function perfHtml(f) {
   const rows = [['Akıcı (45+ FPS)', p.smooth], ['Orta (30-45 FPS)', p.mid], ['Takılıyor (30 FPS altı)', p.slow], ['RAM 3 GB ve altı', p.lowRam]]
     .map(([l, b]) => `<span>${esc(l)}</span><div class="bar"><i style="width:${Math.max(1, 100 * b.n / Math.max(1, p.measured))}%"></i></div><span class="n">${fmt(b.n)} kişi · <b>${pct(b.played, b.n)}</b> oynadı</span>`).join('');
   const dv = (p.devs || []).map((d) => `<tr><td>${esc(d.dev || '?')}</td><td>${esc((d.gpu || '').replace(/^(ANGLE \()?/, '').slice(0, 28))}</td><td class="num">${d.ram ? fmt(d.ram) + ' GB' : '—'}</td>
-    <td class="num">${d.fps ? fmt(d.fps) : '—'} / ${d.mfps ? fmt(d.mfps) : '—'}</td><td>${esc(d.q || '')}</td><td class="num">${d.boot ? fmt(d.boot) + ' sn' : '—'}</td><td class="num">${fmt(d.runs)}</td><td>${esc(d.ft != null ? (FT_STUCK[d.ft] || (d.ft >= 6 ? 'ilk oyunu bitirdi' : '')) : '')}</td></tr>`).join('');
+    <td class="num">${d.fps ? fmt(d.fps) : '—'} / ${d.mfps ? fmt(d.mfps) : '—'}</td><td>${esc(QUAL_TR[d.q] || d.q || '')}</td><td class="num">${d.boot ? fmt(d.boot) + ' sn' : '—'}</td><td class="num">${fmt(d.runs)}</td><td>${esc(d.ft != null ? (FT_STUCK[d.ft] || (d.ft >= 6 ? 'ilk oyunu bitirdi' : '')) : '')}</td></tr>`).join('');
   return `<div class="card" style="margin-top:8px"><span class="muted">Telefon ve akıcılık (2.76.2+ sürüm, ${fmt(p.measured)} oyuncu ölçüldü · ortanca açılış ${fmt(p.medBoot)} sn)</span>
     <div class="fun" style="margin-top:8px">${rows}</div>
     <details style="margin-top:8px"><summary class="muted">En yavaş telefonlar (FPS oyun / menü)</summary><div style="overflow-x:auto"><table><tr><th>Telefon</th><th>GPU</th><th class="num">RAM</th><th class="num">FPS</th><th>Kalite</th><th class="num">Açılış</th><th class="num">Oyun</th><th>Son adım</th></tr>${dv}</table></div></details></div>`;
@@ -458,7 +458,12 @@ const SCR_TR = { 'play': 'Oyun oynarken', 'play:tut': 'Eğitimde', 'story:tut': 
   'play:s1': 'Şarkı 1 çalarken', 'pause:s1': 'Şarkı 1 (duraklatınca)', 'revive:s1': 'Şarkı 1 "Devam et"', 'play:s2': 'Şarkı 2 çalarken', 'pause:s2': 'Şarkı 2 (duraklatınca)',
   'revive:s2': 'Şarkı 2 "Devam et"', 'over:song': 'Şarkı bitti / yeni plak ekranı',
   'over:up': 'Oyun sonu (Yetenekler önerisi)', 'upgrades:up': 'Yetenekler rehberinde', 'upgrades': 'Yetenekler ekranında', 'menu': 'Ana menüde', 'pause': 'Duraklatınca',
-  'shop': 'Mağazada', 'ranking': 'Sıralamada', 'settings': 'Ayarlarda' };
+  'shop': 'Mağazada', 'ranking': 'Sıralamada', 'settings': 'Ayarlarda', 'story': 'Açılış hikâyesinde', 'duel': 'Düello ekranında', 'duelvs': 'Düello maçında',
+  'battlepass': 'Sezon biletinde', 'howto': 'Nasıl oynanır ekranında', 'language': 'Dil seçiminde', 'loginstreak': 'Giriş ödülü ekranında', 'stats': 'İstatistiklerde', '?': 'Bilinmiyor' };
+// Rehber ekleri (telemetryScreen: "ekran:rehber"), ör. ranking:rank → Sıralamada (rehber: Sıralama).
+const GUIDE_TR = { duel: 'Düello', rank: 'Sıralama', up: 'Yetenekler', recycle: 'Süpernova', tut: 'Eğitim', song: 'şarkı', s1: 'Şarkı 1', s2: 'Şarkı 2' };
+const scrTr = (k) => { if (SCR_TR[k]) return SCR_TR[k]; const [a, b] = String(k).split(':'); return (SCR_TR[a] || a) + (b ? ' (rehber: ' + (GUIDE_TR[b] || b) + ')' : ''); };
+const QUAL_TR = { low: 'Düşük', medium: 'Orta', high: 'Yüksek', '2d': '2D' };
 const HAZ_TR = { hazard: 'Cızırtı (1)', hazardJump: 'Sıçrayan (1)', hazardBomb: 'Bomba (1)', hazardPull: 'Çekim (2)', hazardTwin: 'İkiz (2)', hazardPulse: 'Nabız (3)', hazardCreep: 'Sürüngen (4)', '?': 'Bilinmiyor' };
 // İlk iki şarkı ve görevler (2.77.0+, bkz. www/game/data.js songNext / MISSION_POOL).
 function songHtml(f) {
@@ -467,7 +472,7 @@ function songHtml(f) {
   if (!s.n) return `<div class="card" style="margin-top:8px"><span class="muted">İlk iki şarkı ve görevler</span><div class="muted" style="margin-top:6px">Henüz veri yok — 2.77.0 yayına girince dolmaya başlar.</div></div>`;
   const qTot = Object.values(s.quit).reduce((a, b) => a + b, 0);
   const bars = Object.entries(s.quit).sort((a, b) => b[1] - a[1]).map(([k, n]) =>
-    `<span>${esc(SCR_TR[k] || k)}</span><div class="bar"><i style="width:${Math.max(1, 100 * n / Math.max(1, qTot))}%"></i></div><span class="n">${fmt(n)} <span class="muted">${pct(n, qTot)}</span></span>`).join('');
+    `<span>${esc(scrTr(k))}</span><div class="bar"><i style="width:${Math.max(1, 100 * n / Math.max(1, qTot))}%"></i></div><span class="n">${fmt(n)} <span class="muted">${pct(n, qTot)}</span></span>`).join('');
   return `<div class="card" style="margin-top:8px"><span class="muted">İlk iki şarkı ve görevler (2.77.0+ sürüm, ${fmt(s.n)} yeni oyuncu)</span>
     <div class="rgrid" style="margin-top:8px">${kpi(pct(s.s1, s.n), 'Şarkı 1\'i bitiren (ikinci plağı kazanan)')}${kpi(fmt(s.medTries), 'Şarkı 1 deneme (bitirenlerde ortanca)')}
       ${kpi(pct(s.s2, s.n), 'Şarkı 2\'yi oynayan (sonsuz moda geçen)')}${kpi(pct(s.ms1, s.n), 'En az 1 görev bitiren')}${kpi(pct(s.ms3, s.n), 'İlk görev setini bitiren (3 görev)')}
@@ -481,12 +486,12 @@ function firstRunHtml(f) {
   const bars = (o, lab, tot) => Object.entries(o).sort((a, b) => b[1] - a[1]).map(([k, n]) =>
     `<span>${esc(lab[k] || k)}</span><div class="bar"><i style="width:${Math.max(1, 100 * n / Math.max(1, tot))}%"></i></div><span class="n">${fmt(n)} <span class="muted">${pct(n, tot)}</span></span>`).join('');
   const nextTot = Object.values(r.next).reduce((s, n) => s + n, 0);
-  const NEXT_TR = { play: 'Tekrar oynadı', upgrades: 'Yeteneklere gitti', menu: 'Ana menüye döndü', ranking: 'Sıralamaya baktı', shop: 'Mağazaya gitti' };
+  const NEXT_TR = { play: 'Tekrar oynadı', upgrades: 'Yeteneklere gitti', menu: 'Ana menüye döndü', ranking: 'Sıralamaya baktı', shop: 'Mağazaya gitti', duel: 'Düello\'ya gitti', battlepass: 'Sezon biletine baktı', settings: 'Ayarlara gitti', stats: 'İstatistiklere baktı', howto: 'Nasıl oynanır\'a baktı', language: 'Dil seçimine gitti', loginstreak: 'Giriş ödülünü açtı' };
   return `<div class="card" style="margin-top:8px"><span class="muted">İlk oyun ve çıkış (2.76.3+ sürüm)</span>
     <div class="rgrid" style="margin-top:8px">${kpi(fmt(r.medSec) + ' sn', 'İlk oyun süresi (ortanca)')}${kpi(fmt(r.medHits), 'İlk oyunda darbe (ortanca)')}
       ${kpi(fmt(r.medScore), 'İlk oyun skoru (ortanca)')}${r.fhN ? kpi(fmt(r.medFirstHit) + ' sn', 'İlk darbeye kadar (ortanca)') + kpi(fmt(r.medHits10), 'İlk 10 sn darbe (ortanca)') : ''}${kpi(fmt(r.revUsed) + ' / ' + fmt(r.revOffered), '"Devam et" kullanan / teklif edilen')}
       ${kpi(fmt(r.medOver) + ' sn', 'Oyun sonu ekranında kalma')}${r.opensN ? kpi(pct(r.reopened, r.opensN), 'Oyunu 2+ kez açan') : ''}</div>
-    ${r.quitN ? `<div style="margin-top:10px"><b>En fazla 1 oyun oynayıp çıkanlar nerede bıraktı</b> <span class="muted">(${fmt(r.quitN)} kişi)</span><div class="fun" style="margin-top:6px">${bars(r.quit, SCR_TR, r.quitN)}</div></div>` : ''}
+    ${r.quitN ? `<div style="margin-top:10px"><b>En fazla 1 oyun oynayıp çıkanlar nerede bıraktı</b> <span class="muted">(${fmt(r.quitN)} kişi)</span><div class="fun" style="margin-top:6px">${bars(r.quit, Object.fromEntries(Object.keys(r.quit).map((k) => [k, scrTr(k)])), r.quitN)}</div></div>` : ''}
     ${nextTot ? `<div style="margin-top:10px"><b>İlk oyun sonunda ne yaptı</b><div class="fun" style="margin-top:6px">${bars(r.next, NEXT_TR, nextTot)}</div></div>` : ''}
     ${r.n ? `<div style="margin-top:10px"><b>İlk oyunu bitiren darbe</b> <span class="muted">(son vuran tehlike, parantezde hasar)</span><div class="fun" style="margin-top:6px">${bars(r.killers, HAZ_TR, r.n)}</div></div>` : ''}</div>`;
 }
@@ -837,7 +842,7 @@ function renderErrors() {
   $('#errList').innerHTML = gs.length ? gs.map((g, i) => `
     <details class="card errG"><summary>
       <div class="row"><span class="msg sp">${esc(g.msg)}</span><span class="tag bad">${g.n}×</span><span class="tag">${g.users.size} kişi</span></div>
-      <div class="muted" style="font-size:12px;margin-top:4px">v${esc([...g.vers].join(', v'))} · ${esc([...g.plats].map((p) => PLAT_TR[p] || p).join(', '))}${g.scr.size ? ' · ekran: ' + esc([...g.scr].join(', ')) : ''} · son ${ago(g.last)}</div>
+      <div class="muted" style="font-size:12px;margin-top:4px">v${esc([...g.vers].join(', v'))} · ${esc([...g.plats].map((p) => PLAT_TR[p] || p).join(', '))}${g.scr.size ? ' · ekran: ' + esc([...g.scr].map(scrTr).join(', ')) : ''} · son ${ago(g.last)}</div>
     </summary>
       <pre>${esc(g.stack || '(yığın yok)')}</pre>
       <div class="muted mono" style="margin-top:6px">${esc(g.ua || '')}</div>

@@ -7,6 +7,8 @@
 let upgradeJustBoughtKey=null, upgradeJustBoughtTimer=null;
 function upgradeConfirm(iconKey, name, price, priceIcon, msg, onYes){
   showPurchaseConfirm(iconKey, name, price, onYes, msg, priceIcon);
+  // Parçacık Değeri'nin kazancı nota ikonu içerir: düz metin yazılırsa ikonun kodu görünür.
+  document.getElementById('pcMessage').innerHTML = msg;
 }
 function renderUpgrades(){
   const grid=document.getElementById('upgradesGrid'); if(!grid) return;
