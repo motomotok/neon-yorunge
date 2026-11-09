@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Borrowed Day</title>
+<link rel="stylesheet" href="css/oyun.css">
+</head>
+<body>
+<div id="app">
+  <section class="screen fate" id="menu">
+    <div class="art" id="menuArt"></div>
+    <h1>Borrowed Day</h1>
+    <p class="alt" data-t>Ödünç Hayatlar</p>
+    <div class="tuslar">
+      <button class="card" id="mDevam" type="button" hidden data-t>Kaldığın yerden devam</button>
+      <button class="card" id="mBasla" type="button"></button>
+      <div class="m-hayatlar" id="mHayatlar"></div>
+      <button id="mSes" type="button"></button>
+      <button id="mDil" type="button"></button>
+    </div>
+  </section>
+
+  <section class="screen fate" id="fate" aria-live="polite">
+    <div class="art" id="fateArt"></div>
+    <div class="line" id="fateLine"></div>
+    <div class="meta" id="fateMeta"></div>
+    <div class="tap" data-t>dokun</div>
+  </section>
+
+  <section class="screen" id="play">
+    <div class="bar">
+      <div class="clock" id="clock">05:30</div>
+      <button class="menu-tus" id="menuTus" type="button" aria-label="Menü"><i></i><i></i><i></i></button>
+      <div class="gauges" id="gauges"></div>
+      <div class="g-not" id="gNot" role="status" hidden></div>
+    </div>
+    <div class="scene" id="scene"><img id="sceneImg" alt=""><img id="sceneOld" alt=""><canvas id="rain"></canvas><canvas id="fx"></canvas><div class="yuz" id="yuz"><img alt=""></div></div>
+    <div class="rule"></div>
+    <div class="text" id="text" aria-live="polite"></div>
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <section class="screen fate" id="harita">
+    <div class="h-kaydir" id="hKaydir">
+      <header class="h-ust"><h2 data-t>Kader Haritası</h2><p id="hBaslik"></p></header>
+      <div class="h-alan" id="hAlan"></div>
+      <p class="h-iz" id="hIz" hidden></p>
+      <div class="h-son" id="hSon" hidden>
+        <p id="hyol"></p>
+        <p id="hkapanis"></p>
+        <h3 id="hDigerBaslik" data-t>Bu Salı'da başkaları da vardı</h3>
+        <div class="h-hayatlar" id="hHayatlar"></div>
+        <p id="hNot" role="status"></p>
+        <button class="card" id="hMenu" type="button" data-t>Ana menü</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="kapla" id="durak" hidden>
+    <h2 data-t>Durduruldu</h2>
+    <button class="card" id="dDevam" type="button" data-t>Devam et</button>
+    <button class="card" id="dSes" type="button"></button>
+    <button class="card" id="dBastan" type="button">Baştan başla</button>
+    <button class="card" id="dMenu" type="button" data-t>Ana menü</button>
+    <p id="dNot" data-t>İlerlemen kayıtlı. Ana menüden kaldığın yere dönebilirsin.</p>
+  </div>
+</div>
+
+<!-- Sıra önemli: önce hayat verileri, sonra motor. Yeni hayat eklenince buraya bir satır eklenir. -->
+<script src="assets/ses/liste.js"></script>
+<script src="js/dil.js"></script>
+<script src="dil/en.js"></script>
+<script src="dil/en_deniz.js"></script>
+<script src="dil/en_idu.js"></script>
+<script src="hayatlar/hasan.js"></script>
+<script src="hayatlar/deniz.js"></script>
+<script src="hayatlar/idu.js"></script>
+<script src="js/ses.js"></script>
+<script src="js/ekran.js"></script>
+<script src="js/etkilesim.js"></script>
+<script src="js/harita.js"></script>
+<script src="js/akis.js"></script>
+</body>
+</html>

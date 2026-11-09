@@ -1,0 +1,215 @@
+@font-face {
+  font-family: 'Caveat';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(fonts/caveat-latin-ext.woff2) format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Caveat';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(fonts/caveat-latin.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Caveat';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(fonts/caveat-latin-ext.woff2) format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Caveat';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(fonts/caveat-latin.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/*
+  EKRAN DÜZENİ (sabit, her sahnede aynı):
+  ┌ üst bar: saat (sol) · 4 gösterge (sağ)
+  ├ sahne penceresi: 4:5 görsel (yazısız, tuşsuz)
+  ├ çizgi
+  ├ metin: 3 satırlık sabit alan
+  └ seçim kartları: 1-3 kart, hep aynı yerde
+  Kader ekranı ve Kader Haritası: koyu zemin.
+*/
+:root{
+  --paper:#f3efe7; --ink:#1d1b19; --wash:#77716a; --gold:#d6a028; --red:#9e2a2b; --night:#2a2826; --cream:#efe4d0;
+  --hand:'Caveat','Segoe Print','Bradley Hand',cursive;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+html,body{height:100%;margin:0;overscroll-behavior:none;user-select:none;-webkit-user-select:none;touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+img{-webkit-user-drag:none;user-drag:none}
+body{background:#141312;display:grid;place-items:center;font-family:var(--hand);color:var(--ink);overflow:hidden;
+  padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+#app{position:relative;height:min(100%,calc(100vw*16/9));aspect-ratio:9/16;max-width:100%;overflow:hidden;
+  background:var(--paper) url(../assets/zemin_acik.jpg) center/cover;box-shadow:0 0 40px #000a}
+@media (max-width:520px){#app{height:100%;width:100%;aspect-ratio:auto;box-shadow:none}}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;opacity:0;transition:opacity .6s ease;pointer-events:none}
+/* oynanış: satır yükseklikleri sabit; sahne kalan alanı alır, metin ve kartlar asla yer değiştirmez */
+#play{display:grid;grid-template-rows:auto minmax(0,1fr) auto auto auto}
+.screen.on{opacity:1;pointer-events:auto}
+
+/* --- oynanış ekranı --- */
+.bar{position:relative;flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:3.6% 5.5% 5.4%}
+.clock{font-size:clamp(28px,7vh,54px);font-weight:500;line-height:1;letter-spacing:.5px;white-space:nowrap}
+.clock.uzun{font-size:clamp(22px,4.6vh,36px)}
+.clock .flag{color:var(--ink);font-size:.55em;margin-left:.2em;vertical-align:middle;font-family:'Segoe UI Symbol','DejaVu Sans',sans-serif;font-variant-emoji:text}
+.gauges{display:flex;gap:2%;width:52%;justify-content:flex-end}
+.g{position:relative;width:23.5%;aspect-ratio:1;display:grid;place-items:center;padding:0;border:0;background:none;font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
+.g img{width:100%;height:100%;object-fit:contain}
+.g i{position:absolute;left:12%;right:12%;bottom:-14%;height:3px;background:#0002;border-radius:2px;overflow:hidden}
+.g i b{position:absolute;inset:0 auto 0 0;background:var(--ink);transition:width .6s ease}
+.g .ad{position:absolute;left:50%;top:116%;transform:translateX(-50%);font-size:clamp(13px,1.9vh,17px);font-weight:600;line-height:1;white-space:nowrap}
+#g-para i{display:none}
+#g-para .ad{top:103%;font-size:clamp(14px,2.1vh,19px);font-weight:700}
+.g-not{position:absolute;left:5.5%;right:5.5%;top:100%;z-index:6;padding:8px 12px;background:var(--paper);border:1.5px solid var(--ink);border-radius:6px;font-size:clamp(17px,2.5vh,22px);line-height:1.15;text-align:center}
+.g-not[hidden]{display:none}
+.g .d{position:absolute;top:-30%;font-size:clamp(14px,2.6vh,22px);font-weight:700;opacity:0;transform:translateY(6px);transition:all .5s ease;white-space:nowrap}
+.g .d.show{opacity:1;transform:none}
+.g.pulse{animation:pulse .6s ease}
+@keyframes pulse{50%{transform:scale(1.15)}}
+
+.scene{position:relative;margin:0 5.5%;min-height:0;overflow:hidden}
+.scene > img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transition:opacity .8s ease}
+#sceneOld{pointer-events:none}
+/* kamera: her karede çok yavaş yakınlaşma, durağan görsel canlı dursun */
+.scene > img.kb{animation:kb 14s ease-out forwards}
+@keyframes kb{from{transform:scale(1)}to{transform:scale(1.06)}}
+/* konuşan yüz: sahnenin sol alt köşesinde küçük kağıt çerçeve */
+.yuz{position:absolute;aspect-ratio:1;border:1.5px solid var(--ink);border-radius:2px 5px 3px 6px;background:var(--paper);box-shadow:3px 4px 0 #0002;
+  overflow:hidden;opacity:0;transform:translateY(10px) rotate(-1.5deg);transition:opacity .45s ease,transform .45s ease;pointer-events:none}
+.yuz.on{opacity:1;transform:rotate(-1.5deg)}
+.yuz img{width:100%;height:100%;object-fit:cover;display:block}
+.scene canvas{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;touch-action:none}
+.rule{flex:0 0 auto;height:2px;background:var(--ink);margin:2.5% 5.5% 0;border-radius:2px;opacity:.85}
+.text{--fs:clamp(19px,3.3vh,30px);height:calc(var(--fs)*1.15*3 + 10px);display:grid;place-items:center;text-align:center;padding:0 7%;font-size:var(--fs);line-height:1.15;overflow:hidden}
+.text s{text-decoration-thickness:2px}
+.cards{display:grid;grid-template-columns:repeat(2,1fr);column-gap:4%;padding:0 6% calc(6% + env(safe-area-inset-bottom,0px))}
+.cards.three{grid-template-columns:repeat(3,1fr)}
+.card{position:relative;border:0;background:url(../assets/kart.png) center/100% 100% no-repeat;font:600 clamp(18px,3.1vh,28px)/1.05 var(--hand);
+  color:var(--ink);height:clamp(72px,13vh,118px);padding:4% 8%;cursor:pointer;display:grid;place-items:center;text-align:center;touch-action:none;user-select:none;transition:transform .25s ease,opacity .3s}
+.cards.one .card{grid-column:1 / -1;justify-self:center;width:48%}
+.card:active{transform:translateY(1px)}
+.card:focus-visible{outline:2px dashed var(--gold);outline-offset:3px}
+.card:disabled:not(.picked){opacity:.38;cursor:default}
+.card.dragging{transition:none;z-index:5}
+.card svg.ring{position:absolute;inset:-6% -2%;width:104%;height:112%;pointer-events:none}
+.card svg.ring circle{fill:none;stroke:var(--ink);stroke-width:2.2;stroke-linecap:round}
+.card .hint{position:absolute;left:0;right:0;bottom:7%;text-align:center;font-size:.68em;opacity:.72}
+.card.timed::after{content:"";position:absolute;left:10%;right:10%;bottom:8%;height:3px;background:var(--ink);transform-origin:left;animation:shrink var(--t,3s) linear forwards}
+@keyframes shrink{to{transform:scaleX(0)}}
+.card.picked{transform:scale(1.03)}
+
+/* --- defter (21:00): sahne penceresinin içinde çizilir --- */
+.page{position:absolute;background:#f7f2e6;border:1.5px solid var(--ink);border-radius:2px 5px 3px 6px;box-shadow:3px 4px 0 #0001;
+  padding:9% 9% 6% 13%;display:flex;flex-direction:column;font-size:var(--pfs,26px);line-height:1.5;overflow:hidden;
+  background-image:linear-gradient(90deg,transparent 9%,#9e2a2b33 9%,#9e2a2b33 calc(9% + 1.5px),transparent calc(9% + 1.5px)),
+    repeating-linear-gradient(transparent 0 calc(1.5em - 1px),#1d1b1922 calc(1.5em - 1px) 1.5em);background-position:0 0,0 8%}
+.page .h{align-self:flex-end;opacity:.6;font-size:.85em}
+.page .l{min-height:1.5em}
+.page .l.baska{font-weight:500;font-style:italic;color:#3b3631;transform:rotate(-1.5deg);transform-origin:left}
+.page #bugun{white-space:normal}
+.page .k{display:inline-block;height:.18em;border-radius:1em;background:#1d1b1966;vertical-align:middle;
+  -webkit-mask:radial-gradient(circle at 50% 50%,#000 60%,transparent 61%) 0 0/.5em .5em}
+.page.kapak{background:#e7dfcd;background-image:none;justify-content:center;align-items:center;text-align:center;padding:12%}
+.page .kapak-yazi{font-weight:500;font-size:1.05em;transform:rotate(-3deg);color:#3b3631;line-height:1.3}
+
+/* --- kader ekranı --- */
+.fate{background:var(--night) url(../assets/zemin_koyu.jpg) center/cover;color:var(--cream);align-items:center;justify-content:center}
+.fate .art{position:absolute;inset:0;background:center/cover no-repeat}
+.fate .line{position:relative;margin-top:-28%;padding:0 10%;text-align:center;font-size:clamp(26px,4.6vh,42px);line-height:1.2}
+.fate .line span{opacity:0;transition:opacity .25s}
+.fate .line span.on{opacity:1}
+.fate .meta{position:relative;margin-top:4%;font-size:clamp(18px,2.8vh,26px);opacity:.45}
+.fate .tap{position:absolute;bottom:7%;font-size:clamp(18px,2.6vh,24px);opacity:.35}
+
+/* --- Kader Haritası --- */
+#harita{justify-content:flex-start;background-image:linear-gradient(#1d1b19cc,#1d1b19cc),url(../assets/harita/zemin.jpg);background-size:cover;background-position:center}
+.h-kaydir{position:relative;z-index:1;flex:1;width:100%;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:7% 5.5% 8%;-webkit-overflow-scrolling:touch}
+.h-ust{text-align:center}
+.h-ust h2{margin:0;font-size:clamp(30px,5vh,46px);font-weight:700}
+.h-ust p{margin:2px 0 0;opacity:.55;font-size:clamp(17px,2.5vh,23px)}
+.h-alan{position:relative;width:100%;margin-top:4px}
+.h-alan svg{position:absolute;inset:0;overflow:visible}
+.h-altin{stroke:var(--gold);stroke-width:3;stroke-linecap:round}
+.h-soluk{stroke:#efe4d044;stroke-width:1.4;stroke-dasharray:3 6}
+.h-kirmizi{stroke:#e0473f;stroke-width:2;stroke-linecap:round}
+.h-d{position:absolute;left:0;right:0;height:0;opacity:0;transition:opacity .6s ease}
+.h-d.on{opacity:1}
+.h-nokta{position:absolute;top:-6px;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:var(--gold);display:block}
+.h-nokta img{position:absolute;left:50%;top:50%;width:46px;height:46px;transform:translate(-50%,-50%);border-radius:50%;box-shadow:0 0 0 1px #efe4d044}
+.h-sec,.h-oteki{position:absolute;top:-1.1em;width:31%;line-height:1.08;font-size:clamp(15px,2.25vh,20px)}
+.h-sec span{display:block;font-size:.72em;opacity:.55;font-weight:400}
+.h-sec{font-weight:700;color:var(--cream)}
+.h-oteki{top:-.5em;opacity:.34;font-size:clamp(13px,1.95vh,17px)}
+.h-sec.sag,.h-oteki.sag{right:0;text-align:right}
+.h-sec.sol,.h-oteki.sol{left:0;text-align:left}
+.h-d.kader .h-nokta{width:22px;height:22px;margin-left:-11px;top:-11px;background:var(--cream);box-shadow:0 0 0 4px #efe4d033}
+.h-d.kader .h-nokta img{width:74px;height:74px}
+.h-k-yazi{position:absolute;left:50%;transform:translateX(-50%);width:max-content;max-width:100%;padding:1px 10px 3px;border-radius:12px;background:#1d1b19ee;top:2.1em;text-align:center;font-weight:700;font-size:clamp(18px,2.8vh,25px);line-height:1.05}
+.h-k-yazi span{font-weight:400;opacity:.55;font-size:.75em}
+.h-iz-uc{position:absolute;left:0;top:0;width:34px;height:34px;border-radius:50%;box-shadow:0 0 0 1.5px #e0473f;will-change:transform}
+.h-iz{margin:32px 2% 0;text-align:center;color:#ee6a60;font-size:clamp(20px,3vh,27px);line-height:1.2;animation:hSon 1.4s ease both}
+.h-son{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:18px;animation:hSon 1.4s ease both}
+.h-son[hidden]{display:none}
+@keyframes hSon{from{opacity:0}to{opacity:1}}
+#hyol{margin:0;text-align:center;opacity:.6;font-size:clamp(17px,2.5vh,23px)}
+#hkapanis{margin:0 2%;min-height:5em;text-align:center;font-size:clamp(21px,3.3vh,31px);line-height:1.2}
+#hkapanis span{opacity:0;transition:opacity .25s}
+#hkapanis span.on,#hkapanis span span.on{opacity:1}
+#hkapanis > span{opacity:1}
+.h-son h3{margin:6px 0 0;font-size:clamp(19px,2.8vh,25px);font-weight:600;opacity:.8}
+.h-hayatlar{display:flex;justify-content:center;gap:4px;width:100%}
+.h-hayat{flex:1 1 0;min-width:0;padding:0;border:0;background:none;color:var(--cream);font:600 clamp(15px,2.2vh,19px)/1.1 var(--hand);cursor:pointer;touch-action:manipulation}
+.h-hayat img{display:block;width:min(100%,58px);aspect-ratio:1;height:auto;margin:0 auto 3px;border-radius:50%;border:1.5px solid #efe4d066;mix-blend-mode:screen;background:#2a2826}
+#hNot{min-height:2.4em;margin:0;text-align:center;opacity:.7;font-size:clamp(16px,2.3vh,21px)}
+#hMenu{width:56%;height:clamp(58px,9vh,80px);background-color:var(--paper);color:var(--ink);touch-action:manipulation}
+.ov-el{position:absolute;left:0;top:0;width:50px;height:50px;margin:-25px 0 0 -25px;border-radius:50%;background:#f3ece0d9;box-shadow:0 0 0 2px #1d1b19aa,0 2px 10px #0008;pointer-events:none;will-change:transform,opacity;z-index:5;display:flex;align-items:center;justify-content:center;color:#1d1b19;font:700 19px/1 var(--hand)}
+.ov-cubuk{position:absolute;left:8%;right:8%;bottom:10px;height:7px;border-radius:4px;background:#1d1b1999;overflow:hidden;pointer-events:none;z-index:5}
+.ov-cubuk i{display:block;height:100%;background:var(--gold);transform:scaleX(0);transform-origin:left}
+.scene > img.gercek-isaret{inset:auto;left:50%;top:50%;width:auto;height:auto;transform:translate(-50%,-50%);max-width:60%;max-height:60%;object-fit:contain;pointer-events:none;z-index:5}
+.sahne-ipucu{grid-column:1 / -1;align-self:center;text-align:center;padding:6% 0;font-size:clamp(17px,2.5vh,22px);font-weight:500;opacity:.62;animation:ipucu 2.4s ease-in-out infinite}
+@keyframes ipucu{50%{opacity:.3}}
+
+
+/* --- ana menü --- */
+#menu{justify-content:flex-start;padding:13% 8% calc(7% + env(safe-area-inset-bottom,0px))}
+#menu .art{opacity:.9}
+#menu h1{position:relative;margin:0;font-size:clamp(54px,9.5vh,84px);font-weight:700;line-height:1;text-align:center}
+#menu .alt{position:relative;margin:2% 0 0;font-size:clamp(22px,3.4vh,31px);opacity:.6;text-align:center}
+#menu .tuslar{position:relative;margin-top:auto;width:100%;display:flex;flex-direction:column;align-items:center;gap:8px}
+#menu .card{width:62%;height:clamp(66px,10.5vh,96px);touch-action:manipulation;background-color:var(--paper)}
+#menu .card[hidden]{display:none}
+#mSes,#mDil{position:relative;background:none;border:0;color:var(--cream);opacity:.6;font:500 clamp(18px,2.6vh,24px) var(--hand);padding:8px 18px;cursor:pointer}
+#mSes:focus-visible,#mDil:focus-visible{outline:2px dashed var(--cream)}
+
+/* --- oyun içi menü --- */
+.menu-tus{flex:0 0 auto;width:44px;height:44px;margin:0 auto 0 4%;padding:11px 9px;background:none;border:0;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;touch-action:manipulation}
+.menu-tus i{display:block;height:2.5px;background:var(--ink);border-radius:2px;opacity:.75}
+.menu-tus i:nth-child(2){width:80%}
+.menu-tus[hidden]{display:none}
+.menu-tus:focus-visible{outline:2px dashed var(--gold)}
+.kapla{position:absolute;inset:0;z-index:20;background:#2a2826;color:var(--cream);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:8%}
+.kapla[hidden]{display:none}
+.kapla h2{margin:0 0 3%;font-size:clamp(36px,6vh,54px);font-weight:700}
+.kapla .card{width:66%;height:clamp(62px,9.5vh,86px);touch-action:manipulation;background-color:var(--paper)}
+.kapla p{margin:3% 0 0;font-size:clamp(18px,2.5vh,23px);opacity:.6;text-align:center}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* --- Deniz: yazılı kağıdı, kendine çekilen simit, menüdeki öteki hayatlar --- */
+.page.kagit{background-image:none;padding:8% 9%;z-index:4}
+.page.kagit .soru{margin-top:6%;line-height:1.35}
+.scene .ceken{position:absolute;left:50%;top:12%;right:auto;bottom:auto;transform:translateX(-50%);pointer-events:auto;touch-action:none;cursor:grab;z-index:6;filter:drop-shadow(0 3px 6px #0006)}
+.scene .ceken.tutuldu{cursor:grabbing}
+.scene .ceken.oynat{animation:ceken 1s ease-in-out}
+@keyframes ceken{50%{transform:translate(-50%,70px)}}
+.m-hayatlar{display:flex;flex-direction:column;align-items:center;gap:8px;width:100%}
+.m-hayatlar:empty{display:none}
