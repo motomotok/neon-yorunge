@@ -465,6 +465,9 @@ function showPurchaseConfirm(iconKey, name, price, onYes, message, priceIcon, on
   const priceEl=document.getElementById('pcPrice');
   if(price==null){ priceEl.style.display='none'; }
   else { priceEl.style.display='block'; priceEl.innerHTML = icon(priceIcon||'coin')+' '+price; }
+  // 2.81: DJ yazarken açılan pencere tıklanabilsin (narrBlocker z42 > pencere z35).
+  if(typeof setNarrBlock==='function') setNarrBlock(false);
+  if(typeof guideActive!=='undefined' && guideActive && (guideStep==='menu' || guideStep==='rmenu')) guidePause();
   document.getElementById('purchaseConfirmOverlay').style.display = 'flex';
   setTimeout(diagOverlayCovered, 250);
 }

@@ -249,3 +249,45 @@ document.getElementById('restorePurchasesBtn').addEventListener('click', e=>{
   if(window.Premium && Premium.isNative()){ Premium.restore(); queueToast(t('restore_started_toast')); }
   else queueToast(t('restore_web_toast'));
 });
+
+// 2.81: Android Geri tuşu. Eskiden hiç dinlenmiyordu ve her ekranda uygulamayı
+// kapatıyordu (mağazada, oyun ortasında bile). Şimdi: açık pencere kapanır,
+// oyun duraklar, alt ekranlar ana menüye döner; ana menüde uygulama kapanmaz,
+// arka plana alınır (oyuncu geri gelince kaldığı yerden devam eder).
+function handleBackButton(){
+  try{
+    if(window.Ads && Ads.isShowing && Ads.isShowing()) return;
+    const vis=id=>{ const el=document.getElementById(id); return el && getComputedStyle(el).display!=='none'; };
+    if(vis('purchaseConfirmOverlay')){ document.getElementById('pcNoBtn').click(); return; }
+    if(vis('nameOverlay')){ document.getElementById('nameCancelBtn').click(); return; }
+    if(vis('fbOverlay')){ const s=document.getElementById('fbSkip'); if(s) s.click(); return; }
+    if(vis('settingsInfoOverlay')){ document.getElementById('settingsInfoOverlay').style.display='none'; return; }
+    if(vis('infoPopupOverlay')){ document.getElementById('infoPopupOverlay').style.display='none'; return; }
+    if(vis('coreInfoOverlay')){ if(typeof closeCoreInfo==='function') closeCoreInfo(); return; }
+    if(vis('kvkkOverlay')) return;
+    if(state==='pause'){ resumeGame(); return; }
+    if(tutorialActive){ if(state==='play') pauseGame(); return; }
+    if(typeof narratorIsTyping==='function' && narratorIsTyping()) return;
+    const ds=document.getElementById('duelSearch');
+    if(ds && ds.classList.contains('show')) return;
+    if(state==='play'){ pauseGame(); return; }
+    if(state==='pause'){ resumeGame(); return; }
+    if(state==='revive' || state==='duelvs' || state==='story') return;
+    if(state==='over'){
+      const sw=document.getElementById('screen-songwin');
+      if(sw && sw.classList.contains('active')){ songWinLater(); return; }
+      goMenu(); return;
+    }
+    if(state==='menu'){
+      const A=window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.App;
+      if(A && A.minimizeApp) A.minimizeApp(); else if(A && A.exitApp) A.exitApp();
+      return;
+    }
+    if(typeof guideActive!=='undefined' && guideActive && typeof guideBlocksNav==='function' && guideBlocksNav('menu')) return;
+    goMenu();
+  }catch(e){}
+}
+try{
+  const capAppB = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.App;
+  if(capAppB && capAppB.addListener) capAppB.addListener('backButton', handleBackButton);
+}catch(e){}

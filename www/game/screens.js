@@ -4,6 +4,7 @@ function showScreen(id){
   if(typeof hideLoginTip==='function') hideLoginTip();
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   if(id){ const el=document.getElementById('screen-'+id); if(el) el.classList.add('active'); }
+  if(typeof guideOnScreen==='function') guideOnScreen(id);
   const overlayEl=document.getElementById('overlay');
   overlayEl.classList.toggle('hidden', !id);
   const achTip=document.getElementById('achTooltip'); if(achTip) achTip.classList.remove('show');
@@ -385,16 +386,43 @@ function showSongWin(runScore){
   showScreen('songwin');
   if(typeof Music!=='undefined' && Music.preload) Music.preload(THEME_MUSIC[SONG_GIFT_THEME]);
   beep(660,0.15,'triangle',0.12); setTimeout(()=>beep(990,0.25,'sine',0.11),160);
-  setTimeout(()=>overPrompt(false), 2600);
+  // 2.81: Şarkı 1'i kazananların yarısı bu ekranda bırakıyordu. Yeni plak birkaç
+  // saniye sonra kendiliğinden çalar ("Sonra" ile durur). İzin / geri bildirim
+  // soruları artık bu ekranda çıkmaz ("Sonra" denince oyun sonunda sorulur).
+  songWinAuto();
+}
+const SONGWIN_AUTO_S = 6;
+let _swTimer=null;
+function songWinStop(){
+  clearInterval(_swTimer); _swTimer=null;
+  const c=document.getElementById('swAutoN'); if(c) c.remove();
+}
+function songWinAuto(){
+  songWinStop();
+  const lbl=document.getElementById('swPlayLbl'); if(!lbl) return;
+  let n=SONGWIN_AUTO_S;
+  const c=document.createElement('span'); c.id='swAutoN'; c.className='swAutoN'; c.textContent=n;
+  lbl.after(c);
+  _swTimer=setInterval(()=>{
+    const sw=document.getElementById('screen-songwin');
+    const ov=document.getElementById('purchaseConfirmOverlay');
+    if(state!=='over' || !sw || !sw.classList.contains('active')){ songWinStop(); return; }
+    if(document.hidden || (ov && getComputedStyle(ov).display!=='none')) return;   // bekle, sayma
+    n--; c.textContent=n;
+    if(n<=0){ songWinStop(); songPlayNext(); }
+  }, 1000);
 }
 function songPlayNext(){
+  songWinStop();
   if(state!=='over') return;
   applyTheme(SONG_GIFT_THEME);
   startGame('daily');
 }
 function songWinLater(){
+  songWinStop();
   if(state!=='over') return;
   showScreen('over'); beep(200,0.3,'sine',0.12);
+  setTimeout(()=>overPrompt(false), 1200);
 }
 
 // Oyun sonunda yarının somut ödülü: oyuncu çıkarken geri gelmek için bir sebep görsün.
@@ -427,6 +455,11 @@ function song3Give(after){
 }
 // Günün ilk menüsü: sözü verilen plak, sonra günlük ödül ekranı (ilk 7 gün). Ödül yalnız
 // rozetle dururken oyuncu "yarın gel" sözünün karşılığını görmeden geçip gidebiliyordu.
+// Menüde bekleyen günün hediyesi var mı (rehber bunu beklesin diye).
+function dailyWelcomeDue(){
+  if(!stats.tutorialDone) return false;
+  return song3Due() || (!loginRewardClaimedToday() && stats.lsAutoDate!==todayStr() && (stats.scoreRuns||0)>=1 && (stats.activeDays||1)<=7);
+}
 function dailyWelcome(){
   if(state!=='menu' || tutorialActive || guideActive || !stats.tutorialDone) return false;
   const ov=document.getElementById('purchaseConfirmOverlay');
@@ -435,6 +468,7 @@ function dailyWelcome(){
   if(!loginRewardClaimedToday() && stats.lsAutoDate!==todayStr() && (stats.scoreRuns||0)>=1 && (stats.activeDays||1)<=7){
     stats.lsAutoDate=todayStr(); saveStats(); goLoginStreak(); return true;
   }
+  if(typeof guideCheckMenu==='function') guideCheckMenu();   // hediye yoksa / bittiyse sıradaki rehber
   return false;
 }
 // Oyun sonunda en fazla BİR soru, sırayla: bildirim izni → mağaza puanı (mutlu an) →

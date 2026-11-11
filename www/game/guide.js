@@ -35,6 +35,10 @@ function guideCheckMenu(){
   if(guideActive || tutorialActive || !stats.tutorialDone) return;
   setTimeout(()=>{
     if(guideActive || tutorialActive || state!=='menu') return;
+    // 2.81: açılış soruları (güncelleme, dünkü set ödülü) ve günün hediyesi önce.
+    // Eskiden rehber 0.7 sn'de başlıyor, sözü verilen plak rehber bitene kadar hiç çıkmıyordu.
+    if(typeof _menuBootDone!=='undefined' && !_menuBootDone) return;
+    if(typeof dailyWelcomeDue==='function' && dailyWelcomeDue()) return;
     const ov=document.getElementById('purchaseConfirmOverlay');
     if(ov && getComputedStyle(ov).display!=='none') return;   // başka bir DJ sorusu açık
     if(!stats.guideDuelDone && duelUnlocked() && songNext()===0){
@@ -93,6 +97,22 @@ function guideEnd(){
   guideActive=null; guideStep=null; _guideAfter=null;
   tutorialClearSpotlight(); tutorialRestoreHidden(); tutorialRestoreDisabled(); narratorHide();
   if(state==='upgrades'){ renderUpgrades(); renderUpgradesTab(); }
+}
+// Rehber yarıda bırakılır ama "görüldü" sayılmaz: oyuncu başka bir ekrana
+// geçtiyse (ör. bir DJ sorusundan Mağaza'ya) kutu peşinden gitmesin; bir
+// sonraki ana menüde yeniden başlar.
+function guidePause(){
+  if(!guideActive) return;
+  guideActive=null; guideStep=null; _guideAfter=null;
+  tutorialClearSpotlight(); tutorialRestoreHidden(); tutorialRestoreDisabled(); narratorHide();
+}
+// showScreen'den: rehber adımı yalnız kendi ekranlarında yaşar.
+const GUIDE_SCREENS = {menu:['menu','duel'], rmenu:['menu','ranking'], pick:['duel'], find:['duel'], dname:['duel'],
+  rname:['ranking'], podium:['ranking'], tabs:['ranking'], uover:['over','upgrades'], uhp:['upgrades'], rc:['upgrades']};
+function guideOnScreen(id){
+  if(!guideActive || !guideStep) return;
+  const ok=GUIDE_SCREENS[guideStep];
+  if(ok && !ok.includes(id)){ if(guideActive==='up') guideEnd(); else guidePause(); }
 }
 function guideGo(step){
   guideStep=step;

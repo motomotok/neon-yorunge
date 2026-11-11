@@ -41,7 +41,8 @@ setTimeout(async ()=>{
   const askedUpdate = await updateMaybePrompt();
   notifyReschedule();
   let asked = askedUpdate;
-  if(!asked && state==='menu') asked = await dsetClaimPending().catch(()=>false);
+  // 2.81: dün söz verilen plak dünkü set ödülünden önce (set ödülü bir sonraki menüye kalır).
+  if(!asked && state==='menu' && !(typeof song3Due==='function' && song3Due())) asked = await dsetClaimPending().catch(()=>false);
   _menuBootDone = true;
   if(!asked) asked = dailyWelcome();   // KVKK şeridi oyunu kapatmaz; dönen oyuncunun hediyesini bekletmesin
   if(!asked && !askedKvkk && state==='menu') notifyMaybeAsk('launch');
