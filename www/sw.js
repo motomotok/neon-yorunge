@@ -1,4 +1,4 @@
-const CACHE = 'beat-orbit-v154';
+const CACHE = 'beat-orbit-v156';
 const ASSETS = [
   './',
   './index.html',
@@ -55,6 +55,7 @@ const ASSETS = [
   './game/splash.js',
   './game/tutorial.js',
   './game/guide.js',
+  './game/turne.js',
   './game/cloud-sync.js',
   './game/telemetry.js',
   './game/input.js',

@@ -142,7 +142,7 @@ function telemetrySummary(){
     nop: stats.nfOpen||0, rd: stats.retDay||0, lc: stats.loginClaims||0,
     // Geri bildirim (1 zor · 2 sıkıcı · 3 karışık · 4 güzel), üçüncü plak (1 söz · 2 verildi),
     // mağaza puanı penceresi istendi mi, düello önerisi (1 gösterildi · 2 kabul).
-    fb: stats.fb||0, g3: (stats.song3 && stats.song3.s)||0, rv: stats.rvAsked||0, dof: stats.duelOffered||0,
+    tq: typeof turneDoneCount==='function' ? turneDoneCount() : 0, fb: stats.fb||0, g3: (stats.song3 && stats.song3.s)||0, rv: stats.rvAsked||0, dof: stats.duelOffered||0,
     ...perfSummary(), ...runSummary(),
   };
 }

@@ -28,7 +28,7 @@ async function collectFunnel(db) {
       scr: p.scr || "", on: p.on === true, opens: p.opens || 0, r1s: p.r1s || 0, r1sc: p.r1sc || 0, r1h: p.r1h || 0, r1k: p.r1k || "",
       r1rv: p.r1rv || 0, r1os: p.r1os || 0, r1ob: p.r1ob || "", r1fh: p.r1fh, r1h10: p.r1h10,
       sg: p.sg, s1t: p.s1t || 0, msn: p.msn || 0, msl: p.msl || 0,
-      np: p.np, tti: p.tti || 0, src: p.src || "", nsh: p.nsh || 0, nop: p.nop || 0, rd: p.rd || 0, lc: p.lc || 0, fb: p.fb || 0, g3: p.g3 || 0, rv: p.rv || 0, dof: p.dof || 0,
+      np: p.np, tti: p.tti || 0, src: p.src || "", nsh: p.nsh || 0, nop: p.nop || 0, rd: p.rd || 0, lc: p.lc || 0, fb: p.fb || 0, g3: p.g3 || 0, rv: p.rv || 0, dof: p.dof || 0, tq: p.tq,
       returned: typeof p.days === "number" ? p.days >= 2 : last - created >= 20 * 3600000 });
   }
   const med = (a) => { if (!a.length) return 0; const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
@@ -64,7 +64,10 @@ async function collectFunnel(db) {
     const rp = c.filter((p) => typeof p.np === "number"), el = rp.filter((p) => p.d < TODAY);
     const grp = (a) => ({ n: a.length, played: a.filter((p) => p.runs >= 1).length, d1: a.filter((p) => p.rd === 1).length, back: a.filter((p) => p.rd >= 1).length, claim: a.filter((p) => p.lc >= 1).length });
     const nat = rp.filter((p) => p.plat !== "web");
-    const ret = { fb: [1, 2, 3, 4].map((v) => rp.filter((p) => p.fb === v).length), g3: rp.filter((p) => p.g3 === 2).length, g3Promised: rp.filter((p) => p.g3 >= 1).length,
+    // DJ Turnesi (2.82.0+): biten görev sayısı eşiklerine ulaşan oyuncu (6 = 1. sahne, 12 = 2. sahne...).
+    const tqp = c.filter((p) => typeof p.tq === "number");
+    const ret = { tq: { n: tqp.length, at: [1, 3, 6, 9, 12, 18, 24, 30].map((k) => [k, tqp.filter((p) => p.tq >= k).length]) },
+      fb: [1, 2, 3, 4].map((v) => rp.filter((p) => p.fb === v).length), g3: rp.filter((p) => p.g3 === 2).length, g3Promised: rp.filter((p) => p.g3 >= 1).length,
       rv: rp.filter((p) => p.rv === 1).length, dofShown: rp.filter((p) => p.dof >= 1).length, dofYes: rp.filter((p) => p.dof === 2).length,
       n: rp.length, all: grp(el), ad: grp(el.filter((p) => p.src === "ad")), org: grp(el.filter((p) => p.src === "org")),
       other: grp(el.filter((p) => !p.src)), medTti: r1(med(rp.filter((p) => p.tti).map((p) => p.tti / 10))),

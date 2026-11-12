@@ -264,6 +264,7 @@ function handleBackButton(){
     if(vis('settingsInfoOverlay')){ document.getElementById('settingsInfoOverlay').style.display='none'; return; }
     if(vis('infoPopupOverlay')){ document.getElementById('infoPopupOverlay').style.display='none'; return; }
     if(vis('coreInfoOverlay')){ if(typeof closeCoreInfo==='function') closeCoreInfo(); return; }
+    if(vis('tqOv')){ const y=document.getElementById('tqOvNo'); (y && y.style.display!=='none' ? y : document.getElementById('tqOvYes')).click(); return; }
     if(vis('kvkkOverlay')) return;
     if(state==='pause'){ resumeGame(); return; }
     if(tutorialActive){ if(state==='play') pauseGame(); return; }

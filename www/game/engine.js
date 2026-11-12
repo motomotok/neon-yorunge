@@ -775,6 +775,7 @@ function update(dt){
   if(session.song){ songTick(); if(state!=='play') return; }
   session.cleanT += dt/60; if(session.cleanT>session.cleanMax) session.cleanMax=session.cleanT;
   if(mode==='daily' && !tutorialActive && (_msTick+=dt)>=30){ _msTick=0; missionsCheck(false); }
+  if(mode==='daily' && !tutorialActive && typeof turneTick==='function') turneTick(dt);
 
   // Ani hız sıçramalarını (dondurma/yavaşlatma bitince tek karede eski hıza
   // fırlaması) önlemek için hedef çarpana her karede yumuşakça yaklaşılır —

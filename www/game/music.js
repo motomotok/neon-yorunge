@@ -48,7 +48,7 @@ const Music = (function(){
   const buffers = {};         // ad → Promise<{part: AudioBuffer}>
   let cur=null;               // çalan şarkı
   let loadingName=null;
-  let suspended=false, lastCombo=0;
+  let suspended=false, lastCombo=0, ctxErr='';
 
   function ensureCtx(){
     if(ctx) return ctx;
@@ -57,7 +57,12 @@ const Music = (function(){
     // SESSİZ kalabiliyor (TestFlight 1.0.1: efektler var, müzik yok). iOS'ta varsayılan hız.
     const IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
     try{ ctx = IOS ? new C({latencyHint:'playback'}) : new C({sampleRate:32000, latencyHint:'playback'}); }
-    catch(e){ try{ ctx = new C(); }catch(e2){ return null; } }
+    catch(e){ try{ ctx = new C(); }catch(e2){
+      // 2.81.1: eski iOS'ta (16.x) yeni ses bağlamı açılamayabiliyor (panel: state=null).
+      // Efektlerin bağlamı (fx.js AC) varsa müzik de onu kullanır.
+      ctxErr = (e2 && e2.message) || String(e2);
+      if(typeof AC!=='undefined' && AC) ctx = AC; else return null;
+    } }
     // iOS telefon görüşmesi/Siri sonrası bağlamı 'interrupted' bırakır: ilk dokunuşta devam.
     ctx.onstatechange = ()=>{ if(ctx.state==='interrupted' && !suspended) resume(); };
     out = ctx.createGain(); out.gain.value = musicVolume();
@@ -176,7 +181,7 @@ const Music = (function(){
         // Müzik kapatıldıysa şarkı tamamen durur; reklam / arka plan ise sadece askıya alır.
         if(!cfg.music) stop(0.3);
         duck.gain.setTargetAtTime(0, ctx.currentTime, 0.08);
-        setTimeout(()=>{ if(suspended && ctx) ctx.suspend().catch(()=>{}); }, 350);
+        setTimeout(()=>{ if(suspended && ctx && !(typeof AC!=='undefined' && ctx===AC)) ctx.suspend().catch(()=>{}); }, 350);   // ortak bağlam: efektler sussun diye askıya alınmaz
       }
       return;
     }
@@ -230,7 +235,7 @@ const Music = (function(){
     if(cur || !cfg.music || !window.CrashReport || !CrashReport.report) return;
     CrashReport.report('DIAG music: state='+(ctx&&ctx.state)+' rate='+(ctx&&ctx.sampleRate)+' suspended='+suspended+
       ' loading='+loadingName+' buffers='+Object.keys(buffers).join('|')+' wanted='+wantedTrack()+' audible='+audible()+
-      ' scr='+state+' ua='+navigator.userAgent.slice(0,60));
+      ' scr='+state+(ctxErr?' err='+ctxErr.slice(0,60):'')+' ua='+navigator.userAgent.slice(0,60));
   }
   function unlock(){ ensureCtx(); resume(); if(!diagT) diagT=setTimeout(diag, 10000); }
   document.addEventListener('pointerdown', unlock, true);

@@ -101,6 +101,7 @@ function goMenu(){ state='menu'; setHud(false); showScreen('menu');
   }
   refreshWallet();
   syncDsetChip();
+  if(typeof turneCheck==='function'){ turneCheck(); turneRender(); setTimeout(()=>{ if(state==='menu') turneChapterShow(); }, 1400); }
   // Uygulama açıkken gece yarısı geçtiyse dünkü setin ödülü menüye dönünce
   // verilir (açılıştaki ilk kontrol main.js'te, güncelleme sorusundan sonra).
   if(_menuBootDone && stats.dsetPending) setTimeout(()=>{ if(state==='menu') dsetClaimPending(); }, 600);
@@ -334,7 +335,9 @@ function gameOver(reason){
   document.getElementById('nextGoalLine').textContent = song && song.n===1 && !songWin ? t('song1_lost_goal',{name:t(THEMES[SONG_GIFT_THEME].nameKey)})
     : song && song.n===2 ? t('song_endless_line')
     : mode==='daily' ? dsetOverText(dsetRes) : nextGoalLineText(runScore, newRecord);
+  if(mode==='daily' && !tutorialActive && typeof turneRunEnd==='function') turneRunEnd();
   renderMissionsCard();
+  if(typeof turneRender==='function') turneRender();
   renderTomorrowLine();
   // İlk oyunlarda oyun sonu sade: yeni oyuncunun önünde Tekrar ve görevler dışında seçenek kalabalığı olmasın.
   document.getElementById('screen-over').classList.toggle('overSimple', mode==='daily' && !tutorialActive && (stats.scoreRuns||0)<OVER_SIMPLE_RUNS);
@@ -430,7 +433,7 @@ function songWinLater(){
 // Üçüncü plak (stats.song3 = {s:1 söz verildi · 2 verildi, d:söz günü, k:tema}): söz ilk
 // oyun sonunda verilir, ertesi gün veya sonraki ilk gelişte menüde hediye edilir.
 const SONG3_THEMES = ['urbansounds', 'lofichillhop', 'steamfunk', 'cybercircuit'];
-const OVER_SIMPLE_RUNS = 3, REVIEW_MIN_RUNS = 5, FEEDBACK_RUNS = 3;
+const OVER_SIMPLE_RUNS = 3, REVIEW_MIN_RUNS = 5, FEEDBACK_RUNS = 1;
 function renderTomorrowLine(){
   const el=document.getElementById('tmrLine'); if(!el) return;
   if(tutorialActive || (stats.activeDays||1)>14){ el.style.display='none'; return; }
@@ -477,10 +480,12 @@ async function overPrompt(happy){
   if(state!=='over' || guideActive || tutorialActive) return;
   const ov=document.getElementById('purchaseConfirmOverlay');
   if((ov && getComputedStyle(ov).display!=='none') || (window.Ads && Ads.isShowing && Ads.isShowing())) return;
+  // 2.81.1: geri bildirim ilk oyun sonunda, bildirim izninden önce (eskiden 3. oyundan
+  // sonraydı, oraya 94 kişiden 8'i ulaşıyordu: "anlamıyorlar mı, sevmiyorlar mı" ölçülemiyordu).
+  if(!stats.fbAsked && (stats.scoreRuns||0)>=FEEDBACK_RUNS){ feedbackShow(); return; }
   if(typeof notifyMaybeAsk==='function' && await notifyMaybeAsk('run')) return;
   if(state!=='over') return;
   if(happy && !stats.rvAsked && window.Telemetry && Telemetry.askReview){ stats.rvAsked=1; saveStats(); Telemetry.askReview(); return; }
-  if(!stats.fbAsked && (stats.scoreRuns||0)>=FEEDBACK_RUNS){ feedbackShow(); return; }
   if(!stats.duelOffered && duelUnlocked() && songNext()===0 && !(stats.duel && stats.duel.games>0)){
     stats.duelOffered=1; saveStats();
     showDjConfirm(t('duel_offer'), ()=>{
@@ -511,7 +516,7 @@ function feedbackShow(){
 function renderMissionsCard(){
   const el=document.getElementById('msCard'); if(!el) return;
   const ms=stats.mset;
-  if(!ms || mode!=='daily' || tutorialActive){ el.style.display='none'; return; }
+  if(!ms || mode!=='daily' || tutorialActive || (typeof turneActive==='function' && turneActive())){ el.style.display='none'; return; }
   el.style.display='';
   const fresh=(session && session.msNew) || [], r=missionReward(ms.lv);
   const done=ms.list.filter(m=>m.done).length;

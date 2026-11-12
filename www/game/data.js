@@ -6,7 +6,7 @@
 // güncelleme push edildiğinde cihaza gerçekten yansıyıp yansımadığını
 // görsel olarak doğrulamak için. HER anlamlı değişiklikte artırılmalı:
 // küçük düzeltme -> patch (x.x.+1), yeni özellik -> minor (x.+1.0).
-const GAME_VERSION = '2.81.0';
+const GAME_VERSION = '2.82.0';
 
 // 4 tema, kullanıcının gönderdiği 4 konsept görseline birebir karşılık gelir
 // (bkz. proje notu) — varsayılan/ücretsiz 'neon' id'si "Retro Beats" görseli,
@@ -667,7 +667,10 @@ function flushSaves(){
 }
 function _queueSave(){ if(!_saveTimer) _saveTimer=setTimeout(flushSaves,300); }
 function saveCfg(){ _dirtyCfg=true; _queueSave(); }
-function saveStats(){ _dirtyStats=true; _queueSave(); }
+// Her kayıttan sonra turne görevi kontrol edilir (yetenek alındı, düello bitti...: bkz. turne.js).
+let _tqChk=false;
+function saveStats(){ _dirtyStats=true; _queueSave();
+  if(!_tqChk && typeof turneCheck==='function'){ _tqChk=true; setTimeout(()=>{ _tqChk=false; turneCheck(); }, 0); } }
 document.addEventListener('visibilitychange',()=>{ if(document.hidden) flushSaves(); });
 window.addEventListener('pagehide',flushSaves);
 
@@ -1031,6 +1034,7 @@ function missionProgress(m, end){
 // Oyun içinde (yarım saniyede bir) ve oyun sonunda: biten görevin notası hemen
 // verilir; üçü de bitince set bonusu. Sıradaki set bir sonraki oyunda kurulur.
 function missionsCheck(end){
+  if(typeof turneActive==='function' && turneActive()) return;   // turne sürerken görev setleri bekler
   const ms=stats.mset; if(!ms || ms.paid || !session) return;
   let any=false;
   for(const m of ms.list){
@@ -1049,6 +1053,7 @@ function missionsCheck(end){
 }
 // Oyun sonu: birikenler eklenir, tek oyunluk en iyiler güncellenir.
 function missionsRunEnd(){
+  if(typeof turneActive==='function' && turneActive()) return;
   const ms=stats.mset; if(!ms) return;
   missionsCheck(true);
   for(const m of ms.list){

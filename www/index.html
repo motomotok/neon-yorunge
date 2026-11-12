@@ -125,6 +125,8 @@
         <button class="btn menuStartBtn menuPlayBtn" data-go="quickstart"><i class="gicon" data-icon="play"></i><b data-i18n="menu_play_score">SKOR AVI</b><small data-i18n="menu_play_score_sub">Günlük ödüllü yarış</small></button>
         <button class="btn menuDuelBtn menuPlayBtn" data-go="duel"><i class="gicon" data-icon="lightning"></i><b data-i18n="nav_duel">DÜELLO</b><small data-i18n="menu_play_duel_sub">1'e 1 · Dereceli</small></button>
       </div>
+      <!-- DJ Turnesi: sıradaki görev (bkz. game/turne.js) -->
+      <div class="tqCard" id="tqMenu" style="display:none"></div>
       <div class="menuEventChip" id="menuEventChip" data-go="shop" style="display:none">
         <span class="ic" id="menuEventIcon"></span> <span id="menuEventText"></span>
       </div>
@@ -397,6 +399,17 @@
     </div>
   </div>
 
+  <!-- DJ Turnesi: sahneler ve görevler (bkz. game/turne.js) -->
+  <div class="screen fullpin" id="screen-turne">
+    <div class="screenHead">
+      <h2><i class="gicon" data-icon="flag"></i> <span data-i18n="tq_title">DJ Turnesi</span></h2>
+    </div>
+    <div class="screenBody" id="turneBody"></div>
+    <div class="screenFoot">
+      <button class="btn alt small" data-go="menu"><i class="gicon" data-icon="back"></i> <span data-i18n="btn_back">Geri</span></button>
+    </div>
+  </div>
+
   <div class="screen fullpin" id="screen-shop">
     <div class="screenHead">
       <h2><i class="gicon" data-icon="cart"></i> <span data-i18n="shop_title">Plak Dükkanı</span></h2>
@@ -477,6 +490,7 @@
     <div class="walletBig" style="font-size:16px;padding:6px 16px;" id="coinsEarned"><i class="gicon" data-icon="coin"></i> +0</div>
     <div class="sub" id="nextGoalLine" style="margin:6px 0 0;min-height:1em"></div>
     <!-- Görevler (bkz. game/screens.js renderMissionsCard) -->
+    <div class="tqCard over" id="tqOver" style="display:none"></div>
     <div class="msCard" id="msCard" style="display:none"></div>
     <div class="tmrLine" id="tmrLine" style="display:none"></div>
     <div class="col">
@@ -615,6 +629,20 @@
     </div>
   </div>
 </div>
+<!-- Turne: sahne bitti (bkz. game/turne.js turneChapterShow) -->
+<div id="tqOv" style="display:none;position:fixed;inset:0;z-index:36;align-items:center;justify-content:center;background:rgba(2,3,10,.78);padding:18px;">
+  <div class="card tqOvCard">
+    <div class="tqOvStage" id="tqOvStage"></div>
+    <div class="tqOvName" id="tqOvName"></div>
+    <div class="tqOvDone" id="tqOvDone"></div>
+    <div class="tqOvReward" id="tqOvReward"></div>
+    <div class="tqOvNext" id="tqOvNext"></div>
+    <div class="row2" style="margin-top:4px">
+      <button class="btn small" id="tqOvYes"></button>
+      <button class="btn alt small" id="tqOvNo"></button>
+    </div>
+  </div>
+</div>
 <!-- Tek dokunuşluk geri bildirim (bkz. game/screens.js feedbackShow) -->
 <div id="fbOverlay" style="display:none;position:fixed;inset:0;z-index:35;align-items:center;justify-content:center;background:rgba(2,3,10,.72);padding:18px;">
   <div class="card" style="max-width:320px;width:100%;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center;">
@@ -737,6 +765,7 @@
 <script src="game/narrator.js"></script>
 <script src="game/tutorial.js"></script>
 <script src="game/guide.js"></script>
+<script src="game/turne.js"></script>
 <script src="game/cloud-sync.js"></script>
 <script src="game/telemetry.js"></script>
 <script src="game/input.js"></script>
