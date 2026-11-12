@@ -1853,3 +1853,25 @@ body.duel #walletChip, body.duel #walletEndHud{display:none;}
 .tqOvReward{display:flex;align-items:center;gap:6px;font-size:20px;font-weight:900;color:#ffd28a;margin:4px 0;}
 .tqOvReward .gicon{width:20px;height:20px;}
 .tqOvNext{font-size:13px;opacity:.8;}
+
+/* ---- 2.82.1 Oyun içi görev şeridi ---- */
+#tqHud{position:absolute;top:calc(env(safe-area-inset-top) + 182px);right:18px;pointer-events:none;display:none;
+  align-items:center;gap:8px;max-width:min(210px,46vw);padding:7px 11px 8px 8px;border-radius:12px;
+  background:rgba(10,6,14,.55);border:1px solid rgba(255,184,84,.35);box-shadow:0 0 14px rgba(255,184,84,.12);text-align:left;}
+#tqHud.show{display:flex;}
+#tqHud.pop{animation:tqPop .5s ease-out;}
+#tqHud .tqhIc{flex:none;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:rgba(255,184,84,.16);color:#ffd28a;}
+#tqHud .tqhIc .gicon{width:15px;height:15px;}
+#tqHud .tqhBody{min-width:0;display:flex;flex-direction:column;gap:2px;}
+#tqHud small{font-size:9.5px;font-weight:800;letter-spacing:.12em;color:#e9c991;opacity:.85;white-space:nowrap;}
+#tqHud small .gicon{width:11px;height:11px;vertical-align:-1px;}
+#tqHud b{font-size:12px;font-weight:700;line-height:1.25;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6);}
+#tqHud .tqhBar{height:3px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden;margin-top:2px;}
+#tqHud .tqhBar i{display:block;height:100%;background:linear-gradient(90deg,#ffb854,#ffd28a);transform-origin:left;transform:scaleX(0);transition:transform .35s;}
+#tqHud.done{border-color:rgba(110,240,160,.6);box-shadow:0 0 18px rgba(110,240,160,.3);}
+#tqHud.done .tqhIc{background:rgba(110,240,160,.2);color:#7dffb0;}
+#tqHud.done small{color:#7dffb0;opacity:1;}
+#tqHud.done .tqhBar i{background:#7dffb0;}
+body.left-hand #tqHud{left:18px;right:auto;}
+body.duel #tqHud{display:none;}

@@ -131,6 +131,7 @@ function turneCheck(){
     _tqJust.push(q.id);
     if(typeof session!=='undefined' && session && (state==='play' || state==='over')) (session.tqDone=session.tqDone||[]).push(q.id);
     queueToast(icon('check')+' '+t('tq_done_toast',{text:turneText(q)})+' '+turneRewardHTML(q));
+    if(state==='play') _tqHudFlash={q, until:performance.now()+2600};
     _tqAdvance(true);
   }
   if(any){
@@ -149,6 +150,27 @@ function turneRunEnd(){
   if(q && q.k==='run'){ try{ stats.tq.best=Math.max(stats.tq.best||0, q.f()); }catch(e){} }
   turneCheck();
   setTimeout(turneChapterShow, 1200);
+}
+// Oyun içi görev şeridi (HUD): sağ üstte, cüzdanın altında. Görev oyunda
+// tamamlanırsa 2.6 sn yeşil "tamam + ödül" gösterir, sonra sıradaki göreve geçer.
+let _tqHudFlash=null, _tqHudKey='';
+function turneHud(){
+  const el=document.getElementById('tqHud'); if(!el) return;
+  const on = mode==='daily' && !tutorialActive && state==='play' && stats.tq && turneActive();
+  if(!on){ if(_tqHudKey!=='off'){ el.classList.remove('show','done'); _tqHudKey='off'; } return; }
+  const now=performance.now();
+  if(_tqHudFlash && now>_tqHudFlash.until) _tqHudFlash=null;
+  const f=_tqHudFlash, q=f ? f.q : turneQuest(); if(!q) return;
+  const cur = f ? q.tg : Math.min(q.tg, Math.floor(turneCur(q)));
+  const key=(f?'F':'')+q.id+'|'+cur;
+  if(key===_tqHudKey) return; _tqHudKey=key;
+  el.classList.add('show'); el.classList.toggle('done', !!f);
+  el.querySelector('.tqhIc').innerHTML=icon(f ? 'check' : q.ic);
+  document.getElementById('tqhLbl').innerHTML = f ? t('tq_hud_done')+' '+turneRewardHTML(q)
+    : t('tq_hud_lbl')+(q.tg>1 ? ' · '+cur+'/'+q.tg : '');
+  document.getElementById('tqhTxt').textContent=turneText(q);
+  document.getElementById('tqhFill').style.transform='scaleX('+(q.tg>0 ? cur/q.tg : 0)+')';
+  if(!f && el._pop!==q.id){ el._pop=q.id; el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
 }
 let _tqTick=0;
 function turneTick(dt){

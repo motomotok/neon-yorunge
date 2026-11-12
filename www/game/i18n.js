@@ -1121,6 +1121,8 @@ const STRINGS = {
   tq_go_tomorrow:{tr:"YARIN",en:"TOMORROW"},
   tq_tomorrow_toast:{tr:"Yarın oyuna gir, görev kendiliğinden tamamlanır.",en:"Open the game tomorrow and this quest completes by itself."},
   tq_done_toast:{tr:"Görev tamam: {text}",en:"Quest done: {text}"},
+  tq_hud_lbl:{tr:"GÖREV",en:"QUEST"},
+  tq_hud_done:{tr:"GÖREV TAMAM",en:"QUEST DONE"},
   tq_song1:{tr:"1. şarkıyı sonuna kadar çal",en:"Play song 1 to the end"},
   tq_song2:{tr:"2. şarkıyı çal",en:"Play song 2"},
   tq_hp1:{tr:"Yeteneklerden Can Kapasitesi al",en:"Get HP Capacity in Skills"},

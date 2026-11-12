@@ -1330,6 +1330,7 @@ function updateHud(){
     if(el){ el.style.display = endN==null ? 'none' : ''; if(endN!=null) el.textContent=t('hud_end_notes',{n:endN}); }
     _hud.endN=endN;
   }
+  if(typeof turneHud==='function') turneHud();
 }
 function chip(iconKey,cls){ return `<div class="pwchip${cls?' '+cls:''}">${icon(iconKey)}<div class="pwbar"><i style="transform:scaleX(0)"></i></div></div>`; }
 
