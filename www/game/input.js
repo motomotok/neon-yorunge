@@ -190,7 +190,7 @@ function applyAccessibility(){
   document.body.classList.toggle('ctl-tap', cfg.control==='tap');
 }
 
-// Kontrol (Ayarlar): varsayılan joystick (altta sabit, bkz. joystick.js);
+// Kontrol (Ayarlar): varsayılan kaydırma (ekranın her yerinde, bkz. joystick.js);
 // 'tap' = eski Sol/Sağ Dokunma: ekranın sağ yarısı dış halka, sol yarısı iç halka.
 function tapControl(){ return cfg.control==='tap'; }
 window.addEventListener('pointerdown', e=>{
@@ -198,7 +198,7 @@ window.addEventListener('pointerdown', e=>{
   if(state!=='play') return;
   e.preventDefault();
   if(tapControl()) moveRing(e.clientX >= W/2 ? 1 : -1);
-  else joyBegin(e);
+  else joyBegin(e);   // kaydırma kontrolü
 }, {passive:false});
 window.addEventListener('pointermove', e=>{ joyMove(e); }, {passive:true});
 window.addEventListener('pointerup', e=>{ joyEnd(e); });

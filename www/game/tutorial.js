@@ -182,7 +182,7 @@ function tutorialAskSkip(){
 }
 
 // --- UI yardımcıları ---
-// Joystick ipucu (bkz. joystick.js joyHint): taban nabız atar, ok penanın
+// Kaydırma ipucu (bkz. joystick.js joyHint): alt ortada nabız, ok penanın
 // gitmesi gereken yönü ekranda gösterir (+1 dışa, -1 içe); pena döndükçe ok da döner.
 function tutorialShowTapHint(dir){
   if(typeof joyHint!=='function') return;

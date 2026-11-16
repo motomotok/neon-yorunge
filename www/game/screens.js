@@ -52,8 +52,8 @@ function clearPlayOverlays(){
   if(typeof duelAbort==='function' && state!=='over') duelAbort();
 }
 
-// Her oyun başlangıcında 4 sn: joystick nabız atar, "ÇUBUĞU İT" etiketi —
-// yeni oyuncu kontrolü ilk bakışta görsün. Sonra taban sade kalır.
+// Her oyun başlangıcında 4 sn: alt ortada nabız + "KAYDIR" etiketi —
+// yeni oyuncu kontrolü ilk bakışta görsün.
 function showTutorialHint(){
   if(typeof joyHint==='function') joyHint({pulse:true, label:t('joy_push')}, 4000);
 }
