@@ -440,7 +440,22 @@ function colorToHex(c){
   return h;
 }
 
+// Düello hayaleti: rakibin penası, yarı saydam, mor hâleli (bkz. duel.js).
+function drawDuelGhost2D(t){
+  const g = (typeof duelGhostView==='function') ? duelGhostView() : null; if(!g) return;
+  const gx=CX+Math.cos(g.ang)*g.r, gy=CY+Math.sin(g.ang)*g.r;
+  ctx.save(); ctx.globalAlpha=g.a;
+  const hg=ctx.createRadialGradient(gx,gy,0,gx,gy,PLAYER_R*2.1);
+  hg.addColorStop(0,'rgba(201,162,255,.55)'); hg.addColorStop(1,'rgba(201,162,255,0)');
+  ctx.fillStyle=hg; ctx.beginPath(); ctx.arc(gx,gy,PLAYER_R*2.1,0,7); ctx.fill();
+  const img=g.img;
+  ctx.globalAlpha=g.a*0.62;
+  if(img && img.complete && img.naturalWidth>0){ const s=PLAYER_R*2.7; ctx.drawImage(img, gx-s/2, gy-s/2+Math.sin(t*5)*1.5, s, s); }
+  else drawNoteShape(gx,gy,PLAYER_R,'#ffffff',true,0);
+  ctx.restore();
+}
 function drawPlayer(t){
+  if(GAME_STATES[state]) drawDuelGhost2D(t);
   const pr=player.curRadius;
   const px=CX+Math.cos(player.ang)*pr, py=CY+Math.sin(player.ang)*pr;
   const pc = playerColor();

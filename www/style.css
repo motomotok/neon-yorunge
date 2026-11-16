@@ -1827,10 +1827,17 @@ body.duel #walletChip, body.duel #walletEndHud{display:none;}
 .tqOvNext{font-size:13px;opacity:.8;}
 
 /* ---- 2.82.1 Oyun içi görev şeridi ---- */
-#tqHud{position:absolute;top:calc(env(safe-area-inset-top) + 182px);right:18px;pointer-events:none;display:none;
-  align-items:center;gap:8px;max-width:min(210px,46vw);padding:7px 11px 8px 8px;border-radius:12px;
+/* 2.83.5: plağın altında, ortada (sağ üstte plağın öğe gelen çeyreğini kapatıyordu).
+   Tek satır kalacak kadar geniş; kaydırma ipucunun (#joy, alttan 70px) altında biter. */
+#tqHud{position:absolute;bottom:calc(env(safe-area-inset-bottom) + 12px);left:0;right:0;margin:0 auto;width:max-content;pointer-events:none;display:none;
+  align-items:center;gap:8px;max-width:min(330px,90vw);padding:6px 12px 7px 7px;border-radius:12px;
   background:rgba(10,6,14,.55);border:1px solid rgba(255,184,84,.35);box-shadow:0 0 14px rgba(255,184,84,.12);text-align:left;}
 #tqHud.show{display:flex;}
+/* Düello hayaletinin isim etiketi (bkz. duel.js duelGhostTagSync) */
+#duelGhostTag{position:absolute;left:0;top:0;pointer-events:none;display:none;white-space:nowrap;max-width:40vw;overflow:hidden;text-overflow:ellipsis;
+  font-size:10px;font-weight:800;letter-spacing:.04em;color:#fff;padding:2px 7px;border-radius:8px;
+  background:rgba(110,70,190,.62);border:1px solid rgba(201,162,255,.55);text-shadow:0 1px 2px rgba(0,0,0,.5);}
+#duelGhostTag.show{display:block;}
 #tqHud.pop{animation:tqPop .5s ease-out;}
 #tqHud .tqhIc{flex:none;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
   background:rgba(255,184,84,.16);color:#ffd28a;}
@@ -1845,5 +1852,4 @@ body.duel #walletChip, body.duel #walletEndHud{display:none;}
 #tqHud.done .tqhIc{background:rgba(110,240,160,.2);color:#7dffb0;}
 #tqHud.done small{color:#7dffb0;opacity:1;}
 #tqHud.done .tqhBar i{background:#7dffb0;}
-body.left-hand #tqHud{left:18px;right:auto;}
 body.duel #tqHud{display:none;}

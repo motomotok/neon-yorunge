@@ -593,6 +593,29 @@ export class Entities {
     this.group.add(p.root);
     this.penaTex = new Map();
     this.penaOutline = new Map();
+    // Düello hayaleti (rakibin penası): yarı saydam, mor hâleli; pena altında çizilir.
+    const g = this.ghost = {root:new THREE.Group()};
+    g.glow = new THREE.Sprite(new THREE.SpriteMaterial({map:glowTexture(), transparent:true, opacity:0.5,
+      depthWrite:false, depthTest:false, blending:THREE.AdditiveBlending, color:linColor('#c9a2ff').clone()}));
+    g.glow.scale.setScalar(4.2); g.glow.position.y = 0.35;
+    g.mat = new THREE.SpriteMaterial({transparent:true, depthWrite:false, depthTest:false, opacity:0.5});
+    g.sprite = new THREE.Sprite(g.mat); g.sprite.scale.setScalar(3.0);
+    g.glow.renderOrder = 8; g.sprite.renderOrder = 9;
+    g.root.add(g.glow, g.sprite); g.root.visible = false;
+    this.group.add(g.root);
+  }
+
+  _updateGhost(f, t){
+    const g = this.ghost, gh = f.ghost;
+    g.root.visible = !!(gh && f.inGame);
+    if(!g.root.visible) return;
+    g.root.position.set(Math.cos(gh.ang)*gh.r, TOP_Y*f.base + 0.5, Math.sin(gh.ang)*gh.r);
+    g.root.scale.setScalar(f.PLAYER_R);
+    setMap(g.mat, gh.img ? this._penaTexture('ghost:'+gh.skin, gh.img) : null);
+    g.sprite.visible = !!g.mat.map;
+    g.sprite.position.y = 1.12 + Math.sin(t*5)*0.06;
+    g.mat.opacity = 0.62*gh.a;
+    g.glow.material.opacity = 0.5*gh.a;
   }
 
   // Pena görselinin beyaz, biraz kalın silueti (kontur). Görsel yüklenene
@@ -834,6 +857,7 @@ export class Entities {
     this.frame++;
     const styleKey = (f.themeKey||'') + '|' + (f.colorblind?1:0);
     this._updateItems(f, t, dt, styleKey);
+    this._updateGhost(f, t);
     this._updatePlayer(f, t, dt);
     const notes = f.notes||0;
     if(f.inGame && notes > this.lastNotes) this._noteHit(f);

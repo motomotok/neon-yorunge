@@ -388,6 +388,14 @@ function playerScreen(lead){
   _ps.project(camera);
   return {x:(_ps.x+1)/2*W, y:(1-_ps.y)/2*H};
 }
+// Düello hayaletinin ekrandaki konumu (CSS piksel): isim etiketi onu izler.
+function ghostScreen(){
+  if(!renderer || failed || !entities || !entities.ghost || !entities.ghost.root.visible || !W) return null;
+  const g = entities.ghost;
+  _ps.copy(g.sprite.position); g.root.localToWorld(_ps);
+  _ps.project(camera);
+  return {x:(_ps.x+1)/2*W, y:(1-_ps.y)/2*H};
+}
 // Plağın merkezinin ekrandaki konumu (CSS piksel) — joystick yönünü penanın
 // plak üstündeki konumuna göre ekran uzayında hesaplamak için (bkz. game/joystick.js).
 function discScreen(){
@@ -405,4 +413,4 @@ function info(){
 
 // Parlamayı (bloom) çalışırken aç/kapat — ölçüm ve takılma koruması için.
 function setBloom(on){ if(!renderer) return; bloomCut = !on; buildComposer(QUALITY[qualityLive]); resize(W, H, base); }
-window.Render3D = { supported, init, warm, resize, render, setQuality, info, fail, menuAnchors, playerScreen, discScreen, setBloom };
+window.Render3D = { supported, init, warm, resize, render, setQuality, info, fail, menuAnchors, playerScreen, discScreen, ghostScreen, setBloom };

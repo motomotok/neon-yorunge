@@ -224,7 +224,7 @@ async function duelFindOpp(dd){
   if(!win.length && cands.length) win=[cands.reduce((a,c)=>dm(c)<dm(a)?c:a)];
   const c=duelPick(win);
   if(!c) return duelMakeBot(DUEL_SEEDS.filter(x=>!sameName(x.name)).reduce((a,x)=>Math.abs(x.mmr-dd.mmr)<Math.abs(a.mmr-dd.mmr)?x:a));
-  if(c.g) return Object.assign({}, c.g, {kind:'ghost'});
+  if(c.g) return Object.assign({}, c.g, {kind:'ghost', rings:duelRingsOf(c.g.samples, c.g.seed)});
   return duelMakeBot(c.seed, c.m);
 }
 async function duelStartSearch(){
@@ -268,6 +268,7 @@ function duelAbort(){
   metaOff=false;
   const hud=document.getElementById('duelHud'); if(hud) hud.classList.remove('show');
   document.body.classList.remove('duel');
+  _ghost.on=false; duelGhostTagHide();
   const m=duelMatch;
   if(m && !m.done && elapsed>60){
     m.done=true;
@@ -304,7 +305,7 @@ function duelMakeBot(b, mmrOverride){
   const raw = samples[samples.length-1][1] || 1, k = target/raw;
   samples.forEach(sm=>{ sm[1] = Math.round(sm[1]*k*100)/100; });
   const perks = DUEL_PERKS.map(p=>p.id).sort(()=>r()-0.5).slice(0,3);
-  return {kind:'seed', name:b.name, uid:'bot_'+b.id, mmr, d:rk.d, lp:Math.max(0,Math.min(rk.d>=DUEL_TOP?999:99, rk.lp)), seed, samples, attacks, died, perks,
+  return {kind:'seed', rings:duelRingsOf(samples, seed), name:b.name, uid:'bot_'+b.id, mmr, d:rk.d, lp:Math.max(0,Math.min(rk.d>=DUEL_TOP?999:99, rk.lp)), seed, samples, attacks, died, perks,
     theme:themes[Math.floor(r()*themes.length)], skin:(skins[Math.floor(r()*skins.length)]||{}).id||'teal'};
 }
 
@@ -345,6 +346,10 @@ function duelSetup(){
   document.getElementById('duelOppRec').innerHTML = duelRecordHtml(o.theme, o.skin, 'spin rev');
   document.getElementById('duelHud').classList.add('show');
   document.body.classList.add('duel');
+  _ghost.on=false; _ghost.skin=o.skin; _ghost.img=(typeof PENA_IMG!=='undefined' && PENA_IMG[o.skin]) || null; _ghost.a=0;
+  const tag=document.getElementById('duelGhostTag'); if(tag) tag.textContent=safeOtherName(o.name, o.uid);
+  // İlk 3 düelloda hayaletin ne olduğu bir kez söylenir.
+  if((duelState().games||0) < 3) setTimeout(()=>{ if(mode==='duel' && state==='play') showFlash(t('duel_ghost_flash'), 90, t('duel_ghost_sub'), 'melody'); }, 1600);
 }
 function duelOrbReady(){ return mode==='duel' && duelOrbCd<=0 && !items.some(it=>it.alive && it.type==='attackOrb'); }
 function duelOrbGap(){ return (duelHas('dpStriker') ? 480 : 720) + rnd()*180; }
@@ -405,8 +410,9 @@ function duelTick(dt){
   // Kayıt (0.5 sn'de bir)
   if(elapsed >= _duelRec.next){
     _duelRec.next += DUEL_SAMPLE;
-    _duelRec.samples.push([+tt.toFixed(1), Math.round(score*100)/100, hp, player.shieldHits>0?1:0]);
+    _duelRec.samples.push([+tt.toFixed(1), Math.round(score*100)/100, hp, player.shieldHits>0?1:0, player.targetRing]);
   }
+  duelGhostTick(dt);
   if(op.popT>0) op.popT-=dt;
   // Rakip elendi mi? (kendi kaydında canı bitti ya da saldırılarımız canını bitirdi)
   if(op.ko==null && ((o.died!=null && tt>=o.died) || duelOppHp(tt)<=0)){
@@ -431,6 +437,60 @@ function duelHudSync(){
   if(pop.dataset.on!==String(show)){ pop.dataset.on=String(show); pop.classList.toggle('show', show); }
   if(show && pop.textContent!==op.popTxt) pop.textContent=op.popTxt;
   const lead=document.getElementById('duelHud'); lead.classList.toggle('ahead', score>=sc);
+  duelGhostTagSync();
+}
+
+// ---- Hayalet: rakibin penası aynı plakta (2.83.5) ----
+// Firebase'e ek okuma/yazma yok: rakibin halkası zaten indirilen kaydın 0,5
+// sn'lik örneklerinde (s[0] = süre + (halka+1)*1000; eski istemciler s[0]'ı
+// okumaz). Eski kayıtlar ve başlangıç kadrosu için tohumdan doğal bir halka
+// yolu üretilir. Açı: kendi penamızın yanında; rakip puanda öndeyse önümüzde,
+// gerideyse arkamızda koşar (geçiş anı = sollama).
+const _ghost = {on:false, r:0, off:0.32, a:0, ang:0, skin:'', img:null};
+function duelPackSamples(list){
+  return list.map(s=>[+s[0] + ((s[4]|0)+1)*1000, s[1], s[2], s[3]]);
+}
+function duelRingsOf(samples, seed){
+  samples = samples || [];
+  if(samples.length && samples.every(s=>+s[0]>=1000)) return samples.map(s=>Math.max(0, Math.min(NUM_RINGS-1, Math.floor(+s[0]/1000)-1)));
+  const r=mulberry32(((seed|0) ^ 0x6057) >>> 0), out=[]; let ring=1, hold=0;
+  for(let i=0;i<Math.max(samples.length, DUEL_SECS*2+1);i++){
+    if(hold<=0){ if(r()<0.6) ring = ring<=0 ? 1 : ring>=NUM_RINGS-1 ? NUM_RINGS-2 : ring+(r()<0.5?-1:1); hold=1+Math.floor(r()*4); }
+    hold--; out.push(ring);
+  }
+  return out;
+}
+function duelGhostRing(tt){
+  const rs=duelMatch && duelMatch.opp.rings; if(!rs || !rs.length) return 1;
+  return rs[Math.min(rs.length-1, Math.max(0, Math.floor(tt*2)))];
+}
+function duelGhostTick(dt){
+  const g=_ghost, tt=elapsed/60, op=_duelOpp;
+  const target=radiusFor(duelGhostRing(tt));
+  if(!g.on){ g.on=true; g.r=target; g.off=0.32; g.a=0; }
+  g.r += (target-g.r)*Math.min(1, 0.16*dt);
+  const me=score, opp=duelOppScore(tt), lead=(opp-me)/Math.max(300, (opp+me)*0.5);
+  let off=Math.max(-1, Math.min(1, lead))*0.75;
+  if(Math.abs(off)<0.32) off=(lead>=0?1:-1)*0.32;
+  g.off += (off-g.off)*Math.min(1, 0.03*dt);
+  g.a += ((op.ko!=null ? 0 : 1)-g.a)*Math.min(1, 0.06*dt);
+  g.ang = normAng(player.ang + g.off);
+}
+// Çizim katmanları (render.js 2D, gfx.js 3D) bunu okur; maç yoksa null.
+function duelGhostView(){
+  return (mode==='duel' && _ghost.on && GAME_STATES[state] && _ghost.a>0.02) ? _ghost : null;
+}
+function duelGhostTagHide(){ const el=document.getElementById('duelGhostTag'); if(el){ el.classList.remove('show'); el.dataset.on='false'; } }
+function duelGhostTagSync(){
+  const el=document.getElementById('duelGhostTag'), g=duelGhostView(); if(!el) return;
+  let p=null;
+  if(g){
+    if(typeof gfx3dActive==='function' && gfx3dActive() && window.Render3D && Render3D.ghostScreen) p=Render3D.ghostScreen();
+    if(!p) p={x:CX+Math.cos(g.ang)*g.r, y:CY+Math.sin(g.ang)*g.r};
+  }
+  const on=!!(p && g.a>0.3);
+  if(el.dataset.on!==String(on)){ el.dataset.on=String(on); el.classList.toggle('show', on); }
+  if(on) el.style.transform='translate('+Math.round(p.x)+'px,'+Math.round(p.y-PLAYER_R*1.7)+'px) translate(-50%,-100%)';
 }
 // Maç biter: süre doldu / biz düştük / rakip düştü.
 function duelEnd(reason){
@@ -463,7 +523,8 @@ function duelGameOver(reason){
   // Sezon XP'si (Clash Royale'deki taç gibi): pes etmek XP vermez.
   if(reason!=='ff'){ ensureSeason(); addSeasonXp(win ? 20 : 10); }
   if(typeof trackEvent==='function') trackEvent('duel_played');
-  _duelRec.samples.push([+Math.min(tt,DUEL_SECS).toFixed(1), myScore, Math.max(0,hp), player.shieldHits>0?1:0]);
+  _duelRec.samples.push([+Math.min(tt,DUEL_SECS).toFixed(1), myScore, Math.max(0,hp), player.shieldHits>0?1:0, player.targetRing]);
+  _ghost.on=false; duelGhostTagHide();
   if(iDied) _duelRec.died=+tt.toFixed(1);
   saveStats();
   m.done = true;
@@ -471,7 +532,7 @@ function duelGameOver(reason){
   // olur; bir öncekinin üzerine yazılır. 10 sn'den kısa maç kaydedilmez.
   if(window.DuelCloud && _duelRec.samples.length>20){
     DuelCloud.upload({seed:m.seed, name:playerName(), mmr:mmrBefore, d:rankBefore.d, lp:Math.max(0,rankBefore.lp), theme:cfg.theme, skin:cfg.skin,
-      perks:m.perks, samples:_duelRec.samples.slice(0,200), attacks:_duelRec.attacks.slice(0,40), died:_duelRec.died, score:myScore})
+      perks:m.perks, samples:duelPackSamples(_duelRec.samples.slice(0,200)), attacks:_duelRec.attacks.slice(0,40), died:_duelRec.died, score:myScore})
       .then(uid=>{ if(uid){ stats.myUid=uid; saveStats(); } }).catch(()=>{});
   }
   // Sonuç ekranı

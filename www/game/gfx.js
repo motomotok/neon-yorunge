@@ -134,6 +134,7 @@ function renderFrame3D(dt){
   f.notes=session ? session.stars : 0;
   f.rewind=!!(state==='play' && session && session.risk && session.risk.type==='riskRewind');
   f.theme=T; f.themeKey=cfg.theme; f.ringStyle=cfg.ringStyle; f.trail=cfg.trail; f.skin=cfg.skin;
+  f.ghost=(typeof duelGhostView==='function') ? duelGhostView() : null;
   f.skinImg=penaImg(); f.playerColor=playerColor(); f.colorblind=cfg.colorblind; f.easeOut=easeOut;
   try{ Render3D.render(f); }
   catch(e){ gfx3dFailed(e && e.message); }
