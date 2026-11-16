@@ -694,16 +694,17 @@ function updateSpawns(dt, calm){
 }
 const MIN_VISIBLE = 3;
 
-// Halka değişimi (2.83: joystick, bkz. joystick.js). dir: +1 dışa, -1 içe —
-// yön ekranda penanın plak üstündeki konumuna göre joystick'ten hesaplanır.
+// Halka değişimi (2.83: joystick, bkz. joystick.js; ya da Sol/Sağ Dokunma).
+// dir: +1 dışa, -1 içe.
 // Döner: halka gerçekten değişti mi (kenar/kilit/öğretici engelinde false).
-function moveRing(dir){
+function moveRing(dir, raw){
   // Öğretici metni yazılırken (ve öğenin henüz sahnede olmadığı anlarda)
   // halka değişmez — senaryo öğesi oyuncunun O ANKİ halkasına göre konuyor.
   if(tutorialActive && typeof tutorialTapAllowed==='function' && !tutorialTapAllowed()) return false;
   let goOut = dir > 0;
   // Geri Sar risk balonu: yön ters çevrilir.
-  if(session && session.risk && session.risk.type==='riskRewind') goOut = !goOut;
+  // (raw: joystick kolu tersliği kendisi uygular.)
+  if(!raw && session && session.risk && session.risk.type==='riskRewind') goOut = !goOut;
   const next = player.targetRing + (goOut ? 1 : -1);
   if(next < 0 || next > NUM_RINGS-1) return false;
   const seal = (typeof sealAt==='function') ? sealAt(next, player.ang) : null;

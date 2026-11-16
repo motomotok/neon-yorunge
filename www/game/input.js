@@ -98,6 +98,7 @@ document.querySelectorAll('#gfxQSeg .gfxQOpt').forEach(b=>b.addEventListener('cl
   setGfxQuality(b.dataset.q); beep(550,0.05,'sine',0.08); }));
 document.getElementById('bigSw').addEventListener('click', ()=>{ cfg.bigButtons=!cfg.bigButtons; saveCfg(); applyAccessibility(); syncSettings(); beep(600,0.06,'sine',0.1); });
 document.getElementById('handSw').addEventListener('click', ()=>{ cfg.leftHand=!cfg.leftHand; saveCfg(); applyAccessibility(); syncSettings(); beep(600,0.06,'sine',0.1); });
+document.getElementById('tapSw').addEventListener('click', ()=>{ cfg.control = tapControl() ? 'joy' : 'tap'; saveCfg(); applyAccessibility(); syncSettings(); beep(600,0.06,'sine',0.1); });
 document.getElementById('cbSw').addEventListener('click', ()=>{ cfg.colorblind=!cfg.colorblind; saveCfg(); syncSettings(); beep(600,0.06,'sine',0.1); });
 // Switch küçültüldüğü için dokunma alanı dar kalmasın diye tüm satır
 // tıklanabilir — tıklama zaten switch'in üzerindeyse (çift tetiklemeyi
@@ -186,22 +187,31 @@ document.getElementById('infoPopupOverlay').addEventListener('click', e=>{
 function applyAccessibility(){
   document.body.classList.toggle('big-ui', cfg.bigButtons);
   document.body.classList.toggle('left-hand', cfg.leftHand);
+  document.body.classList.toggle('ctl-tap', cfg.control==='tap');
 }
 
-// Oyunda ekranın herhangi bir yerine basmak joystick'i o noktada açar (bkz. joystick.js).
+// Kontrol (Ayarlar): varsayılan joystick (altta sabit, bkz. joystick.js);
+// 'tap' = eski Sol/Sağ Dokunma: ekranın sağ yarısı dış halka, sol yarısı iç halka.
+function tapControl(){ return cfg.control==='tap'; }
 window.addEventListener('pointerdown', e=>{
   if(e.target.closest('button, .theme, .sw, .modeCard, .diffChip, .skinDot, .shopCard, .stab')) return;
-  if(state==='play'){ e.preventDefault(); joyBegin(e); }
+  if(state!=='play') return;
+  e.preventDefault();
+  if(tapControl()) moveRing(e.clientX >= W/2 ? 1 : -1);
+  else joyBegin(e);
 }, {passive:false});
 window.addEventListener('pointermove', e=>{ joyMove(e); }, {passive:true});
 window.addEventListener('pointerup', e=>{ joyEnd(e); });
 window.addEventListener('pointercancel', e=>{ joyEnd(e); });
 window.addEventListener('blur', ()=>{ joyReset(); });
-window.addEventListener('keyup', e=>{ joyKey(e.code, false); });
 window.addEventListener('keydown', e=>{
   if(e.repeat){ if(e.code==='Space' || (state==='play' && e.code.startsWith('Arrow'))) e.preventDefault(); return; }   // basılı tutma joystick'te zaten tutuluyor
-  // Oklar / WASD: ekran yönü (joystick ile aynı hesap). Bırakınca keyup.
-  if(state==='play' && joyKey(e.code, true)){ e.preventDefault(); return; }
+  // Sol/Sağ Dokunma modunda A/D ve sol/sağ ok eski kontrol; joystick modunda
+  // oklar / WASD ekran yönü (joystick ile aynı hesap).
+  if(state==='play' && tapControl()){
+    if(e.code==='ArrowRight' || e.code==='KeyD'){ moveRing(1); e.preventDefault(); return; }
+    if(e.code==='ArrowLeft' || e.code==='KeyA'){ moveRing(-1); e.preventDefault(); return; }
+  } else if(state==='play' && joyKey(e.code, true)){ e.preventDefault(); return; }
   if(e.code==='Space'){
     e.preventDefault();
     // Ok tuşları joystick üzerinden geçtiği için tutorial'ın kendi koruması

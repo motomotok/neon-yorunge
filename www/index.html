@@ -41,7 +41,7 @@
   <div id="tqHud"><span class="tqhIc"></span><div class="tqhBody"><small id="tqhLbl"></small><b id="tqhTxt"></b><div class="tqhBar"><i id="tqhFill"></i></div></div></div>
   <!-- Düello: rakip paneli (bkz. game/duel.js) -->
   <!-- Joystick (bkz. game/joystick.js): kayan taban + topuz; ipucu katmanı (nabız, ok, etiket) -->
-  <div id="joy" class="home"><div class="joyIn"><div class="joyPulse"></div><div class="joyBase"></div><div class="joyArrow"><i></i></div><div class="joyKnob"></div><div class="joyLbl"></div></div></div>
+  <div id="joy"><div class="joyIn"><div class="joyPulse"></div><div class="joyBase"></div><div class="joyArrow"><i></i></div><div class="joyKnob"></div><div class="joyLbl"></div></div></div>
   <div id="duelHud"><div id="duelOppRec"></div><div class="dhInfo"><span id="duelOppName"></span><b id="duelOppScore">0.00</b><div class="dhHp"><i id="duelOppHp"></i></div></div><div id="duelOppPop"></div></div>
 </div>
 <div id="levelFlash"></div>
@@ -161,7 +161,8 @@
         </svg>
         <div class="htJoy">
           <div class="htJoyPad"><span class="htJoyKnob"></span></div>
-          <div class="htJoyTxt"><b data-i18n="joy_push">ÇUBUĞU İT</b><small data-i18n="ht_joy_d">Pena ittiğin yöne gider: plağın ortasına doğru it iç halka, dışarı doğru it dış halka.</small></div>
+          <div class="htJoyTxt htJoyOnly"><b data-i18n="joy_push">ÇUBUĞU İT</b><small data-i18n="ht_joy_d">Pena ittiğin yöne gider: plağın ortasına doğru it iç halka, dışarı doğru it dış halka.</small></div>
+          <div class="htJoyTxt htTapOnly"><b data-i18n="ht_tap_n">SOLA / SAĞA DOKUN</b><small data-i18n="ht_tap_d">Ekranın sol yarısına dokun: iç halka. Sağ yarısına dokun: dış halka. Klavyede A ve D.</small></div>
         </div>
         <p class="htLead" data-i18n="ht_lead"></p>
       </div>
@@ -239,6 +240,7 @@
         <div class="toggle quad"><i class="gicon" data-icon="bigbtn"></i><span data-i18n="toggle_big">Büyük Butonlar</span> <div class="sw" id="bigSw"></div></div>
         <div class="toggle quad"><i class="gicon" data-icon="hand"></i><span data-i18n="toggle_hand">Sol El Modu</span> <div class="sw" id="handSw"></div></div>
         <div class="toggle quad"><i class="gicon" data-icon="eye"></i><span data-i18n="toggle_cb">Renk Körü Simgeler</span> <div class="sw" id="cbSw"></div></div>
+        <div class="toggle quad"><i class="gicon" data-icon="hand"></i><span data-i18n="toggle_tapctl">Sol/Sağ Dokunma (A-D)</span> <div class="sw" id="tapSw"></div></div>
       </div>
       <div class="setDuo">
       <div class="setNameRow"><i class="gicon" data-icon="trophy"></i><span class="snLbl" data-i18n="set_name_label">Oyuncu adın</span><b id="setNameVal">—</b>

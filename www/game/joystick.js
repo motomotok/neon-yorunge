@@ -1,98 +1,77 @@
-// Joystick (2.83): eski "sola dokun içe / sağa dokun dışa" kontrolünün yerine.
+// Joystick (2.83): eski "sola dokun içe / sağa dokun dışa" kontrolünün yerine
+// (eski kontrol Ayarlar > Sol/Sağ Dokunma ile hâlâ seçilebilir, bkz. input.js).
 //
-// Ekranın altında yarı saydam bir taban durur. Parmak ekranın herhangi bir
-// yerine basınca taban oraya atlar (kayan joystick), topuz parmağı izler,
-// bırakınca taban alt ortaya döner. Pena halkalar arasında yine AYRIK (0/1/2)
-// geçer: joystick yalnız hedef halkayı değiştirir; kilit, tehdit yönetmeni,
-// düello, öğretici olduğu gibi çalışır.
+// Ekranın altında SABİT bir joystick. Yalnız ona (ve çevresine) basınca çalışır.
+// Kol gibi: dokunduğun anda penanın plak üstündeki konumuna göre ekranda
+// "dışa doğru" yön bir kez belirlenir ve parmak kalkana kadar sabit kalır
+// (pena dönerken basılı tutmanın anlamı değişmesin). Topuzun o eksendeki
+// itişi penanın halkasını DOĞRUDAN belirler: az it = bir halka, sonuna kadar
+// it = iki halka, geri çek = başladığı halkaya döner. Bırakınca pena olduğu
+// halkada kalır. Halkalar ayrık kalır; kilit, tehdit yönetmeni, düello aynı.
 //
-// Yön EKRANDA hesaplanır: her karede penanın plak merkezine göre ekrandaki
-// "dışa doğru" birim vektörü bulunur (3D'de kameranın eğik bakışı dahil) ve
-// joystick vektörü onun üzerine izdüşürülür. Böylece pena plağın neresinde
-// olursa olsun "ittiğin yöne" gider: alttayken aşağı = dış, yukarı = iç;
-// sağdayken sağ = dış, sol = iç. Teğet bileşen (penanın yörüngesi boyunca)
-// yok sayılır.
-//
-// Klavye: oklar / WASD ekran yönü verir, aynı hesaptan geçer.
+// Klavye: oklar / WASD ekran yönü; her basış bir halka.
 const JOY_MAX = 56;          // topuzun merkezden en fazla gidebildiği yol (px)
-const JOY_DEAD = 14;         // ölü bölge (px)
-const JOY_FIRE = 0.55;       // halka değişimi için gereken izdüşüm (JOY_MAX oranı)
-const JOY_REARM = 0.35;      // yeni adım için bu oranın altına dönmek yeter
-const JOY_REPEAT_MS = 320;   // basılı tutunca bir sonraki adım (kısa bir itiş iki halka atlamasın)
-const JOY_TANGENT = false;   // v2: teğet bileşenle hız oynatma (şimdilik kapalı)
+const JOY_DEAD = 10;         // ölü bölge (px)
+// Kol kademeleri (JOY_MAX oranı); iniş eşikleri biraz düşük (titremesin).
+const JOY_L1_UP = 0.40, JOY_L1_DN = 0.30, JOY_L2_UP = 0.85, JOY_L2_DN = 0.74;
+const JOY_HIT = 1.6;         // tabanın yarıçapının bu katı içinde dokunuş joystick'i tutar
 
-const _joy = {active:false, id:null, ox:0, oy:0, vx:0, vy:0, tx:0, ty:0,
-  keys:{}, armed:true, lastDir:0, lastStep:0, lastOk:false, el:null, knob:null, rejT:null};
+const _joy = {active:false, id:null, cx:0, cy:0, vx:0, vy:0, base:0, axis:null, level:0,
+  keys:{}, el:null, knob:null, rejT:null};
 
 function _joyEls(){
   if(!_joy.el){ _joy.el = document.getElementById('joy'); _joy.knob = _joy.el && _joy.el.querySelector('.joyKnob'); }
   return _joy.el;
-}
-function _joyPlace(){
-  const el = _joyEls(); if(!el) return;
-  el.style.transform = (_joy.tx||_joy.ty) ? `translate3d(${_joy.tx}px,${_joy.ty}px,0)` : '';
 }
 function _joyKnob(){
   if(!_joyEls() || !_joy.knob) return;
   const v = joyVec();
   _joy.knob.style.transform = (v[0]||v[1]) ? `translate3d(${v[0].toFixed(1)}px,${v[1].toFixed(1)}px,0)` : '';
 }
-
-// Topuzun o anki vektörü (px, uzunluğu en fazla JOY_MAX): parmak ya da klavye.
+// Topuzun o anki vektörü (px, uzunluğu en fazla JOY_MAX).
 function joyVec(){
-  if(_joy.active){
-    let x=_joy.vx, y=_joy.vy; const l=Math.hypot(x,y);
-    if(l>JOY_MAX){ x*=JOY_MAX/l; y*=JOY_MAX/l; }
-    return [x,y];
-  }
-  const k=_joy.keys;
-  let x=(k.r?1:0)-(k.l?1:0), y=(k.d?1:0)-(k.u?1:0);
-  if(!x && !y) return [0,0];
-  const l=Math.hypot(x,y); return [x/l*JOY_MAX, y/l*JOY_MAX];
+  if(!_joy.active) return [0,0];
+  let x=_joy.vx, y=_joy.vy; const l=Math.hypot(x,y);
+  if(l>JOY_MAX){ x*=JOY_MAX/l; y*=JOY_MAX/l; }
+  return [x,y];
 }
-
+// Dokunuş joystick'e mi? Öyleyse tutar ve true döner.
 function joyBegin(e){
-  if(_joy.active || state!=='play') return;
-  const el = _joyEls(); if(!el) return;
-  _joy.active = true; _joy.id = e.pointerId; _joy.vx = 0; _joy.vy = 0;
-  // Ev konumu: taban şu an kaydırılmışsa (dönüş animasyonu sürerken) onu düş.
-  el.classList.remove('home');
-  const r = el.getBoundingClientRect();
-  const hx = r.left + r.width/2 - _joy.tx, hy = r.top + r.height/2 - _joy.ty;
-  _joy.ox = e.clientX; _joy.oy = e.clientY;
-  _joy.tx = _joy.ox - hx; _joy.ty = _joy.oy - hy;
+  if(_joy.active || state!=='play') return false;
+  const el = _joyEls(); if(!el || el.offsetParent===null) return false;
+  const r = el.getBoundingClientRect(), cx = r.left + r.width/2, cy = r.top + r.height/2;
+  if(Math.hypot(e.clientX-cx, e.clientY-cy) > (r.width/2)*JOY_HIT) return false;
+  _joy.active = true; _joy.id = e.pointerId; _joy.cx = cx; _joy.cy = cy;
+  _joy.vx = e.clientX-cx; _joy.vy = e.clientY-cy;
+  _joy.base = player.targetRing; _joy.axis = joyOutward(); _joy.level = 0; _joy.blocked = null;
   el.style.setProperty('--joy-col', typeof playerColor==='function' ? playerColor() : '#2fe6c4');
   el.classList.add('on');
-  _joyPlace(); _joyKnob();
+  _joyKnob();
+  return true;
 }
 function joyMove(e){
   if(!_joy.active || e.pointerId!==_joy.id) return;
-  _joy.vx = e.clientX - _joy.ox; _joy.vy = e.clientY - _joy.oy;
+  _joy.vx = e.clientX - _joy.cx; _joy.vy = e.clientY - _joy.cy;
   _joyKnob();
 }
 function joyEnd(e){
   if(e && _joy.active && e.pointerId!==_joy.id) return;
-  if(!_joy.active && !_joy.tx && !_joy.ty) return;
-  _joy.active = false; _joy.id = null; _joy.vx = 0; _joy.vy = 0;
-  _joy.armed = true; _joy.lastDir = 0;
-  _joy.tx = 0; _joy.ty = 0;
-  const el = _joyEls(); if(el){ el.classList.remove('on'); el.classList.add('home'); }
-  _joyPlace(); _joyKnob();
+  if(!_joy.active) return;
+  _joy.active = false; _joy.id = null; _joy.vx = 0; _joy.vy = 0; _joy.axis = null; _joy.level = 0;
+  const el = _joyEls(); if(el) el.classList.remove('on');
+  _joyKnob();
 }
-// Klavye: code -> yön. down=false bırakma.
-const _JOY_KEYS = {ArrowUp:'u', KeyW:'u', ArrowDown:'d', KeyS:'d', ArrowLeft:'l', KeyA:'l', ArrowRight:'r', KeyD:'r'};
+// Klavye (joystick modu): oklar / WASD ekran yönü, her basış bir halka.
+const _JOY_KEYS = {ArrowUp:[0,-1], KeyW:[0,-1], ArrowDown:[0,1], KeyS:[0,1], ArrowLeft:[-1,0], KeyA:[-1,0], ArrowRight:[1,0], KeyD:[1,0]};
 function joyKey(code, down){
   const k = _JOY_KEYS[code]; if(!k) return false;
-  if(!!_joy.keys[k] === down) return true;
-  _joy.keys[k] = down;
-  if(!down && !Object.values(_joy.keys).some(Boolean)){ _joy.armed = true; _joy.lastDir = 0; }
-  _joyKnob();
+  if(!down) return true;
+  const o = joyOutward(); if(!o) return true;
+  const d = k[0]*o[0] + k[1]*o[1];
+  if(Math.abs(d) >= 0.35) moveRing(d>0 ? 1 : -1);
   return true;
 }
-function joyReset(){
-  _joy.keys = {};
-  joyEnd();
-}
+function joyReset(){ joyEnd(); }
 // Kilitli halkaya itince topuz kısa süre kırmızı titrer (bkz. engine.js moveRing).
 function joyReject(){
   const el=_joyEls(); if(!el) return;
@@ -121,21 +100,27 @@ function joyDirScreen(dir){
 // Her oyun karesinde (engine.js update) çağrılır.
 function updateJoystick(dt, settled){
   _joyArrow();
+  if(!_joy.active) return;
+  if(!_joy.axis){ _joy.axis = joyOutward(); if(!_joy.axis) return; }
+  if(tutorialActive && typeof tutorialTapAllowed==='function' && !tutorialTapAllowed()){ _joy.base = player.targetRing; return; }
   const v = joyVec(), mag = Math.hypot(v[0], v[1]);
-  if(mag < JOY_DEAD){ _joy.armed = true; _joy.lastDir = 0; return; }
-  if(tutorialActive && typeof tutorialTapAllowed==='function' && !tutorialTapAllowed()) return;
-  const o = joyOutward(); if(!o) return;
-  const d = v[0]*o[0] + v[1]*o[1];
-  if(Math.abs(d) < JOY_REARM*JOY_MAX) _joy.armed = true;
-  const dir = d > JOY_FIRE*JOY_MAX ? 1 : d < -JOY_FIRE*JOY_MAX ? -1 : 0;
-  if(!dir) return;
-  if(dir !== _joy.lastDir) _joy.armed = true;
-  const now = performance.now();
-  const repeat = !_joy.armed && _joy.lastOk && settled && dir===_joy.lastDir && now-_joy.lastStep >= JOY_REPEAT_MS;
-  if(_joy.armed || repeat){
-    _joy.lastOk = moveRing(dir);
-    if(_joy.lastOk) _joy.lastStep = now;
-    _joy.armed = false; _joy.lastDir = dir;
+  let s = mag < JOY_DEAD ? 0 : (v[0]*_joy.axis[0] + v[1]*_joy.axis[1]) / JOY_MAX;
+  // Geri Sar: kolun anlamı ters.
+  if(session && session.risk && session.risk.type==='riskRewind') s = -s;
+  const a = Math.abs(s), cur = Math.abs(_joy.level);
+  let lv = cur;
+  if(cur===0){ if(a>=JOY_L2_UP) lv=2; else if(a>=JOY_L1_UP) lv=1; }
+  else if(cur===1){ if(a>=JOY_L2_UP) lv=2; else if(a<JOY_L1_DN) lv=0; }
+  else { if(a<JOY_L1_DN) lv=0; else if(a<JOY_L2_DN) lv=1; }
+  let level = lv * (s<0 ? -1 : 1);
+  if(lv && Math.sign(_joy.level) && Math.sign(_joy.level)!==Math.sign(s) && a<JOY_L1_UP) level = 0;   // karşı yöne geçerken önce nötr
+  _joy.level = level;
+  const want = Math.max(0, Math.min(NUM_RINGS-1, _joy.base + level));
+  // Kilitli halkaya istek: bir kez reddedilir (bip), aynı istek tekrarlanmaz.
+  if(want===_joy.blocked) return;
+  _joy.blocked = null;
+  for(let i=0; i<NUM_RINGS && player.targetRing!==want; i++){
+    if(!moveRing(want>player.targetRing ? 1 : -1, true)){ _joy.blocked = want; break; }
   }
 }
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden) joyReset(); });
