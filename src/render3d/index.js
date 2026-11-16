@@ -388,6 +388,14 @@ function playerScreen(lead){
   _ps.project(camera);
   return {x:(_ps.x+1)/2*W, y:(1-_ps.y)/2*H};
 }
+// Plağın merkezinin ekrandaki konumu (CSS piksel) — joystick yönünü penanın
+// plak üstündeki konumuna göre ekran uzayında hesaplamak için (bkz. game/joystick.js).
+function discScreen(){
+  if(!renderer || failed || !entities || !entities.player || !W) return null;
+  _ps.set(0, entities.player.root.position.y, 0); entities.group.localToWorld(_ps);
+  _ps.project(camera);
+  return {x:(_ps.x+1)/2*W, y:(1-_ps.y)/2*H};
+}
 function info(){
   return {quality:qualityLive, preference:qualityPref, fps:Math.round(fps.value), dpr:Math.round(dprCur*100)/100,
     bloom:!!composer, gpu:gpuName, gpuTier, failed, missingAssets:loadErrors.slice(),
@@ -397,4 +405,4 @@ function info(){
 
 // Parlamayı (bloom) çalışırken aç/kapat — ölçüm ve takılma koruması için.
 function setBloom(on){ if(!renderer) return; bloomCut = !on; buildComposer(QUALITY[qualityLive]); resize(W, H, base); }
-window.Render3D = { supported, init, warm, resize, render, setQuality, info, fail, menuAnchors, playerScreen, setBloom };
+window.Render3D = { supported, init, warm, resize, render, setQuality, info, fail, menuAnchors, playerScreen, discScreen, setBloom };

@@ -7,6 +7,9 @@ const cv = document.getElementById('game');
 let ctx = cv.getContext('2d');
 let W,H,CX,CY,DPR, RINGS=[], PLAYER_R;
 const NUM_RINGS = 3, MIN_GAP = 0.55;
+// Halka geçiş hızı (kare başına yaklaşma oranı). 2.83 joystick ile 0.22/0.38'den
+// yükseltildi: itince pena hemen gitmeli. Çevik Pena yeteneği farkı korunur.
+const RING_LERP = 0.30, RING_LERP_NIMBLE = 0.46;
 
 function resize(){
   // 3D modda bu canvas yalnız tam ekran flaşları taşır (dünya WebGL'de):
@@ -124,7 +127,7 @@ function resetGame(){
   // Süpernova Yetenekleri (bkz. data.js PERKS): oyun başında bir kez okunur.
   const zenRun = mode==='zen';
   session.secondChance = !zenRun && hasPerk('secondChance');
-  session.ringLerp = hasPerk('nimblePick') ? 0.38 : 0.22;
+  session.ringLerp = hasPerk('nimblePick') ? RING_LERP_NIMBLE : RING_LERP;
   if(!zenRun && hasPerk('shieldStart') && !session.heat.noShield) player.shieldHits=shieldHitsFor();
   if(mode==='duel' && typeof duelSetup==='function') duelSetup();
   if(activeBoost){
@@ -691,32 +694,30 @@ function updateSpawns(dt, calm){
 }
 const MIN_VISIBLE = 3;
 
-// Yön yayları yeni oyuncu için: ilk SIDE_ARC_RUNS oyunda kendiliğinden açık. Ayarlar'dan elle seçilirse (cfg.sideArcs) o geçerli.
-const SIDE_ARC_RUNS = 5;
-function sideArcsOn(){ return typeof cfg.sideArcs==='boolean' ? cfg.sideArcs : (stats.scoreRuns||0) < SIDE_ARC_RUNS; }
-function tap(x){
-  // Tutorial'ın coin/tehlike adımlarında (senaryo öğesi oyuncunun O ANKİ
-  // halkasına göre yerleştirildiği için) halka değiştirmek öğeyi
-  // kaçırmasına yol açar — bu adımlarda dokunma geçici olarak devre dışı.
-  if(tutorialActive && typeof tutorialTapAllowed==='function' && !tutorialTapAllowed()) return;
-  let goOut = x >= W/2;
-  // Geri Sar risk balonu: sol ↔ sağ yer değiştirir.
+// Halka değişimi (2.83: joystick, bkz. joystick.js). dir: +1 dışa, -1 içe —
+// yön ekranda penanın plak üstündeki konumuna göre joystick'ten hesaplanır.
+// Döner: halka gerçekten değişti mi (kenar/kilit/öğretici engelinde false).
+function moveRing(dir){
+  // Öğretici metni yazılırken (ve öğenin henüz sahnede olmadığı anlarda)
+  // halka değişmez — senaryo öğesi oyuncunun O ANKİ halkasına göre konuyor.
+  if(tutorialActive && typeof tutorialTapAllowed==='function' && !tutorialTapAllowed()) return false;
+  let goOut = dir > 0;
+  // Geri Sar risk balonu: yön ters çevrilir.
   if(session && session.risk && session.risk.type==='riskRewind') goOut = !goOut;
   const next = player.targetRing + (goOut ? 1 : -1);
-  if(next < 0 || next > NUM_RINGS-1) return;
+  if(next < 0 || next > NUM_RINGS-1) return false;
   const seal = (typeof sealAt==='function') ? sealAt(next, player.ang) : null;
   if(seal){
     // Kilitli yay: geçiş reddedilir — kısa bir "tok" ses ve yay parlaması.
     seal.sealBump = 1; shake = Math.max(shake, 4);
     beep(140,0.09,'square',0.08);
-    return;
+    if(typeof joyReject==='function') joyReject();
+    return false;
   }
   player.targetRing = next;
-  // Her dokunuşta (= her halka değişiminde) çalan "tık" kasıtlı olarak
-  // kaldırıldı — nota/elmas toplama ve combo seslerinin arasına girip
-  // ritmi bozuyordu. Kilitli yay reddi (yukarıdaki beep) ayrı bir nadir
-  // olay olduğu için dokunulmadı.
-  if(tutorialActive && typeof tutorialOnTap==='function') tutorialOnTap(goOut);
+  // Halka değişiminde "tık" sesi bilerek yok (nota/kombo seslerinin ritmini bozuyordu).
+  if(tutorialActive && typeof tutorialOnMove==='function') tutorialOnMove(goOut);
+  return true;
 }
 
 function burst(x,y,color,n,spd){
@@ -800,6 +801,7 @@ function update(dt){
   const tR=radiusFor(player.targetRing);
   player.curRadius += (tR-player.curRadius)*Math.min(1,(session.ringLerp||0.22)*dt);
   const settled = Math.abs(player.curRadius-tR) < PLAYER_R*0.8;
+  if(typeof updateJoystick==='function') updateJoystick(dt, settled);
   const curRing = player.targetRing;
 
   if(player.slowT>0) player.slowT-=dt;
@@ -1249,12 +1251,6 @@ function updateHud(){
   const comboText='x'+combo;
   if(_hud.combo!==comboText){ document.getElementById('combo').textContent=comboText; _hud.combo=comboText; }
   if(_hud.level!==level){ document.getElementById('levelHud').textContent=level; _hud.level=level; }
-  // O halkadan o yöne geçilemiyorsa yön çipi söner.
-  if(_hud.ring!==player.targetRing){
-    _hud.ring=player.targetRing;
-    document.getElementById('chipIn').classList.toggle('off', player.targetRing<=0);
-    document.getElementById('chipOut').classList.toggle('off', player.targetRing>=NUM_RINGS-1);
-  }
   // Can artık sabit kalp sayısı değil, değişken bir HP bar (bkz. §4 plan) —
   // "3 can" yerine "3-17 arası HP", tehlike tipine göre değişen hasar alıyor.
   const hpPct = mode==='zen' ? 100 : Math.max(0, Math.round(hp/maxHp*100));
@@ -1389,29 +1385,24 @@ function endRisk(){
     beep(520,0.08,'sine',0.08);
   }
 }
-// Geri Sar başında 2 sn: alt köşelerdeki dokunma ipuçları TERS etiketlerle.
+// Geri Sar başında 2 sn: joystick'in üstünde mor "YÖN TERS" etiketi.
 let _rewindHintT=null;
 function showRewindHint(){
-  const el=document.getElementById('tutorialHint'); if(!el) return;
-  const l=el.querySelector('.tutTap-left .tutLabel'), rr=el.querySelector('.tutTap-right .tutLabel');
-  if(l) l.textContent=t('tut_outer'); if(rr) rr.textContent=t('tut_inner');
-  clearTimeout(tutorialHideTimer); clearTimeout(_rewindHintT);
-  el.classList.add('show','rev');
+  clearTimeout(_rewindHintT);
+  if(typeof joyHint==='function') joyHint({label:t('joy_rev'), rev:true, pulse:true});
   _rewindHintT=setTimeout(hideRewindHint, 2200);
 }
 function hideRewindHint(){
+  if(_rewindHintT==null) return;
   clearTimeout(_rewindHintT); _rewindHintT=null;
-  const el=document.getElementById('tutorialHint'); if(!el || !el.classList.contains('rev')) return;
-  el.classList.remove('show','rev');
-  const l=el.querySelector('.tutTap-left .tutLabel'), rr=el.querySelector('.tutTap-right .tutLabel');
-  if(l) l.textContent=t('tut_inner'); if(rr) rr.textContent=t('tut_outer');
+  if(typeof joyHintOff==='function') joyHintOff();
 }
 // Ekran katmanları: Karartma'da penayı izleyen "spot ışığı" (büyük, önceden
 // çizilmiş radyal degrade yalnız transform ile kaydırılır — her karede
 // yeniden boyama yok), Geri Sar'da mor kenar titreşimi. Yalnız etki sürerken açık.
 let _rfx=null;
 function syncRiskFx(){
-  if(!_rfx) _rfx={veil:document.getElementById('riskVeil'), edge:document.getElementById('riskEdge'), hint:document.getElementById('hint'), dark:false, edgeOn:false, r:0};
+  if(!_rfx) _rfx={veil:document.getElementById('riskVeil'), edge:document.getElementById('riskEdge'), dark:false, edgeOn:false, r:0};
   const f=_rfx; if(!f.veil) return;
   const r = GAME_STATES[state] && session ? session.risk : null;
   const dark = !!(r && r.type==='riskDark'), rew = !!(r && r.type==='riskRewind');
@@ -1429,8 +1420,6 @@ function syncRiskFx(){
   if(dark!==f.dark){ f.veil.style.display = dark ? 'block' : 'none'; if(!dark) f.veil.style.opacity='0'; f.dark=dark; }
   if(rew!==f.edgeOn && f.edge){
     f.edge.classList.toggle('on', rew); f.edgeOn=rew;
-    // Alttaki "SOL → iç halka" çubuğu Geri Sar'da yanlış bilgi verirdi: gizlenir.
-    if(f.hint) f.hint.style.opacity = rew ? '0' : '';
   }
 }
 function hideRiskFx(){

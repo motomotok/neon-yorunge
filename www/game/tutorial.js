@@ -2,7 +2,7 @@
 // giriş. Oyun ilk kez açılınca menü beklemeden kendiliğinden başlar (bkz.
 // main.js); sonunda doğrudan gerçek ilk oyun (Skor Avı) başlar.
 //
-// Akış (2.76.0): sola + sağa dokun → başka halkadaki nota → cızırtıdan kaç
+// Akış (2.83.0): joystick'i içe + dışa it → başka halkadaki nota → cızırtıdan kaç
 // → "sahne senin" → gerçek oyun. Bilerek çarptırma / bilerek düşürme ve
 // yetenek–Süpernova–Çekirdek turu kaldırıldı (yeni oyuncular öğreticide
 // bırakıyordu). Onlar artık oyun içinde, sırası gelince kısa rehberle
@@ -17,7 +17,7 @@ let tutorialStep = null;
 let _tutTapOK = false;            // bu adımda dokunmaya izin var mı
 let _tutPending = {};             // etiket -> {type, ring, resolved}
 let _tutDodgeHit = false;
-let _tutSidesDone = {left:false, right:false};
+let _tutSidesDone = {in:false, out:false};
 // Öğreticide şarkı kombo beklemeden duyulur (music.js en az bu seviyeyi çalar):
 // başta bas + boğuk melodi, ilk nota alınınca şarkı tam açılır.
 let tutorialMusicLv = 1;
@@ -29,7 +29,7 @@ function startTutorial(){
   mode='classic'; diffKey='normal'; diffCfg=DIFF.normal;
   resetGame();
   items.length = 0; // resetGame()'in otomatik tohum öğelerini temizle — senaryo tamamen elle kontrol edilecek
-  // Orta halkada başla: hem SOL (1→0) hem SAĞ (0→1) geçerli birer hamle olsun.
+  // Orta halkada başla: hem İÇE (1→0) hem DIŞA (0→1) geçerli birer hamle olsun.
   player.targetRing = 1; player.curRadius = radiusFor(1);
   // Tam canla başlar: kaçış adımında çarpsa da öğretici bitmez.
   hp = maxHp;
@@ -77,17 +77,18 @@ function _tutSay(key, opts){ narratorSay(t(key), opts); }
 function _tutSayThen(key, fn){ narratorSay(t(key), {onDone:fn}); }
 
 const TUTORIAL_STEPS = {
-  // Sola ve sağa dokunma tek adım: iki taraf da (sıra fark etmez) bir kez denenince geçilir.
+  // Joystick'i içe ve dışa itmek tek adım: iki yön de (sıra fark etmez) bir kez denenince geçilir.
+  // Ok önce plağın ortasını (içe) gösterir, içe gidilince dışarıyı.
   sides(){
-    _tutSidesDone = {left:false, right:false};
-    narratorSay(t('tut2_intro')+' '+t('tut2_sides'), {onDone:()=>{ _tutTapOK=true; tutorialShowTapHint('both'); }});
+    _tutSidesDone = {in:false, out:false};
+    narratorSay(t('tut2_intro')+' '+t('tut2_sides'), {onDone:()=>{ _tutTapOK=true; tutorialShowTapHint(-1); }});
   },
   // Nota başka bir halkada: oyuncu oraya geçmek için dokunmalı.
   note(){
     const ring = player.targetRing<2 ? player.targetRing+1 : player.targetRing-1;
     _tutSayThen('tut2_note2', ()=>{
       _tutTapOK = true;
-      tutorialShowTapHint(ring>player.targetRing ? 'right' : 'left');
+      tutorialShowTapHint(ring>player.targetRing ? 1 : -1);
       tutorialSpawnItem('star','note',ring);
     });
   },
@@ -95,7 +96,7 @@ const TUTORIAL_STEPS = {
     _tutDodgeHit = false;
     narratorSay(t('tut2_music')+' '+t('tut2_dodge'), {onDone:()=>{
       _tutTapOK = true;
-      tutorialShowTapHint(player.targetRing<2 ? 'right' : 'left');
+      tutorialShowTapHint(player.targetRing<2 ? 1 : -1);
       tutorialSpawnItem('hazard','dodge');
     }});
   },
@@ -107,11 +108,14 @@ const TUTORIAL_STEPS = {
 };
 
 // --- Diğer dosyalardan çağrılan hook'lar ---
-function tutorialOnTap(goOut){
+function tutorialOnMove(goOut){
+  // Nota adımı: ok hep notanın halkasını gösterir (yanlış yöne gidilirse döner); kaçışta hamle yeter.
+  if(tutorialStep==='note'){ const p=_tutPending.note; const d=p ? Math.sign(p.ring-player.targetRing) : 0; tutorialShowTapHint(d); return; }
+  if(tutorialStep==='dodge'){ tutorialHideTapHint(); return; }
   if(tutorialStep!=='sides') return;
-  _tutSidesDone[goOut ? 'right' : 'left'] = true;
-  tutorialShowTapHint(_tutSidesDone.left ? (_tutSidesDone.right ? null : 'right') : (_tutSidesDone.right ? 'left' : 'both'));
-  if(_tutSidesDone.left && _tutSidesDone.right) tutorialGoStep('note');
+  _tutSidesDone[goOut ? 'out' : 'in'] = true;
+  tutorialShowTapHint(_tutSidesDone.in ? (_tutSidesDone.out ? null : 1) : -1);
+  if(_tutSidesDone.in && _tutSidesDone.out) tutorialGoStep('note');
 }
 function tutorialTapAllowed(){
   return _tutTapOK && !narratorIsTyping();
@@ -178,19 +182,15 @@ function tutorialAskSkip(){
 }
 
 // --- UI yardımcıları ---
-function tutorialShowTapHint(side){
-  const el=document.getElementById('tutorialHint'); if(!el) return;
-  if(!side){ tutorialHideTapHint(); return; }
-  el.classList.add('show');
-  const l=el.querySelector('.tutTap-left'), r=el.querySelector('.tutTap-right');
-  if(l) l.style.display = (side==='left' || side==='both') ? 'flex' : 'none';
-  if(r) r.style.display = (side==='right' || side==='both') ? 'flex' : 'none';
+// Joystick ipucu (bkz. joystick.js joyHint): taban nabız atar, ok penanın
+// gitmesi gereken yönü ekranda gösterir (+1 dışa, -1 içe); pena döndükçe ok da döner.
+function tutorialShowTapHint(dir){
+  if(typeof joyHint!=='function') return;
+  if(!dir){ tutorialHideTapHint(); return; }
+  joyHint({pulse:true, dir, label:t(dir>0 ? 'joy_out' : 'joy_in')});
 }
 function tutorialHideTapHint(){
-  const el=document.getElementById('tutorialHint'); if(!el) return;
-  el.classList.remove('show');
-  const l=el.querySelector('.tutTap-left'), r=el.querySelector('.tutTap-right');
-  if(l) l.style.display=''; if(r) r.style.display='';
+  if(typeof joyHintOff==='function') joyHintOff();
 }
 let tutorialSpotlightEls=[];
 function tutorialSpotlight(el){

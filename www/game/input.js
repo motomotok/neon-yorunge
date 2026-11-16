@@ -98,7 +98,6 @@ document.querySelectorAll('#gfxQSeg .gfxQOpt').forEach(b=>b.addEventListener('cl
   setGfxQuality(b.dataset.q); beep(550,0.05,'sine',0.08); }));
 document.getElementById('bigSw').addEventListener('click', ()=>{ cfg.bigButtons=!cfg.bigButtons; saveCfg(); applyAccessibility(); syncSettings(); beep(600,0.06,'sine',0.1); });
 document.getElementById('handSw').addEventListener('click', ()=>{ cfg.leftHand=!cfg.leftHand; saveCfg(); applyAccessibility(); syncSettings(); beep(600,0.06,'sine',0.1); });
-document.getElementById('arcsSw').addEventListener('click', ()=>{ cfg.sideArcs=!sideArcsOn(); saveCfg(); syncSettings(); beep(600,0.06,'sine',0.1); });
 document.getElementById('cbSw').addEventListener('click', ()=>{ cfg.colorblind=!cfg.colorblind; saveCfg(); syncSettings(); beep(600,0.06,'sine',0.1); });
 // Switch küçültüldüğü için dokunma alanı dar kalmasın diye tüm satır
 // tıklanabilir — tıklama zaten switch'in üzerindeyse (çift tetiklemeyi
@@ -189,19 +188,23 @@ function applyAccessibility(){
   document.body.classList.toggle('left-hand', cfg.leftHand);
 }
 
+// Oyunda ekranın herhangi bir yerine basmak joystick'i o noktada açar (bkz. joystick.js).
 window.addEventListener('pointerdown', e=>{
   if(e.target.closest('button, .theme, .sw, .modeCard, .diffChip, .skinDot, .shopCard, .stab')) return;
-  if(state==='play'){ e.preventDefault(); tap(e.clientX); }
+  if(state==='play'){ e.preventDefault(); joyBegin(e); }
 }, {passive:false});
+window.addEventListener('pointermove', e=>{ joyMove(e); }, {passive:true});
+window.addEventListener('pointerup', e=>{ joyEnd(e); });
+window.addEventListener('pointercancel', e=>{ joyEnd(e); });
+window.addEventListener('blur', ()=>{ joyReset(); });
+window.addEventListener('keyup', e=>{ joyKey(e.code, false); });
 window.addEventListener('keydown', e=>{
-  if(e.repeat){ if(e.code==='Space') e.preventDefault(); return; }   // basılı tutmak art arda halka değiştirmesin
-  if(e.code==='ArrowRight' || e.code==='KeyD'){
-    if(state==='play') tap(W);
-  } else if(e.code==='ArrowLeft' || e.code==='KeyA'){
-    if(state==='play') tap(0);
-  } else if(e.code==='Space'){
+  if(e.repeat){ if(e.code==='Space' || (state==='play' && e.code.startsWith('Arrow'))) e.preventDefault(); return; }   // basılı tutma joystick'te zaten tutuluyor
+  // Oklar / WASD: ekran yönü (joystick ile aynı hesap). Bırakınca keyup.
+  if(state==='play' && joyKey(e.code, true)){ e.preventDefault(); return; }
+  if(e.code==='Space'){
     e.preventDefault();
-    // Ok tuşları tap() üzerinden geçtiği için tutorial'ın kendi koruması
+    // Ok tuşları joystick üzerinden geçtiği için tutorial'ın kendi koruması
     // (tutorialTapAllowed) zaten devrede; ama SPACE/P/Escape doğrudan
     // startGame()/goMode()/pauseGame() çağırıyor — bunlar tutorial'ın
     // dispatcher korumasından geçmiyor, script dışına çıkılabilir

@@ -533,7 +533,7 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
    katmanlarında: metin değişince yalnız o kutu yeniden çizilir. Eskiden kök
    katmanda oldukları için her değişimde tüm sayfa yeniden boyanıyordu
    (Redmi Note 9'da tek seferde 75-95 ms → oyundaki takılmaların asıl sebebi). */
-#scoreHud,#combo,#levelHud,#waveRow,#goalHint,#hpText,#hpBarWrap,#pw,#walletChip,#walletEndHud,#timerHud,#levelFlash,#hint,#pauseBtn{
+#scoreHud,#combo,#levelHud,#waveRow,#goalHint,#hpText,#hpBarWrap,#pw,#walletChip,#walletEndHud,#timerHud,#levelFlash,#pauseBtn{
   will-change:transform;}
 #pauseBtn{position:absolute;top:calc(env(safe-area-inset-top) + 78px);right:18px;pointer-events:auto;
   width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.18);
@@ -552,48 +552,35 @@ h2{font-family:var(--font-display);font-size:clamp(21px,5.8vw,32px);font-weight:
   letter-spacing:.8px;color:var(--star);text-shadow:0 0 12px rgba(0,0,0,.8),0 0 18px var(--star);}
 #levelFlash.drop{font-size:clamp(17px,5.2vw,28px);color:var(--peril);text-shadow:0 0 22px var(--peril);}
 #levelFlash.drop small{color:#ffd9d2;text-shadow:0 0 12px rgba(0,0,0,.85);}
-.hint{position:fixed;bottom:calc(env(safe-area-inset-bottom) + 22px);left:0;right:0;text-align:center;
-  font-size:12px;letter-spacing:1.5px;opacity:.5;z-index:9;pointer-events:none;}
-/* Dokunuş yönü ok yerine renkle: plaktaki yay penanın o an gideceği halkayı aynı renkte gösterir. */
-:root{--side-in:#39D5FF;--side-out:#FF9A3D;}
-.hint.sideChips{opacity:1;height:30px;}
-.sideChip{position:absolute;top:0;display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;
-  background:rgba(0,0,0,.55);border:1.5px solid currentColor;font-family:var(--font-ui);font-size:11px;font-weight:800;letter-spacing:1px;
-  white-space:nowrap;transform:translateX(-50%);transition:opacity .15s;}
-.sideChip b{font-weight:800;}
-.sideChip i{width:10px;height:10px;border-radius:50%;background:currentColor;}
-.sideChip.in{left:25%;color:var(--side-in);}
-.sideChip.out{left:75%;color:var(--side-out);}
-.sideChip.off{opacity:.25;}
-
-/* İlk 5 saniyelik dokunma eğitimi: ekranın sol/sağ yarısına karşılık
-   gelen köşelerde, hangi tarafa dokununca hangi yöne geçileceğini
-   gösteren parmak-dokunuşu ikonları — süre kısaldığı için daha hızlı
-   yanıp söner (bkz. tutBlink). Gerçek dokunmayı engellememesi için
-   pointer-events kapalı. */
-#tutorialHint{position:fixed;inset:0;z-index:8;pointer-events:none;display:none;}
-#tutorialHint.show{display:block;}
-.tutTap{position:absolute;bottom:calc(env(safe-area-inset-bottom) + 64px);
-  display:flex;flex-direction:column;align-items:center;gap:6px;
-  animation:tutBlink .7s linear infinite;}
-.tutTap-left{left:12vw;}
-.tutTap-right{right:12vw;}
-@keyframes tutBlink{0%,66.66%{opacity:1}66.67%,100%{opacity:0}}
-.tutPulse{width:52px;height:52px;border-radius:50%;
-  border:2px solid rgba(255,255,255,.75);background:rgba(255,255,255,.14);position:relative;}
-.tutPulse::after{content:'';position:absolute;inset:0;border-radius:50%;
-  border:2px solid rgba(255,255,255,.5);animation:tutRipple .8s ease-out infinite;}
-@keyframes tutRipple{0%{transform:scale(.6);opacity:.9}100%{transform:scale(1.9);opacity:0}}
-.tutTap-left .tutPulse{border-color:var(--side-in);background:rgba(57,213,255,.22);}
-.tutTap-left .tutPulse::after{border-color:var(--side-in);}
-.tutTap-left .tutLabel{color:var(--side-in);}
-.tutTap-right .tutPulse{border-color:var(--side-out);background:rgba(255,154,61,.22);}
-.tutTap-right .tutPulse::after{border-color:var(--side-out);}
-.tutTap-right .tutLabel{color:var(--side-out);}
-/* Etiket altta çipte zaten yazıyor; Geri Sar'ın ters ipuçlarında etiket kalır. */
-#tutorialHint:not(.rev) .tutLabel{display:none;}
-.tutLabel{font-family:var(--font-ui);font-size:10.5px;font-weight:800;letter-spacing:1px;
-  color:#fff;background:rgba(0,0,0,.45);padding:3px 10px;border-radius:999px;white-space:nowrap;}
+/* Joystick (2.83, bkz. game/joystick.js): alt ortada yarı saydam taban; parmak
+   basınca oraya kayar, bırakınca geri döner. İpucu katmanı: nabız halkası,
+   penanın gideceği yönü gösteren ok, etiket. Turuncu/mavi yön kodu yok. */
+#joy{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom) + 44px);width:112px;height:112px;margin-left:-56px;
+  pointer-events:none;opacity:.5;--joy-col:#2fe6c4;will-change:transform;}
+#joy.home{transition:transform .2s ease-out,opacity .2s;}
+#joy.on,#joy.hintOn{opacity:.95;}
+.joyIn{position:absolute;inset:0;}
+body.big-ui .joyIn{transform:scale(1.18);}
+.joyBase{position:absolute;inset:0;border-radius:50%;border:2px solid rgba(255,255,255,.32);
+  background:radial-gradient(circle,rgba(255,255,255,.10),rgba(255,255,255,.03) 68%,rgba(0,0,0,.28));box-shadow:0 4px 14px rgba(0,0,0,.45);}
+.joyKnob{position:absolute;left:30px;top:30px;width:52px;height:52px;border-radius:50%;box-sizing:border-box;
+  background:radial-gradient(circle at 38% 32%,rgba(255,255,255,.6),var(--joy-col) 58%);border:2px solid rgba(255,255,255,.6);box-shadow:0 3px 10px rgba(0,0,0,.55);}
+#joy.rej .joyKnob{background:#ff4566;animation:joyShake .26s linear;}
+@keyframes joyShake{25%{margin-left:-4px}75%{margin-left:4px}}
+.joyPulse{position:absolute;inset:-6px;border-radius:50%;border:2px solid var(--joy-col);opacity:0;}
+#joy.pulse .joyPulse{animation:joyPulse 1s ease-out infinite;}
+@keyframes joyPulse{0%{transform:scale(.9);opacity:.85}100%{transform:scale(1.45);opacity:0}}
+.joyArrow{position:absolute;left:50%;top:50%;width:0;height:0;display:none;}
+#joy.arrow .joyArrow{display:block;}
+.joyArrow i{position:absolute;left:62px;top:-14px;width:0;height:0;border-top:14px solid transparent;border-bottom:14px solid transparent;
+  border-left:22px solid #fff;filter:drop-shadow(0 0 6px var(--joy-col));animation:joyArrow .8s ease-in-out infinite;}
+@keyframes joyArrow{0%,100%{transform:translateX(0)}50%{transform:translateX(8px)}}
+.joyLbl{position:absolute;left:50%;bottom:calc(100% + 40px);transform:translateX(-50%);display:none;font-family:var(--font-ui);font-size:11px;
+  font-weight:800;letter-spacing:1px;color:#fff;background:rgba(0,0,0,.62);padding:4px 11px;border-radius:999px;white-space:nowrap;}
+#joy.hintOn .joyLbl:not(:empty){display:block;}
+#joy.rev .joyPulse{border-color:#d6a0ff;}
+#joy.rev .joyLbl{background:rgba(110,40,160,.88);}
+@media (prefers-reduced-motion:reduce){#joy.pulse .joyPulse,.joyArrow i{animation:none;}#joy.pulse .joyPulse{opacity:.7;}}
 
 /* İlk-oyun rehberli tutorial'ı: mesaj kutusu, hedef vurgulama, kapanış ekranı. */
 /* Anlatıcı yazarken ekranın geri kalanını tıklamaya kapatan şeffaf katman
@@ -1158,25 +1145,17 @@ h1 .gicon,h2 .gicon{color:var(--star);}
 @keyframes htPena{0%,12%{transform:translate(150px,132px);}22%,58%{transform:translate(150px,106px);}68%,100%{transform:translate(150px,132px);}}
 @keyframes htRingIn{0%,14%{stroke-opacity:.3;stroke:#d9b48a;}22%,58%{stroke-opacity:.95;stroke:#2fe6c4;}66%,100%{stroke-opacity:.3;stroke:#d9b48a;}}
 @keyframes htRingOut{0%,10%{stroke-opacity:.95;stroke:#2fe6c4;}20%,62%{stroke-opacity:.3;stroke:#d9b48a;}70%,100%{stroke-opacity:.95;stroke:#2fe6c4;}}
-.htTaps{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px;}
-.htTap{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 6px;border-radius:12px;position:relative;
+.htJoy{display:flex;align-items:center;gap:12px;margin-top:4px;padding:8px 12px;border-radius:12px;
   background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);}
-.htTap b{font-family:var(--font-display);font-size:12px;letter-spacing:1px;color:#fff;}
-.htTap small{font-size:11px;opacity:.75;}
-.htTapDot{width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,.5);margin-bottom:2px;position:relative;}
-.htTapDot::after{content:'';position:absolute;inset:4px;border-radius:50%;background:rgba(255,255,255,.5);}
-.htTap.L b{color:var(--side-in);}
-.htTap.L .htTapDot{border-color:var(--side-in);}
-.htTap.L .htTapDot::after{background:var(--side-in);}
-.htTap.R b{color:var(--side-out);}
-.htTap.R .htTapDot{border-color:var(--side-out);}
-.htTap.R .htTapDot::after{background:var(--side-out);}
-.htTap.L{animation:htTapL 4s infinite;} .htTap.R{animation:htTapR 4s infinite;}
-.htTap.L .htTapDot{animation:htDotL 4s infinite;} .htTap.R .htTapDot{animation:htDotR 4s infinite;}
-@keyframes htTapL{0%,8%{border-color:rgba(255,255,255,.08);background:rgba(255,255,255,.04);}12%,20%{border-color:#2fe6c4;background:rgba(47,230,196,.16);}28%,100%{border-color:rgba(255,255,255,.08);background:rgba(255,255,255,.04);}}
-@keyframes htTapR{0%,46%{border-color:rgba(255,255,255,.08);background:rgba(255,255,255,.04);}50%,58%{border-color:#2fe6c4;background:rgba(47,230,196,.16);}66%,100%{border-color:rgba(255,255,255,.08);background:rgba(255,255,255,.04);}}
-@keyframes htDotL{0%,8%,28%,100%{transform:scale(1);border-color:rgba(255,255,255,.5);}12%{transform:scale(.8);border-color:#2fe6c4;box-shadow:0 0 0 8px rgba(47,230,196,0),0 0 14px #2fe6c4;}}
-@keyframes htDotR{0%,46%,66%,100%{transform:scale(1);border-color:rgba(255,255,255,.5);}50%{transform:scale(.8);border-color:#2fe6c4;box-shadow:0 0 14px #2fe6c4;}}
+.htJoyPad{width:54px;height:54px;flex:none;border-radius:50%;border:2px solid rgba(255,255,255,.32);position:relative;
+  background:radial-gradient(circle,rgba(255,255,255,.08),rgba(0,0,0,.2));}
+.htJoyKnob{position:absolute;left:14px;top:14px;width:22px;height:22px;border-radius:50%;background:#2fe6c4;
+  box-shadow:0 0 8px rgba(47,230,196,.6);animation:htKnob 4s cubic-bezier(.5,0,.3,1) infinite;}
+/* Pena 12-22% arası içe (yukarı), 58-68% arası dışa (aşağı) geçer: topuz aynı anda o yöne itilir. */
+@keyframes htKnob{0%,8%{transform:none}12%,20%{transform:translateY(-13px)}26%,52%{transform:none}56%,64%{transform:translateY(13px)}70%,100%{transform:none}}
+.htJoyTxt{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.htJoyTxt b{font-family:var(--font-display);font-size:12px;letter-spacing:1px;color:#fff;}
+.htJoyTxt small{font-size:11px;opacity:.78;line-height:1.35;}
 .htLead{font-size:12px;line-height:1.4;text-align:center;opacity:.85;margin-top:9px;padding:0 6px;}
 
 /* Şarkı listesi tarzı bölümler */
@@ -1485,12 +1464,6 @@ h1 .gicon,h2 .gicon{color:var(--star);}
 .pwchip.risk.dirty{opacity:.5;filter:grayscale(.6);box-shadow:none;}
 .pwchip.risk.ending{animation:riskChipBlink .32s steps(2) infinite;}
 @keyframes riskChipBlink{50%{opacity:.35}}
-/* Geri Sar başında ters etiketli dokunma ipuçları: mor. */
-#tutorialHint.rev .tutTap{animation:none;}
-#tutorialHint.rev .tutPulse{border-color:rgba(214,160,255,.95);background:rgba(196,107,255,.25);}
-#tutorialHint.rev .tutPulse::after{border-color:rgba(214,160,255,.6);}
-#tutorialHint.rev .tutLabel{background:rgba(110,40,160,.8);}
-#tutorialHint.rev .tutArrow{filter:drop-shadow(0 0 6px rgba(196,107,255,.95));}
 /* İlk görüş tanıtım kartı: altta, oyun alanını kapatmadan. Aile rengi = etiket. */
 #introCard{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 176px);z-index:11;pointer-events:none;
   display:flex;align-items:center;gap:10px;width:min(88vw,360px);padding:8px 14px 8px 8px;border-radius:16px;

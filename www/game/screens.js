@@ -36,14 +36,13 @@ function updateScrollCues(){
 setInterval(()=>{ if(document.querySelector('.screen.active')) updateScrollCues(); }, 500);
 window.addEventListener('resize', ()=>updateScrollCues());
 function setHud(on){ document.getElementById('hud').classList.toggle('show', on);
-  document.getElementById('hint').style.display = on?'block':'none';
+  if(!on && typeof joyReset==='function') joyReset();
   if(!on) clearPlayOverlays(); }
 // Oyundan çıkınca (oyun sonu, ana menü, mod ekranı…) oyun içi geçici
 // yazı/animasyonlar menüye taşmasın: "SEVİYE 5" flaşı, başlangıçtaki
-// sol/sağ parmak-izi ipuçları ve devam geri sayımı temizlenir.
+// joystick ipuçları ve devam geri sayımı temizlenir.
 function clearPlayOverlays(){
-  clearTimeout(tutorialHideTimer);
-  const th=document.getElementById('tutorialHint'); if(th) th.classList.remove('show');
+  if(typeof joyHintOff==='function') joyHintOff();
   levelFlashT=0;
   const lf=document.getElementById('levelFlash'); if(lf) lf.style.opacity=0;
   if(typeof _hud!=='undefined') _hud.flash=0;
@@ -53,16 +52,10 @@ function clearPlayOverlays(){
   if(typeof duelAbort==='function' && state!=='over') duelAbort();
 }
 
-// Her oyun başlangıcında 5 saniyeliğine sol/sağ dokunma bölgelerini
-// gösteren yanıp sönen parmak-izi ipuçları — yeni oyuncu kontrolleri
-// ilk bakışta anlasın diye (bkz. style.css'teki tutBlink/tutRipple, süre
-// kısaldığı için daha hızlı yanıp sönecek şekilde hızlandırıldı).
-let tutorialHideTimer=null;
+// Her oyun başlangıcında 4 sn: joystick nabız atar, "ÇUBUĞU İT" etiketi —
+// yeni oyuncu kontrolü ilk bakışta görsün. Sonra taban sade kalır.
 function showTutorialHint(){
-  const el=document.getElementById('tutorialHint'); if(!el) return;
-  clearTimeout(tutorialHideTimer);
-  el.classList.add('show');
-  tutorialHideTimer=setTimeout(()=>el.classList.remove('show'), 5000);
+  if(typeof joyHint==='function') joyHint({pulse:true, label:t('joy_push')}, 4000);
 }
 
 // Kademeler dolduysa "Yetenekler" butonunun altındaki etiket Süpernova'ya
