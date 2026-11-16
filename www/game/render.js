@@ -516,7 +516,7 @@ function drawItem(x,y,type,sc,t,it){
   // İlk görüş tanıtımı (bkz. engine.js introCheck): öğenin çevresinde kısa
   // süreli, nabız gibi atan beyaz ışık halkası — kart hangi öğeyi anlatıyor.
   if(it && it.spot>0){
-    const a=Math.min(1,it.spot/30), pr=R*((type==='hazardBomb'?3.2:2.5)+Math.sin(t*9)*0.18);
+    const a=Math.min(1,it.spot/30), pr=R*(ITEM_VIS*1.55+Math.sin(t*9)*0.18);
     ctx.save(); ctx.globalAlpha=0.9*a; ctx.strokeStyle='#ffffff'; ctx.lineWidth=2.5;
     ctx.shadowColor='#ffffff'; ctx.shadowBlur=10;
     ctx.beginPath(); ctx.arc(x,y,pr,0,7); ctx.stroke(); ctx.restore();
@@ -535,28 +535,15 @@ function drawItem(x,y,type,sc,t,it){
   // (nota, jeton, sol anahtarı, cızırtılar) kendi parlaklıklarını taşıyor.
 
   if(isHazardType(type) || type==='hazardTwinDecoy'){
-    let Rh = type==='hazardBomb' ? R*1.5 : R;
+    // 2.83.4: tüm cızırtılar AYNI kırmızı gövde ve AYNI boy; tür yüz ifadesinden
+    // okunur (bkz. drawHazFace). Dönmezler (yüz ters dönmesin); nabız boyut
+    // değiştirmez, açık/kapalı yüzden anlaşılır. Sahte ikiz titrer (mevcut).
     let shapeAlpha = type==='hazardTwinDecoy' ? 0.4+Math.sin(t*9)*0.25 : 1;
-    if(type==='hazardPulse'){
-      const danger = it ? it.pulseDanger : true;
-      const phase = it ? it.pulsePhase : 0;
-      Rh = R*(0.55+(Math.sin(phase)*0.5+0.5)*0.85);
-      if(!danger) shapeAlpha=0.55;
-    }
+    if(type==='hazardPulse' && it && !it.pulseDanger) shapeAlpha=0.55;
     ctx.globalAlpha=shapeAlpha;
-    // Her tehlike tipi artık kendine özgü bir CANAVAR GÖRSELİ taşıyor (eski
-    // vektör poligon/yıldız yerine, bkz. HAZARD_IMG_KEY + data.js MONSTER_IMG)
-    // — tip renk kadar GÖRSELDEN de bir bakışta ayırt edilebiliyor, poligon
-    // siluetlerinden bile daha güçlü bir ayrım. (hazardTwin ile
-    // hazardTwinDecoy kasıtlı olarak birebir aynı görseli paylaşır —
-    // ikisini ayırt edilemez kılmak, oyunun "hangisi gerçek?" mekaniğinin
-    // ta kendisi.)
-    const spin = (type==='hazardJump') ? 0 : t*(type==='hazardCreep'?1.1:type==='hazardPulse'?1.0:0.6);
-    drawHazardImage(x,y,Rh*1.3,col,type,spin);
+    const hv = it ? hazVariant(type,it) : (_paintHazVariant!=null ? _paintHazVariant : hazVariant(type,null));
+    drawHazardImage(x,y,R*ITEM_VIS,col,type,0,hv);
     ctx.globalAlpha=1;
-    // Zıplayan/çeken cızırtıların ve boss dalgası öğelerinin etrafındaki
-    // noktalı çemberler kaldırıldı (2026-10-19): oyuncular "bu ne?" diye
-    // karışıyordu. Tüm cızırtılar — boss savaşı dahil — yalnız kendi görseli.
   } else if(type==='gold'){
     drawNoteShape(x,y,R*1.1,col,true,0);
     if(cfg.colorblind){ ctx.setLineDash([4,4]); ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(x,y,R*1.5,0,7); ctx.stroke(); ctx.setLineDash([]); }
@@ -565,7 +552,7 @@ function drawItem(x,y,type,sc,t,it){
     // (it yoksa — 3D doku üretimi — salınım 3D tarafında yapılır).
     const bob = it ? Math.sin(t*3.2 + it.ang*3)*R*0.3 : 0;
     drawCollectGlow(x, y+bob, R*2.0, it ? 0.8+Math.sin(t*3+it.ang*5)*0.2 : 1);
-    if(imgReady(ITEM_IMG.note)){ const s=R*1.45; ctx.drawImage(ITEM_IMG.note, x-s, y-s+bob, s*2, s*2); }
+    if(imgReady(ITEM_IMG.note)){ const s=R*ITEM_VIS; ctx.drawImage(ITEM_IMG.note, x-s, y-s+bob, s*2, s*2); }
     else drawNoteShape(x,y+bob,R,col,false,0);
     if(it) drawTwinkle(x+R*0.95, y-R*1.05+bob, R*0.5, t*2.6+it.ang*7);
     if(cfg.colorblind){ ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(x,y,R*1.15,0,7); ctx.stroke(); }
@@ -575,7 +562,7 @@ function drawItem(x,y,type,sc,t,it){
     // olarak kullanır (manifest items.diamond ile değiştirilebilir).
     // Kullanıcının kristal + gümüş sol anahtarı görseli (img/items/clef.png);
     // yüklenene kadar vektör sol anahtarı.
-    if(imgReady(ITEM_IMG.clef)){ const s=R*1.7; ctx.drawImage(ITEM_IMG.clef, x-s, y-s, s*2, s*2); }
+    if(imgReady(ITEM_IMG.clef)){ const s=R*ITEM_VIS; ctx.drawImage(ITEM_IMG.clef, x-s, y-s, s*2, s*2); }
     else { ctx.save(); ctx.shadowColor='#ffd98a'; ctx.shadowBlur=R*0.9; drawTrebleClef(ctx, x, y, R*2.9, col); ctx.restore(); }
     // İkon sabit; çevresinde sabit noktalarda küçük yıldızlar sırayla yavaşça
     // belirip söner — nadir/değerli olduğu belli olsun.
@@ -597,7 +584,7 @@ function drawItem(x,y,type,sc,t,it){
     drawCollectGlow(x, y, R*1.9, it ? 0.8+Math.sin(t*3+it.ang*5)*0.2 : 1);
     if(it) drawTwinkle(x+R*0.85, y-R*0.85, R*0.45, t*2.3+it.ang*9);
     if(imgReady(ITEM_IMG.coin)){
-      const flip = it ? Math.cos(t*1.6 + it.ang*2) : 1, fx = 0.35 + 0.65*Math.abs(flip), s=R*1.15;
+      const flip = it ? Math.cos(t*1.6 + it.ang*2) : 1, fx = 0.35 + 0.65*Math.abs(flip), s=R*ITEM_VIS*0.9;
       ctx.save(); ctx.translate(x,y); ctx.scale(fx,1);
       ctx.drawImage(ITEM_IMG.coin, -s, -s, s*2, s*2);
       if(flip<0){ ctx.fillStyle='rgba(120,60,10,.35)'; ctx.beginPath(); ctx.arc(0,0,s*0.98,0,7); ctx.fill(); } // arka yüz biraz koyu
@@ -616,7 +603,7 @@ function drawItem(x,y,type,sc,t,it){
     drawRiskBubble(x,y,R,type,t,it);
   } else if(type==='attackOrb'){
     // Düello saldırı balonu: güç ailesinin baloncuğu, turuncu; içinde şimşek.
-    const bob = it ? Math.sin(t*2.4 + it.ang*3)*R*0.18 : 0, r=R*1.55*(it ? 1+Math.sin(t*7)*0.05 : 1);
+    const bob = it ? Math.sin(t*2.4 + it.ang*3)*R*0.18 : 0, r=R*ITEM_VIS*(it ? 1+Math.sin(t*7)*0.05 : 1);
     drawBubble(x, y+bob, r, '#ff9a3c');
     const s=r*0.55; ctx.save(); ctx.translate(x, y+bob); ctx.fillStyle='#ffffff'; ctx.shadowColor='#ff9a3c'; ctx.shadowBlur=r*0.4;
     ctx.beginPath(); ctx.moveTo(0.15*s,-0.95*s); ctx.lineTo(-0.55*s,0.12*s); ctx.lineTo(-0.02*s,0.12*s); ctx.lineTo(-0.2*s,0.95*s);
@@ -626,15 +613,15 @@ function drawItem(x,y,type,sc,t,it){
     // baloncuğun içinde — "baloncuk = güç" tek bakışta okunur, kırmızı
     // mıknatıs da artık bir cızırtıyla karışmaz.
     const bob = it ? Math.sin(t*2.4 + it.ang*3)*R*0.18 : 0;
-    drawBubble(x, y+bob, R*1.5, POWER_BUBBLE);
-    if(imgReady(ITEM_IMG[type])){ const s=R*1.0; ctx.drawImage(ITEM_IMG[type], x-s, y-s+bob, s*2, s*2); }
+    drawBubble(x, y+bob, R*ITEM_VIS, POWER_BUBBLE);
+    if(imgReady(ITEM_IMG[type])){ const s=R*1.1; ctx.drawImage(ITEM_IMG[type], x-s, y-s+bob, s*2, s*2); }
     else { const iconKey = PW_ICON_TYPE[type]; if(iconKey) drawPwIcon(x,y+bob,iconKey,R*0.85); }
   } else if(imgReady(ITEM_IMG[type])){
     // Can: görsel, kalp atar (takviyeler yukarıda baloncuk içinde)
     // (it yoksa — 3D doku üretimi — hareket 3D tarafında yapılır).
     const pulse = (type==='heart' && it) ? 1+Math.sin(t*5)*0.08 : 1;
     const bob = (it && type!=='heart') ? Math.sin(t*2.4 + it.ang*3)*R*0.18 : 0;
-    const s = R*1.4*pulse;
+    const s = R*ITEM_VIS*pulse*(type==='heart' ? 1.25 : 1);   // kalp görselinin kendi boşluğu var
     ctx.drawImage(ITEM_IMG[type], x-s, y-s+bob, s*2, s*2);
   } else if(type==='heart'){
     const pulse=1+Math.sin(t*5)*0.08;
@@ -667,15 +654,21 @@ function drawItem(x,y,type,sc,t,it){
 // Artık TÜM cızırtılar sıcak tehlike ailesinde: temel/dev/nabız kırmızı
 // (boyut ve nefes alıp vermeyle ayrılır), zıplayan turuncu, kilit gül,
 // ikiz mor, sinsi pembe. Toplanırlar altın, güçler camsı baloncuk, risk mor.
+// 2.83.4: tek renk — hepsi kırmızı gövde (glitch_red), tür yüzle ayrılır.
 const HAZARD_IMG_KEY = {
-  hazard:'glitch_red', hazardJump:'glitch_orange', hazardBomb:'glitch_red',
-  hazardPull:'glitch_rose', hazardTwin:'glitch_purple', hazardTwinDecoy:'glitch_purple',
-  hazardPulse:'glitch_red', hazardCreep:'glitch_pink',
+  hazard:'glitch_red', hazardJump:'glitch_red', hazardBomb:'glitch_red',
+  hazardPull:'glitch_red', hazardTwin:'glitch_red', hazardTwinDecoy:'glitch_red',
+  hazardPulse:'glitch_red', hazardCreep:'glitch_red',
 };
 const HAZARD_COLOR = {
-  hazard:'#ff3b3b', hazardJump:'#ff8a1f', hazardBomb:'#ff3b3b', hazardPull:'#ff4f8a',
-  hazardTwin:'#b04bff', hazardTwinDecoy:'#b04bff', hazardPulse:'#ff3b3b', hazardCreep:'#ff4fd8',
+  hazard:'#ff3b3b', hazardJump:'#ff3b3b', hazardBomb:'#ff3b3b', hazardPull:'#ff3b3b',
+  hazardTwin:'#ff3b3b', hazardTwinDecoy:'#ff3b3b', hazardPulse:'#ff3b3b', hazardCreep:'#ff3b3b',
 };
+// Tüm toplanabilir/kaçılacak öğelerin görsel yarıçapı (R = PLAYER_R*0.95 cinsinden).
+// 2.83.4'ten önce cızırtı ~2.5R (dev 3.7R), kalkan baloncuğu 1.5R, jeton 1.15R idi.
+const ITEM_VIS = 1.5;
+// 3D doku üretimi (gfx.js paintItem3D) hangi yüz varyantını boyayacağını buradan verir.
+let _paintHazVariant = null;
 const POWER_BUBBLE = '#7fe8ff', RISK_COL = '#c46bff';
 // Toplanabilir dil: nota ve nota jetonu arkasında küçük, yumuşak, sıcak altın
 // parıltı (bir kez çizilip önbelleğe alınır) + ara sıra yanıp sönen minik
@@ -714,7 +707,7 @@ function drawBubble(x,y,r,col){
 // Risk balonu: mor baloncuk + "bozuk sinyal" renk kayması (pembe/camgöbeği
 // çift kenar) + içinde etkinin ikonu (◀◀ Geri Sar, çizik göz Karartma).
 function drawRiskBubble(x,y,R,type,t,it){
-  const r=R*1.55*(it ? 1+Math.sin(t*6+it.ang)*0.05 : 1);
+  const r=R*ITEM_VIS*(it ? 1+Math.sin(t*6+it.ang)*0.05 : 1);
   const jx = (it && Math.random()<0.12) ? (Math.random()-0.5)*r*0.14 : 0;
   ctx.save(); ctx.globalAlpha*=0.6; ctx.lineWidth=Math.max(1.2,r*0.07);
   ctx.strokeStyle='#ff3fd0'; ctx.beginPath(); ctx.arc(x-r*0.06+jx,y,r,0,7); ctx.stroke();
@@ -742,48 +735,121 @@ function drawRiskBubble(x,y,R,type,t,it){
 // (her zeminde kontrast), çevresinde tipin renginde hafif hâle, çizgiler
 // parlatılıp kalınlaştırılmış. Oyunda yalnız hazır canvas çizilir (ek maliyet
 // yok); 3D de dokusunu buradan alır. Çarpışma boyutu değişmedi.
-const HAZ_SPRITE_PAD = 0.12;   // sprite kenar boşluğu (görselin her yanında)
+const HAZ_SPRITE_PAD = 0.04;   // sprite kenar boşluğu (görselin her yanında)
+// Yumak görselinin görünen gövdesi görsel karesinin ~%75'i: diğer öğelerle aynı
+// görünen boy için görsel bu oranla büyütülür (ölçüm: 2.83.4 doku sayfası).
+const HAZ_BODY_FILL = 0.75;
 const _hazSprite = {};
-function hazardSprite(type){
-  const key = HAZARD_IMG_KEY[type]; if(!key) return null;
+// Cızırtının o anki yüz varyantı: nabız açık/kapalı, sinsi bekliyor/sıçrayacak.
+function hazVariant(type, it){
+  if(type==='hazardPulse') return (it && it.pulseDanger===false) ? 'off' : 'on';
+  if(type==='hazardCreep') return (it && !it.creeped && it.creepT>0 && it.creepT<30) ? 'wind' : 'idle';
+  return '';
+}
+function hazardSprite(type, variant){
+  const ftype = type==='hazardTwinDecoy' ? 'hazardTwin' : type;
+  const key = ftype+'#'+(variant||'');
   if(_hazSprite[key]) return _hazSprite[key];
-  const img = MONSTER_IMG[key]; if(!imgReady(img)) return null;
-  const col = HAZARD_COLOR[type] || '#ff3b3b';
+  const img = MONSTER_IMG.glitch_red; if(!imgReady(img)) return null;
   const S=256, c=document.createElement('canvas'); c.width=c.height=S;
   const g=c.getContext('2d'), h=S/2, m=S*HAZ_SPRITE_PAD;
-  // Işık "ödül" dilidir (notalar/jetonlar parlar); cızırtı PARLAMAZ: arkasında
-  // koyu, sert kenarlı bir delik, çizgilerinin çevresinde koyu kontur — her
-  // zeminde seçilir ama toplanabilir bir şey gibi görünmez.
-  let gr=g.createRadialGradient(h,h,0,h,h,h*0.9);
-  gr.addColorStop(0,'rgba(6,3,10,.92)'); gr.addColorStop(0.8,'rgba(6,3,10,.82)'); gr.addColorStop(1,'rgba(6,3,10,0)');
-  g.fillStyle=gr; g.beginPath(); g.arc(h,h,h,0,7); g.fill();
+  // Işık "ödül" dilidir; cızırtı PARLAMAZ: arkasında koyu, sert kenarlı delik.
+  const gr=g.createRadialGradient(h,h,0,h,h,h*0.82);
+  gr.addColorStop(0,'rgba(6,3,10,.92)'); gr.addColorStop(0.85,'rgba(6,3,10,.8)'); gr.addColorStop(1,'rgba(6,3,10,0)');
+  g.fillStyle=gr; g.beginPath(); g.arc(h,h,h*0.82,0,7); g.fill();
   g.shadowColor='rgba(0,0,0,.95)'; g.shadowBlur=S*0.03;
   g.drawImage(img, m, m, S-2*m, S-2*m);
-  g.shadowBlur=0; g.globalCompositeOperation='lighter'; g.globalAlpha=0.35;
-  g.drawImage(img, m, m, S-2*m, S-2*m);
+  g.shadowBlur=0;
+  // Parlak cam görünümünü kır (toplanabilir sanılıyordu): gövdeyi koyu kırmızıyla mat yap.
+  g.globalCompositeOperation='source-atop'; g.fillStyle='rgba(90,0,14,.28)'; g.fillRect(0,0,S,S);
+  g.globalCompositeOperation='source-over';
+  // Yüzün arkasında hafif koyu alan: yumağın çizgileri gözü/ağzı yutmasın.
+  const fr=(S-2*m)/2*HAZ_BODY_FILL, fg=g.createRadialGradient(h,h,0,h,h,fr);
+  fg.addColorStop(0,'rgba(40,0,8,.55)'); fg.addColorStop(0.75,'rgba(40,0,8,.35)'); fg.addColorStop(1,'rgba(40,0,8,0)');
+  g.fillStyle=fg; g.beginPath(); g.arc(h,h,fr,0,7); g.fill();
+  drawHazFace(g, h, h, fr*1.52, ftype, variant);
   _hazSprite[key]=c; return c;
 }
-function drawHazardImage(x,y,size,col,type,rot){
-  const img = MONSTER_IMG[HAZARD_IMG_KEY[type]];
-  const spr = hazardSprite(type);
+// Canavar yüzleri (2.83.4). g: hedef bağlam, (cx,cy) merkez, r gövde yarıçapı.
+// Kalın koyu konturlar: küçük boyutta (telefonda ~25 px) da okunur.
+function drawHazFace(g, cx, cy, r, type, variant){
+  const u=r/100, INK='#1a0006', TOOTH='#fff6f0';
+  g.save(); g.translate(cx, cy); g.lineCap='round'; g.lineJoin='round';
+  const eye=(x,y,rr)=>{ g.fillStyle='#ffffff'; g.beginPath(); g.arc(x*u,y*u,rr*u,0,7); g.fill(); g.lineWidth=7*u; g.strokeStyle=INK; g.stroke(); };
+  const pupil=(x,y,rr)=>{ g.fillStyle=INK; g.beginPath(); g.arc(x*u,y*u,rr*u,0,7); g.fill(); g.fillStyle='rgba(255,255,255,.85)'; g.beginPath(); g.arc((x-rr*0.35)*u,(y-rr*0.35)*u,rr*0.28*u,0,7); g.fill(); };
+  const line=(pts,w)=>{ g.strokeStyle=INK; g.lineWidth=(w||8)*u; g.beginPath(); pts.forEach((p,i)=>i?g.lineTo(p[0]*u,p[1]*u):g.moveTo(p[0]*u,p[1]*u)); g.stroke(); };
+  const closedEye=(x,y)=>{ g.strokeStyle='#ffd6de'; g.lineWidth=8*u; g.beginPath(); g.arc(x*u,(y-6)*u,15*u,0.15*Math.PI,0.85*Math.PI); g.stroke(); };
+  const brows=(inDrop)=>{ line([[-52,-44],[-14,-44+inDrop]],10); line([[52,-44],[14,-44+inDrop]],10); };
+  const teethRow=(x0,x1,y,hgt,n,down)=>{ g.fillStyle=TOOTH; for(let i=0;i<n;i++){ const a=x0+(x1-x0)*i/n, b=x0+(x1-x0)*(i+1)/n; g.beginPath(); g.moveTo(a*u,y*u); g.lineTo(b*u,y*u); g.lineTo((a+b)/2*u,(y+(down?hgt:-hgt))*u); g.closePath(); g.fill(); } };
+  const mouthShape=(fn)=>{ g.fillStyle=INK; g.beginPath(); fn(); g.closePath(); g.fill(); };
+  switch(type){
+    case 'hazardBomb':   // Dev: düz bakar, kötü sırıtış
+      eye(-30,-14,18); eye(30,-14,18); pupil(-30,-10,9); pupil(30,-10,9);
+      g.fillStyle='#7a0016'; [-30,30].forEach(x=>{ g.beginPath(); g.arc(x*u,-14*u,18*u,Math.PI,2*Math.PI); g.fill(); });   // ağır göz kapağı
+      line([[-50,-14],[-10,-14]],6); line([[10,-14],[50,-14]],6);
+      mouthShape(()=>{ g.moveTo(-48*u,16*u); g.quadraticCurveTo(0,30*u,48*u,16*u); g.quadraticCurveTo(0,72*u,-48*u,16*u); });
+      teethRow(-40,40,22,10,7,true);
+      break;
+    case 'hazardJump':   // Zıplayan: şaşı
+      eye(-30,-12,19); eye(30,-12,16); pupil(-21,-10,9); pupil(22,-10,8);
+      line([[-48,-40],[-14,-36]],8); line([[14,-34],[46,-42]],8);
+      g.fillStyle=INK; g.beginPath(); g.ellipse(4*u,34*u,10*u,12*u,0,0,7); g.fill();
+      break;
+    case 'hazardPull':   // Kilit: S / spiral gözler
+      [-30,30].forEach((x,k)=>{ eye(x,-12,20); g.strokeStyle=INK; g.lineWidth=4.5*u; g.beginPath();
+        const sg = k ? 1 : -1;
+        for(let a=0;a<=Math.PI*5;a+=0.2){ const rr=1.15*a*u, px=x*u+Math.cos(a*sg)*rr, py=-12*u+Math.sin(a*sg)*rr; if(a===0) g.moveTo(px,py); else g.lineTo(px,py); }
+        g.stroke(); });
+      line([[-30,34],[-15,28],[0,34],[15,28],[30,34]],7);
+      break;
+    case 'hazardTwin':   // İkiz: göz kırpar, yan sırıtır
+      eye(-30,-12,18); pupil(-28,-10,9); closedEye(30,-8);
+      line([[-52,-38],[-14,-42]],8); line([[14,-30],[50,-36]],8);
+      mouthShape(()=>{ g.moveTo(-34*u,30*u); g.quadraticCurveTo(6*u,40*u,40*u,16*u); g.quadraticCurveTo(10*u,54*u,-34*u,30*u); });
+      teethRow(-20,30,32,7,4,true);
+      break;
+    case 'hazardPulse':
+      if(variant==='off'){ // uyur: zararsız
+        closedEye(-30,-6); closedEye(30,-6);
+        line([[-12,36],[12,36]],7);
+      } else {             // uyanık: yakar
+        eye(-30,-14,21); eye(30,-14,21); pupil(-30,-14,5); pupil(30,-14,5);
+        brows(10);
+        g.fillStyle=INK; g.beginPath(); g.ellipse(0,38*u,28*u,20*u,0,0,7); g.fill();
+        teethRow(-24,24,22,8,5,true); teethRow(-22,22,55,8,5,false);
+      }
+      break;
+    case 'hazardCreep':
+      if(variant==='wind'){ // sıçramak üzere: gözler fal taşı, ağız açık, dil
+        eye(-30,-14,21); eye(30,-14,21); pupil(-30,-10,8); pupil(30,-10,8);
+        g.fillStyle=INK; g.beginPath(); g.ellipse(0,34*u,26*u,18*u,0,0,7); g.fill();
+        g.fillStyle='#ff6f9a'; g.beginPath(); g.ellipse(6*u,46*u,12*u,12*u,0,0,7); g.fill();
+      } else {              // sinsi: kısık gözler, dil dışarı
+        [-30,30].forEach(x=>{ g.fillStyle='#ffffff'; g.beginPath(); g.ellipse(x*u,-10*u,19*u,7*u,0,0,7); g.fill(); g.lineWidth=6*u; g.strokeStyle=INK; g.stroke(); pupil(x+6,-10,5); });
+        line([[-50,-30],[-12,-22]],9); line([[12,-22],[50,-30]],9);
+        line([[-26,30],[26,26]],7);
+        g.fillStyle='#ff6f9a'; g.beginPath(); g.ellipse(10*u,40*u,10*u,13*u,0,0,7); g.fill(); g.lineWidth=4*u; g.strokeStyle=INK; g.stroke();
+      }
+      break;
+    default:             // Temel: düz bakar, kızgın
+      eye(-30,-12,18); eye(30,-12,18); pupil(-30,-9,9); pupil(30,-9,9);
+      brows(18);
+      line([[-24,36],[0,30],[24,36]],10);
+  }
+  g.restore();
+}
+function drawHazardImage(x,y,size,col,type,rot,variant){
+  const spr = hazardSprite(type, variant);
   if(spr){
+    // Bozuk sinyal: ~12 kez/sn küçük sarsıntı + parlaklık titremesi.
     const k=Math.floor(performance.now()/80), rj=mulberry32(k*131+Math.round(x*7+y*13));
-    const jx=(rj()-0.5)*size*0.08, jy=(rj()-0.5)*size*0.08, s=size*1.35*1.08/(1-2*HAZ_SPRITE_PAD);
+    const jx=(rj()-0.5)*size*0.06, jy=(rj()-0.5)*size*0.06, s=size/HAZ_BODY_FILL/(1-2*HAZ_SPRITE_PAD);
     ctx.save(); ctx.translate(x+jx,y+jy); if(rot) ctx.rotate(rot);
-    ctx.globalAlpha*=0.88+rj()*0.12;
+    ctx.globalAlpha*=0.9+rj()*0.1;
     ctx.drawImage(spr, -s, -s, s*2, s*2);
     ctx.restore();
-  } else if(img && img.complete && img.naturalWidth>0){
-    // Cızırtı: ~12 kez/sn değişen küçük sarsıntı + parlaklık titremesi —
-    // bozuk sinyal hissi. (t=0 ile çağrılan 3D doku üretiminde sabit kalır.)
-    const k=Math.floor(performance.now()/80), rj=mulberry32(k*131+Math.round(x*7+y*13));
-    const jx=(rj()-0.5)*size*0.08, jy=(rj()-0.5)*size*0.08, s=size*1.35;
-    ctx.save(); ctx.translate(x+jx,y+jy); if(rot) ctx.rotate(rot);
-    ctx.globalAlpha*=0.82+rj()*0.18;
-    ctx.drawImage(img, -s, -s, s*2, s*2);
-    ctx.restore();
   } else {
-    // Görsel henüz yüklenmediyse (ilk birkaç kare) eski basit daireye düş.
+    // Görsel henüz yüklenmediyse (ilk birkaç kare) basit daire.
     ctx.fillStyle=col; ctx.beginPath(); ctx.arc(x,y,size*0.8,0,7); ctx.fill();
   }
 }

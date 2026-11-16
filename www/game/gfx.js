@@ -198,13 +198,14 @@ function syncMenuAnchors(){
 // Manifest'te görseli verilmeyen öğe tipleri için klasik 2D çizimi (render.js
 // drawItem) bir canvas'a basar; Render3D bunu doku olarak kullanır. Canavar
 // PNG'si henüz yüklenmediyse false döner ve birkaç kare sonra tekrar denenir.
-function paintItem3D(type, cnv){
-  const S=cnv.width, R=S/(2*2.6*(type==='hazardBomb' ? 1.5 : 1));
+function paintItem3D(type, cnv, variant){
+  const S=cnv.width, R=S/(2*2.6);
   const g=cnv.getContext('2d');
   g.clearRect(0,0,S,S);
   const prev=ctx; ctx=g;
+  _paintHazVariant = variant || null;
   try{ drawItem(S/2, S/2, type, R/(PLAYER_R*0.95), 0, null); }
-  finally{ ctx=prev; }
+  finally{ ctx=prev; _paintHazVariant = null; }
   if(isHazardType(type) || type==='hazardTwinDecoy') return imgReady(MONSTER_IMG[HAZARD_IMG_KEY[type]]);
   if(type==='star') return imgReady(ITEM_IMG.note);
   if(type==='coin') return imgReady(ITEM_IMG.coin);

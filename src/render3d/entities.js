@@ -129,8 +129,16 @@ function sealTexture(){
 const YARN_3D = false;
 const HAZARDS = new Set(['hazard','hazardJump','hazardBomb','hazardPull','hazardTwin','hazardTwinDecoy','hazardPulse','hazardCreep']);
 // Manifest görsellerinin varsayılan göreli boyutu (2D sürümdeki oranlar).
-const TYPE_SIZE = {hazardBomb:1.5, diamond:1.0, coin:0.9, heart:1.1};
+// 2.83.4: tüm öğeler aynı boy (dev cızırtı dahil); manifest görseli kendi size'ını taşıyabilir.
+const TYPE_SIZE = {};
 const HOVER = 1.55;
+// Cızırtının yüz varyantı (render.js hazVariant ile aynı kural): nabız açık/kapalı,
+// sinsi bekliyor/sıçramak üzere. Doku önbellekte; değişince yalnız harita değişir.
+function hazardVariant(type, it){
+  if(type==='hazardPulse') return (it && it.pulseDanger===false) ? 'off' : 'on';
+  if(type==='hazardCreep') return (it && !it.creeped && it.creepT>0 && it.creepT<30) ? 'wind' : 'idle';
+  return '';
+}
 // Klasik moddakiyle (render.js CLEF_SPARKS) aynı yıldız konumları — R cinsinden x, y ve faz.
 const CLEF_SPARKS = [[1.25,-1.15,0],[-1.3,-0.5,1.6],[1.35,0.75,3.1],[-0.9,1.25,4.5],[0.2,-1.6,5.6]];
 let _spark = null;
@@ -275,9 +283,9 @@ export class Entities {
   }
 
   // ---------------- Klasik çizimden doku (fallback) ----------------
-  _fallbackTexture(type, styleKey){
+  _fallbackTexture(type, styleKey, variant){
     const paintType = type==='hazardTwinDecoy' ? 'hazardTwin' : type;
-    const key = paintType+'|'+styleKey;
+    const key = paintType+'|'+(variant||'')+'|'+styleKey;
     // Tema/renk körü modu değişince eski stilin dokuları bir daha kullanılmaz:
     // GPU'dan silinir (eskiden her ziyaret edilen tema ~15 doku bırakıyordu).
     if(this._fbStyle !== styleKey){
@@ -288,13 +296,13 @@ export class Entities {
     if(!e){
       const c = document.createElement('canvas'); c.width = c.height = FALLBACK_PX;
       const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
-      e = {canvas:c, tex, ready:false, lastTry:-999, type:paintType};
+      e = {canvas:c, tex, ready:false, lastTry:-999, type:paintType, variant:variant||''};
       this.fallbackTex.set(key, e);
     }
     // Görseller (canavar PNG'leri) henüz yüklenmemişse birkaç karede bir tekrar dene.
     if(!e.ready && this.frame - e.lastTry > 20 && this.hooks.paintItem){
       e.lastTry = this.frame;
-      e.ready = !!this.hooks.paintItem(e.type, e.canvas);
+      e.ready = !!this.hooks.paintItem(e.type, e.canvas, e.variant);
       e.tex.needsUpdate = true;
     }
     return e.tex;
@@ -338,7 +346,7 @@ export class Entities {
       v.mat = new THREE.SpriteMaterial({map, transparent:true, depthWrite:false, depthTest:false});
       v.body = new THREE.Sprite(v.mat);
       v.body.position.y = HOVER;
-      v.baseScale = def ? 2.6*sz : 2*2.6*(type==='hazardBomb' ? 1.5 : 1);   // dev cızırtı dokusu küçük çizilir (bkz. gfx.js paintItem3D)
+      v.baseScale = def ? 2.6*sz : 2*2.6;   // klasik doku ±2.6R alanı kaplar (bkz. gfx.js paintItem3D)
       v.body.scale.setScalar(v.baseScale);
       root.add(v.body);
     }
@@ -376,7 +384,7 @@ export class Entities {
   warmBegin(styleKey){
     const list = ITEM_TYPES.map(type=>{
       const v = this._acquire(type);
-      if(!v.def && v.mat) setMap(v.mat, this._fallbackTexture(type, styleKey));
+      if(!v.def && v.mat) setMap(v.mat, this._fallbackTexture(type, styleKey, hazardVariant(type, null)));
       v.root.position.set(0, -1e4, 0);
       v.root.traverse(o=>{ o.userData.warmCull = o.frustumCulled; o.frustumCulled = false; });
       return v;
@@ -407,11 +415,7 @@ export class Entities {
 
   _itemColor(type, f, it){
     const T = f.theme;
-    if(type==='hazardPull') return '#ffb454';
-    if(type==='hazardTwin'||type==='hazardTwinDecoy') return '#ff8a3d';
-    if(type==='hazardPulse') return (it && it.pulseDanger===false) ? '#ffd9dc' : '#ff3b52';
-    if(type==='hazardCreep') return '#d94a1f';
-    if(HAZARDS.has(type)) return T.peril;
+    if(HAZARDS.has(type)) return '#ff3b3b';   // 2.83.4: tüm cızırtılar tek kırmızı
     if(type==='star') return T.star;
     if(type==='gold') return T.gold;
     if(type==='coin') return '#ffb454';
@@ -483,11 +487,10 @@ export class Entities {
     const bob = (type==='star'||type==='gold') ? Math.sin(t*3.2 + it.ang*3)*0.32 : type==='diamond' ? 0 : Math.sin(t*2.4 + it.ang*3)*0.14;
     let scale = 1, opacity = 1, spin = 0, flipX = 1;
     if(hazard){
-      spin = type==='hazardJump' ? 0 : t*(type==='hazardCreep'?1.1:type==='hazardPulse'?1.0:0.6);
-      if(type==='hazardPulse'){
-        scale = (0.55+(Math.sin(it.pulsePhase||0)*0.5+0.5)*0.85)/0.975;
-        if(!it.pulseDanger) opacity = 0.55;
-      }
+      // 2.83.4: cızırtılar dönmez (yüzleri ters dönmesin), nabız boyut değiştirmez;
+      // durum yüzden okunur (uyuyan nabız soluk).
+      spin = 0;
+      if(type==='hazardPulse' && !it.pulseDanger) opacity = 0.55;
       if(type==='hazardTwinDecoy') opacity = 0.4+Math.sin(t*9)*0.25;
       // Cızırtı: bozuk sinyal gibi hafif parlaklık titremesi.
       opacity *= 0.82 + Math.random()*0.18;
@@ -516,7 +519,7 @@ export class Entities {
       if(v.glow){ v.glow.position.y = HOVER + bob; v.glow.material.color.set(v.yarnGlowCol); v.glow.material.opacity = 0.42*opacity; }
       v.shadow.material.opacity = 0.5;
     } else if(v.mat){
-      if(!def) setMap(v.mat, this._fallbackTexture(type, styleKey));
+      if(!def) setMap(v.mat, this._fallbackTexture(type, styleKey, hazardVariant(type, it)));
       else if(def.kind==='sheet') updateSheetFrame(def, t);
       v.mat.rotation = (def && def.opts.spin===false) ? 0 : spin;
       v.mat.opacity = opacity;
@@ -556,7 +559,7 @@ export class Entities {
       }
       v.spotRing.visible = true;
       v.spotRing.position.y = v.body ? v.body.position.y : HOVER;
-      v.spotRing.scale.setScalar(((type==='hazardBomb') ? 6.6 : 5.2) + Math.sin(t*9)*0.35);
+      v.spotRing.scale.setScalar(5.2 + Math.sin(t*9)*0.35);
       v.spotRing.material.opacity = Math.min(1, it.spot/30)*0.95;
     } else if(v.spotRing) v.spotRing.visible = false;
   }

@@ -882,7 +882,7 @@ function update(dt){
     if(it.expiring){ it.pop-=dt*0.028; if(it.pop<=0){ it.alive=false; continue; } }   // ~0.6 sn'de söner (eskiden 0.2 sn)
 
     const da=Math.abs(angDiff(player.ang,it.ang));
-    const hitWindow = it.type==='hazardBomb' ? 0.20 : 0.13;
+    const hitWindow = 0.13;   // 2.83.4: dev cızırtı artık aynı boy, geniş çarpma alanı da kalktı
     const isDangerKind = isHazardType(it.type) || it.type==='hazardTwinDecoy';
 
     // Tehlikeler: eskisi gibi açı+halka+"yerleşmiş mi" kontrolüyle — bu
@@ -894,7 +894,7 @@ function update(dt){
       if(it.expiring || da>0.6) continue;
       const ix=CX+Math.cos(it.ang)*radiusFor(it.ring), iy=CY+Math.sin(it.ang)*radiusFor(it.ring);
       const ppx=CX+Math.cos(player.ang)*player.curRadius, ppy=CY+Math.sin(player.ang)*player.curRadius;
-      const sameRing = Math.hypot(ppx-ix, ppy-iy) < PLAYER_R*(it.type==='hazardBomb' ? 2.6 : 2.0);
+      const sameRing = Math.hypot(ppx-ix, ppy-iy) < PLAYER_R*2.0;
       if(isHazardType(it.type)){
         if(!sameRing) continue;
         if(it.type==='hazardPulse' && !it.pulseDanger) continue;
@@ -1477,6 +1477,6 @@ function drawItemIcon(cnv, type){
   const S=cnv.width, g=cnv.getContext('2d');
   g.clearRect(0,0,S,S);
   const prev=ctx; ctx=g;
-  try{ const R=S/(2*(type==='hazardBomb' ? 3.6 : 2.7)); drawItem(S/2, S/2, type, R/(PLAYER_R*0.95), 0, null); }
+  try{ const R=S/(2*2.7); drawItem(S/2, S/2, type, R/(PLAYER_R*0.95), 0, null); }
   finally{ ctx=prev; }
 }
