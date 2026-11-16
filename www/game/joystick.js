@@ -1,22 +1,19 @@
 // Joystick (2.83): eski "sola dokun içe / sağa dokun dışa" kontrolünün yerine
 // (eski kontrol Ayarlar > Sol/Sağ Dokunma ile hâlâ seçilebilir, bkz. input.js).
 //
-// Ekranın altında SABİT bir joystick. Yalnız ona (ve çevresine) basınca çalışır.
-// Kol gibi: dokunduğun anda penanın plak üstündeki konumuna göre ekranda
-// "dışa doğru" yön bir kez belirlenir ve parmak kalkana kadar sabit kalır
-// (pena dönerken basılı tutmanın anlamı değişmesin). Topuzun o eksendeki
-// itişi penanın halkasını DOĞRUDAN belirler: az it = bir halka, sonuna kadar
-// it = iki halka, geri çek = başladığı halkaya döner. Bırakınca pena olduğu
-// halkada kalır. Halkalar ayrık kalır; kilit, tehdit yönetmeni, düello aynı.
+// Ekranın altında SABİT bir joystick; yalnız ona (ve çevresine) basınca çalışır.
+// Her itiş TEK halka geçer (2.83.2, kullanıcı kararı): yön, itildiği anda
+// penanın plak üstündeki konumuna göre ekranda hesaplanır (ortaya doğru = iç,
+// dışarı doğru = dış). Basılı tutmak tekrar etmez; yeni halka için topuz
+// ortaya döner (ya da parmak kalkar) ve yeniden itilir.
 //
 // Klavye: oklar / WASD ekran yönü; her basış bir halka.
 const JOY_MAX = 56;          // topuzun merkezden en fazla gidebildiği yol (px)
-const JOY_DEAD = 10;         // ölü bölge (px)
-// Kol kademeleri (JOY_MAX oranı); iniş eşikleri biraz düşük (titremesin).
-const JOY_L1_UP = 0.40, JOY_L1_DN = 0.30, JOY_L2_UP = 0.85, JOY_L2_DN = 0.74;
+const JOY_FIRE = 0.5;        // halka değişimi için gereken itiş (JOY_MAX oranı)
+const JOY_REARM = 0.3;       // yeni itiş için topuzun dönmesi gereken oran
 const JOY_HIT = 1.6;         // tabanın yarıçapının bu katı içinde dokunuş joystick'i tutar
 
-const _joy = {active:false, id:null, cx:0, cy:0, vx:0, vy:0, base:0, axis:null, level:0,
+const _joy = {active:false, id:null, cx:0, cy:0, vx:0, vy:0, armed:true,
   keys:{}, el:null, knob:null, rejT:null};
 
 function _joyEls(){
@@ -43,7 +40,7 @@ function joyBegin(e){
   if(Math.hypot(e.clientX-cx, e.clientY-cy) > (r.width/2)*JOY_HIT) return false;
   _joy.active = true; _joy.id = e.pointerId; _joy.cx = cx; _joy.cy = cy;
   _joy.vx = e.clientX-cx; _joy.vy = e.clientY-cy;
-  _joy.base = player.targetRing; _joy.axis = joyOutward(); _joy.level = 0; _joy.blocked = null;
+  _joy.armed = true;
   el.style.setProperty('--joy-col', typeof playerColor==='function' ? playerColor() : '#2fe6c4');
   el.classList.add('on');
   _joyKnob();
@@ -57,7 +54,7 @@ function joyMove(e){
 function joyEnd(e){
   if(e && _joy.active && e.pointerId!==_joy.id) return;
   if(!_joy.active) return;
-  _joy.active = false; _joy.id = null; _joy.vx = 0; _joy.vy = 0; _joy.axis = null; _joy.level = 0;
+  _joy.active = false; _joy.id = null; _joy.vx = 0; _joy.vy = 0; _joy.armed = true;
   const el = _joyEls(); if(el) el.classList.remove('on');
   _joyKnob();
 }
@@ -101,27 +98,15 @@ function joyDirScreen(dir){
 function updateJoystick(dt, settled){
   _joyArrow();
   if(!_joy.active) return;
-  if(!_joy.axis){ _joy.axis = joyOutward(); if(!_joy.axis) return; }
-  if(tutorialActive && typeof tutorialTapAllowed==='function' && !tutorialTapAllowed()){ _joy.base = player.targetRing; return; }
+  if(tutorialActive && typeof tutorialTapAllowed==='function' && !tutorialTapAllowed()) return;
   const v = joyVec(), mag = Math.hypot(v[0], v[1]);
-  let s = mag < JOY_DEAD ? 0 : (v[0]*_joy.axis[0] + v[1]*_joy.axis[1]) / JOY_MAX;
-  // Geri Sar: kolun anlamı ters.
-  if(session && session.risk && session.risk.type==='riskRewind') s = -s;
-  const a = Math.abs(s), cur = Math.abs(_joy.level);
-  let lv = cur;
-  if(cur===0){ if(a>=JOY_L2_UP) lv=2; else if(a>=JOY_L1_UP) lv=1; }
-  else if(cur===1){ if(a>=JOY_L2_UP) lv=2; else if(a<JOY_L1_DN) lv=0; }
-  else { if(a<JOY_L1_DN) lv=0; else if(a<JOY_L2_DN) lv=1; }
-  let level = lv * (s<0 ? -1 : 1);
-  if(lv && Math.sign(_joy.level) && Math.sign(_joy.level)!==Math.sign(s) && a<JOY_L1_UP) level = 0;   // karşı yöne geçerken önce nötr
-  _joy.level = level;
-  const want = Math.max(0, Math.min(NUM_RINGS-1, _joy.base + level));
-  // Kilitli halkaya istek: bir kez reddedilir (bip), aynı istek tekrarlanmaz.
-  if(want===_joy.blocked) return;
-  _joy.blocked = null;
-  for(let i=0; i<NUM_RINGS && player.targetRing!==want; i++){
-    if(!moveRing(want>player.targetRing ? 1 : -1, true)){ _joy.blocked = want; break; }
-  }
+  if(mag < JOY_REARM*JOY_MAX){ _joy.armed = true; return; }
+  if(!_joy.armed || mag < JOY_FIRE*JOY_MAX) return;
+  const o = joyOutward(); if(!o) return;
+  const d = (v[0]*o[0] + v[1]*o[1]) / mag;     // itişin iç/dış eksenindeki payı
+  if(Math.abs(d) < 0.35) return;                // penanın yörüngesi boyunca itiş: yok say
+  _joy.armed = false;
+  moveRing(d>0 ? 1 : -1);                       // Geri Sar tersliğini moveRing uygular
 }
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden) joyReset(); });
 

@@ -7,9 +7,9 @@ const cv = document.getElementById('game');
 let ctx = cv.getContext('2d');
 let W,H,CX,CY,DPR, RINGS=[], PLAYER_R;
 const NUM_RINGS = 3, MIN_GAP = 0.55;
-// Halka geçiş hızı (kare başına yaklaşma oranı). 2.83 joystick ile 0.22/0.38'den
-// yükseltildi: itince pena hemen gitmeli. Çevik Pena yeteneği farkı korunur.
-const RING_LERP = 0.30, RING_LERP_NIMBLE = 0.46;
+// Halka geçiş hızı (kare başına yaklaşma oranı). 2.83.0'da 0.30'a çıkmıştı;
+// "çat diye zıplıyor" geri bildirimiyle 2.83.2'de eski yumuşak değere döndü.
+const RING_LERP = 0.22, RING_LERP_NIMBLE = 0.38;
 
 function resize(){
   // 3D modda bu canvas yalnız tam ekran flaşları taşır (dünya WebGL'de):
